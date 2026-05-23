@@ -26,7 +26,13 @@
     "extra": {
       "supabaseUrl": "${SUPABASE_URL}",
       "supabaseAnonKey": "${SUPABASE_ANON_KEY}",
-      "resendFromEmail": "${RESEND_FROM_EMAIL}"
+      "resendFromEmail": "${RESEND_FROM_EMAIL}",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "61b5bfb4-812d-48c7-b136-0c29d9b3e182"
+      }
     }
   }
 }
