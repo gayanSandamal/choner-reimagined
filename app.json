@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Choner",
+    "slug": "choner-mobile",
+    "scheme": "choner",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0B1220"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.choner.app"
+    },
+    "android": {
+      "package": "com.choner.app"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "supabaseUrl": "${SUPABASE_URL}",
+      "supabaseAnonKey": "${SUPABASE_ANON_KEY}",
+      "resendFromEmail": "${RESEND_FROM_EMAIL}"
+    }
+  }
+}
