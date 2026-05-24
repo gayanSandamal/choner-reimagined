@@ -42,6 +42,9 @@ export default function SignInScreen() {
         <Input label="Password" secureTextEntry value={value} onChangeText={onChange} error={errors.password?.message} />
       )} />
       <Button label={loading ? 'Signing in...' : 'Sign in'} onPress={onSubmit} disabled={loading} />
+      <Link href="/(auth)/forgot-password" asChild>
+        <Button label="Forgot password?" variant="ghost" />
+      </Link>
       <Link href="/(auth)/sign-up" asChild>
         <Button label="Create account" variant="secondary" />
       </Link>

@@ -1,97 +1,170 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Card } from '@/components/ui/Card';
 import { AppText } from '@/components/ui/AppText';
+import { Button } from '@/components/ui/button';
 import { ChallengeTaskItem } from '@/components/challenges/ChallengeTaskItem';
+import { LoadingState, ErrorState } from '@/components/ui/StateViews';
+import { useSession } from '@/providers/session-provider';
+import {
+  useActiveChallenge,
+  useChallengeTemplate,
+  useCompleteTask,
+  useUndoTaskCheckin,
+  useStartChallenge,
+  useAbandonChallenge,
+} from '@/features/challenges/hooks';
+import { useIsPremium } from '@/features/billing/hooks';
 import { theme } from '@/constants/theme';
 
-interface Task {
-  key: string;
-  title: string;
-  meta: string;
+function todayString() {
+  return new Date().toISOString().slice(0, 10);
 }
-
-const challengeTitles: Record<string, string> = {
-  '1': '7-Day Energy Reset',
-  '2': 'Sleep Reset Sprint',
-  '3': 'Stress Recovery Week',
-  '4': 'Hydration Catalyst',
-  '5': 'Weekend Buffer Plan',
-};
-
-const challengeDescriptions: Record<string, string> = {
-  '1': 'Best for busy professionals rebuilding consistency and physical vitality.',
-  '2': 'Short challenge for better sleep timing, evening routines, and recovery.',
-  '3': 'Reduce mental load with lighter daily tasks and mindfulness targets.',
-  '4': 'Focus on building the foundational habit of drinking enough water daily.',
-  '5': 'Avoid the typical weekend drop-off and protect your streak with light goals.',
-};
-
-const challengeTasks: Record<string, Task[]> = {
-  '1': [
-    { key: 'walk', title: 'Walk 7,000 steps', meta: 'Daily movement target' },
-    { key: 'sunlight', title: '10 min morning sunlight', meta: 'Circadian rhythm lock' },
-    { key: 'caffeine', title: 'No caffeine after 2 PM', meta: 'Protect deep sleep' },
-  ],
-  '2': [
-    { key: 'screen', title: 'Digital wind-down', meta: 'No screens 30 mins before sleep' },
-    { key: 'lights', title: 'Dim household lights', meta: 'Prepare melatonin release' },
-    { key: 'wake', title: 'Consistent wake window', meta: 'Set alarm for same time daily' },
-  ],
-  '3': [
-    { key: 'hydrate', title: 'Hydrate consistently', meta: '2.5L water throughout the day' },
-    { key: 'breathe', title: '5 min boxed breathing', meta: 'Soothe sympathetic nervous system' },
-    { key: 'nature', title: '15 min nature stroll', meta: 'Unplugged recovery walking' },
-  ],
-  'default': [
-    { key: 'walk', title: 'Walk 7,000 steps', meta: 'Daily movement target' },
-    { key: 'hydrate', title: 'Hydrate consistently', meta: '2.5L over the day' },
-    { key: 'winddown', title: 'Digital wind-down', meta: '30 mins before sleep' },
-  ],
-};
 
 export default function ChallengeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const challengeTitle = challengeTitles[id] || `Challenge #${id}`;
-  const challengeDesc = challengeDescriptions[id] || 'Designed for users who need structure, social pressure, and an achievable streak.';
-  const tasks = challengeTasks[id] || challengeTasks['default'];
+  const { session } = useSession();
+  const userId = session?.user.id;
 
-  const [completedMap, setCompletedMap] = useState<Record<string, boolean>>({});
+  const templateQ = useChallengeTemplate(id);
+  const activeQ = useActiveChallenge(userId);
+  const { isPremium } = useIsPremium();
 
-  // Reset completion state when id changes
-  useEffect(() => {
-    setCompletedMap({});
-  }, [id]);
+  const startMut = useStartChallenge();
+  const abandonMut = useAbandonChallenge();
+  const completeMut = useCompleteTask();
+  const undoMut = useUndoTaskCheckin();
 
-  const toggleTask = (key: string) => {
-    setCompletedMap(prev => ({ ...prev, [key]: !prev[key] }));
+  // Is the user's active challenge for this template?
+  const activeChallenge = activeQ.data as any;
+  const isActiveForThisTemplate =
+    activeChallenge?.challenge_template_id === id || activeChallenge?.challenge_templates?.id === id;
+
+  const tasks = useMemo(() => {
+    if (!isActiveForThisTemplate) return [];
+    return ((activeChallenge?.challenge_tasks ?? []) as any[]).sort(
+      (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+    );
+  }, [activeChallenge, isActiveForThisTemplate]);
+
+  const today = todayString();
+  const checkinFor = (task: any) =>
+    (task.task_checkins ?? []).find((c: any) => (c.completed_at ?? '').slice(0, 10) === today);
+
+  const onStart = () => {
+    if (!userId || !id) return;
+    if (templateQ.data?.is_premium && !isPremium) {
+      Alert.alert('Premium challenge', 'Upgrade to unlock this challenge.', [
+        { text: 'Cancel' },
+        { text: 'See plans', onPress: () => router.push('/modals/premium') },
+      ]);
+      return;
+    }
+    if (activeChallenge && !isActiveForThisTemplate) {
+      Alert.alert(
+        'You have an active challenge',
+        'Starting a new one will abandon your current challenge. Continue?',
+        [
+          { text: 'Cancel' },
+          {
+            text: 'Replace it',
+            style: 'destructive',
+            onPress: async () => {
+              await abandonMut.mutateAsync(activeChallenge.id);
+              startMut.mutate({
+                userId,
+                templateId: id,
+                accountabilityMode: 'solo',
+              });
+            },
+          },
+        ]
+      );
+      return;
+    }
+    startMut.mutate({ userId, templateId: id, accountabilityMode: 'solo' });
   };
+
+  const onAbandon = () => {
+    if (!activeChallenge) return;
+    Alert.alert('End this challenge?', 'Your progress will be saved in history.', [
+      { text: 'Keep going' },
+      {
+        text: 'End challenge',
+        style: 'destructive',
+        onPress: () => abandonMut.mutate(activeChallenge.id),
+      },
+    ]);
+  };
+
+  if (templateQ.isLoading) {
+    return (
+      <Screen>
+        <ScreenHeader title="Challenge" onBack={() => router.back()} />
+        <LoadingState />
+      </Screen>
+    );
+  }
+  if (templateQ.isError || !templateQ.data) {
+    return (
+      <Screen>
+        <ScreenHeader title="Challenge" onBack={() => router.back()} />
+        <ErrorState message={(templateQ.error as Error)?.message} onRetry={() => templateQ.refetch()} />
+      </Screen>
+    );
+  }
+
+  const t = templateQ.data;
 
   return (
     <Screen scroll={false}>
       <ScrollView contentContainerStyle={{ gap: theme.spacing(2), paddingBottom: theme.spacing(4) }}>
-        <ScreenHeader title={challengeTitle} onBack={() => router.back()} />
-        
-        <Card style={{ marginTop: theme.spacing(1) }}>
-          <AppText muted>{challengeDesc}</AppText>
-        </Card>
-        
-        <View style={{ marginTop: theme.spacing(2), marginBottom: theme.spacing(1) }}>
-          <AppText variant="label" muted style={{ paddingLeft: theme.spacing(1) }}>Tasks</AppText>
-        </View>
+        <ScreenHeader title={t.title} onBack={() => router.back()} />
 
-        {tasks.map(task => (
-          <ChallengeTaskItem 
-            key={task.key}
-            title={task.title}
-            meta={task.meta}
-            completed={!!completedMap[task.key]}
-            onPress={() => toggleTask(task.key)}
+        <Card style={{ marginTop: theme.spacing(1), gap: theme.spacing(1) }}>
+          <AppText muted>{t.description ?? (t as any).summary ?? ''}</AppText>
+          <AppText variant="caption" muted>
+            {t.duration_days} days • {t.difficulty}
+            {t.is_premium ? ' • Premium' : ''}
+          </AppText>
+        </Card>
+
+        {isActiveForThisTemplate ? (
+          <>
+            <View style={{ marginTop: theme.spacing(2), marginBottom: theme.spacing(1) }}>
+              <AppText variant="label" muted style={{ paddingLeft: theme.spacing(1) }}>Today's tasks</AppText>
+            </View>
+            {tasks.length === 0 ? (
+              <Card><AppText muted>No tasks for this challenge yet.</AppText></Card>
+            ) : (
+              tasks.map((task) => {
+                const checkin = checkinFor(task);
+                return (
+                  <ChallengeTaskItem
+                    key={task.id}
+                    title={task.title}
+                    meta={`${task.task_type} • ${task.due_window ?? 'anytime'}`}
+                    completed={Boolean(checkin)}
+                    onPress={() => {
+                      if (checkin) undoMut.mutate(checkin.id);
+                      else completeMut.mutate({ taskId: task.id, userChallengeId: activeChallenge.id });
+                    }}
+                  />
+                );
+              })
+            )}
+            <Button label="End this challenge" variant="ghost" onPress={onAbandon} />
+          </>
+        ) : (
+          <Button
+            label={startMut.isPending ? 'Starting...' : 'Start this challenge'}
+            onPress={onStart}
+            disabled={startMut.isPending}
           />
-        ))}
+        )}
       </ScrollView>
     </Screen>
   );

@@ -12,19 +12,21 @@ import { theme } from '@/constants/theme';
 const goals = ['Move more', 'Sleep better', 'Reduce stress', 'Improve energy'];
 const struggles = ['I start but stop', 'I lack accountability', 'I am too busy', 'I feel overwhelmed'];
 const stylesList = ['solo', 'partner', 'group', 'public'];
+const stressLevels = ['low', 'medium', 'high'];
 
 export default function OnboardingScreen() {
   const { session } = useSession();
   const [goal, setGoal] = useState(goals[0]);
   const [struggle, setStruggle] = useState(struggles[0]);
   const [style, setStyle] = useState(stylesList[1]);
+  const [stress, setStress] = useState(stressLevels[1]);
 
   const mutation = useMutation({
     mutationFn: () => updateProfile(session!.user.id, {
       primary_goal: goal,
       main_struggle: struggle,
       accountability_mode: style,
-      stress_level: 'medium',
+      stress_level: stress,
       onboarding_complete: true,
     }),
     onSuccess: () => router.replace('/(tabs)/home'),
@@ -37,6 +39,7 @@ export default function OnboardingScreen() {
       <AppText variant="muted">Tell Choner what matters most so your challenge and accountability flow feel personal from day one.</AppText>
       <SelectionBlock title="Primary goal" options={goals} selected={goal} onSelect={setGoal} />
       <SelectionBlock title="Main struggle" options={struggles} selected={struggle} onSelect={setStruggle} />
+      <SelectionBlock title="Current stress level" options={stressLevels} selected={stress} onSelect={setStress} />
       <SelectionBlock title="Motivation style" options={stylesList} selected={style} onSelect={setStyle} />
       <Button label={mutation.isPending ? 'Saving...' : 'Finish setup'} onPress={() => mutation.mutate()} disabled={mutation.isPending} />
     </Screen>

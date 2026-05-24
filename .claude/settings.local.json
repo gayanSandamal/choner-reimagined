@@ -12,7 +12,12 @@
       "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\(d.get\\(''''main'''',''''''''\\)\\);print\\(d.get\\(''''react-native'''',''''''''\\)\\)\")",
       "Bash(ls:*)",
       "Bash(pnpm run:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(supabase projects *)",
+      "Bash(supabase migration *)",
+      "Bash(supabase db *)",
+      "Bash(npx supabase *)",
+      "Bash(git add *)"
     ]
   }
 }

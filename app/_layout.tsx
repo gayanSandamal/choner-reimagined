@@ -35,6 +35,15 @@ function RootLayoutNav() {
       <Stack.Screen name="modals/notifications" options={{ presentation: 'modal' }} />
       <Stack.Screen name="modals/premium" options={{ presentation: 'modal' }} />
       <Stack.Screen name="settings/index" />
+      <Stack.Screen name="settings/notifications" />
+      <Stack.Screen name="profile/edit" />
+      <Stack.Screen name="group/[id]" />
+      <Stack.Screen name="group/new" />
+      <Stack.Screen name="group/invite" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="post/[id]" />
+      <Stack.Screen name="legal/privacy" />
+      <Stack.Screen name="legal/terms" />
+      <Stack.Screen name="legal/health-disclaimer" />
     </Stack>
   );
 }
