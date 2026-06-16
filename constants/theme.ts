@@ -1,8 +1,12 @@
+// Design tokens for the playful-warm direction.
+// Keep these additive — existing keys (colors, radius, shadow, spacing)
+// are consumed across many files and must not be renamed.
+
 export const theme = {
   colors: {
     bg: '#031A2D',
     surface: '#082743',
-    surfaceHighlight: '#0A2F50', // Lighter surface for interactions or hover states
+    surfaceHighlight: '#0A2F50',
     surface2: '#0C3152',
     surface3: '#13446C',
     primary: '#FF8A1F',
@@ -12,17 +16,31 @@ export const theme = {
     text: '#F7FAFC',
     muted: '#A5B6C8',
     danger: '#FF6B6B',
-    success: '#FF9D45', // Kept matching primary for brand alignment or could be green if preferred. Let's keep it consistent.
+    success: '#3DD68C',
     warning: '#FFC46A',
     border: '#16507E',
-    chip: '#10365A'
+    chip: '#10365A',
+    // Surface tints used by glass/blur and gradient backdrops.
+    glassTint: 'rgba(255, 255, 255, 0.06)',
+    glassBorder: 'rgba(255, 255, 255, 0.14)',
+    overlayDim: 'rgba(2, 14, 26, 0.55)'
+  },
+  // Tuple form so consumers can spread into expo-linear-gradient's `colors` prop.
+  gradients: {
+    warm: ['#FF8A1F', '#FF4E81'] as const,
+    glow: ['#FFB566', '#FF8A1F'] as const,
+    calm: ['#0A2F50', '#031A2D'] as const,
+    success: ['#3DD68C', '#7FE3A1'] as const,
+    sky: ['#1F6FFF', '#33C2FF'] as const,
+    paywall: ['#FF8A1F', '#FF4E81', '#7C5CFF'] as const
   },
   radius: {
     xs: 8,
-    sm: 14, // Softer corners
-    md: 20, // Softer corners for cards
+    sm: 14,
+    md: 20,
     lg: 28,
-    xl: 36
+    xl: 36,
+    pill: 999
   },
   shadow: {
     sm: {
@@ -47,12 +65,43 @@ export const theme = {
       elevation: 8
     },
     glow: {
-      shadowColor: '#FF8A1F', // Primary color glow for premium
+      shadowColor: '#FF8A1F',
       shadowOpacity: 0.4,
       shadowRadius: 20,
       shadowOffset: { width: 0, height: 0 },
       elevation: 10
     }
   },
+  // Centralized motion language. Use through `theme.motion.spring.bouncy`
+  // etc. so the whole app feels coherent.
+  motion: {
+    spring: {
+      bouncy: { damping: 10, stiffness: 180, mass: 0.8 },
+      gentle: { damping: 18, stiffness: 140, mass: 0.9 },
+      stiff: { damping: 22, stiffness: 320, mass: 0.7 }
+    },
+    timing: {
+      quick: 160,
+      base: 240,
+      lazy: 380
+    },
+    // Press-feedback scale targets for PressableScale.
+    pressScale: {
+      subtle: 0.985,
+      base: 0.96,
+      bold: 0.93
+    }
+  },
+  // Font families resolved by expo-font loader in app/_layout.tsx.
+  fonts: {
+    body: 'Nunito_400Regular',
+    bodyMedium: 'Nunito_600SemiBold',
+    bodyBold: 'Nunito_700Bold',
+    display: 'Nunito_800ExtraBold',
+    displayBlack: 'Nunito_900Black'
+  },
   spacing: (n: number) => n * 8
 };
+
+export type Theme = typeof theme;
+export type GradientName = keyof typeof theme.gradients;

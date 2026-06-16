@@ -8,17 +8,63 @@
     "userInterfaceStyle": "automatic",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#0B1220"
+      "backgroundColor": "#031A2D"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.choner.app"
+      "bundleIdentifier": "com.choner.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Choner needs access to your photo library to set your profile picture.",
+        "NSCameraUsageDescription": "Choner uses the camera if you take a profile photo.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:choner.app"
+      ]
     },
     "android": {
-      "package": "com.choner.app"
+      "package": "com.choner.app",
+      "versionCode": 1,
+      "permissions": [
+        "NOTIFICATIONS"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "choner.app"
+            }
+          ],
+          "autoVerify": true
+        }
+      ]
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#FF8A1F",
+          "mode": "production"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choner needs access to your photo library to set your profile picture.",
+          "cameraPermission": "Choner uses the camera if you take a profile photo."
+        }
+      ],
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,32 +1,60 @@
-import { useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
-import { supabase } from '@/lib/supabase';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ListItem } from '@/components/ui/ListItem';
 import { AppText } from '@/components/ui/AppText';
+import { signOut } from '@/features/auth/api';
+import { useDeleteAccount } from '@/features/profile/hooks';
+import { useIsPremium } from '@/features/billing/hooks';
 import { theme } from '@/constants/theme';
 
-export default function SettingsScreen() {
-  const [isPrivate, setIsPrivate] = useState(false);
+const SUBSCRIPTION_URLS = {
+  ios: 'itms-apps://apps.apple.com/account/subscriptions',
+  android: 'https://play.google.com/store/account/subscriptions',
+};
 
-  const togglePrivacy = () => {
-    const nextVal = !isPrivate;
-    setIsPrivate(nextVal);
-    Alert.alert(
-      "Privacy Updated",
-      `Your challenge activity is now ${nextVal ? 'Private' : 'Public'}.`
-    );
+export default function SettingsScreen() {
+  const deleteMut = useDeleteAccount();
+  const { isPremium } = useIsPremium();
+
+  const handleManageSubscription = () => {
+    const url = Platform.OS === 'ios' ? SUBSCRIPTION_URLS.ios : SUBSCRIPTION_URLS.android;
+    Linking.openURL(url).catch(() => Alert.alert('Could not open', 'Manage your subscription from the App Store / Play Store.'));
   };
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
+    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => signOut() },
+    ]);
+  };
+
+  const handleDeleteAccount = () => {
     Alert.alert(
-      "Sign Out",
-      "Are you sure you want to sign out?",
+      'Delete account',
+      'This will permanently delete your account and all data. This cannot be undone.',
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Sign Out", style: "destructive", onPress: () => supabase.auth.signOut() }
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert('Are you sure?', 'Please confirm one more time.', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Yes, delete forever',
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    await deleteMut.mutateAsync();
+                  } catch (e: any) {
+                    Alert.alert('Could not delete', e.message);
+                  }
+                },
+              },
+            ]),
+        },
       ]
     );
   };
@@ -35,35 +63,69 @@ export default function SettingsScreen() {
     <Screen scroll={false}>
       <ScrollView contentContainerStyle={{ gap: theme.spacing(1), paddingBottom: theme.spacing(4) }}>
         <ScreenHeader title="Settings" onBack={() => router.back()} />
-        
-        <View style={{ marginTop: theme.spacing(2), marginBottom: theme.spacing(1) }}>
-          <AppText variant="label" muted style={{ paddingLeft: theme.spacing(1) }}>Preferences</AppText>
-        </View>
-        <ListItem 
-          title="Notifications" 
-          subtitle="Configure streak reminders, community nudges, and recovery suggestions." 
-          icon="notifications" 
-          showChevron 
-          onPress={() => router.push('/modals/notifications')}
+
+        <SectionLabel label="Preferences" />
+        <ListItem
+          title="Notifications"
+          subtitle="Streak reminders, community nudges, and recovery suggestions."
+          icon="notifications"
+          showChevron
+          onPress={() => router.push('/settings/notifications')}
         />
-        <ListItem 
-          title="Privacy & Visibility" 
-          subtitle={`Current Mode: ${isPrivate ? 'Private' : 'Public'}`} 
-          icon="lock-closed" 
-          showChevron 
-          onPress={togglePrivacy}
+        <ListItem
+          title="Edit profile"
+          subtitle="Name, photo, goals."
+          icon="person-circle"
+          showChevron
+          onPress={() => router.push('/profile/edit')}
         />
 
-        <View style={{ marginTop: theme.spacing(3), marginBottom: theme.spacing(1) }}>
-          <AppText variant="label" muted style={{ paddingLeft: theme.spacing(1) }}>Account</AppText>
-        </View>
-        <ListItem 
-          title="Sign Out" 
-          subtitle="Sign out of your Choner account"
-          icon="log-out" 
-          onPress={handleSignOut}
+        <SectionLabel label="Billing" />
+        <ListItem
+          title={isPremium ? 'Manage subscription' : 'Upgrade to Premium'}
+          subtitle={isPremium ? 'View, change, or cancel your subscription.' : 'Unlock AI coach, advanced insights, and more.'}
+          icon={isPremium ? 'card' : 'sparkles'}
+          showChevron
+          onPress={() => (isPremium ? handleManageSubscription() : router.push('/modals/premium'))}
+        />
+
+        <SectionLabel label="Legal" />
+        <ListItem
+          title="Privacy policy"
+          icon="shield-checkmark"
+          showChevron
+          onPress={() => router.push('/legal/privacy')}
+        />
+        <ListItem
+          title="Terms of service"
+          icon="document-text"
+          showChevron
+          onPress={() => router.push('/legal/terms')}
+        />
+        <ListItem
+          title="Health disclaimer"
+          icon="medkit"
+          showChevron
+          onPress={() => router.push('/legal/health-disclaimer')}
+        />
+
+        <SectionLabel label="Account" />
+        <ListItem title="Sign out" icon="log-out" onPress={handleSignOut} />
+        <ListItem
+          title="Delete account"
+          subtitle="Permanently delete your account and data."
+          icon="trash"
+          onPress={handleDeleteAccount}
         />
       </ScrollView>
     </Screen>
+  );
+}
+
+function SectionLabel({ label }: { label: string }) {
+  return (
+    <View style={{ marginTop: theme.spacing(2), marginBottom: theme.spacing(1) }}>
+      <AppText variant="label" muted style={{ paddingLeft: theme.spacing(1) }}>{label}</AppText>
+    </View>
   );
 }

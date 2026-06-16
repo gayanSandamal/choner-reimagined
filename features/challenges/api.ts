@@ -6,6 +6,16 @@ export async function getTemplates() {
   return data ?? [];
 }
 
+export async function getTemplate(templateId: string) {
+  const { data, error } = await supabase
+    .from('challenge_templates')
+    .select('*')
+    .eq('id', templateId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function getActiveChallenge(userId: string) {
   const { data, error } = await supabase
     .from('user_challenges')
@@ -15,6 +25,18 @@ export async function getActiveChallenge(userId: string) {
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+export async function getChallengeHistory(userId: string) {
+  const { data, error } = await supabase
+    .from('user_challenges')
+    .select('*, challenge_templates(*)')
+    .eq('user_id', userId)
+    .in('status', ['completed', 'abandoned'])
+    .order('completed_at', { ascending: false, nullsFirst: false })
+    .limit(20);
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function startChallenge(payload: {
@@ -45,4 +67,41 @@ export async function completeTask(payload: {
 
   if (error) throw error;
   return data;
+}
+
+export async function undoTaskCheckin(checkinId: string) {
+  const { error } = await supabase.from('task_checkins').delete().eq('id', checkinId);
+  if (error) throw error;
+}
+
+export async function setChallengeStatus(userChallengeId: string, status: 'active' | 'paused' | 'completed' | 'abandoned') {
+  const patch: { status: typeof status; completed_at?: string } = { status };
+  if (status === 'completed') patch.completed_at = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('user_challenges')
+    .update(patch)
+    .eq('id', userChallengeId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function pauseChallenge(userChallengeId: string) {
+  return setChallengeStatus(userChallengeId, 'paused');
+}
+
+export async function resumeChallenge(userChallengeId: string) {
+  return setChallengeStatus(userChallengeId, 'active');
+}
+
+export async function abandonChallenge(userChallengeId: string) {
+  return setChallengeStatus(userChallengeId, 'abandoned');
+}
+
+export async function getStreak(userId: string) {
+  const { data, error } = await supabase.rpc('get_user_insights', { p_user_id: userId });
+  if (error) throw error;
+  const insights = data as { streak_days?: number } | null;
+  return insights?.streak_days ?? 0;
 }

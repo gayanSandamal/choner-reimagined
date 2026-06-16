@@ -1,82 +1,135 @@
-import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/AppText';
 import { Card } from '@/components/ui/Card';
+import { Chip } from '@/components/ui/Chip';
+import { Badge } from '@/components/ui/Badge';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
+import { useChallengeTemplates } from '@/features/challenges/hooks';
+import { useIsPremium } from '@/features/billing/hooks';
 import { theme } from '@/constants/theme';
 
-const categories = ['All', 'Consistency', 'Sleep', 'Movement', 'Stress', 'Energy'];
-
-const challengesData = [
-  { id: '1', title: '7-Day Energy Reset', subtitle: 'Best for busy professionals rebuilding consistency', categories: ['Consistency', 'Energy'] },
-  { id: '2', title: 'Sleep Reset Sprint', subtitle: 'Short challenge for better sleep timing and recovery', categories: ['Sleep'] },
-  { id: '3', title: 'Stress Recovery Week', subtitle: 'Reduce mental load with lighter daily tasks', categories: ['Stress'] },
-  { id: '4', title: 'Hydration Catalyst', subtitle: 'Build the foundational water intake habit', categories: ['Consistency', 'Movement'] },
-  { id: '5', title: 'Weekend Buffer Plan', subtitle: 'Avoid the typical weekend drop-off and protect your streak', categories: ['Consistency', 'Stress'] },
-];
-
 export default function ChallengesScreen() {
+  const templatesQ = useChallengeTemplates();
+  const { isPremium } = useIsPremium();
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const filteredChallenges = selectedCategory === 'All'
-    ? challengesData
-    : challengesData.filter(item => item.categories.includes(selectedCategory));
+  const categories = useMemo(() => {
+    const set = new Set<string>(['All']);
+    (templatesQ.data ?? []).forEach((t: any) => t.category && set.add(capitalize(t.category)));
+    return Array.from(set);
+  }, [templatesQ.data]);
+
+  const filtered = useMemo(() => {
+    const all = templatesQ.data ?? [];
+    return selectedCategory === 'All'
+      ? all
+      : all.filter((t: any) => capitalize(t.category) === selectedCategory);
+  }, [templatesQ.data, selectedCategory]);
 
   return (
     <Screen scroll={false}>
-      <ScrollView contentContainerStyle={{ gap: theme.spacing(2), paddingBottom: theme.spacing(4) }}>
-        <SectionHeader title="Challenges" subtitle="Choose a challenge that fits your current energy and lifestyle" />
-        
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {categories.map((item) => {
-            const isActive = selectedCategory === item;
+      <ScrollView
+        contentContainerStyle={{ gap: theme.spacing(2), paddingBottom: theme.spacing(4) }}
+        refreshControl={
+          <RefreshControl
+            refreshing={templatesQ.isRefetching}
+            onRefresh={() => templatesQ.refetch()}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
+      >
+        <SectionHeader
+          title="Quests"
+          subtitle="Pick the challenge that fits your current energy and rhythm"
+        />
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+        >
+          {categories.map((item) => (
+            <Chip
+              key={item}
+              label={item}
+              active={selectedCategory === item}
+              onPress={() => setSelectedCategory(item)}
+            />
+          ))}
+        </ScrollView>
+
+        {templatesQ.isLoading ? (
+          <LoadingState />
+        ) : templatesQ.isError ? (
+          <ErrorState
+            icon="flash-off-outline"
+            title="Quests are catching their breath"
+            message={(templatesQ.error as Error).message}
+            onRetry={() => templatesQ.refetch()}
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon="compass-outline"
+            title="Nothing in this category yet"
+            body="Try a different one, or check back soon."
+            actionLabel="See all"
+            onAction={() => setSelectedCategory('All')}
+          />
+        ) : (
+          filtered.map((t: any, i: number) => {
+            const locked = t.is_premium && !isPremium;
             return (
-              <Card
-                key={item}
-                onPress={() => setSelectedCategory(item)}
-                style={{
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  backgroundColor: isActive ? theme.colors.primary : theme.colors.surface,
-                  borderColor: isActive ? theme.colors.primary : theme.colors.border,
-                }}
-              >
-                <AppText 
-                  variant="caption" 
-                  style={{ 
-                    fontWeight: isActive ? '700' : '400',
-                    color: isActive ? '#000' : theme.colors.text 
-                  }}
+              <Animated.View key={t.id} entering={FadeInDown.delay(i * 50).duration(300)}>
+                <Card
+                  onPress={() => router.push({ pathname: '/challenge/[id]', params: { id: t.id } })}
+                  style={{ gap: 8 }}
+                  variant={t.is_premium ? 'glow' : 'default'}
                 >
-                  {item}
-                </AppText>
-              </Card>
+                  <View style={styles.headerRow}>
+                    <AppText variant="subtitle" style={{ flex: 1 }}>
+                      {t.title}
+                    </AppText>
+                    {t.is_premium ? <Badge label="Pro" variant="gradient" gradient="warm" /> : null}
+                  </View>
+                  <AppText muted numberOfLines={2}>
+                    {t.description ?? t.summary}
+                  </AppText>
+                  <View style={styles.metaRow}>
+                    <Badge label={`${t.duration_days} days`} tone="neutral" variant="soft" />
+                    <Badge label={t.difficulty} tone="primary" variant="soft" />
+                  </View>
+                  <AppText
+                    variant="caption"
+                    style={{
+                      color: locked ? theme.colors.muted : theme.colors.primary2,
+                      fontFamily: theme.fonts.bodyBold,
+                      marginTop: 4
+                    }}
+                  >
+                    {locked ? 'Premium required →' : 'Open quest →'}
+                  </AppText>
+                </Card>
+              </Animated.View>
             );
-          })}
-        </View>
-
-        {filteredChallenges.map((challenge) => (
-          <Card 
-            key={challenge.id} 
-            onPress={() => router.push(`/challenge/${challenge.id}`)}
-            style={{ gap: 6 }}
-          >
-            <AppText variant="subtitle">{challenge.title}</AppText>
-            <AppText muted>{challenge.subtitle}</AppText>
-            <AppText variant="caption" style={{ color: theme.colors.primary2, fontWeight: '600', marginTop: 4 }}>
-              Open challenge →
-            </AppText>
-          </Card>
-        ))}
-
-        {filteredChallenges.length === 0 && (
-          <View style={{ paddingVertical: theme.spacing(4), alignItems: 'center' }}>
-            <AppText muted>No challenges in this category yet.</AppText>
-          </View>
+          })
         )}
       </ScrollView>
     </Screen>
   );
 }
+
+function capitalize(s: string) {
+  return s ? s[0].toUpperCase() + s.slice(1) : s;
+}
+
+const styles = StyleSheet.create({
+  chipRow: { gap: 8, paddingRight: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  metaRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' }
+});

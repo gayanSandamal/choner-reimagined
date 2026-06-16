@@ -1,20 +1,127 @@
-import { PropsWithChildren, useEffect } from 'react';
+import { PropsWithChildren, useEffect, useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SessionProvider } from '@/providers/session-provider';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SessionProvider, useSession } from '@/providers/session-provider';
 import { queryClient } from '@/lib/query-client';
-import { registerForPushNotificationsAsync } from '@/lib/notifications';
+import { attachNotificationResponseListener, registerForPushNotificationsAsync } from '@/lib/notifications';
+import { configurePurchases } from '@/lib/billing';
+import { registerPushToken } from '@/features/notifications/api';
+import { supabase } from '@/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { clearUser, identifyUser, initObservability } from '@/lib/observability';
+import { ReduceMotionContext } from '@/lib/motion';
+
+function SessionWiring() {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const userId = session?.user.id;
+  const userEmail = session?.user.email;
+
+  useEffect(() => {
+    if (!userId) {
+      clearUser();
+      return;
+    }
+    let cancelled = false;
+
+    identifyUser(userId, userEmail ? { email: userEmail } : undefined);
+
+    // Configure RevenueCat with the signed-in user id so server-side
+    // entitlements are associated with the right account.
+    configurePurchases(userId).catch(() => undefined);
+
+    // Register Expo push token to user_devices.
+    (async () => {
+      try {
+        const token = await registerForPushNotificationsAsync();
+        if (token && !cancelled) {
+          await registerPushToken({ userId, token });
+        }
+      } catch {
+        // ignore — push isn't required to use the app
+      }
+    })();
+
+    // Realtime subscriptions for in-app notifications and active challenges.
+    const notifChannel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['notifications', userId] });
+          qc.invalidateQueries({ queryKey: ['notifications-unread', userId] });
+        }
+      )
+      .subscribe();
+
+    const subChannel = supabase
+      .channel(`subscriptions:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'subscriptions', filter: `user_id=eq.${userId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['subscription', userId] });
+          qc.invalidateQueries({ queryKey: ['is-premium', userId] });
+        }
+      )
+      .subscribe();
+
+    const detachNotifTap = attachNotificationResponseListener();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(notifChannel);
+      supabase.removeChannel(subChannel);
+      detachNotifTap();
+    };
+  }, [userId, userEmail, qc]);
+
+  return null;
+}
+
+let observabilityInitialized = false;
 
 export function AppProvider({ children }: PropsWithChildren) {
+  if (!observabilityInitialized) {
+    initObservability();
+    observabilityInitialized = true;
+  }
+
+  const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
-    registerForPushNotificationsAsync().catch(() => undefined);
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((v) => {
+        if (mounted) setReduceMotion(v);
+      })
+      .catch(() => undefined);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => {
+      if (mounted) setReduceMotion(v);
+    });
+    return () => {
+      mounted = false;
+      sub.remove();
+    };
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <SessionProvider>{children}</SessionProvider>
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <QueryClientProvider client={queryClient}>
+            <ReduceMotionContext.Provider value={reduceMotion}>
+              <SessionProvider>
+                <SessionWiring />
+                {children}
+              </SessionProvider>
+            </ReduceMotionContext.Provider>
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
