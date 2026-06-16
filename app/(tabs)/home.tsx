@@ -105,6 +105,7 @@ export default function HomeScreen() {
               title={(activeQ.data as any).challenge_templates?.title ?? 'Your challenge'}
               subtitle={`${completedToday}/${tasks.length} tasks done today`}
               progress={progressPct}
+              streak={streakQ.data ?? 0}
               aiPriority={
                 completedToday === 0
                   ? 'A small win now sets the day. Start with the easiest task.'

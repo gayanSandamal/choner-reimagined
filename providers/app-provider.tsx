@@ -1,4 +1,5 @@
-import { PropsWithChildren, useEffect } from 'react';
+import { PropsWithChildren, useEffect, useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -11,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { clearUser, identifyUser, initObservability } from '@/lib/observability';
+import { ReduceMotionContext } from '@/lib/motion';
 
 function SessionWiring() {
   const { session } = useSession();
@@ -88,15 +90,35 @@ export function AppProvider({ children }: PropsWithChildren) {
     initObservability();
     observabilityInitialized = true;
   }
+
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((v) => {
+        if (mounted) setReduceMotion(v);
+      })
+      .catch(() => undefined);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => {
+      if (mounted) setReduceMotion(v);
+    });
+    return () => {
+      mounted = false;
+      sub.remove();
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
-            <SessionProvider>
-              <SessionWiring />
-              {children}
-            </SessionProvider>
+            <ReduceMotionContext.Provider value={reduceMotion}>
+              <SessionProvider>
+                <SessionWiring />
+                {children}
+              </SessionProvider>
+            </ReduceMotionContext.Provider>
           </QueryClientProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>

@@ -1,7 +1,7 @@
 import { Text, TextProps, TextStyle } from 'react-native';
 import { theme } from '@/constants/theme';
 
-type Variant = 'title' | 'subtitle' | 'body' | 'caption' | 'label';
+type Variant = 'display' | 'title' | 'subtitle' | 'body' | 'caption' | 'label';
 
 interface Props extends TextProps {
   variant?: Variant;
@@ -9,11 +9,42 @@ interface Props extends TextProps {
 }
 
 const styles: Record<Variant, TextStyle> = {
-  title: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
-  subtitle: { fontSize: 18, fontWeight: '700', letterSpacing: -0.2 },
-  body: { fontSize: 15, fontWeight: '400', letterSpacing: 0.1 },
-  caption: { fontSize: 13, fontWeight: '400', letterSpacing: 0.2 },
-  label: { fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }
+  display: {
+    fontFamily: theme.fonts.displayBlack,
+    fontSize: 40,
+    letterSpacing: -1,
+    lineHeight: 46
+  },
+  title: {
+    fontFamily: theme.fonts.display,
+    fontSize: 28,
+    letterSpacing: -0.5,
+    lineHeight: 34
+  },
+  subtitle: {
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 18,
+    letterSpacing: -0.2,
+    lineHeight: 24
+  },
+  body: {
+    fontFamily: theme.fonts.body,
+    fontSize: 15,
+    letterSpacing: 0.1,
+    lineHeight: 22
+  },
+  caption: {
+    fontFamily: theme.fonts.body,
+    fontSize: 13,
+    letterSpacing: 0.2,
+    lineHeight: 18
+  },
+  label: {
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: 'uppercase'
+  }
 };
 
 export function AppText({ variant = 'body', muted = false, style, ...props }: Props) {
