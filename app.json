@@ -6,6 +6,8 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#031A2D"
@@ -27,6 +29,7 @@
     "android": {
       "package": "com.choner.app",
       "versionCode": 1,
+      "edgeToEdgeEnabled": true,
       "permissions": [
         "NOTIFICATIONS"
       ],
@@ -64,7 +67,9 @@
           "cameraPermission": "Choner uses the camera if you take a profile photo."
         }
       ],
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-asset",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
