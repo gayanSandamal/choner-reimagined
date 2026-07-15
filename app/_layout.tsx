@@ -8,6 +8,7 @@ import {
   Nunito_600SemiBold,
   Nunito_700Bold,
   Nunito_800ExtraBold,
+  Nunito_800ExtraBold_Italic,
   Nunito_900Black,
   useFonts
 } from '@expo-google-fonts/nunito';
@@ -26,10 +27,13 @@ function RootLayoutNav() {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    // Legal pages are static content and must stay reachable from the
+    // welcome/sign-up terms links before an account exists.
+    const inLegalGroup = segments[0] === 'legal';
 
     if (!session) {
-      if (!inAuthGroup) {
-        router.replace('/(auth)/sign-in');
+      if (!inAuthGroup && !inLegalGroup) {
+        router.replace('/(auth)/welcome');
       }
     } else if (session) {
       if (inAuthGroup) {
@@ -85,6 +89,7 @@ export default function RootLayout() {
     Nunito_600SemiBold,
     Nunito_700Bold,
     Nunito_800ExtraBold,
+    Nunito_800ExtraBold_Italic,
     Nunito_900Black
   });
 

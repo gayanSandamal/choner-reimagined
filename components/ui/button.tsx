@@ -6,7 +6,7 @@ import { AppText } from './text';
 import { theme, GradientName } from '@/constants/theme';
 import { PressableScale } from './PressableScale';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'gradient' | 'danger';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'gradient' | 'danger';
 
 interface ButtonProps {
   label: string;
@@ -20,6 +20,7 @@ interface ButtonProps {
   size?: 'sm' | 'md' | 'lg';
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  pill?: boolean;
 }
 
 export const Button = forwardRef<View, ButtonProps>(function Button(
@@ -34,7 +35,8 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
     labelStyle,
     size = 'md',
     leftIcon,
-    rightIcon
+    rightIcon,
+    pill = false
   },
   ref
 ) {
@@ -49,6 +51,8 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
       ? styles.secondary
       : variant === 'ghost'
       ? styles.ghost
+      : variant === 'outline'
+      ? styles.outline
       : variant === 'danger'
       ? styles.danger
       : undefined;
@@ -56,6 +60,8 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
   const labelColor =
     variant === 'ghost'
       ? theme.colors.primary2
+      : variant === 'outline'
+      ? theme.colors.primary
       : variant === 'secondary'
       ? theme.colors.text
       : '#FFFFFF';
@@ -82,7 +88,7 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
         disabled={isDisabled}
         haptic={haptic}
         onPress={onPress}
-        style={[styles.gradientWrap, sizeStyle, isDisabled && styles.disabled, style]}
+        style={[styles.gradientWrap, sizeStyle, pill && styles.pill, isDisabled && styles.disabled, style]}
       >
         <LinearGradient
           colors={theme.gradients[gradient] as unknown as readonly [string, string, ...string[]]}
@@ -101,7 +107,7 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
       disabled={isDisabled}
       haptic={haptic}
       onPress={onPress}
-      style={[styles.base, variantBg, sizeStyle, isDisabled && styles.disabled, style]}
+      style={[styles.base, variantBg, sizeStyle, pill && styles.pill, isDisabled && styles.disabled, style]}
     >
       {inner}
     </PressableScale>
@@ -132,7 +138,13 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border
   },
   ghost: { backgroundColor: 'transparent' },
+  outline: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: theme.colors.primary
+  },
   danger: { backgroundColor: theme.colors.danger },
+  pill: { borderRadius: theme.radius.pill },
   label: { fontFamily: theme.fonts.bodyBold, fontSize: 15, letterSpacing: 0.3 },
   disabled: { opacity: 0.5 }
 });
