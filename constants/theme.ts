@@ -20,6 +20,8 @@ export const theme = {
     warning: '#FFC46A',
     border: '#16507E',
     chip: '#10365A',
+    link: '#33C2FF',
+    facebook: '#1877F2',
     // Surface tints used by glass/blur and gradient backdrops.
     glassTint: 'rgba(255, 255, 255, 0.06)',
     glassBorder: 'rgba(255, 255, 255, 0.14)',
@@ -98,6 +100,7 @@ export const theme = {
     bodyMedium: 'Nunito_600SemiBold',
     bodyBold: 'Nunito_700Bold',
     display: 'Nunito_800ExtraBold',
+    displayItalic: 'Nunito_800ExtraBold_Italic',
     displayBlack: 'Nunito_900Black'
   },
   spacing: (n: number) => n * 8

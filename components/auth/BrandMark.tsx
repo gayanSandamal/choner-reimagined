@@ -1,71 +1,37 @@
-import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming
-} from 'react-native-reanimated';
-import { AppText } from '@/components/ui/AppText';
+import { StyleProp, ViewStyle } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { theme } from '@/constants/theme';
-import { useReduceMotion } from '@/lib/motion';
 
-export function BrandMark({ tagline }: { tagline?: string }) {
-  const reduceMotion = useReduceMotion();
-  const t = useSharedValue(0);
+// The "choner" wordmark, from the brand SVG asset.
+const VIEWBOX_WIDTH = 169;
+const VIEWBOX_HEIGHT = 66;
+const ASPECT = VIEWBOX_WIDTH / VIEWBOX_HEIGHT;
 
-  useEffect(() => {
-    if (reduceMotion) return;
-    t.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 2200, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      false
-    );
-  }, [reduceMotion]);
+const WORDMARK_PATH =
+  'M1.62583 35.812C1.62583 33.2893 2.13916 31.0893 3.16583 29.212C4.1925 27.3053 5.61516 25.8387 7.43383 24.812C9.2525 23.756 11.3352 23.228 13.6818 23.228C16.7032 23.228 19.1965 23.9907 21.1618 25.516C23.1565 27.012 24.4912 29.124 25.1658 31.852H18.5218C18.1698 30.796 17.5685 29.9747 16.7178 29.388C15.8965 28.772 14.8698 28.464 13.6378 28.464C11.8778 28.464 10.4845 29.1093 9.45783 30.4C8.43116 31.6613 7.91783 33.4653 7.91783 35.812C7.91783 38.1293 8.43116 39.9333 9.45783 41.224C10.4845 42.4853 11.8778 43.116 13.6378 43.116C16.1312 43.116 17.7592 42.0013 18.5218 39.772H25.1658C24.4912 42.412 23.1565 44.5093 21.1618 46.064C19.1672 47.6187 16.6738 48.396 13.6818 48.396C11.3352 48.396 9.2525 47.8827 7.43383 46.856C5.61516 45.8 4.1925 44.3333 3.16583 42.456C2.13916 40.5493 1.62583 38.3347 1.62583 35.812ZM45.6066 23.272C47.4546 23.272 49.0972 23.6827 50.5346 24.504C51.9719 25.296 53.0866 26.484 53.8786 28.068C54.6999 29.6227 55.1106 31.5 55.1106 33.7V48H48.9506V34.536C48.9506 32.6 48.4666 31.1187 47.4986 30.092C46.5306 29.036 45.2106 28.508 43.5386 28.508C41.8372 28.508 40.4879 29.036 39.4906 30.092C38.5226 31.1187 38.0386 32.6 38.0386 34.536V48H31.8786V15.44H38.0386V26.66C38.8306 25.604 39.8866 24.7827 41.2066 24.196C42.5266 23.58 43.9932 23.272 45.6066 23.272ZM73.9924 48.396C71.6458 48.396 69.5338 47.8827 67.6564 46.856C65.7791 45.8 64.2978 44.3187 63.2124 42.412C62.1564 40.5053 61.6284 38.3053 61.6284 35.812C61.6284 33.3187 62.1711 31.1187 63.2564 29.212C64.3711 27.3053 65.8818 25.8387 67.7884 24.812C69.6951 23.756 71.8218 23.228 74.1684 23.228C76.5151 23.228 78.6418 23.756 80.5484 24.812C82.4551 25.8387 83.9511 27.3053 85.0364 29.212C86.1511 31.1187 86.7084 33.3187 86.7084 35.812C86.7084 38.3053 86.1364 40.5053 84.9924 42.412C83.8778 44.3187 82.3524 45.8 80.4164 46.856C78.5098 47.8827 76.3684 48.396 73.9924 48.396ZM73.9924 43.028C75.1071 43.028 76.1484 42.764 77.1164 42.236C78.1138 41.6787 78.9058 40.8573 79.4924 39.772C80.0791 38.6867 80.3724 37.3667 80.3724 35.812C80.3724 33.4947 79.7564 31.72 78.5244 30.488C77.3218 29.2267 75.8404 28.596 74.0804 28.596C72.3204 28.596 70.8391 29.2267 69.6364 30.488C68.4631 31.72 67.8764 33.4947 67.8764 35.812C67.8764 38.1293 68.4484 39.9187 69.5924 41.18C70.7658 42.412 72.2324 43.028 73.9924 43.028ZM106.935 23.272C109.839 23.272 112.186 24.196 113.975 26.044C115.764 27.8627 116.659 30.4147 116.659 33.7V48H110.499V34.536C110.499 32.6 110.015 31.1187 109.047 30.092C108.079 29.036 106.759 28.508 105.087 28.508C103.386 28.508 102.036 29.036 101.039 30.092C100.071 31.1187 99.587 32.6 99.587 34.536V48H93.427V23.624H99.587V26.66C100.408 25.604 101.45 24.7827 102.711 24.196C104.002 23.58 105.41 23.272 106.935 23.272ZM147.377 35.284C147.377 36.164 147.318 36.956 147.201 37.66H129.381C129.528 39.42 130.144 40.7987 131.229 41.796C132.314 42.7933 133.649 43.292 135.233 43.292C137.521 43.292 139.149 42.3093 140.117 40.344H146.761C146.057 42.6907 144.708 44.6267 142.713 46.152C140.718 47.648 138.269 48.396 135.365 48.396C133.018 48.396 130.906 47.8827 129.029 46.856C127.181 45.8 125.729 44.3187 124.673 42.412C123.646 40.5053 123.133 38.3053 123.133 35.812C123.133 33.2893 123.646 31.0747 124.673 29.168C125.7 27.2613 127.137 25.7947 128.985 24.768C130.833 23.7413 132.96 23.228 135.365 23.228C137.682 23.228 139.75 23.7267 141.569 24.724C143.417 25.7213 144.84 27.144 145.837 28.992C146.864 30.8107 147.377 32.908 147.377 35.284ZM140.997 33.524C140.968 31.94 140.396 30.6787 139.281 29.74C138.166 28.772 136.802 28.288 135.189 28.288C133.664 28.288 132.373 28.7573 131.317 29.696C130.29 30.6053 129.66 31.8813 129.425 33.524H140.997ZM160.233 27.408C161.025 26.1173 162.052 25.1053 163.313 24.372C164.604 23.6387 166.07 23.272 167.713 23.272V29.74H166.085C164.149 29.74 162.682 30.1947 161.685 31.104C160.717 32.0133 160.233 33.5973 160.233 35.856V48H154.073V23.624H160.233V27.408Z';
 
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + t.value * 0.04 }]
-  }));
-
+// The brand wordmark: the "choner" logo rendered from its SVG path.
+// `width` drives the size; height is derived from the source aspect ratio.
+export function BrandMark({
+  width = 140,
+  color = theme.colors.primary,
+  style
+}: {
+  width?: number;
+  color?: string;
+  style?: StyleProp<ViewStyle>;
+}) {
   return (
-    <View style={styles.root}>
-      <Animated.View style={[styles.badge, style]}>
-        <LinearGradient
-          colors={theme.gradients.warm as unknown as readonly [string, string]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <Ionicons name="flash" size={32} color="#FFF" />
-      </Animated.View>
-      <AppText variant="display" style={{ marginTop: 14, fontSize: 36 }}>
-        Choner
-      </AppText>
-      {tagline ? (
-        <AppText muted style={{ marginTop: 4, textAlign: 'center' }}>
-          {tagline}
-        </AppText>
-      ) : null}
-    </View>
+    <Svg
+      width={width}
+      height={width / ASPECT}
+      viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
+      fill="none"
+      accessibilityRole="image"
+      accessibilityLabel="choner"
+      style={[{ alignSelf: 'center' }, style]}
+    >
+      <Path d={WORDMARK_PATH} fill={color} />
+    </Svg>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { alignItems: 'center', marginTop: 24, marginBottom: 16 },
-  badge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...theme.shadow.glow
-  }
-});
