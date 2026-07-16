@@ -224,7 +224,6 @@ export default function SignUpScreen() {
               leftIcon={
                 <Ionicons name="log-in-outline" size={18} color={theme.colors.primary} />
               }
-              labelStyle={{ fontFamily: theme.fonts.displayItalic }}
               onPress={() => router.push('/(auth)/sign-in')}
             />
           </Animated.View>

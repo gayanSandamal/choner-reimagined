@@ -150,7 +150,6 @@ export default function SignInScreen() {
                   color={theme.colors.primary}
                 />
               }
-              labelStyle={{ fontFamily: theme.fonts.displayItalic }}
               onPress={() => router.push('/(auth)/sign-up')}
             />
           </Animated.View>
