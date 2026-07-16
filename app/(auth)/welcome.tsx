@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/button';
-import { BrandLogo } from '@/components/auth/BrandLogo';
+import { AnimatedBrandLogo } from '@/components/auth/AnimatedBrandLogo';
 import { BrandMark } from '@/components/auth/BrandMark';
 import { TermsFooter } from '@/components/auth/TermsFooter';
 import { theme } from '@/constants/theme';
@@ -14,7 +14,7 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.spacer} />
       <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.brand}>
-        <BrandLogo size={170} />
+        <AnimatedBrandLogo size={170} />
         <BrandMark width={150} />
       </Animated.View>
       <View style={styles.spacer} />
