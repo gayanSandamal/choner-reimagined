@@ -61,7 +61,6 @@ export default function VerifyEmailScreen() {
             leftIcon={
               <Ionicons name="log-in-outline" size={18} color={theme.colors.primary} />
             }
-            labelStyle={{ fontFamily: theme.fonts.displayItalic }}
             onPress={() => router.replace('/(auth)/sign-in')}
           />
         </Animated.View>

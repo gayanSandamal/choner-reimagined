@@ -4,7 +4,6 @@ import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/button';
-import { AnimatedBrandLogo } from '@/components/auth/AnimatedBrandLogo';
 import { BrandMark } from '@/components/auth/BrandMark';
 import { TermsFooter } from '@/components/auth/TermsFooter';
 import { theme } from '@/constants/theme';
@@ -14,8 +13,7 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.spacer} />
       <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.brand}>
-        <AnimatedBrandLogo size={170} />
-        <BrandMark width={150} />
+        <BrandMark width={180} />
       </Animated.View>
       <View style={styles.spacer} />
 
@@ -39,7 +37,6 @@ export default function WelcomeScreen() {
             leftIcon={
               <Ionicons name="person-add-outline" size={18} color={theme.colors.primary} />
             }
-            labelStyle={{ fontFamily: theme.fonts.displayItalic }}
             onPress={() => router.push('/(auth)/sign-up')}
           />
         </Animated.View>

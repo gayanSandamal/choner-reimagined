@@ -14,17 +14,22 @@ import {
 } from '@expo-google-fonts/nunito';
 import * as SplashScreen from 'expo-splash-screen';
 import { View } from 'react-native';
+import { SplashView } from '@/components/SplashView';
+import { useSplashHoldElapsed } from '@/lib/splash-hold';
 import { theme } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 function RootLayoutNav() {
   const { session, loading } = useSession();
+  const splashHoldElapsed = useSplashHoldElapsed();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return;
+    // Hold all boot-time routing until the branded splash has had its
+    // minimum display time; app/index.tsx keeps rendering it meanwhile.
+    if (loading || !splashHoldElapsed) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     // Legal pages are static content and must stay reachable from the
@@ -40,7 +45,7 @@ function RootLayoutNav() {
         router.replace('/(tabs)/home');
       }
     }
-  }, [session, loading, segments]);
+  }, [session, loading, splashHoldElapsed, segments]);
 
   return (
     <Stack
@@ -99,8 +104,11 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  // On a native cold start the OS splash still covers this (it hides via
+  // onLayout below, after fonts resolve); on JS reloads and in Expo Go it
+  // fills what would otherwise be a blank frame.
   if (!fontsLoaded && !fontError) {
-    return null;
+    return <SplashView />;
   }
 
   return (

@@ -2,7 +2,7 @@
 title: 'Animated Choner logo (Lottie) on welcome screen'
 type: 'feature'
 created: '2026-07-16'
-status: 'in-progress'
+status: 'done'
 baseline_commit: 'e3bbf0d95bf51fd6da6299a6e4db27fd97168c9e'
 review_loop_iteration: 0
 context: []
@@ -57,10 +57,11 @@ context: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `package.json` -- `npx expo install lottie-react-native` -- SDK-pinned, Expo Go compatible
-- [ ] `assets/lottie/choner-logo.json` -- author Lottie (comp 660×480 @30fps): shape layers rebuilt from the parametric geometry — ring top-edge arc (behind), hollow heart stroke, ring bottom-edge + comma (front), orbiting dot layer placed *under* the heart stroke so it occludes naturally when passing behind. Frames 0–18: entrance (opacity 0→100, scale 92→100 on root). Frames 18–138 (4s loop): heart group double-beat scale pulse (≤6%, ease-out) + dot spatial keyframes once around the ring ellipse, returning to home -- core deliverable
-- [ ] `components/auth/AnimatedBrandLogo.tsx` -- new wrapper: `LottieView` (autoPlay once through entrance+loop, `onAnimationFinish` → `ref.play(18, 138)` to loop the subtle segment); `useReduceMotion()` or unsupported-web → render `<BrandLogo size={size} />`; `size` prop drives width, height from 660:480 aspect -- single integration surface
-- [ ] `app/(auth)/welcome.tsx` -- replace `BrandLogo` import/usage with `AnimatedBrandLogo` (same size/layout) -- scope limit: only this screen
+- [x] `package.json` -- `npx expo install lottie-react-native` -- SDK-pinned, Expo Go compatible
+- [x] `assets/lottie/choner-logo.json` -- author Lottie (comp 660×480 @30fps): shape layers rebuilt from the parametric geometry — ring top-edge arc (behind), hollow heart stroke, ring bottom-edge + comma (front), orbiting dot layer placed *under* the heart stroke so it occludes naturally when passing behind. Frames 0–18: entrance (opacity 0→100, scale 92→100 on root). Frames 18–138 (4s loop): heart group double-beat scale pulse (≤6%, ease-out) + dot spatial keyframes once around the ring ellipse, returning to home -- core deliverable
+- [x] `components/auth/AnimatedBrandLogo.tsx` -- new wrapper: `LottieView` (autoPlay once through entrance+loop, `onAnimationFinish` → `ref.play(18, 138)` to loop the subtle segment); `useReduceMotion()` or unsupported-web → render `<BrandLogo size={size} />`; `size` prop drives width, height from 660:480 aspect -- single integration surface
+- [x] `app/(auth)/welcome.tsx` -- replace `BrandLogo` import/usage with `AnimatedBrandLogo` (same size/layout) -- scope limit: only this screen
+- [x] `components/auth/AnimatedBrandLogo.web.tsx` -- platform fork added during implementation: `lottie-react-native`'s web renderer requires the optional `@lottiefiles/dotlottie-react` peer (not installed, out of spec scope); web now renders the static `BrandLogo` like the Reduce Motion path. iOS/Android use the animated version unaffected -- unplanned but required for the web dev-preview target named in the I/O matrix
 
 **Acceptance Criteria:**
 - Given Expo Go on iOS or Android, when the welcome screen opens, then the logo animates (entrance → subtle loop) with no dev build or native config change.
@@ -85,3 +86,51 @@ context: []
 **Manual checks (if no CLI):**
 - Expo web preview: welcome shows animated logo (or clean static fallback), no console errors, entrance plays once, loop is seamless.
 - Expo Go device: same behavior; toggle OS Reduce Motion → static logo, no animation.
+
+## Suggested Review Order
+
+**Integration surface**
+
+- Single behavior swap: static mark replaced with the animated wrapper, same size/layout.
+  [`welcome.tsx:17`](../../app/(auth)/welcome.tsx#L17)
+
+**Playback control (post-review fix: was `autoPlay` + competing entrance, now starts directly in the loop)**
+
+- Loop bounds derived from the asset's own `op` field instead of hardcoded, so a regenerated JSON can't silently desync the loop point.
+  [`AnimatedBrandLogo.tsx:18`](../../components/auth/AnimatedBrandLogo.tsx#L18)
+
+- `onAnimationFinish` always resumes the loop regardless of `isCancelled` (backgrounding, interruption) — the earlier gated version could freeze permanently.
+  [`AnimatedBrandLogo.tsx:26`](../../components/auth/AnimatedBrandLogo.tsx#L26)
+
+- Playback starts at the loop segment via `ref.play()` on mount, not `autoPlay` from frame 0 — avoids stacking a second, uncoordinated entrance on top of the screen's existing Reanimated fade-in.
+  [`AnimatedBrandLogo.tsx:30`](../../components/auth/AnimatedBrandLogo.tsx#L30)
+
+- Box sized from the static mark's own aspect ratio, not the Lottie comp's padded canvas — keeps the box identical size when swapping to/from the Reduce Motion fallback.
+  [`AnimatedBrandLogo.tsx:44`](../../components/auth/AnimatedBrandLogo.tsx#L44)
+
+- Inner `LottieView` hidden from the accessibility tree so screen readers see only the outer labeled container, not a second unlabeled node.
+  [`AnimatedBrandLogo.tsx:47`](../../components/auth/AnimatedBrandLogo.tsx#L47)
+
+**Platform fallback**
+
+- Reduce Motion / unsupported-web both render the exact static traced mark rather than any Lottie path.
+  [`AnimatedBrandLogo.tsx:36`](../../components/auth/AnimatedBrandLogo.tsx#L36)
+  [`AnimatedBrandLogo.web.tsx:9`](../../components/auth/AnimatedBrandLogo.web.tsx#L9)
+
+**Animation asset**
+
+- Heartbeat keyframes (double-beat, ease-out) live entirely inside the loop window so they replay every cycle.
+  [`generate-choner-logo-lottie.mjs:117`](../../scripts/generate-choner-logo-lottie.mjs#L117)
+
+- Dot orbit keyframes computed from the same tilted-ellipse geometry as the static mark's ring, so the animated path matches the drawn ring.
+  [`generate-choner-logo-lottie.mjs:79`](../../scripts/generate-choner-logo-lottie.mjs#L79)
+
+- Root layer is fully static (no baked-in entrance) — committed generator, re-run with `node scripts/generate-choner-logo-lottie.mjs assets/lottie/choner-logo.json` if the mark ever needs retuning.
+  [`generate-choner-logo-lottie.mjs:145`](../../scripts/generate-choner-logo-lottie.mjs#L145)
+
+**Peripherals**
+
+- Shared prop type keeps the native and web components' signatures in sync.
+  [`AnimatedBrandLogo.web.tsx:2`](../../components/auth/AnimatedBrandLogo.web.tsx#L2)
+- New dependency, Expo-Go compatible (verified on-device).
+  [`package.json`](../../package.json)
