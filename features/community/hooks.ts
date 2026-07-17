@@ -104,7 +104,23 @@ export function useReactToPost() {
 }
 
 export function useCreateInvite() {
-  return useMutation({ mutationFn: api.createInvite });
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.createInvite,
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['pending-invites', vars.inviterId] }),
+  });
+}
+
+export function usePendingInvites(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['pending-invites', userId],
+    queryFn: () => api.listMyPendingInvites(userId!),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useResendInvite() {
+  return useMutation({ mutationFn: api.resendInvite });
 }
 
 export function useReportContent() {

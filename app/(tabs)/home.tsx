@@ -10,6 +10,7 @@ import { ChallengeTaskItem } from '@/components/challenges/ChallengeTaskItem';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { useSession } from '@/providers/session-provider';
 import { useActiveChallenge, useCompleteTask, useStreak, useUndoTaskCheckin } from '@/features/challenges/hooks';
+import { usePendingInvites } from '@/features/community/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
 
@@ -32,8 +33,16 @@ export default function HomeScreen() {
   const profileQ = useProfile(userId);
   const activeQ = useActiveChallenge(userId);
   const streakQ = useStreak(userId);
+  const invitesQ = usePendingInvites(userId);
   const completeTask = useCompleteTask();
   const undoTask = useUndoTaskCheckin();
+
+  // Newest pending invite for the active partner challenge — home keeps
+  // the challenge visually alive while the partner hasn't joined yet.
+  const waitingInvite =
+    (activeQ.data as any)?.accountability_mode === 'partner'
+      ? (invitesQ.data ?? []).find((i: any) => i.user_challenge_id === (activeQ.data as any).id)
+      : undefined;
 
   const tasks = useMemo(() => {
     const challenge = activeQ.data as any;
@@ -94,13 +103,21 @@ export default function HomeScreen() {
           <ErrorState message={(activeQ.error as Error).message} onRetry={() => activeQ.refetch()} />
         ) : !activeQ.data ? (
           <EmptyState
-            title="No active challenge"
-            body="Pick a challenge to start your accountability streak."
-            actionLabel="Browse challenges"
-            onAction={() => router.push('/(tabs)/challenges')}
+            title="Ready when you are"
+            body="Choner works best with two. Invite a partner to start your first challenge."
+            actionLabel="Invite a partner"
+            onAction={() => router.push('/group/invite')}
           />
         ) : (
           <>
+            {waitingInvite ? (
+              <Card variant="glow">
+                <AppText variant="subtitle">Waiting for {waitingInvite.email} to join</AppText>
+                <AppText variant="caption" muted>
+                  Your challenge starts the moment they're in.
+                </AppText>
+              </Card>
+            ) : null}
             <HeroCard
               title={(activeQ.data as any).challenge_templates?.title ?? 'Your challenge'}
               subtitle={`${completedToday}/${tasks.length} tasks done today`}

@@ -6,6 +6,16 @@ export async function getTemplates() {
   return data ?? [];
 }
 
+export async function getTemplateBySlug(slug: string) {
+  const { data, error } = await supabase
+    .from('challenge_templates')
+    .select('*')
+    .eq('slug', slug)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function getTemplate(templateId: string) {
   const { data, error } = await supabase
     .from('challenge_templates')

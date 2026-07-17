@@ -6,8 +6,11 @@ import { Card } from '@/components/ui/Card';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
+import { Badge } from '@/components/ui/Badge';
 import { useSession } from '@/providers/session-provider';
 import { useProfile } from '@/features/profile/hooks';
+import { goalLabel, toneLabel } from '@/features/onboarding/mappings';
+import { TONES } from '@/features/onboarding/constants';
 import { useIsPremium } from '@/features/billing/hooks';
 import { useStreak } from '@/features/challenges/hooks';
 import { signOut } from '@/features/auth/api';
@@ -53,10 +56,13 @@ export default function ProfileScreen() {
                   </AppText>
                 ) : null}
               </View>
+              {TONES.some((t) => t.value === profileQ.data?.accountability_mode) ? (
+                <Badge label={toneLabel(profileQ.data?.accountability_mode) ?? ''} />
+              ) : null}
             </View>
 
             <AppText muted variant="caption">
-              Goal: {profileQ.data?.primary_goal ?? '—'} • Mode: {profileQ.data?.accountability_mode ?? 'solo'} • Streak: {streakQ.data ?? 0}d
+              Goal: {goalLabel(profileQ.data?.primary_goal) ?? '—'} • Style: {toneLabel(profileQ.data?.accountability_mode) ?? '—'} • Streak: {streakQ.data ?? 0}d
             </AppText>
 
             <Button label="Edit profile" variant="secondary" onPress={() => router.push('/profile/edit')} />

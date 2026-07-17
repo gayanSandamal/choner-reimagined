@@ -11,10 +11,16 @@ import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
 import { useSession } from '@/providers/session-provider';
 import { useProfile, useUpdateProfile, useUploadAvatar } from '@/features/profile/hooks';
+import { GOALS, TONES } from '@/features/onboarding/constants';
 import { theme } from '@/constants/theme';
 
-const goals = ['Move more', 'Sleep better', 'Reduce stress', 'Improve energy'];
-const modes = ['solo', 'partner', 'group', 'public'];
+// Rows written before the onboarding rewrite store display labels
+// ('Move more') or old modes ('solo'). Chips highlight on value or label
+// match; an unrecognized legacy value highlights nothing and is only
+// replaced when the user actively picks a chip.
+function isSelected(option: { value: string; label: string }, stored: string) {
+  return option.value === stored || option.label === stored;
+}
 
 export default function EditProfileScreen() {
   const { session } = useSession();
@@ -24,14 +30,14 @@ export default function EditProfileScreen() {
   const uploadMut = useUploadAvatar();
 
   const [fullName, setFullName] = useState('');
-  const [goal, setGoal] = useState(goals[0]);
-  const [mode, setMode] = useState('solo');
+  const [goal, setGoal] = useState<string>('');
+  const [tone, setTone] = useState<string>('');
 
   useEffect(() => {
     if (profileQ.data) {
       setFullName(profileQ.data.full_name ?? '');
-      setGoal(profileQ.data.primary_goal ?? goals[0]);
-      setMode(profileQ.data.accountability_mode ?? 'solo');
+      setGoal(profileQ.data.primary_goal ?? '');
+      setTone(profileQ.data.accountability_mode ?? '');
     }
   }, [profileQ.data]);
 
@@ -66,7 +72,11 @@ export default function EditProfileScreen() {
     try {
       await updateMut.mutateAsync({
         userId,
-        payload: { full_name: fullName, primary_goal: goal, accountability_mode: mode },
+        payload: {
+          full_name: fullName,
+          ...(goal ? { primary_goal: goal } : {}),
+          ...(tone ? { accountability_mode: tone } : {}),
+        },
       });
       router.back();
     } catch (e: any) {
@@ -108,40 +118,40 @@ export default function EditProfileScreen() {
       <View style={{ gap: 8 }}>
         <AppText variant="label">Primary goal</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {goals.map((g) => (
+          {GOALS.map((g) => (
             <Pressable
-              key={g}
-              onPress={() => setGoal(g)}
+              key={g.value}
+              onPress={() => setGoal(g.value)}
               style={{
                 paddingVertical: 10, paddingHorizontal: 12,
                 borderRadius: theme.radius.md,
-                backgroundColor: g === goal ? theme.colors.surface2 : theme.colors.surface,
+                backgroundColor: isSelected(g, goal) ? theme.colors.surface2 : theme.colors.surface,
                 borderWidth: 1,
-                borderColor: g === goal ? theme.colors.primary2 : theme.colors.border,
+                borderColor: isSelected(g, goal) ? theme.colors.primary2 : theme.colors.border,
               }}
             >
-              <AppText variant="caption">{g}</AppText>
+              <AppText variant="caption">{g.label}</AppText>
             </Pressable>
           ))}
         </View>
       </View>
 
       <View style={{ gap: 8 }}>
-        <AppText variant="label">Accountability mode</AppText>
+        <AppText variant="label">How Choner talks to you</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {modes.map((m) => (
+          {TONES.map((t) => (
             <Pressable
-              key={m}
-              onPress={() => setMode(m)}
+              key={t.value}
+              onPress={() => setTone(t.value)}
               style={{
                 paddingVertical: 10, paddingHorizontal: 12,
                 borderRadius: theme.radius.md,
-                backgroundColor: m === mode ? theme.colors.surface2 : theme.colors.surface,
+                backgroundColor: isSelected(t, tone) ? theme.colors.surface2 : theme.colors.surface,
                 borderWidth: 1,
-                borderColor: m === mode ? theme.colors.primary2 : theme.colors.border,
+                borderColor: isSelected(t, tone) ? theme.colors.primary2 : theme.colors.border,
               }}
             >
-              <AppText variant="caption">{m}</AppText>
+              <AppText variant="caption">{t.label}</AppText>
             </Pressable>
           ))}
         </View>

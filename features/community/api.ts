@@ -215,6 +215,36 @@ export async function createInvite(input: {
   return invite;
 }
 
+export async function listMyPendingInvites(userId: string) {
+  const { data, error } = await supabase
+    .from('challenge_invites')
+    .select('*')
+    .eq('invited_by', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Re-fires the invite email for an existing pending invite. No new row:
+// the token stays valid, so the old link and the resent one both work.
+export async function resendInvite(invite: {
+  email: string;
+  token: string;
+  user_challenge_id?: string | null;
+  inviterName?: string;
+}) {
+  const { error } = await supabase.functions.invoke('invite-email', {
+    body: {
+      email: invite.email,
+      inviterName: invite.inviterName,
+      token: invite.token,
+      challengeId: invite.user_challenge_id ?? undefined,
+    },
+  });
+  if (error) throw error;
+}
+
 export async function acceptInvite(token: string) {
   const { data, error } = await supabase.rpc('accept_challenge_invite', { p_token: token });
   if (error) throw error;

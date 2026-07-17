@@ -39,7 +39,9 @@ export default function SignInScreen() {
       setLoading(true);
       await signIn(values);
       haptics.success();
-      router.replace('/(tabs)/home');
+      // Land on the index gate: it decides between onboarding and home
+      // based on the profile's onboarding_complete flag.
+      router.replace('/');
     } catch (error: any) {
       haptics.error();
       Alert.alert('Sign in failed', error.message);

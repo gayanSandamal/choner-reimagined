@@ -2,6 +2,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppProvider } from '@/providers/app-provider';
 import { useSession } from '@/providers/session-provider';
+import { useProfile } from '@/features/profile/hooks';
 import { useCallback, useEffect } from 'react';
 import {
   Nunito_400Regular,
@@ -25,6 +26,7 @@ function RootLayoutNav() {
   const splashHoldElapsed = useSplashHoldElapsed();
   const segments = useSegments();
   const router = useRouter();
+  const profileQ = useProfile(session?.user.id);
 
   useEffect(() => {
     // Hold all boot-time routing until the branded splash has had its
@@ -41,11 +43,21 @@ function RootLayoutNav() {
         router.replace('/(auth)/welcome');
       }
     } else if (session) {
-      if (inAuthGroup) {
+      // Hold routing until the profile is known; index.tsx keeps showing
+      // the branded splash for this same window.
+      if (profileQ.isLoading) return;
+      // Fail open on profile errors — never trap the user on the splash.
+      // The gate only ever pushes users INTO onboarding: screens 6-7 run
+      // with onboarding_complete already true, and exits are explicit.
+      const needsOnboarding = profileQ.data ? !profileQ.data.onboarding_complete : false;
+      const inOnboarding = segments[0] === 'onboarding';
+      if (needsOnboarding && !inOnboarding && !inLegalGroup) {
+        router.replace('/onboarding');
+      } else if (!needsOnboarding && inAuthGroup) {
         router.replace('/(tabs)/home');
       }
     }
-  }, [session, loading, splashHoldElapsed, segments]);
+  }, [session, loading, splashHoldElapsed, segments, profileQ.isLoading, profileQ.data]);
 
   return (
     <Stack
