@@ -25,7 +25,13 @@ export const theme = {
     // Surface tints used by glass/blur and gradient backdrops.
     glassTint: 'rgba(255, 255, 255, 0.06)',
     glassBorder: 'rgba(255, 255, 255, 0.14)',
-    overlayDim: 'rgba(2, 14, 26, 0.55)'
+    overlayDim: 'rgba(2, 14, 26, 0.55)',
+    // Campfire hero — logs, embers, smoke.
+    log: '#8A5230',
+    logDark: '#5C371F',
+    ember: '#FF8A1F',
+    emberDim: '#B34A2A',
+    smoke: '#5E7186'
   },
   // Tuple form so consumers can spread into expo-linear-gradient's `colors` prop.
   gradients: {
@@ -34,7 +40,13 @@ export const theme = {
     calm: ['#0A2F50', '#031A2D'] as const,
     success: ['#3DD68C', '#7FE3A1'] as const,
     sky: ['#1F6FFF', '#33C2FF'] as const,
-    paywall: ['#FF8A1F', '#FF4E81', '#7C5CFF'] as const
+    paywall: ['#FF8A1F', '#FF4E81', '#7C5CFF'] as const,
+    // Time-of-day backdrops for the campfire home hero. Bottom stop always
+    // leans toward ember tones so the flame glow blends into the sky.
+    skyDawn: ['#031A2D', '#123457', '#5C3A56', '#A85340'] as const,
+    skyDay: ['#052238', '#0A2F50', '#123457'] as const,
+    skyDusk: ['#020E1A', '#2A1F3D', '#5C2F45', '#8A4A3A'] as const,
+    skyNight: ['#020610', '#020E1A', '#031A2D'] as const
   },
   radius: {
     xs: 8,

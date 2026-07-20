@@ -3,6 +3,8 @@ import {
   getTemplates,
   getTemplate,
   getActiveChallenge,
+  getDefaultChallenges,
+  ensureDefaultChallenges,
   getChallengeHistory,
   startChallenge,
   completeTask,
@@ -33,6 +35,25 @@ export function useActiveChallenge(userId: string | undefined) {
     queryKey: ['active-challenge', userId],
     queryFn: () => getActiveChallenge(userId!),
     enabled: Boolean(userId),
+  });
+}
+
+export function useDefaultChallenges(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['default-challenges', userId],
+    queryFn: () => getDefaultChallenges(userId!),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useEnsureDefaultChallenges() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ensureDefaultChallenges,
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['default-challenges', vars.userId] });
+      queryClient.invalidateQueries({ queryKey: ['active-challenge', vars.userId] });
+    },
   });
 }
 
@@ -69,6 +90,7 @@ export function useCompleteTask() {
     mutationFn: completeTask,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['default-challenges'] });
       queryClient.invalidateQueries({ queryKey: ['insights'] });
       queryClient.invalidateQueries({ queryKey: ['streak'] });
     },
@@ -81,6 +103,7 @@ export function useUndoTaskCheckin() {
     mutationFn: undoTaskCheckin,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['default-challenges'] });
       queryClient.invalidateQueries({ queryKey: ['streak'] });
     },
   });

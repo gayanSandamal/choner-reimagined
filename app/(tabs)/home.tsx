@@ -1,18 +1,24 @@
-import { useMemo } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { Screen } from '@/components/ui/screen';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/ui/AppText';
-import { Card } from '@/components/ui/Card';
-import { SectionHeader } from '@/components/ui/SectionHeader';
-import { HeroCard } from '@/components/home/HeroCard';
-import { ChallengeTaskItem } from '@/components/challenges/ChallengeTaskItem';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { SegmentedToggle } from '@/components/ui/SegmentedToggle';
+import { Button } from '@/components/ui/button';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
+import { Firepit } from '@/components/home/Firepit';
+import { LogTaskItem } from '@/components/home/LogTaskItem';
 import { useSession } from '@/providers/session-provider';
-import { useActiveChallenge, useCompleteTask, useStreak, useUndoTaskCheckin } from '@/features/challenges/hooks';
+import { useDefaultChallenges, useCompleteTask, useStreak, useUndoTaskCheckin } from '@/features/challenges/hooks';
 import { usePendingInvites } from '@/features/community/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
+import { useTimeOfDay } from '@/lib/time-of-day';
+
+type Mode = 'solo' | 'partner';
 
 function greetingFor(date = new Date()) {
   const h = date.getHours();
@@ -27,137 +33,227 @@ function todayString() {
   return new Date().toISOString().slice(0, 10);
 }
 
+type ChallengeTask = {
+  id: string;
+  title: string;
+  due_window: string | null;
+  task_type: string;
+  task_checkins?: Array<{ id: string; completed_at: string | null }>;
+};
+
+function sortedTasks(challenge: any): ChallengeTask[] {
+  const list = (challenge?.challenge_tasks ?? []) as ChallengeTask[];
+  return [...list].sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''));
+}
+
 export default function HomeScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const profileQ = useProfile(userId);
-  const activeQ = useActiveChallenge(userId);
+  const challengesQ = useDefaultChallenges(userId);
   const streakQ = useStreak(userId);
   const invitesQ = usePendingInvites(userId);
   const completeTask = useCompleteTask();
   const undoTask = useUndoTaskCheckin();
+  const { gradient: skyGradient, isEvening, timeLeftLabel } = useTimeOfDay();
 
-  // Newest pending invite for the active partner challenge — home keeps
-  // the challenge visually alive while the partner hasn't joined yet.
-  const waitingInvite =
-    (activeQ.data as any)?.accountability_mode === 'partner'
-      ? (invitesQ.data ?? []).find((i: any) => i.user_challenge_id === (activeQ.data as any).id)
-      : undefined;
+  const [mode, setMode] = useState<Mode>('solo');
 
-  const tasks = useMemo(() => {
-    const challenge = activeQ.data as any;
-    const list = (challenge?.challenge_tasks ?? []) as Array<{
-      id: string;
-      title: string;
-      due_window: string | null;
-      task_type: string;
-      task_checkins?: Array<{ id: string; completed_at: string | null }>;
-    }>;
-    return [...list].sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''));
-  }, [activeQ.data]);
+  const soloChallenge = challengesQ.data?.solo ?? null;
+  const partnerChallenge = challengesQ.data?.partner ?? null;
+  const selected = mode === 'solo' ? soloChallenge : partnerChallenge;
+  const isPartnerPending = mode === 'partner' && partnerChallenge?.status === 'pending';
+
+  const waitingInvite = partnerChallenge
+    ? (invitesQ.data ?? []).find((i: any) => i.user_challenge_id === partnerChallenge.id)
+    : undefined;
+
+  const tasks = useMemo(() => sortedTasks(selected), [selected]);
 
   const today = todayString();
-  const todaysCheckinFor = (task: (typeof tasks)[number]) =>
+  const todaysCheckinFor = (task: ChallengeTask) =>
     (task.task_checkins ?? []).find((c) => (c.completed_at ?? '').slice(0, 10) === today);
 
-  const completedToday = tasks.filter((t) => todaysCheckinFor(t)).length;
-  const progressPct = tasks.length === 0 ? 0 : Math.round((completedToday / tasks.length) * 100);
+  const pendingTasks = tasks.filter((t) => !todaysCheckinFor(t));
+  const burnedTasks = tasks.filter((t) => todaysCheckinFor(t));
+  const completedToday = burnedTasks.length;
 
-  const onToggleTask = (task: (typeof tasks)[number]) => {
-    const checkin = todaysCheckinFor(task);
-    if (checkin) {
-      undoTask.mutate(checkin.id);
-    } else if (activeQ.data) {
-      completeTask.mutate({ taskId: task.id, userChallengeId: (activeQ.data as any).id });
+  const onFeedFire = (task: ChallengeTask) => {
+    if (selected) {
+      completeTask.mutate({ taskId: task.id, userChallengeId: selected.id });
     }
   };
 
-  const refreshing = activeQ.isRefetching || profileQ.isRefetching;
-  const onRefresh = () => {
-    activeQ.refetch();
-    streakQ.refetch();
-    profileQ.refetch();
+  const onUndo = (task: ChallengeTask) => {
+    const checkin = todaysCheckinFor(task);
+    if (checkin) undoTask.mutate(checkin.id);
   };
 
+  const refreshing = challengesQ.isRefetching || profileQ.isRefetching;
+  const onRefresh = () => {
+    challengesQ.refetch();
+    streakQ.refetch();
+    profileQ.refetch();
+    invitesQ.refetch();
+  };
+
+  const firstName = profileQ.data?.full_name?.split(' ')[0];
+
   return (
-    <Screen scroll={false}>
-      <ScrollView
-        contentContainerStyle={{ gap: theme.spacing(2), paddingBottom: theme.spacing(4) }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-      >
-        <View style={{ gap: 6 }}>
-          <AppText variant="caption" muted>{greetingFor()}</AppText>
+    <View style={styles.root}>
+      <LinearGradient
+        colors={skyGradient as unknown as readonly [string, string, ...string[]]}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={styles.safe}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+        >
           <AppText variant="title">
-            {streakQ.data && streakQ.data > 0
-              ? `You're on a ${streakQ.data}-day streak`
-              : 'Let’s build your momentum'}
+            {greetingFor()}{firstName ? `, ${firstName}` : ''}
           </AppText>
-          {profileQ.data?.full_name ? (
-            <AppText muted>Welcome back, {profileQ.data.full_name.split(' ')[0]}.</AppText>
-          ) : null}
-        </View>
 
-        {activeQ.isLoading ? (
-          <LoadingState />
-        ) : activeQ.isError ? (
-          <ErrorState message={(activeQ.error as Error).message} onRetry={() => activeQ.refetch()} />
-        ) : !activeQ.data ? (
-          <EmptyState
-            title="Ready when you are"
-            body="Choner works best with two. Invite a partner to start your first challenge."
-            actionLabel="Invite a partner"
-            onAction={() => router.push('/group/invite')}
-          />
-        ) : (
-          <>
-            {waitingInvite ? (
-              <Card variant="glow">
-                <AppText variant="subtitle">Waiting for {waitingInvite.email} to join</AppText>
-                <AppText variant="caption" muted>
-                  Your challenge starts the moment they're in.
-                </AppText>
-              </Card>
-            ) : null}
-            <HeroCard
-              title={(activeQ.data as any).challenge_templates?.title ?? 'Your challenge'}
-              subtitle={`${completedToday}/${tasks.length} tasks done today`}
-              progress={progressPct}
-              streak={streakQ.data ?? 0}
-              aiPriority={
-                completedToday === 0
-                  ? 'A small win now sets the day. Start with the easiest task.'
-                  : completedToday < tasks.length
-                  ? 'You\'re moving. One more check-in protects your streak.'
-                  : 'Streak protected. Rest is part of recovery.'
-              }
+          {challengesQ.isLoading ? (
+            <LoadingState />
+          ) : challengesQ.isError ? (
+            <ErrorState message={(challengesQ.error as Error).message} onRetry={() => challengesQ.refetch()} />
+          ) : !soloChallenge && !partnerChallenge ? (
+            <EmptyState
+              title="Ready when you are"
+              body="Choner works best with two. Invite a partner to start your first challenge."
+              actionLabel="Invite a partner"
+              onAction={() => router.push('/group/invite')}
             />
+          ) : (
+            <>
+              <SegmentedToggle<Mode>
+                value={mode}
+                onChange={setMode}
+                options={[
+                  { value: 'solo', label: 'Solo', icon: 'person-outline' },
+                  { value: 'partner', label: 'Partner', icon: 'people-outline' }
+                ]}
+              />
 
-            <SectionHeader title="Today's tasks" subtitle="The minimum actions that keep your streak alive" />
-            {tasks.length === 0 ? (
-              <EmptyState title="No tasks set up yet" body="Your challenge has no tasks — try restarting it from the challenge detail screen." />
-            ) : (
-              tasks.map((task) => (
-                <ChallengeTaskItem
-                  key={task.id}
-                  title={task.title}
-                  meta={`${task.task_type} • ${task.due_window ?? 'anytime'}`}
-                  completed={Boolean(todaysCheckinFor(task))}
-                  onPress={() => onToggleTask(task)}
-                />
-              ))
-            )}
-          </>
-        )}
+              <Firepit
+                streak={streakQ.data ?? 0}
+                completedToday={isPartnerPending ? 0 : completedToday}
+                totalTasks={isPartnerPending ? 0 : tasks.length}
+                isEvening={isEvening}
+                timeLeftLabel={timeLeftLabel}
+                userName={profileQ.data?.full_name}
+                userAvatarUri={profileQ.data?.avatar_url}
+                waitingPartnerEmail={isPartnerPending ? (waitingInvite?.email ?? 'a partner') : undefined}
+                aiPriority={
+                  isPartnerPending || tasks.length === 0
+                    ? undefined
+                    : completedToday === 0
+                    ? 'A small win now sets the day. Start with the easiest log.'
+                    : completedToday < tasks.length
+                    ? "You're moving. One more log protects your streak."
+                    : 'Streak protected. Rest is part of recovery.'
+                }
+              />
 
-        <Card>
-          <AppText variant="label">Quick actions</AppText>
-          <View style={{ gap: theme.spacing(1), marginTop: theme.spacing(1) }}>
-            <AppText onPress={() => router.push('/modals/ai-coach')}>• Open AI coach</AppText>
-            <AppText onPress={() => router.push('/modals/notifications')}>• Review notifications</AppText>
-            <AppText onPress={() => router.push('/modals/premium')}>• See premium plan</AppText>
+              {isPartnerPending ? (
+                <View style={styles.pendingBlock}>
+                  <AppText variant="caption" muted style={styles.centerText}>
+                    {waitingInvite
+                      ? `Your shared fire lights the moment ${waitingInvite.email} joins.`
+                      : 'Invite someone to keep this fire together — you hold each other to it.'}
+                  </AppText>
+                  <Button
+                    label={waitingInvite ? 'Invite someone else' : 'Invite a partner'}
+                    variant={waitingInvite ? 'ghost' : 'gradient'}
+                    onPress={() => router.push('/group/invite')}
+                  />
+                </View>
+              ) : tasks.length === 0 ? (
+                <EmptyState title="No tasks set up yet" body="This challenge has no tasks — try restarting it from the challenge detail screen." />
+              ) : (
+                <>
+                  <View style={{ gap: theme.spacing(1) }}>
+                    {pendingTasks.map((task) => (
+                      <LogTaskItem
+                        key={task.id}
+                        title={task.title}
+                        taskType={task.task_type}
+                        dueWindow={task.due_window}
+                        onFeedFire={() => onFeedFire(task)}
+                      />
+                    ))}
+                  </View>
+
+                  {burnedTasks.length > 0 ? (
+                    <View style={styles.burnedRow}>
+                      {burnedTasks.map((task) => (
+                        <PressableScale key={task.id} style={styles.burnedChip} onPress={() => onUndo(task)} haptic="selection">
+                          <Ionicons name="checkmark" size={12} color={theme.colors.success} />
+                          <AppText variant="caption" style={{ color: theme.colors.muted, textDecorationLine: 'line-through' }}>
+                            {task.title}
+                          </AppText>
+                        </PressableScale>
+                      ))}
+                    </View>
+                  ) : null}
+                </>
+              )}
+            </>
+          )}
+
+          <View style={styles.quickGrid}>
+            <QuickTile icon="sparkles-outline" label="AI coach" onPress={() => router.push('/modals/ai-coach')} />
+            <QuickTile icon="notifications-outline" label="Alerts" onPress={() => router.push('/modals/notifications')} />
+            <QuickTile icon="star-outline" label="Premium" onPress={() => router.push('/modals/premium')} />
           </View>
-        </Card>
-      </ScrollView>
-    </Screen>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
+
+function QuickTile({
+  icon,
+  label,
+  onPress
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <PressableScale style={styles.quickTile} onPress={onPress} haptic="light">
+      <Ionicons name={icon} size={20} color={theme.colors.primary2} />
+      <AppText variant="caption" style={{ marginTop: 6 }}>{label}</AppText>
+    </PressableScale>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.bg },
+  safe: { flex: 1 },
+  content: { padding: 20, paddingBottom: theme.spacing(4), gap: theme.spacing(2) },
+  centerText: { textAlign: 'center' },
+  pendingBlock: { gap: theme.spacing(1.5), alignItems: 'stretch' },
+  burnedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  burnedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.chip,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6
+  },
+  quickGrid: { flexDirection: 'row', gap: theme.spacing(1.5) },
+  quickTile: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingVertical: theme.spacing(1.5)
+  }
+});
