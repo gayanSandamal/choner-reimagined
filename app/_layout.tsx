@@ -15,6 +15,7 @@ import {
 } from '@expo-google-fonts/nunito';
 import * as SplashScreen from 'expo-splash-screen';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SplashView } from '@/components/SplashView';
 import { useSplashHoldElapsed } from '@/lib/splash-hold';
 import { theme } from '@/constants/theme';
@@ -124,11 +125,13 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.bg }} onLayout={onLayoutRootView}>
-      <AppProvider>
-        <StatusBar style="light" />
-        <RootLayoutNav />
-      </AppProvider>
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.bg }} onLayout={onLayoutRootView}>
+        <AppProvider>
+          <StatusBar style="light" />
+          <RootLayoutNav />
+        </AppProvider>
+      </View>
+    </GestureHandlerRootView>
   );
 }

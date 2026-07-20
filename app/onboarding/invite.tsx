@@ -16,8 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/input';
 import { useOnboarding } from '@/features/onboarding/context';
 import { goalToTemplateSlug, suggestedHabitTitle } from '@/features/onboarding/mappings';
-import { getTemplateBySlug, getTemplates } from '@/features/challenges/api';
-import { useStartChallenge } from '@/features/challenges/hooks';
+import { getTemplateBySlug, getTemplates, getDefaultChallenges, ensureDefaultChallenges } from '@/features/challenges/api';
 import { useCreateInvite, useResendInvite } from '@/features/community/hooks';
 import { useSession } from '@/providers/session-provider';
 import { useProfile } from '@/features/profile/hooks';
@@ -38,8 +37,8 @@ export default function InviteScreen() {
   const [phase, setPhase] = useState<Phase>(sentInvite ? 'pending' : 'idle');
   const [email, setEmail] = useState('');
   const [lastToken, setLastToken] = useState<string | null>(null);
+  const [attaching, setAttaching] = useState(false);
 
-  const startChallenge = useStartChallenge();
   const createInvite = useCreateInvite();
   const resendInvite = useResendInvite();
 
@@ -51,20 +50,35 @@ export default function InviteScreen() {
     queryFn: async () => (await getTemplateBySlug(slug)) ?? (await getTemplates())[0] ?? null
   });
 
-  const sending = startChallenge.isPending || createInvite.isPending;
+  const sending = attaching || createInvite.isPending;
+
+  // Resolve the partner track to attach this invite to. Onboarding already
+  // provisioned a pending partner challenge; reuse it rather than creating a
+  // second one. Falls back to provisioning if it's somehow missing.
+  const resolvePartnerChallengeId = async (): Promise<string> => {
+    const existing = await getDefaultChallenges(userId!);
+    if (existing.partner?.id) return existing.partner.id;
+
+    const template = templateQ.data ?? (await getTemplates())[0];
+    if (!template) throw new Error('No challenge templates available yet.');
+    await ensureDefaultChallenges({
+      userId: userId!,
+      soloTemplateId: template.id,
+      partnerTemplateId: template.id
+    });
+    const after = await getDefaultChallenges(userId!);
+    if (!after.partner?.id) throw new Error('Could not set up your partner challenge.');
+    return after.partner.id;
+  };
 
   const onSendInvite = async () => {
     if (!userId || !EMAIL_RE.test(email)) return;
     try {
       let challengeId = startedChallengeId;
       if (!challengeId) {
-        const template = templateQ.data ?? (await getTemplates())[0];
-        if (!template) throw new Error('No challenge templates available yet.');
-        challengeId = await startChallenge.mutateAsync({
-          userId,
-          templateId: template.id,
-          accountabilityMode: 'partner'
-        });
+        setAttaching(true);
+        challengeId = await resolvePartnerChallengeId();
+        setAttaching(false);
         // Kept in context so a failed invite retry can't start a second one.
         setStartedChallengeId(challengeId!);
       }
@@ -78,6 +92,7 @@ export default function InviteScreen() {
       setSentInvite({ email: email.trim() });
       setPhase('pending');
     } catch (error: any) {
+      setAttaching(false);
       Alert.alert(
         startedChallengeId ? "The invite didn't send" : 'Could not set up your challenge',
         startedChallengeId

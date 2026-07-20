@@ -618,6 +618,14 @@ export interface Database {
         };
         Returns: string;
       };
+      ensure_default_challenges: {
+        Args: {
+          p_user_id: string;
+          p_solo_template_id?: string;
+          p_partner_template_id?: string;
+        };
+        Returns: void;
+      };
       get_user_insights: {
         Args: {
           p_user_id: string;

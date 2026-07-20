@@ -6,6 +6,9 @@ import { OnboardingScaffold } from '@/components/onboarding/OnboardingScaffold';
 import { OptionCard } from '@/components/onboarding/OptionCard';
 import { ENERGY_LEVELS } from '@/features/onboarding/constants';
 import { useOnboarding } from '@/features/onboarding/context';
+import { goalToTemplateSlug } from '@/features/onboarding/mappings';
+import { getTemplateBySlug } from '@/features/challenges/api';
+import { useEnsureDefaultChallenges } from '@/features/challenges/hooks';
 import { useSession } from '@/providers/session-provider';
 import { useUpdateProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
@@ -14,6 +17,7 @@ export default function EnergyScreen() {
   const { session } = useSession();
   const qc = useQueryClient();
   const updateProfile = useUpdateProfile();
+  const ensureChallenges = useEnsureDefaultChallenges();
   const { goal, struggle, tone, energy, setEnergy } = useOnboarding();
 
   const onSeeProfile = async () => {
@@ -35,6 +39,22 @@ export default function EnergyScreen() {
       });
       // Prime the cache so the routing gate sees onboarding_complete=true.
       qc.setQueryData(['profile', userId], row);
+
+      // Provision the two default tracks (Solo active, Partner pending) from
+      // the goal-matched habit, so Home always has both. Best-effort: a
+      // failure here must not trap the user on onboarding — the RPC is
+      // idempotent and the invite screen re-ensures if needed.
+      try {
+        const template = await getTemplateBySlug(goalToTemplateSlug(goal));
+        await ensureChallenges.mutateAsync({
+          userId,
+          soloTemplateId: template?.id,
+          partnerTemplateId: template?.id
+        });
+      } catch {
+        // Swallowed on purpose — see note above.
+      }
+
       router.push('/onboarding/reveal');
     } catch (error: any) {
       Alert.alert('Could not save your profile', error.message);
