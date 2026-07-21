@@ -11,6 +11,7 @@ import { QuestCard, type FireState } from '@/components/challenges/QuestCard';
 import { useChallengeTemplates, useDefaultChallenges, useStreak } from '@/features/challenges/hooks';
 import { useIsPremium } from '@/features/billing/hooks';
 import { useSession } from '@/providers/session-provider';
+import { features } from '@/constants/features';
 import { theme } from '@/constants/theme';
 
 type GlyphName = keyof typeof Ionicons.glyphMap;
@@ -39,7 +40,9 @@ export default function ChallengesScreen() {
   }, [templatesQ.data]);
 
   const filtered = useMemo(() => {
-    const all = templatesQ.data ?? [];
+    // With Pro gated off, premium quests can't be unlocked — hide them rather
+    // than show dead "Unlock" cards.
+    const all = (templatesQ.data ?? []).filter((t: any) => features.pro || !t.is_premium);
     return selectedCategory === 'All'
       ? all
       : all.filter((t: any) => capitalize(t.category) === selectedCategory);
@@ -140,7 +143,7 @@ export default function ChallengesScreen() {
                   category={t.category}
                   durationDays={t.duration_days}
                   difficulty={t.difficulty}
-                  locked={t.is_premium && !isPremium}
+                  locked={features.pro && t.is_premium && !isPremium}
                   fireState={fireState}
                   onPress={() => onOpenQuest(t.id, fireState)}
                   delay={i * 50}

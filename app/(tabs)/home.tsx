@@ -201,32 +201,9 @@ export default function HomeScreen() {
               )}
             </>
           )}
-
-          <View style={styles.quickGrid}>
-            <QuickTile icon="sparkles-outline" label="AI coach" onPress={() => router.push('/modals/ai-coach')} />
-            <QuickTile icon="notifications-outline" label="Alerts" onPress={() => router.push('/modals/notifications')} />
-            <QuickTile icon="star-outline" label="Premium" onPress={() => router.push('/modals/premium')} />
-          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
-  );
-}
-
-function QuickTile({
-  icon,
-  label,
-  onPress
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <PressableScale style={styles.quickTile} onPress={onPress} haptic="light">
-      <Ionicons name={icon} size={20} color={theme.colors.primary2} />
-      <AppText variant="caption" style={{ marginTop: 6 }}>{label}</AppText>
-    </PressableScale>
   );
 }
 
@@ -245,15 +222,5 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     paddingHorizontal: 12,
     paddingVertical: 6
-  },
-  quickGrid: { flexDirection: 'row', gap: theme.spacing(1.5) },
-  quickTile: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingVertical: theme.spacing(1.5)
   }
 });

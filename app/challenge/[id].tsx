@@ -18,6 +18,7 @@ import {
   useAbandonChallenge,
 } from '@/features/challenges/hooks';
 import { useIsPremium } from '@/features/billing/hooks';
+import { features } from '@/constants/features';
 import { theme } from '@/constants/theme';
 
 function todayString() {
@@ -56,7 +57,7 @@ export default function ChallengeDetailScreen() {
 
   const onStart = () => {
     if (!userId || !id) return;
-    if (templateQ.data?.is_premium && !isPremium) {
+    if (features.pro && templateQ.data?.is_premium && !isPremium) {
       Alert.alert('Premium challenge', 'Upgrade to unlock this challenge.', [
         { text: 'Cancel' },
         { text: 'See plans', onPress: () => router.push('/modals/premium') },

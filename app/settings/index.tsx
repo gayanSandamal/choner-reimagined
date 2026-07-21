@@ -7,6 +7,7 @@ import { AppText } from '@/components/ui/AppText';
 import { signOut } from '@/features/auth/api';
 import { useDeleteAccount } from '@/features/profile/hooks';
 import { useIsPremium } from '@/features/billing/hooks';
+import { features } from '@/constants/features';
 import { theme } from '@/constants/theme';
 
 const SUBSCRIPTION_URLS = {
@@ -80,14 +81,18 @@ export default function SettingsScreen() {
           onPress={() => router.push('/profile/edit')}
         />
 
-        <SectionLabel label="Billing" />
-        <ListItem
-          title={isPremium ? 'Manage subscription' : 'Upgrade to Premium'}
-          subtitle={isPremium ? 'View, change, or cancel your subscription.' : 'Unlock AI coach, advanced insights, and more.'}
-          icon={isPremium ? 'card' : 'sparkles'}
-          showChevron
-          onPress={() => (isPremium ? handleManageSubscription() : router.push('/modals/premium'))}
-        />
+        {features.pro ? (
+          <>
+            <SectionLabel label="Billing" />
+            <ListItem
+              title={isPremium ? 'Manage subscription' : 'Upgrade to Premium'}
+              subtitle={isPremium ? 'View, change, or cancel your subscription.' : 'Unlock AI coach, advanced insights, and more.'}
+              icon={isPremium ? 'card' : 'sparkles'}
+              showChevron
+              onPress={() => (isPremium ? handleManageSubscription() : router.push('/modals/premium'))}
+            />
+          </>
+        ) : null}
 
         <SectionLabel label="Legal" />
         <ListItem
