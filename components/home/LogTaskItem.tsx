@@ -1,19 +1,17 @@
 import { StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming
 } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { theme } from '@/constants/theme';
 import { useReduceMotion } from '@/lib/motion';
 import { haptics } from '@/lib/haptics';
-
-const SWIPE_THRESHOLD = 56;
 
 type GlyphName = keyof typeof Ionicons.glyphMap;
 
@@ -48,40 +46,19 @@ export function LogTaskItem({ title, taskType, dueWindow, onFeedFire }: Props) {
   const opacity = useSharedValue(1);
   const due = dueMeta(dueWindow);
 
-  const fly = () => {
-    'worklet';
-    translateY.value = withTiming(-220, { duration: 240 });
-    opacity.value = withTiming(0, { duration: 220 }, (finished) => {
-      if (finished) runOnJS(onFeedFire)();
-    });
-  };
-
-  const complete = () => {
+  // Feeding is triggered only by the Feed button — the log flies up into the
+  // fire, then commits the check-in once it's gone.
+  const onFeed = () => {
     haptics.bold();
     if (reduceMotion) {
       onFeedFire();
       return;
     }
-    fly();
-  };
-
-  const pan = Gesture.Pan()
-    .onUpdate((e) => {
-      translateY.value = e.translationY < 0 ? e.translationY : e.translationY * 0.15;
-    })
-    .onEnd((e) => {
-      if (e.translationY < -SWIPE_THRESHOLD || e.velocityY < -800) {
-        runOnJS(complete)();
-      } else {
-        translateY.value = withSpring(0, theme.motion.spring.gentle);
-      }
+    translateY.value = withTiming(-220, { duration: 240 });
+    opacity.value = withTiming(0, { duration: 220 }, (finished) => {
+      if (finished) runOnJS(onFeedFire)();
     });
-
-  const tap = Gesture.Tap().onEnd(() => {
-    runOnJS(complete)();
-  });
-
-  const gesture = Gesture.Race(pan, tap);
+  };
 
   const cardStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }, { scale: 1 - Math.min(0.15, -translateY.value / 900) }],
@@ -89,29 +66,37 @@ export function LogTaskItem({ title, taskType, dueWindow, onFeedFire }: Props) {
   }));
 
   return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View
-        style={[styles.card, cardStyle]}
+    <Animated.View style={[styles.card, cardStyle]}>
+      <View style={styles.iconChip}>
+        <Ionicons name={typeIcon(taskType)} size={16} color={theme.colors.primary2} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <AppText>{title}</AppText>
+        <View style={styles.dueRow}>
+          <Ionicons name={due.icon} size={11} color={theme.colors.muted} />
+          <AppText variant="caption" muted>{due.label}</AppText>
+        </View>
+      </View>
+      <PressableScale
+        style={styles.feedBtnWrap}
+        onPress={onFeed}
+        haptic="none"
+        scaleTo="bold"
         accessibilityRole="button"
-        accessibilityLabel={`${title}. Feed the fire.`}
+        accessibilityLabel={`Feed the fire with ${title}`}
         accessibilityHint="Marks this as done today"
       >
-        <View style={styles.iconChip}>
-          <Ionicons name={typeIcon(taskType)} size={16} color={theme.colors.primary2} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <AppText>{title}</AppText>
-          <View style={styles.dueRow}>
-            <Ionicons name={due.icon} size={11} color={theme.colors.muted} />
-            <AppText variant="caption" muted>{due.label}</AppText>
-          </View>
-        </View>
-        <View style={styles.feedBtn}>
-          <Ionicons name="flame" size={16} color={theme.colors.ember} />
-          <AppText variant="caption" style={styles.feedLabel}>Feed</AppText>
-        </View>
-      </Animated.View>
-    </GestureDetector>
+        <LinearGradient
+          colors={theme.gradients.warm}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.feedBtn}
+        >
+          <Ionicons name="flame" size={15} color="#3A1600" />
+          <AppText style={styles.feedLabel}>Feed</AppText>
+        </LinearGradient>
+      </PressableScale>
+    </Animated.View>
   );
 }
 
@@ -136,21 +121,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   dueRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  feedBtnWrap: {
+    borderRadius: theme.radius.pill,
+    ...theme.shadow.glow
+  },
   feedBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 1,
-    backgroundColor: 'rgba(255,138,31,0.12)',
-    borderRadius: theme.radius.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255,138,31,0.32)',
-    paddingHorizontal: 10,
-    paddingVertical: 6
+    gap: 5,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 9
   },
   feedLabel: {
-    color: theme.colors.primary2,
+    color: '#3A1600',
     fontFamily: theme.fonts.bodyBold,
-    fontSize: 10,
-    letterSpacing: 0.3
+    fontSize: 13,
+    letterSpacing: 0.2
   }
 });
