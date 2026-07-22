@@ -21,6 +21,8 @@ const SCENE_H = 190;
 const FLAME_W = 84;
 const FLAME_H = 116;
 
+type FireMode = 'solo' | 'partner';
+
 interface FirepitProps {
   streak: number;
   completedToday: number;
@@ -31,6 +33,11 @@ interface FirepitProps {
   userName?: string | null;
   userAvatarUri?: string | null;
   waitingPartnerEmail?: string;
+  // When set, the header shows a Solo/Partner badge and the seats around the
+  // fire reflect the mode (one seat for solo, two for partner).
+  mode?: FireMode;
+  partnerName?: string | null;
+  partnerAvatarUri?: string | null;
 }
 
 // Static flame shape — a teardrop with a lighter inner core. All motion is
@@ -157,6 +164,40 @@ function statusLine({
   return `${completedToday}/${totalTasks} logs placed`;
 }
 
+function ModeBadge({
+  mode,
+  partnerName,
+  pending
+}: {
+  mode: FireMode;
+  partnerName?: string | null;
+  pending?: boolean;
+}) {
+  const isSolo = mode === 'solo';
+  const sub = isSolo
+    ? 'just you'
+    : pending
+    ? 'pending'
+    : partnerName
+    ? `with ${partnerName}`
+    : 'with your partner';
+  return (
+    <View style={styles.modeBadge}>
+      <Ionicons
+        name={isSolo ? 'person-outline' : 'people-outline'}
+        size={13}
+        color={theme.colors.primary2}
+      />
+      <AppText variant="caption" style={{ color: theme.colors.text, fontFamily: theme.fonts.bodyBold }}>
+        {isSolo ? 'Solo' : 'Partner'}
+      </AppText>
+      <AppText variant="caption" style={{ color: theme.colors.secondary }}>
+        {`· ${sub}`}
+      </AppText>
+    </View>
+  );
+}
+
 export function Firepit({
   streak,
   completedToday,
@@ -166,7 +207,10 @@ export function Firepit({
   aiPriority,
   userName,
   userAvatarUri,
-  waitingPartnerEmail
+  waitingPartnerEmail,
+  mode,
+  partnerName,
+  partnerAvatarUri
 }: FirepitProps) {
   const [width, setWidth] = useState(0);
   const fraction = totalTasks === 0 ? 0 : completedToday / totalTasks;
@@ -190,9 +234,13 @@ export function Firepit({
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <AppText variant="label" style={{ color: theme.colors.primary2 }}>
-          {streak > 0 ? `Day ${streak}` : 'The fire'}
-        </AppText>
+        {mode ? (
+          <ModeBadge mode={mode} partnerName={partnerName} pending={Boolean(waitingPartnerEmail)} />
+        ) : (
+          <AppText variant="label" style={{ color: theme.colors.primary2 }}>
+            {streak > 0 ? `Day ${streak}` : 'The fire'}
+          </AppText>
+        )}
         {streak > 0 ? (
           <View style={styles.streakPill}>
             <Ionicons name="flame" size={12} color={theme.colors.ember} />
@@ -213,11 +261,25 @@ export function Firepit({
             <View style={[styles.log, styles.logBack]} />
             <View style={[styles.log, styles.logFront]} />
 
-            <View style={[styles.seat, { left: width * 0.16 }]}>
+            <View style={[styles.seat, mode === 'solo' ? { left: width * 0.5 - 20 } : { left: width * 0.16 }]}>
               <Avatar name={userName} uri={userAvatarUri} size={40} ring={isRoaring} />
             </View>
 
-            {waitingPartnerEmail ? (
+            {mode === 'partner' ? (
+              <View style={[styles.seat, { right: width * 0.16 }]}>
+                {waitingPartnerEmail ? (
+                  <View style={styles.ghostSeat}>
+                    <Ionicons name="add" size={18} color={theme.colors.muted} />
+                  </View>
+                ) : partnerName || partnerAvatarUri ? (
+                  <Avatar name={partnerName} uri={partnerAvatarUri} size={40} ring={isRoaring} />
+                ) : (
+                  <View style={styles.partnerSeat}>
+                    <Ionicons name="person" size={20} color={theme.colors.accent} />
+                  </View>
+                )}
+              </View>
+            ) : waitingPartnerEmail ? (
               <View style={[styles.seat, { right: width * 0.16 }]}>
                 <View style={styles.ghostSeat}>
                   <Ionicons name="add" size={18} color={theme.colors.muted} />
@@ -261,6 +323,28 @@ export function Firepit({
 const styles = StyleSheet.create({
   container: { gap: theme.spacing(1.5), paddingVertical: theme.spacing(1) },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  modeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: theme.colors.chip,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignSelf: 'flex-start'
+  },
+  partnerSeat: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.surface3,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   streakPill: {
     flexDirection: 'row',
     alignItems: 'center',
