@@ -91,6 +91,13 @@ export default function InviteScreen() {
       setLastToken(invite.token ?? null);
       setSentInvite({ email: email.trim() });
       setPhase('pending');
+      if (!invite.emailed) {
+        // The invite exists and the link works, but don't imply an email landed.
+        Alert.alert(
+          'Invite saved, but not emailed',
+          `We couldn't send the email to ${email.trim()}. ${invite.emailError ?? ''} You can share the link or resend once email is set up.`.trim()
+        );
+      }
     } catch (error: any) {
       setAttaching(false);
       Alert.alert(

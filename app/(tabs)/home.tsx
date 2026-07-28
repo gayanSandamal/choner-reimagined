@@ -7,7 +7,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews
 import { ChallengeCard } from '@/components/home/ChallengeCard';
 import { useSession } from '@/providers/session-provider';
 import { useDefaultChallenges, useStreak } from '@/features/challenges/hooks';
-import { usePendingInvites } from '@/features/community/hooks';
+import { usePendingInvites, usePartnerStatus } from '@/features/community/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
 import { useTimeOfDay } from '@/lib/time-of-day';
@@ -28,6 +28,7 @@ export default function HomeScreen() {
   const challengesQ = useDefaultChallenges(userId);
   const streakQ = useStreak(userId);
   const invitesQ = usePendingInvites(userId);
+  const partnerStatusQ = usePartnerStatus(userId);
   const { gradient: skyGradient, isEvening, timeLeftLabel } = useTimeOfDay();
 
   const soloChallenge = challengesQ.data?.solo ?? null;
@@ -45,6 +46,7 @@ export default function HomeScreen() {
     streakQ.refetch();
     profileQ.refetch();
     invitesQ.refetch();
+    partnerStatusQ.refetch();
   };
 
   const fullName = profileQ.data?.full_name;
@@ -100,6 +102,7 @@ export default function HomeScreen() {
                   userName={fullName}
                   userAvatarUri={avatarUri}
                   waitingPartnerEmail={waitingInvite?.email}
+                  partnerStatus={partnerStatusQ.data}
                 />
               ) : null}
             </>

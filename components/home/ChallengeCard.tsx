@@ -9,9 +9,14 @@ import { EmptyState } from '@/components/ui/StateViews';
 import { Firepit } from '@/components/home/Firepit';
 import { LogTaskItem } from '@/components/home/LogTaskItem';
 import { useCompleteTask, useUndoTaskCheckin } from '@/features/challenges/hooks';
+import type { PartnerStatus } from '@/features/community/api';
 import { theme } from '@/constants/theme';
 
 type Mode = 'solo' | 'partner';
+
+function firstName(name?: string | null) {
+  return (name ?? 'Your partner').trim().split(/\s+/)[0] || 'Your partner';
+}
 
 type ChallengeTask = {
   id: string;
@@ -40,6 +45,9 @@ interface Props {
   userAvatarUri?: string | null;
   // Only meaningful for the partner card — the invite still awaiting a partner.
   waitingPartnerEmail?: string;
+  // Only meaningful for the partner card once paired — the partner's identity
+  // and whether they've logged today.
+  partnerStatus?: PartnerStatus;
 }
 
 // One challenge's full block: the fire, its task-logging, and the pending state.
@@ -52,12 +60,14 @@ export function ChallengeCard({
   timeLeftLabel,
   userName,
   userAvatarUri,
-  waitingPartnerEmail
+  waitingPartnerEmail,
+  partnerStatus
 }: Props) {
   const completeTask = useCompleteTask();
   const undoTask = useUndoTaskCheckin();
 
   const isPending = mode === 'partner' && challenge?.status === 'pending';
+  const showPartnerStatus = mode === 'partner' && !isPending && Boolean(partnerStatus?.linked);
   const tasks = useMemo(() => sortedTasks(challenge), [challenge]);
 
   const today = todayString();
@@ -88,6 +98,8 @@ export function ChallengeCard({
         timeLeftLabel={timeLeftLabel}
         userName={userName}
         userAvatarUri={userAvatarUri}
+        partnerName={partnerStatus?.name}
+        partnerAvatarUri={partnerStatus?.avatar_url}
         waitingPartnerEmail={isPending ? (waitingPartnerEmail ?? 'a partner') : undefined}
         aiPriority={
           isPending || tasks.length === 0
@@ -99,6 +111,24 @@ export function ChallengeCard({
             : 'Streak protected. Rest is part of recovery.'
         }
       />
+
+      {showPartnerStatus ? (
+        <View style={styles.partnerStatusRow}>
+          <Ionicons
+            name={partnerStatus?.checked_in_today ? 'checkmark-circle' : 'ellipse-outline'}
+            size={16}
+            color={partnerStatus?.checked_in_today ? theme.colors.success : theme.colors.muted}
+          />
+          <AppText
+            variant="caption"
+            style={{ color: partnerStatus?.checked_in_today ? theme.colors.success : theme.colors.muted }}
+          >
+            {partnerStatus?.checked_in_today
+              ? `${firstName(partnerStatus?.name)} logged today`
+              : `${firstName(partnerStatus?.name)} hasn't logged yet today`}
+          </AppText>
+        </View>
+      ) : null}
 
       {isPending ? (
         <View style={styles.pendingBlock}>
@@ -168,6 +198,17 @@ const styles = StyleSheet.create({
     gap: theme.spacing(1.5)
   },
   pendingBlock: { gap: theme.spacing(1.5), alignItems: 'stretch' },
+  partnerStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.surfaceHighlight,
+    borderRadius: theme.radius.pill,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignSelf: 'center'
+  },
   centerText: { textAlign: 'center' },
   burnedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   burnedChip: {
