@@ -123,6 +123,29 @@ export function useResendInvite() {
   return useMutation({ mutationFn: api.resendInvite });
 }
 
+export function useAcceptInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (token: string) => api.acceptInvite(token),
+    onSuccess: () => {
+      // Both fires may have just lit — refresh challenges, streak, and the
+      // partner-status read that Home's partner card depends on.
+      qc.invalidateQueries({ queryKey: ['default-challenges'] });
+      qc.invalidateQueries({ queryKey: ['active-challenge'] });
+      qc.invalidateQueries({ queryKey: ['partner-status'] });
+      qc.invalidateQueries({ queryKey: ['pending-invites'] });
+    },
+  });
+}
+
+export function usePartnerStatus(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['partner-status', userId],
+    queryFn: () => api.getPartnerStatus(userId!),
+    enabled: Boolean(userId),
+  });
+}
+
 export function useReportContent() {
   return useMutation({ mutationFn: api.reportContent });
 }

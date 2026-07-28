@@ -199,9 +199,13 @@ export async function createInvite(input: {
     .single();
   if (error) throw error;
 
-  // 2. Fire the email edge function (best-effort; the invite row is the source of truth)
+  // 2. Fire the email edge function. The invite row is the source of truth and
+  // stays valid either way, but we must NOT claim "sent" when it wasn't —
+  // report delivery separately so the UI can tell the truth.
+  let emailed = false;
+  let emailError: string | undefined;
   try {
-    await supabase.functions.invoke('invite-email', {
+    const { error: fnError } = await supabase.functions.invoke('invite-email', {
       body: {
         email: input.email,
         inviterName: input.inviterName,
@@ -209,10 +213,12 @@ export async function createInvite(input: {
         challengeId: input.userChallengeId,
       },
     });
-  } catch {
-    // swallow — the invite still exists and can be re-sent
+    if (fnError) emailError = fnError.message;
+    else emailed = true;
+  } catch (e: any) {
+    emailError = e?.message ?? 'Could not reach the email service.';
   }
-  return invite;
+  return { ...invite, emailed, emailError };
 }
 
 export async function listMyPendingInvites(userId: string) {
@@ -249,4 +255,25 @@ export async function acceptInvite(token: string) {
   const { data, error } = await supabase.rpc('accept_challenge_invite', { p_token: token });
   if (error) throw error;
   return data as string | null;
+}
+
+export type PartnerStatus = {
+  linked: boolean;
+  partner_id?: string;
+  name?: string | null;
+  avatar_url?: string | null;
+  total_tasks?: number;
+  completed_today?: number;
+  checked_in_today?: boolean;
+};
+
+// My partner's identity + whether they've logged today. Backed by a
+// security-definer RPC because a partner's challenges/check-ins are
+// owner-only under RLS.
+export async function getPartnerStatus(userId: string): Promise<PartnerStatus> {
+  // Loosely typed: get_partner_status is new, so it isn't in the generated
+  // Database types until `supabase gen types` is re-run post-migration.
+  const { data, error } = await (supabase.rpc as any)('get_partner_status', { p_user_id: userId });
+  if (error) throw error;
+  return (data as PartnerStatus) ?? { linked: false };
 }

@@ -3,7 +3,9 @@ import { StatusBar } from 'expo-status-bar';
 import { AppProvider } from '@/providers/app-provider';
 import { useSession } from '@/providers/session-provider';
 import { useProfile } from '@/features/profile/hooks';
-import { useCallback, useEffect } from 'react';
+import { useAcceptInvite } from '@/features/community/hooks';
+import { getPendingInviteToken, clearPendingInviteToken } from '@/lib/pending-invite';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   Nunito_400Regular,
   Nunito_600SemiBold,
@@ -22,6 +24,38 @@ import { theme } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
+// Accepts an invite that was opened while signed out, once the user has an
+// account and finished onboarding (so their own partner track exists to light).
+function PendingInviteHandler() {
+  const { session } = useSession();
+  const profileQ = useProfile(session?.user.id);
+  const acceptInvite = useAcceptInvite();
+  const handledRef = useRef(false);
+
+  useEffect(() => {
+    if (!session) {
+      handledRef.current = false;
+      return;
+    }
+    if (handledRef.current) return;
+    if (!profileQ.data?.onboarding_complete) return;
+    handledRef.current = true;
+    (async () => {
+      const token = await getPendingInviteToken();
+      if (!token) return;
+      try {
+        await acceptInvite.mutateAsync(token);
+      } catch {
+        // Direct-link flow surfaces errors; here we silently drop a stale token.
+      } finally {
+        await clearPendingInviteToken();
+      }
+    })();
+  }, [session, profileQ.data?.onboarding_complete]);
+
+  return null;
+}
+
 function RootLayoutNav() {
   const { session, loading } = useSession();
   const splashHoldElapsed = useSplashHoldElapsed();
@@ -38,9 +72,15 @@ function RootLayoutNav() {
     // Legal pages are static content and must stay reachable from the
     // welcome/sign-up terms links before an account exists.
     const inLegalGroup = segments[0] === 'legal';
+    // The invite-accept screen must stay reachable signed-out so it can stash
+    // the token and prompt sign-in, rather than bouncing to welcome and
+    // dropping the invite.
+    // Cast: the typed-routes union regenerates from app/ on the next expo
+    // build; until then the new segment literal isn't in the union.
+    const inInviteGroup = (segments[0] as string) === 'invite';
 
     if (!session) {
-      if (!inAuthGroup && !inLegalGroup) {
+      if (!inAuthGroup && !inLegalGroup && !inInviteGroup) {
         router.replace('/(auth)/welcome');
       }
     } else if (session) {
@@ -61,14 +101,16 @@ function RootLayoutNav() {
   }, [session, loading, splashHoldElapsed, segments, profileQ.isLoading, profileQ.data]);
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: theme.colors.bg },
-        animation: 'slide_from_right'
-      }}
-    >
-      <Stack.Screen name="index" options={{ animation: 'fade' }} />
+    <>
+      <PendingInviteHandler />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: theme.colors.bg },
+          animation: 'slide_from_right'
+        }}
+      >
+        <Stack.Screen name="index" options={{ animation: 'fade' }} />
       <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
       <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
       <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
@@ -94,10 +136,12 @@ function RootLayoutNav() {
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
       <Stack.Screen name="post/[id]" />
+      <Stack.Screen name="invite/[token]" options={{ animation: 'fade' }} />
       <Stack.Screen name="legal/privacy" />
       <Stack.Screen name="legal/terms" />
       <Stack.Screen name="legal/health-disclaimer" />
-    </Stack>
+      </Stack>
+    </>
   );
 }
 
