@@ -8,8 +8,12 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/StateViews';
 import { Firepit } from '@/components/home/Firepit';
 import { LogTaskItem } from '@/components/home/LogTaskItem';
+import { PartnerProof } from '@/components/home/PartnerProof';
 import { useCompleteTask, useUndoTaskCheckin } from '@/features/challenges/hooks';
+import { captureProofPhoto, resolveProofType } from '@/features/challenges/capture';
+import { useSession } from '@/providers/session-provider';
 import type { PartnerStatus } from '@/features/community/api';
+import type { ProofType } from '@/types/database';
 import { theme } from '@/constants/theme';
 
 type Mode = 'solo' | 'partner';
@@ -23,7 +27,8 @@ type ChallengeTask = {
   title: string;
   due_window: string | null;
   task_type: string;
-  task_checkins?: Array<{ id: string; completed_at: string | null }>;
+  proof_type?: ProofType | null;
+  task_checkins?: Array<{ id: string; completed_at: string | null; photo_path?: string | null }>;
 };
 
 function todayString() {
@@ -65,6 +70,8 @@ export function ChallengeCard({
 }: Props) {
   const completeTask = useCompleteTask();
   const undoTask = useUndoTaskCheckin();
+  const { session } = useSession();
+  const userId = session?.user.id;
 
   const isPending = mode === 'partner' && challenge?.status === 'pending';
   const showPartnerStatus = mode === 'partner' && !isPending && Boolean(partnerStatus?.linked);
@@ -78,13 +85,31 @@ export function ChallengeCard({
   const burnedTasks = tasks.filter((t) => todaysCheckinFor(t));
   const completedToday = burnedTasks.length;
 
-  const onFeedFire = (task: ChallengeTask) => {
-    if (challenge) completeTask.mutate({ taskId: task.id, userChallengeId: challenge.id });
+  const onFeedFire = async (task: ChallengeTask) => {
+    if (!challenge || !userId) return;
+    const proof = resolveProofType(task, challenge);
+
+    let photoBase64: string | undefined;
+    if (proof === 'photo') {
+      const shot = await captureProofPhoto();
+      // Backing out of the camera must not silently log the habit anyway.
+      if (shot.status === 'cancelled') return;
+      if (shot.status === 'captured') photoBase64 = shot.base64;
+      // 'unavailable' (web) falls through to a plain tap so the check-in still
+      // works rather than becoming impossible on that platform.
+    }
+
+    completeTask.mutate({
+      taskId: task.id,
+      userChallengeId: challenge.id,
+      userId,
+      photoBase64
+    });
   };
 
   const onUndo = (task: ChallengeTask) => {
     const checkin = todaysCheckinFor(task);
-    if (checkin) undoTask.mutate(checkin.id);
+    if (checkin) undoTask.mutate({ checkinId: checkin.id, photoPath: checkin.photo_path });
   };
 
   return (
@@ -128,6 +153,13 @@ export function ChallengeCard({
               : `${firstName(partnerStatus?.name)} hasn't logged yet today`}
           </AppText>
         </View>
+      ) : null}
+
+      {showPartnerStatus ? (
+        <PartnerProof
+          photos={partnerStatus?.today_photos ?? []}
+          partnerName={firstName(partnerStatus?.name)}
+        />
       ) : null}
 
       {isPending ? (

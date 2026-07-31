@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { decodeBase64 } from '@/lib/base64';
 
 export async function getTemplates() {
   const { data, error } = await supabase.from('challenge_templates').select('*').order('sort_order');
@@ -109,20 +110,73 @@ export async function startChallenge(payload: {
 export async function completeTask(payload: {
   taskId: string;
   userChallengeId: string;
+  userId: string;
   note?: string;
+  // Base64 JPEG straight from the camera. Only supplied for 'photo' habits.
+  photoBase64?: string;
 }) {
+  // Upload BEFORE inserting so the path goes in with the row. Attaching it
+  // afterwards would need a second write, and a failed upload would otherwise
+  // leave a check-in claiming proof it doesn't have.
+  let photoPath: string | undefined;
+  if (payload.photoBase64) {
+    photoPath = await uploadCheckinPhoto({
+      userId: payload.userId,
+      base64: payload.photoBase64
+    });
+  }
+
   const { data, error } = await supabase.from('task_checkins').insert({
     challenge_task_id: payload.taskId,
     user_challenge_id: payload.userChallengeId,
     note: payload.note,
+    photo_path: photoPath,
     status: 'completed'
   }).select().single();
 
-  if (error) throw error;
+  if (error) {
+    // Don't leave the orphaned image behind in a private bucket.
+    if (photoPath) await supabase.storage.from('checkin-photos').remove([photoPath]);
+    throw error;
+  }
   return data;
 }
 
-export async function undoTaskCheckin(checkinId: string) {
+// Path is <user_id>/<unique>.jpg — the leading folder is what the storage RLS
+// policy reads to decide owner-vs-partner access, so it must stay the
+// uploader's own id.
+export async function uploadCheckinPhoto(input: {
+  userId: string;
+  base64: string;
+}) {
+  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const path = `${input.userId}/${unique}.jpg`;
+  const { error } = await supabase.storage
+    .from('checkin-photos')
+    .upload(path, decodeBase64(input.base64), {
+      contentType: 'image/jpeg',
+      upsert: true
+    });
+  if (error) throw error;
+  return path;
+}
+
+// Private bucket, so reads need a signed URL rather than a public one. Short
+// expiry because the app re-signs on each view.
+export async function getCheckinPhotoUrl(path: string, expiresInSeconds = 60 * 10) {
+  const { data, error } = await supabase.storage
+    .from('checkin-photos')
+    .createSignedUrl(path, expiresInSeconds);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+export async function undoTaskCheckin(checkinId: string, photoPath?: string | null) {
+  // Remove the photo first: deleting the row loses the only pointer to it, and
+  // an orphaned object in a private bucket is invisible but still stored.
+  if (photoPath) {
+    await supabase.storage.from('checkin-photos').remove([photoPath]);
+  }
   const { error } = await supabase.from('task_checkins').delete().eq('id', checkinId);
   if (error) throw error;
 }

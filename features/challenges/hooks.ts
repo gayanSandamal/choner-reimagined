@@ -100,7 +100,10 @@ export function useCompleteTask() {
 export function useUndoTaskCheckin() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: undoTaskCheckin,
+    // Object arg so the photo path travels with the id — react-query passes a
+    // context as the second parameter, so a positional signature can't work.
+    mutationFn: (input: { checkinId: string; photoPath?: string | null }) =>
+      undoTaskCheckin(input.checkinId, input.photoPath),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-challenge'] });
       queryClient.invalidateQueries({ queryKey: ['default-challenges'] });
