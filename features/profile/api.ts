@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { decodeBase64 } from '@/lib/base64';
 import { Database } from '@/types/database';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -64,11 +65,3 @@ export async function deleteAccount() {
   await supabase.auth.signOut();
 }
 
-function decodeBase64(b64: string): Uint8Array {
-  // React Native global atob is available via the URL polyfill bundle.
-  const binary = globalThis.atob(b64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i += 1) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}

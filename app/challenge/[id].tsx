@@ -18,6 +18,7 @@ import {
   useAbandonChallenge,
 } from '@/features/challenges/hooks';
 import { useIsPremium } from '@/features/billing/hooks';
+import { captureProofPhoto, resolveProofType } from '@/features/challenges/capture';
 import { features } from '@/constants/features';
 import { theme } from '@/constants/theme';
 
@@ -149,9 +150,24 @@ export default function ChallengeDetailScreen() {
                     title={task.title}
                     meta={`${task.task_type} • ${task.due_window ?? 'anytime'}`}
                     completed={Boolean(checkin)}
-                    onPress={() => {
-                      if (checkin) undoMut.mutate(checkin.id);
-                      else completeMut.mutate({ taskId: task.id, userChallengeId: activeChallenge.id });
+                    onPress={async () => {
+                      if (checkin) {
+                        undoMut.mutate({ checkinId: checkin.id, photoPath: checkin.photo_path });
+                        return;
+                      }
+                      if (!userId) return;
+                      let photoBase64: string | undefined;
+                      if (resolveProofType(task, activeChallenge) === 'photo') {
+                        const shot = await captureProofPhoto();
+                        if (shot.status === 'cancelled') return;
+                        if (shot.status === 'captured') photoBase64 = shot.base64;
+                      }
+                      completeMut.mutate({
+                        taskId: task.id,
+                        userChallengeId: activeChallenge.id,
+                        userId,
+                        photoBase64
+                      });
                     }}
                   />
                 );

@@ -1,5 +1,9 @@
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
+// How a check-in is proved. 'tap' is the default everywhere: a habit only asks
+// for a photo when it's explicitly opted in, never the other way round.
+export type ProofType = 'photo' | 'tap';
+
 export interface Database {
   public: {
     Tables: {
@@ -53,6 +57,7 @@ export interface Database {
           difficulty: string;
           is_premium: boolean | null;
           sort_order: number | null;
+          proof_type: ProofType;
           created_at: string | null;
         };
         Insert: {
@@ -65,6 +70,7 @@ export interface Database {
           difficulty?: string;
           is_premium?: boolean | null;
           sort_order?: number | null;
+          proof_type?: ProofType;
           created_at?: string | null;
         };
         Update: {
@@ -77,6 +83,7 @@ export interface Database {
           difficulty?: string;
           is_premium?: boolean | null;
           sort_order?: number | null;
+          proof_type?: ProofType;
           created_at?: string | null;
         };
         Relationships: [];
@@ -133,6 +140,8 @@ export interface Database {
           task_type: string;
           sort_order: number | null;
           due_window: string | null;
+          // Null means "inherit the template's proof_type".
+          proof_type: ProofType | null;
           created_at: string | null;
         };
         Insert: {
@@ -142,6 +151,7 @@ export interface Database {
           task_type?: string;
           sort_order?: number | null;
           due_window?: string | null;
+          proof_type?: ProofType | null;
           created_at?: string | null;
         };
         Update: {
@@ -151,6 +161,7 @@ export interface Database {
           task_type?: string;
           sort_order?: number | null;
           due_window?: string | null;
+          proof_type?: ProofType | null;
           created_at?: string | null;
         };
         Relationships: [
@@ -170,6 +181,8 @@ export interface Database {
           user_challenge_id: string;
           status: string;
           note: string | null;
+          // Storage path in the private checkin-photos bucket, never a URL.
+          photo_path: string | null;
           completed_at: string | null;
           created_at: string | null;
         };
@@ -179,6 +192,7 @@ export interface Database {
           user_challenge_id: string;
           status?: string;
           note?: string | null;
+          photo_path?: string | null;
           completed_at?: string | null;
           created_at?: string | null;
         };
@@ -188,6 +202,7 @@ export interface Database {
           user_challenge_id?: string;
           status?: string;
           note?: string | null;
+          photo_path?: string | null;
           completed_at?: string | null;
           created_at?: string | null;
         };

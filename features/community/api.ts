@@ -257,6 +257,13 @@ export async function acceptInvite(token: string) {
   return data as string | null;
 }
 
+export type PartnerProofPhoto = {
+  task_title: string;
+  // Storage path in the private checkin-photos bucket. Sign it to display;
+  // there is deliberately no public URL for check-in photos.
+  photo_path: string;
+};
+
 export type PartnerStatus = {
   linked: boolean;
   partner_id?: string;
@@ -265,6 +272,7 @@ export type PartnerStatus = {
   total_tasks?: number;
   completed_today?: number;
   checked_in_today?: boolean;
+  today_photos?: PartnerProofPhoto[];
 };
 
 // My partner's identity + whether they've logged today. Backed by a
