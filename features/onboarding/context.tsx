@@ -12,13 +12,15 @@ interface OnboardingState {
   // Screen 7 progress, kept here so a failed invite can be retried
   // without starting a second challenge.
   startedChallengeId: string | null;
-  sentInvite: { email: string } | null;
+  // The token is kept alongside the email so the share link (and resend) still
+  // work if this screen remounts — the invite row stays valid either way.
+  sentInvite: { email: string; token?: string | null; emailed?: boolean } | null;
   setGoal: (v: GoalValue | null) => void;
   setStruggle: (v: StruggleValue | null) => void;
   setTone: (v: ToneValue) => void;
   setEnergy: (v: EnergyValue) => void;
   setStartedChallengeId: (id: string) => void;
-  setSentInvite: (invite: { email: string } | null) => void;
+  setSentInvite: (invite: { email: string; token?: string | null; emailed?: boolean } | null) => void;
 }
 
 const OnboardingContext = createContext<OnboardingState | null>(null);
@@ -29,7 +31,11 @@ export function OnboardingProvider({ children }: PropsWithChildren) {
   const [tone, setTone] = useState<ToneValue | null>(null);
   const [energy, setEnergy] = useState<EnergyValue | null>(null);
   const [startedChallengeId, setStartedChallengeId] = useState<string | null>(null);
-  const [sentInvite, setSentInvite] = useState<{ email: string } | null>(null);
+  const [sentInvite, setSentInvite] = useState<{
+    email: string;
+    token?: string | null;
+    emailed?: boolean;
+  } | null>(null);
 
   const value = useMemo(
     () => ({

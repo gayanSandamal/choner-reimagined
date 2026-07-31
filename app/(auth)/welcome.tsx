@@ -41,6 +41,15 @@ export default function WelcomeScreen() {
           />
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(360).duration(360)}>
+          {/* Invitees arrive here when the deep link can't open (no app yet),
+              so give them a way in that doesn't depend on the link. */}
+          <Button
+            label="I have an invite code"
+            variant="ghost"
+            onPress={() => router.push('/invite/code')}
+          />
+        </Animated.View>
+        <Animated.View entering={FadeInDown.delay(420).duration(360)}>
           <TermsFooter />
         </Animated.View>
       </View>

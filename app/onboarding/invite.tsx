@@ -21,6 +21,8 @@ import { useCreateInvite, useResendInvite } from '@/features/community/hooks';
 import { useSession } from '@/providers/session-provider';
 import { useProfile } from '@/features/profile/hooks';
 import { useReduceMotion } from '@/lib/motion';
+import { buildInviteLink, shareInviteLink } from '@/lib/invite-link';
+import { captureError } from '@/lib/observability';
 import { theme } from '@/constants/theme';
 
 type Phase = 'idle' | 'emailEntry' | 'pending' | 'skipped';
@@ -36,7 +38,9 @@ export default function InviteScreen() {
 
   const [phase, setPhase] = useState<Phase>(sentInvite ? 'pending' : 'idle');
   const [email, setEmail] = useState('');
-  const [lastToken, setLastToken] = useState<string | null>(null);
+  // Seeded from context so a remount mid-onboarding doesn't strand the invite
+  // with no way to share or resend it.
+  const [lastToken, setLastToken] = useState<string | null>(sentInvite?.token ?? null);
   const [attaching, setAttaching] = useState(false);
 
   const createInvite = useCreateInvite();
@@ -89,14 +93,16 @@ export default function InviteScreen() {
         inviterName: profileQ.data?.full_name ?? undefined
       });
       setLastToken(invite.token ?? null);
-      setSentInvite({ email: email.trim() });
+      setSentInvite({ email: email.trim(), token: invite.token ?? null, emailed: invite.emailed });
       setPhase('pending');
+      // No alert on a failed email: the pending state below says so plainly and
+      // offers the share link, which brings the partner in just as well. The
+      // reason still needs to reach us, though, or delivery breaks silently.
       if (!invite.emailed) {
-        // The invite exists and the link works, but don't imply an email landed.
-        Alert.alert(
-          'Invite saved, but not emailed',
-          `We couldn't send the email to ${email.trim()}. ${invite.emailError ?? ''} You can share the link or resend once email is set up.`.trim()
-        );
+        captureError(new Error('Invite email not delivered'), {
+          reason: invite.emailError,
+          inviteId: invite.id
+        });
       }
     } catch (error: any) {
       setAttaching(false);
@@ -107,6 +113,13 @@ export default function InviteScreen() {
           : error.message
       );
     }
+  };
+
+  const onShare = async () => {
+    if (!lastToken) return;
+    const how = await shareInviteLink(lastToken, profileQ.data?.full_name);
+    if (how === 'copied') Alert.alert('Link copied', 'Paste it to your partner to bring them in.');
+    if (how === 'failed') Alert.alert('Could not share', 'Copy the link shown above instead.');
   };
 
   const onResend = async () => {
@@ -165,10 +178,23 @@ export default function InviteScreen() {
           <Card variant={phase === 'pending' ? 'glow' : 'default'} style={styles.challengeCard}>
             {phase === 'pending' && sentInvite ? (
               <>
-                <AppText variant="subtitle">Waiting for {sentInvite.email} to join Choner</AppText>
-                <AppText variant="caption" muted>
-                  Your challenge starts the moment they sign up.
+                <AppText variant="subtitle">
+                  {sentInvite.emailed
+                    ? `Waiting for ${sentInvite.email} to join Choner`
+                    : `Send ${sentInvite.email} their invite link`}
                 </AppText>
+                <AppText variant="caption" muted>
+                  {sentInvite.emailed
+                    ? 'Your challenge starts the moment they sign up.'
+                    : `We couldn't email them, but the invite is saved. Share this link and it works the same:`}
+                </AppText>
+                {!sentInvite.emailed && lastToken ? (
+                  <View style={styles.linkBox}>
+                    <AppText variant="caption" selectable style={{ color: theme.colors.text }}>
+                      {buildInviteLink(lastToken)}
+                    </AppText>
+                  </View>
+                ) : null}
               </>
             ) : (
               <>
@@ -199,16 +225,27 @@ export default function InviteScreen() {
           </Animated.View>
         ) : null}
 
-        {phase === 'pending' ? (
+        {phase === 'pending' && sentInvite ? (
           <Animated.View entering={FadeInDown.duration(280)} style={styles.pendingActions}>
             <Button
-              label="Resend invite"
+              label="Share invite link"
               variant="secondary"
               size="sm"
-              loading={resendInvite.isPending}
               disabled={!lastToken}
-              onPress={onResend}
+              onPress={onShare}
             />
+            {/* Resending only helps once email actually delivers; offering it
+                while the email channel is down is a dead end. */}
+            {sentInvite.emailed ? (
+              <Button
+                label="Resend invite"
+                variant="secondary"
+                size="sm"
+                loading={resendInvite.isPending}
+                disabled={!lastToken}
+                onPress={onResend}
+              />
+            ) : null}
             <Button
               label="Invite someone else instead"
               variant="ghost"
@@ -293,6 +330,14 @@ const styles = StyleSheet.create({
   header: { gap: theme.spacing(1) },
   leadIn: { color: theme.colors.primary2 },
   challengeCard: { gap: theme.spacing(0.5) },
+  linkBox: {
+    backgroundColor: theme.colors.surface2,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.sm,
+    padding: theme.spacing(1.5),
+    marginTop: theme.spacing(0.5)
+  },
   emailBlock: { gap: theme.spacing(1) },
   pendingActions: { gap: theme.spacing(1) },
   supporting: { textAlign: 'center' },
