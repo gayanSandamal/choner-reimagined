@@ -171,6 +171,37 @@ export async function getCheckinPhotoUrl(path: string, expiresInSeconds = 60 * 1
   return data.signedUrl;
 }
 
+// "Running late, doing it tonight." Saved against the caller's own local day,
+// which the server resolves from their timezone so the client and the
+// missed-day sweep can never disagree about which day it is.
+export async function setLateNote(userChallengeId: string, note: string) {
+  const { error } = await (supabase.rpc as any)('set_late_note', {
+    p_user_challenge_id: userChallengeId,
+    p_note: note
+  });
+  if (error) throw error;
+}
+
+export type DailyStatus = {
+  local_date: string;
+  late_note: string | null;
+  missed_notified_at: string | null;
+};
+
+// Today's row for a challenge, if one exists. Used to show the user their own
+// state quietly — never to push guilt at them.
+export async function getTodayStatus(userChallengeId: string): Promise<DailyStatus | null> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await (supabase as any)
+    .from('daily_status')
+    .select('local_date, late_note, missed_notified_at')
+    .eq('user_challenge_id', userChallengeId)
+    .eq('local_date', today)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
 export async function undoTaskCheckin(checkinId: string, photoPath?: string | null) {
   // Remove the photo first: deleting the row loses the only pointer to it, and
   // an orphaned object in a private bucket is invisible but still stored.

@@ -17,6 +17,11 @@ export interface Database {
           accountability_mode: string | null;
           stress_level: string | null;
           onboarding_complete: boolean | null;
+          // IANA zone, e.g. 'Asia/Colombo'. The missed-day sweep resolves each
+          // user's local day and deadline from this.
+          timezone: string;
+          // 'HH:MM:SS' local time the day is measured against.
+          daily_deadline: string;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -29,6 +34,8 @@ export interface Database {
           accountability_mode?: string | null;
           stress_level?: string | null;
           onboarding_complete?: boolean | null;
+          timezone?: string;
+          daily_deadline?: string;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -41,6 +48,8 @@ export interface Database {
           accountability_mode?: string | null;
           stress_level?: string | null;
           onboarding_complete?: boolean | null;
+          timezone?: string;
+          daily_deadline?: string;
           created_at?: string | null;
           updated_at?: string | null;
         };
