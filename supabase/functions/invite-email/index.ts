@@ -17,9 +17,29 @@ Deno.serve(async (req) => {
   const acceptUrl = body.token ? `${base}invite/${body.token}` : null;
   const inviter = body.inviterName ?? "A friend";
 
-  const cta = acceptUrl
-    ? `<a href="${acceptUrl}" style="display:inline-block; margin-top:16px; background:#FF8A1F; color:#031A2D; font-weight:bold; text-decoration:none; padding:12px 22px; border-radius:999px">Accept the challenge</a>
-       <p style="color:#A5B6C8; font-size:12px; margin-top:14px">Or paste this link into Choner: ${acceptUrl}</p>`
+  // When the base is a custom scheme (choner://), the button is useless to a
+  // recipient who hasn't installed the app yet — and that's every invitee, plus
+  // most mail clients won't even linkify it. So the code is always shown as the
+  // channel that can't fail: install, then Welcome → "I have an invite code".
+  const isDeepLink = !/^https?:/i.test(base);
+
+  const cta = body.token
+    ? `${
+        isDeepLink
+          ? ""
+          : `<a href="${acceptUrl}" style="display:inline-block; margin-top:16px; background:#FF8A1F; color:#031A2D; font-weight:bold; text-decoration:none; padding:12px 22px; border-radius:999px">Accept the challenge</a>`
+      }
+       <p style="color:#A5B6C8; font-size:13px; margin-top:18px; margin-bottom:6px">${
+         isDeepLink
+           ? "Install Choner, then tap <b>I have an invite code</b> on the welcome screen and enter:"
+           : "Or enter this code in the app:"
+       }</p>
+       <div style="font-family:monospace; font-size:18px; letter-spacing:1px; color:#F7FAFC; background:#0A2740; border:1px solid #16507E; border-radius:10px; padding:12px 16px; display:inline-block">${body.token}</div>
+       ${
+         isDeepLink && acceptUrl
+           ? `<p style="color:#A5B6C8; font-size:12px; margin-top:14px">Already have the app? Open: ${acceptUrl}</p>`
+           : ""
+       }`
     : `<p style="margin-bottom:0">Open Choner to accept and start together.</p>`;
 
   const html = `

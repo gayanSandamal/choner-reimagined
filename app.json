@@ -4,6 +4,10 @@
     "slug": "choner-mobile",
     "scheme": "choner",
     "version": "0.1.0",
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
