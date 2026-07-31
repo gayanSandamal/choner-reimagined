@@ -74,6 +74,13 @@ export default function SettingsScreen() {
           onPress={() => router.push('/settings/notifications')}
         />
         <ListItem
+          title="Daily deadline"
+          subtitle="When your day is measured — and when your partner gets nudged."
+          icon="time"
+          showChevron
+          onPress={() => router.push('/settings/deadline')}
+        />
+        <ListItem
           title="Edit profile"
           subtitle="Name, photo, goals."
           icon="person-circle"

@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/StateViews';
 import { Firepit } from '@/components/home/Firepit';
 import { LogTaskItem } from '@/components/home/LogTaskItem';
 import { PartnerProof } from '@/components/home/PartnerProof';
+import { LateNote } from '@/components/home/LateNote';
 import { useCompleteTask, useUndoTaskCheckin } from '@/features/challenges/hooks';
 import { captureProofPhoto, resolveProofType } from '@/features/challenges/capture';
 import { useSession } from '@/providers/session-provider';
@@ -160,6 +161,12 @@ export function ChallengeCard({
           photos={partnerStatus?.today_photos ?? []}
           partnerName={firstName(partnerStatus?.name)}
         />
+      ) : null}
+
+      {/* Only on the partner track, and only while today is still unlogged —
+          there is nothing to explain once the fire is fed. */}
+      {mode === 'partner' && !isPending && challenge && pendingTasks.length > 0 ? (
+        <LateNote userChallengeId={challenge.id} />
       ) : null}
 
       {isPending ? (

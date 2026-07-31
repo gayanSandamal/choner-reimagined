@@ -9,6 +9,8 @@ import {
   startChallenge,
   completeTask,
   undoTaskCheckin,
+  setLateNote,
+  getTodayStatus,
   pauseChallenge,
   resumeChallenge,
   abandonChallenge,
@@ -135,6 +137,25 @@ export function useAbandonChallenge() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-challenge'] });
       queryClient.invalidateQueries({ queryKey: ['challenge-history'] });
+    },
+  });
+}
+
+export function useTodayStatus(userChallengeId: string | undefined) {
+  return useQuery({
+    queryKey: ['daily-status', userChallengeId],
+    queryFn: () => getTodayStatus(userChallengeId!),
+    enabled: Boolean(userChallengeId),
+  });
+}
+
+export function useSetLateNote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { userChallengeId: string; note: string }) =>
+      setLateNote(input.userChallengeId, input.note),
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['daily-status', vars.userChallengeId] });
     },
   });
 }
