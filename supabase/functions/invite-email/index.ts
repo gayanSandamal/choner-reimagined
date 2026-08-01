@@ -57,5 +57,25 @@ Deno.serve(async (req) => {
     html
   });
 
+  // Resend reports failures in the BODY, not the HTTP status — a refused send
+  // still resolves. Returning that verbatim made every failure look like a
+  // success to supabase.functions.invoke, so the app cheerfully said "invite
+  // emailed" for mail that was never accepted. Surface it as a real error so
+  // the caller can fall back to the share link and tell the truth.
+  if (result.error) {
+    return Response.json(
+      {
+        error: result.error.message ?? "Email provider rejected the message.",
+        provider: "resend",
+        // The sandbox from-address only delivers to the Resend account owner;
+        // this is the common case until a domain is verified.
+        hint: /verify a domain/i.test(result.error.message ?? "")
+          ? "No verified sending domain. Verify one at resend.com/domains and set RESEND_FROM_EMAIL to an address on it."
+          : undefined
+      },
+      { status: 502 }
+    );
+  }
+
   return Response.json(result);
 });

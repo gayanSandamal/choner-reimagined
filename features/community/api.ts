@@ -180,6 +180,20 @@ export async function reportContent(input: {
   if (error) throw error;
 }
 
+// Pulls the real message out of a failed edge-function call. supabase-js wraps
+// non-2xx responses in a FunctionsHttpError whose `message` is generic, and
+// keeps the actual Response on `context`.
+async function readFunctionError(err: unknown): Promise<string | undefined> {
+  const ctx = (err as { context?: Response })?.context;
+  if (!ctx || typeof ctx.json !== 'function') return undefined;
+  try {
+    const body = await ctx.json();
+    return [body?.error, body?.hint].filter(Boolean).join(' ') || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // Invitations
 export async function createInvite(input: {
   userChallengeId?: string;
@@ -213,8 +227,12 @@ export async function createInvite(input: {
         challengeId: input.userChallengeId,
       },
     });
-    if (fnError) emailError = fnError.message;
-    else emailed = true;
+    if (fnError) {
+      // functions.invoke only gives a generic "non-2xx" message; the useful
+      // reason (e.g. "you can only send to your own address until a domain is
+      // verified") is in the response body.
+      emailError = (await readFunctionError(fnError)) ?? fnError.message;
+    } else emailed = true;
   } catch (e: any) {
     emailError = e?.message ?? 'Could not reach the email service.';
   }
