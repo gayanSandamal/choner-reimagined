@@ -70,12 +70,40 @@ function SessionWiring() {
       )
       .subscribe();
 
+    // The moment a partner accepts, the invite row flips to 'accepted' and both
+    // partner tracks go active. Without this the inviter's Home kept showing
+    // "waiting for a partner" until they manually pulled to refresh.
+    const refreshPairing = () => {
+      qc.invalidateQueries({ queryKey: ['partner-status', userId] });
+      qc.invalidateQueries({ queryKey: ['default-challenges', userId] });
+      qc.invalidateQueries({ queryKey: ['active-challenge', userId] });
+      qc.invalidateQueries({ queryKey: ['pending-invites', userId] });
+    };
+
+    const pairingChannel = supabase
+      .channel(`pairing:${userId}`)
+      .on(
+        'postgres_changes',
+        // Invites I sent — this is the one that fires on acceptance.
+        { event: '*', schema: 'public', table: 'challenge_invites', filter: `invited_by=eq.${userId}` },
+        refreshPairing
+      )
+      .on(
+        'postgres_changes',
+        // My own tracks, which acceptance flips pending -> active. Covers the
+        // accepter's side too, where no invite row is theirs to watch.
+        { event: '*', schema: 'public', table: 'user_challenges', filter: `user_id=eq.${userId}` },
+        refreshPairing
+      )
+      .subscribe();
+
     const detachNotifTap = attachNotificationResponseListener();
 
     return () => {
       cancelled = true;
       supabase.removeChannel(notifChannel);
       supabase.removeChannel(subChannel);
+      supabase.removeChannel(pairingChannel);
       detachNotifTap();
     };
   }, [userId, userEmail, qc]);
