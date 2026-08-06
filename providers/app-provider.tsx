@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from '@/providers/session-provider';
+import { ToastProvider, useToast } from '@/providers/toast-provider';
 import { queryClient } from '@/lib/query-client';
 import { attachNotificationResponseListener, registerForPushNotificationsAsync } from '@/lib/notifications';
 import { configurePurchases } from '@/lib/billing';
@@ -17,6 +18,7 @@ import { ReduceMotionContext } from '@/lib/motion';
 function SessionWiring() {
   const { session } = useSession();
   const qc = useQueryClient();
+  const { showToast } = useToast();
   const userId = session?.user.id;
   const userEmail = session?.user.email;
 
@@ -51,9 +53,21 @@ function SessionWiring() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-        () => {
+        (payload) => {
           qc.invalidateQueries({ queryKey: ['notifications', userId] });
           qc.invalidateQueries({ queryKey: ['notifications-unread', userId] });
+
+          // Announce it on screen. A push banner is suppressed while the app is
+          // foregrounded (and never arrives at all without a push token), so
+          // this is what the user actually sees when they're looking at the app.
+          const row = payload.new as { title?: string; body?: string; data?: { route?: string } };
+          if (row?.title) {
+            showToast({ title: row.title, body: row.body, route: row.data?.route ?? null });
+          }
+
+          // A partner joining changes the Home cards, not just the bell.
+          qc.invalidateQueries({ queryKey: ['partner-status', userId] });
+          qc.invalidateQueries({ queryKey: ['default-challenges', userId] });
         }
       )
       .subscribe();
@@ -106,7 +120,8 @@ function SessionWiring() {
       supabase.removeChannel(pairingChannel);
       detachNotifTap();
     };
-  }, [userId, userEmail, qc]);
+    // showToast is a stable useCallback, so listing it can't churn the channel.
+  }, [userId, userEmail, qc, showToast]);
 
   return null;
 }
@@ -143,8 +158,13 @@ export function AppProvider({ children }: PropsWithChildren) {
           <QueryClientProvider client={queryClient}>
             <ReduceMotionContext.Provider value={reduceMotion}>
               <SessionProvider>
-                <SessionWiring />
-                {children}
+                {/* Wraps SessionWiring so the realtime handler can raise an
+                    in-app banner, and sits above children so it draws over
+                    whatever screen is showing. */}
+                <ToastProvider>
+                  <SessionWiring />
+                  {children}
+                </ToastProvider>
               </SessionProvider>
             </ReduceMotionContext.Provider>
           </QueryClientProvider>
