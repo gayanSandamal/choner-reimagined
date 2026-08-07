@@ -17,11 +17,13 @@ import { Input } from '@/components/ui/input';
 import { useOnboarding } from '@/features/onboarding/context';
 import { goalToTemplateSlug, suggestedHabitTitle } from '@/features/onboarding/mappings';
 import { getTemplateBySlug, getTemplates, getDefaultChallenges, ensureDefaultChallenges } from '@/features/challenges/api';
-import { useCreateInvite, useResendInvite } from '@/features/community/hooks';
+import { useCreateInvite, useResendInvite, usePartnerStatus } from '@/features/community/hooks';
 import { useSession } from '@/providers/session-provider';
 import { useProfile } from '@/features/profile/hooks';
 import { useReduceMotion } from '@/lib/motion';
 import { buildInviteLink, shareInviteLink } from '@/lib/invite-link';
+import { getPendingInviteToken } from '@/lib/pending-invite';
+import { LoadingState } from '@/components/ui/StateViews';
 import { captureError } from '@/lib/observability';
 import { theme } from '@/constants/theme';
 
@@ -45,6 +47,20 @@ export default function InviteScreen() {
 
   const createInvite = useCreateInvite();
   const resendInvite = useResendInvite();
+  const partnerQ = usePartnerStatus(userId);
+
+  // null = still checking. Distinguished from false so the screen can hold
+  // rather than flash the invite UI at an invitee.
+  const [hasPendingInvite, setHasPendingInvite] = useState<boolean | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getPendingInviteToken()
+      .then((t) => !cancelled && setHasPendingInvite(Boolean(t)))
+      .catch(() => !cancelled && setHasPendingInvite(false));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const slug = goalToTemplateSlug(goal);
   // Prefetched so the send tap doesn't wait on a template lookup; the
@@ -139,6 +155,32 @@ export default function InviteScreen() {
 
   const habit = suggestedHabitTitle(goal);
   const showLeadIn = struggle === 'lack_accountability';
+
+  // An INVITEE must never be asked to invite someone.
+  //
+  // They arrive here because signing up through an invite link still walks the
+  // full onboarding flow, which ends on this screen — so the person who was
+  // just invited got told "Choner works best with two. Invite someone." while
+  // their own partner sat one row above in the database.
+  //
+  // Two signals, because the redemption is asynchronous: `linked` is the
+  // settled truth, and a still-stashed token covers the window between signing
+  // up and app/_layout.tsx redeeming it.
+  useEffect(() => {
+    if (partnerQ.data?.linked || hasPendingInvite) {
+      router.replace('/(tabs)/home');
+    }
+  }, [partnerQ.data?.linked, hasPendingInvite]);
+
+  // Hold the frame while we find out, rather than flashing "invite a partner"
+  // at the one person who must not see it.
+  if (partnerQ.isLoading || hasPendingInvite === null || partnerQ.data?.linked || hasPendingInvite) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <LoadingState label="Setting up your challenge…" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.root}>
