@@ -74,8 +74,20 @@ export function ChallengeCard({
   const { session } = useSession();
   const userId = session?.user.id;
 
+  // The pairing lives in the accepted invite, not on the challenge row, so a
+  // partner track can sit at 'active' with nobody on the other side — after a
+  // partner leaves, or a pairing is removed. Keying the invite prompt off
+  // status alone left that case rendering a two-person fire with an empty seat
+  // and no way to invite anyone. Trust the derived link instead.
+  //
+  // partnerStatus is undefined while it loads; only treat someone as unpaired
+  // once there's a definitive answer, so a paired user never flashes the
+  // invite state on open.
+  const partnerKnown = partnerStatus !== undefined;
   const isPending = mode === 'partner' && challenge?.status === 'pending';
-  const showPartnerStatus = mode === 'partner' && !isPending && Boolean(partnerStatus?.linked);
+  const unpaired = mode === 'partner' && partnerKnown && !partnerStatus?.linked;
+  const needsPartner = isPending || unpaired;
+  const showPartnerStatus = mode === 'partner' && !needsPartner && Boolean(partnerStatus?.linked);
   const tasks = useMemo(() => sortedTasks(challenge), [challenge]);
 
   const today = todayString();
@@ -118,17 +130,17 @@ export function ChallengeCard({
       <Firepit
         mode={mode}
         streak={streak}
-        completedToday={isPending ? 0 : completedToday}
-        totalTasks={isPending ? 0 : tasks.length}
+        completedToday={needsPartner ? 0 : completedToday}
+        totalTasks={needsPartner ? 0 : tasks.length}
         isEvening={isEvening}
         timeLeftLabel={timeLeftLabel}
         userName={userName}
         userAvatarUri={userAvatarUri}
         partnerName={partnerStatus?.name}
         partnerAvatarUri={partnerStatus?.avatar_url}
-        waitingPartnerEmail={isPending ? (waitingPartnerEmail ?? 'a partner') : undefined}
+        waitingPartnerEmail={needsPartner ? (waitingPartnerEmail ?? 'a partner') : undefined}
         aiPriority={
-          isPending || tasks.length === 0
+          needsPartner || tasks.length === 0
             ? undefined
             : completedToday === 0
             ? 'A small win now sets the day. Start with the easiest log.'
@@ -165,11 +177,12 @@ export function ChallengeCard({
 
       {/* Only on the partner track, and only while today is still unlogged —
           there is nothing to explain once the fire is fed. */}
-      {mode === 'partner' && !isPending && challenge && pendingTasks.length > 0 ? (
+      {/* A late note is a message to a partner — pointless with nobody there. */}
+      {mode === 'partner' && !needsPartner && challenge && pendingTasks.length > 0 ? (
         <LateNote userChallengeId={challenge.id} />
       ) : null}
 
-      {isPending ? (
+      {needsPartner ? (
         <View style={styles.pendingBlock}>
           <AppText variant="caption" muted style={styles.centerText}>
             {waitingPartnerEmail
