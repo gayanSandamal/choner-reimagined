@@ -1,6 +1,6 @@
-import { PropsWithChildren, useEffect, useState } from 'react';
+import { PropsWithChildren, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from '@/providers/session-provider';
@@ -8,17 +8,71 @@ import { ToastProvider, useToast } from '@/providers/toast-provider';
 import { queryClient } from '@/lib/query-client';
 import { attachNotificationResponseListener, registerForPushNotificationsAsync } from '@/lib/notifications';
 import { configurePurchases } from '@/lib/billing';
-import { registerPushToken } from '@/features/notifications/api';
+import { registerPushToken, listNotifications } from '@/features/notifications/api';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { clearUser, identifyUser, initObservability } from '@/lib/observability';
 import { ReduceMotionContext } from '@/lib/motion';
 
+// Raises the in-app banner for anything new that lands in notifications.
+//
+// Deliberately poll-driven rather than realtime-driven. Realtime delivery to a
+// device isn't guaranteed — the socket can be asleep, the network can have
+// changed, RLS has to authorise the socket — and a missed socket frame would
+// mean the user is simply never told. Polling always converges; the realtime
+// handler above just invalidates this query so the banner is instant wherever
+// the socket does work.
+function NotificationWatcher({ userId }: { userId: string }) {
+  const { showToast } = useToast();
+  const seen = useRef<Set<string> | null>(null);
+
+  const q = useQuery({
+    queryKey: ['notification-watch', userId],
+    queryFn: () => listNotifications(userId, { limit: 10 }),
+    enabled: Boolean(userId),
+    // Foreground only — react-query pauses this while the app is backgrounded,
+    // which is exactly when a push notification takes over instead.
+    refetchInterval: 15_000,
+    staleTime: 0
+  });
+
+  useEffect(() => {
+    const rows = q.data;
+    if (!rows) return;
+
+    // First load establishes the baseline, so opening the app doesn't replay
+    // every notification the user already has.
+    if (seen.current === null) {
+      seen.current = new Set(rows.map((r) => r.id));
+      return;
+    }
+
+    const fresh = rows.filter((r) => !seen.current!.has(r.id));
+    if (fresh.length === 0) return;
+    fresh.forEach((r) => seen.current!.add(r.id));
+
+    // Oldest first, so the newest ends up being the one left on screen.
+    [...fresh].reverse().forEach((r) =>
+      showToast({
+        title: r.title,
+        body: r.body,
+        route: (r.data as { route?: string } | null)?.route ?? null
+      })
+    );
+  }, [q.data, showToast]);
+
+  // Reset the baseline when the account changes.
+  useEffect(() => {
+    seen.current = null;
+  }, [userId]);
+
+  return null;
+}
+
 function SessionWiring() {
   const { session } = useSession();
   const qc = useQueryClient();
-  const { showToast } = useToast();
   const userId = session?.user.id;
   const userEmail = session?.user.email;
 
@@ -53,18 +107,15 @@ function SessionWiring() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-        (payload) => {
+        () => {
+          // Realtime is the accelerator, not the source of truth: it makes the
+          // banner appear instantly where it's delivered, but NotificationWatcher
+          // is what actually raises it, so a device realtime never reaches still
+          // gets the toast on its next poll. Invalidating here (rather than
+          // toasting here) also means an event can't produce a duplicate.
+          qc.invalidateQueries({ queryKey: ['notification-watch', userId] });
           qc.invalidateQueries({ queryKey: ['notifications', userId] });
           qc.invalidateQueries({ queryKey: ['notifications-unread', userId] });
-
-          // Announce it on screen. A push banner is suppressed while the app is
-          // foregrounded (and never arrives at all without a push token), so
-          // this is what the user actually sees when they're looking at the app.
-          const row = payload.new as { title?: string; body?: string; data?: { route?: string } };
-          if (row?.title) {
-            showToast({ title: row.title, body: row.body, route: row.data?.route ?? null });
-          }
-
           // A partner joining changes the Home cards, not just the bell.
           qc.invalidateQueries({ queryKey: ['partner-status', userId] });
           qc.invalidateQueries({ queryKey: ['default-challenges', userId] });
@@ -120,8 +171,7 @@ function SessionWiring() {
       supabase.removeChannel(pairingChannel);
       detachNotifTap();
     };
-    // showToast is a stable useCallback, so listing it can't churn the channel.
-  }, [userId, userEmail, qc, showToast]);
+  }, [userId, userEmail, qc]);
 
   return null;
 }
@@ -163,6 +213,7 @@ export function AppProvider({ children }: PropsWithChildren) {
                     whatever screen is showing. */}
                 <ToastProvider>
                   <SessionWiring />
+                  <NotificationGate />
                   {children}
                 </ToastProvider>
               </SessionProvider>
@@ -172,4 +223,12 @@ export function AppProvider({ children }: PropsWithChildren) {
       </GestureHandlerRootView>
     </ErrorBoundary>
   );
+}
+
+// Small gate so the watcher only mounts with a signed-in user.
+function NotificationGate() {
+  const { session } = useSession();
+  const userId = session?.user.id;
+  if (!userId) return null;
+  return <NotificationWatcher userId={userId} />;
 }
