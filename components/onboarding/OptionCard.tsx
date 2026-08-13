@@ -21,9 +21,19 @@ interface Props {
   // grid: 2-column tile (Screen 2) · row: full-width, icon left (Screens 3-4)
   // pill: compact vertical tile sharing a row equally (Screen 5)
   layout?: Layout;
+  // Small flag above the label — the challenge picker's "Recommended".
+  badge?: string;
 }
 
-export function OptionCard({ icon, label, description, selected, onPress, layout = 'row' }: Props) {
+export function OptionCard({
+  icon,
+  label,
+  description,
+  selected,
+  onPress,
+  layout = 'row',
+  badge
+}: Props) {
   const t = useSharedValue(selected ? 1 : 0);
 
   useEffect(() => {
@@ -48,7 +58,7 @@ export function OptionCard({ icon, label, description, selected, onPress, layout
       haptic="selection"
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      accessibilityLabel={description ? `${label}. ${description}` : label}
+      accessibilityLabel={[badge, label, description].filter(Boolean).join('. ')}
       style={layout === 'grid' ? styles.gridSlot : layout === 'pill' ? styles.pillSlot : styles.rowSlot}
     >
       <Animated.View
@@ -58,6 +68,11 @@ export function OptionCard({ icon, label, description, selected, onPress, layout
           <AppText style={layout === 'pill' ? styles.iconSm : styles.icon}>{icon}</AppText>
         </View>
         <View style={[styles.textBlock, vertical ? styles.textBlockCentered : styles.textBlockFill]}>
+          {badge ? (
+            <View style={styles.badge}>
+              <AppText style={styles.badgeLabel}>{badge}</AppText>
+            </View>
+          ) : null}
           <AppText variant="subtitle" style={layout === 'pill' && styles.pillLabel}>
             {label}
           </AppText>
@@ -103,5 +118,22 @@ const styles = StyleSheet.create({
   textBlockFill: { flex: 1 },
   textBlockCentered: { alignItems: 'center' },
   centeredText: { textAlign: 'center' },
-  pillLabel: { fontSize: 15 }
+  pillLabel: { fontSize: 15 },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 2,
+    borderRadius: theme.radius.pill,
+    backgroundColor: `${theme.colors.primary}22`,
+    borderWidth: 1,
+    borderColor: `${theme.colors.primary}55`
+  },
+  badgeLabel: {
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 10,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: theme.colors.primary
+  }
 });

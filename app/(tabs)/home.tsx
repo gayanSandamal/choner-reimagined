@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { ChallengeCard } from '@/components/home/ChallengeCard';
+import { WhyReminder } from '@/components/home/WhyReminder';
 import { useSession } from '@/providers/session-provider';
 import { useDefaultChallenges, useStreak } from '@/features/challenges/hooks';
 import { usePendingInvites, usePartnerStatus } from '@/features/community/hooks';
@@ -81,6 +82,13 @@ export default function HomeScreen() {
             />
           ) : (
             <>
+              {/* Above both fires: the reason is about the person, not the
+                  track, and belongs where they see it before logging. */}
+              <WhyReminder
+                userId={userId}
+                challenge={soloChallenge ?? partnerChallenge}
+                dailyDeadline={profileQ.data?.daily_deadline}
+              />
               {soloChallenge ? (
                 <ChallengeCard
                   mode="solo"

@@ -63,7 +63,11 @@ export default function AcceptInviteScreen() {
             <AppText variant="muted" style={styles.textCenter}>
               Your shared fire is lit — you and your partner are in this together now.
             </AppText>
-            <Button label="Go to my fire" onPress={() => router.replace('/(tabs)/home')} />
+            {/* Step 4: the partner who joined answers their own "Why" before
+                landing on Home. The screen seeds itself from anything they
+                already answered and can be skipped, so an existing user
+                accepting a second invite isn't made to redo it. */}
+            <Button label="Continue" onPress={() => router.replace('/onboarding/why')} />
           </>
         ) : phase === 'needs-auth' ? (
           <>

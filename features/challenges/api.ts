@@ -1,8 +1,16 @@
 import { supabase } from '@/lib/supabase';
 import { decodeBase64 } from '@/lib/base64';
+import { ReflectionAnswer, isAnswered } from './reflections';
 
+// Retired templates (is_active=false) stay in the table because live
+// challenges still point at them, but they must never be offered again — not
+// in the Quests list and not in the onboarding picker.
 export async function getTemplates() {
-  const { data, error } = await supabase.from('challenge_templates').select('*').order('sort_order');
+  const { data, error } = await supabase
+    .from('challenge_templates')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order');
   if (error) throw error;
   return data ?? [];
 }
@@ -72,13 +80,71 @@ export async function ensureDefaultChallenges(payload: {
   userId: string;
   soloTemplateId?: string;
   partnerTemplateId?: string;
+  customHabitTitle?: string | null;
 }) {
-  const { error } = await supabase.rpc('ensure_default_challenges', {
+  const { error } = await (supabase.rpc as any)('ensure_default_challenges', {
     p_user_id: payload.userId,
     p_solo_template_id: payload.soloTemplateId ?? undefined,
-    p_partner_template_id: payload.partnerTemplateId ?? undefined
+    p_partner_template_id: payload.partnerTemplateId ?? undefined,
+    p_custom_habit_title: payload.customHabitTitle ?? null
   });
   if (error) throw error;
+}
+
+// The habit a challenge is actually running, which is the user's own text
+// when they wrote their own at Step 1. Everything user-facing should read the
+// habit through here rather than reaching for the template title directly.
+export function challengeHabitTitle(challenge: any): string | null {
+  const custom = challenge?.custom_habit_title?.trim();
+  if (custom) return custom;
+  return challenge?.challenge_templates?.title ?? null;
+}
+
+// Point an existing track at the habit chosen in Step 1. Onboarding
+// provisions both tracks before the picker runs, so by this point the rows
+// exist and re-provisioning would be a no-op — this repoints them instead.
+export async function setChallengeHabit(payload: {
+  userChallengeId: string;
+  templateId: string;
+  customHabitTitle?: string | null;
+}) {
+  const { error } = await (supabase.rpc as any)('set_challenge_habit', {
+    p_user_challenge_id: payload.userChallengeId,
+    p_template_id: payload.templateId,
+    p_custom_habit_title: payload.customHabitTitle ?? null
+  });
+  if (error) throw error;
+}
+
+// Apply the Step 1 choice to both default tracks. The partner track carries
+// the shared commitment, but the solo track shows the same habit on Home, so
+// leaving it on the goal-derived default would show the user two different
+// habits for one decision.
+export async function setDefaultChallengesHabit(payload: {
+  userId: string;
+  templateId: string;
+  customHabitTitle?: string | null;
+}) {
+  const tracks = await getDefaultChallenges(payload.userId);
+  const ids = [tracks.solo?.id, tracks.partner?.id].filter(Boolean) as string[];
+  if (ids.length === 0) {
+    // Nothing provisioned yet (the best-effort call on Screen 5 failed).
+    // Create the tracks on the chosen habit rather than dropping the choice.
+    await ensureDefaultChallenges({
+      userId: payload.userId,
+      soloTemplateId: payload.templateId,
+      partnerTemplateId: payload.templateId,
+      customHabitTitle: payload.customHabitTitle
+    });
+    return;
+  }
+  for (const id of ids) {
+    await setChallengeHabit({
+      userChallengeId: id,
+      templateId: payload.templateId,
+      customHabitTitle: payload.customHabitTitle
+    });
+  }
 }
 
 export async function getChallengeHistory(userId: string) {
@@ -200,6 +266,54 @@ export async function getTodayStatus(userChallengeId: string): Promise<DailyStat
     .maybeSingle();
   if (error) throw error;
   return data ?? null;
+}
+
+// The user's four "Why" answers. Owner-only under RLS by design — these are
+// personal motivation notes, never shown to the partner, so there is
+// deliberately no way to read someone else's.
+export async function getReflections(userId: string): Promise<ReflectionAnswer[]> {
+  const { data, error } = await (supabase as any)
+    .from('challenge_reflections')
+    .select('question_key, choice_key, custom_text')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return (data ?? []) as ReflectionAnswer[];
+}
+
+// Replaces the whole set: an answer the user cleared has to actually
+// disappear, or the daily rotation would keep resurfacing a line they removed.
+export async function saveReflections(payload: {
+  userId: string;
+  userChallengeId?: string | null;
+  answers: ReflectionAnswer[];
+}) {
+  // "Something else" with an empty field isn't an answer — storing it would
+  // give the rotation a row it can render nothing from.
+  const rows = payload.answers.filter(isAnswered);
+  const keptKeys = rows.map((r) => r.question_key);
+
+  let del = (supabase as any)
+    .from('challenge_reflections')
+    .delete()
+    .eq('user_id', payload.userId);
+  if (keptKeys.length) del = del.not('question_key', 'in', `(${keptKeys.join(',')})`);
+  const { error: deleteError } = await del;
+  if (deleteError) throw deleteError;
+
+  if (!rows.length) return;
+
+  const { error } = await (supabase as any).from('challenge_reflections').upsert(
+    rows.map((r) => ({
+      user_id: payload.userId,
+      user_challenge_id: payload.userChallengeId ?? null,
+      question_key: r.question_key,
+      choice_key: r.choice_key,
+      custom_text: r.custom_text?.trim() || null,
+      updated_at: new Date().toISOString()
+    })),
+    { onConflict: 'user_id,question_key' }
+  );
+  if (error) throw error;
 }
 
 export async function undoTaskCheckin(checkinId: string, photoPath?: string | null) {

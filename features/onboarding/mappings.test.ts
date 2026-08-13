@@ -1,5 +1,6 @@
 import {
   DEFAULT_TEMPLATE_SLUG,
+  challengeOptionSlugs,
   energyToFirstWeek,
   firstNameFrom,
   goalLabel,
@@ -11,9 +12,9 @@ import {
 import { ENERGY_LEVELS, GOALS, STRUGGLES, TONES } from './constants';
 
 describe('goalToTemplateSlug', () => {
-  it('maps every goal to its seeded template slug', () => {
-    expect(goalToTemplateSlug('move_more')).toBe('onboarding-walk-10min');
-    expect(goalToTemplateSlug('sleep_better')).toBe('onboarding-no-screens');
+  it('maps every goal to its recommended template slug', () => {
+    expect(goalToTemplateSlug('move_more')).toBe('onboarding-run-1-mile');
+    expect(goalToTemplateSlug('sleep_better')).toBe('onboarding-winddown-walk');
     expect(goalToTemplateSlug('reduce_stress')).toBe('onboarding-deep-breathing');
     expect(goalToTemplateSlug('improve_energy')).toBe('onboarding-morning-water');
   });
@@ -23,9 +24,39 @@ describe('goalToTemplateSlug', () => {
   });
 });
 
+describe('challengeOptionSlugs', () => {
+  it('offers the curated list for each goal', () => {
+    expect(challengeOptionSlugs('move_more')).toHaveLength(4);
+    expect(challengeOptionSlugs('sleep_better')).toEqual([
+      'onboarding-winddown-walk',
+      'onboarding-stretch-before-bed'
+    ]);
+  });
+
+  it('always contains its own recommendation, so the badge never orphans', () => {
+    for (const g of GOALS) {
+      expect(challengeOptionSlugs(g.value)).toContain(goalToTemplateSlug(g.value));
+    }
+    expect(challengeOptionSlugs(null)).toContain(goalToTemplateSlug(null));
+  });
+
+  it('shows the whole deduped set when the goal was skipped', () => {
+    const all = challengeOptionSlugs(null);
+    expect(all[0]).toBe(DEFAULT_TEMPLATE_SLUG);
+    expect(new Set(all).size).toBe(all.length);
+    expect(all).toContain('onboarding-journaling');
+  });
+
+  it('never offers a habit the spec retired', () => {
+    for (const goal of [null, ...GOALS.map((g) => g.value)]) {
+      expect(challengeOptionSlugs(goal)).not.toContain('onboarding-no-screens');
+    }
+  });
+});
+
 describe('suggestedHabitTitle', () => {
-  it('returns the spec habit copy per goal, defaulting to walking', () => {
-    expect(suggestedHabitTitle('sleep_better')).toBe('No screens 30 minutes before bed');
+  it('returns the recommended habit copy per goal, defaulting to walking', () => {
+    expect(suggestedHabitTitle('sleep_better')).toBe('10-min wind-down walk');
     expect(suggestedHabitTitle(null)).toBe('Walk for 10 minutes every day');
   });
 });
