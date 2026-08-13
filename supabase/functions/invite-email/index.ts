@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     ? `${
         isDeepLink
           ? ""
-          : `<a href="${acceptUrl}" style="display:inline-block; margin-top:16px; background:#FF8A1F; color:#031A2D; font-weight:bold; text-decoration:none; padding:12px 22px; border-radius:999px">Accept the challenge</a>`
+          : `<a href="${acceptUrl}" style="display:inline-block; margin-top:16px; background:#FE8C00; color:#001827; font-weight:bold; text-decoration:none; padding:12px 22px; border-radius:999px">Accept the challenge</a>`
       }
        <p style="color:#A5B6C8; font-size:13px; margin-top:18px; margin-bottom:6px">${
          isDeepLink
@@ -43,8 +43,8 @@ Deno.serve(async (req) => {
     : `<p style="margin-bottom:0">Open Choner to accept and start together.</p>`;
 
   const html = `
-    <div style="font-family: Arial, sans-serif; background:#031A2D; color:#F7FAFC; padding:24px; border:1px solid #16507E; border-radius:20px">
-      <h2 style="color:#FF8A1F; margin:0 0 12px 0">You were invited to a Choner challenge</h2>
+    <div style="font-family: Arial, sans-serif; background:#001827; color:#F7FAFC; padding:24px; border:1px solid #16507E; border-radius:20px">
+      <h2 style="color:#FE8C00; margin:0 0 12px 0">You were invited to a Choner challenge</h2>
       <p>${inviter} invited you to join a momentum-building challenge.</p>
       ${cta}
     </div>

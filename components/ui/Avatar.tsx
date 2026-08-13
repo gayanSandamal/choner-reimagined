@@ -21,7 +21,7 @@ function hashHue(input: string) {
 }
 
 const PALETTES: ReadonlyArray<readonly [string, string]> = [
-  ['#FF8A1F', '#FF4E81'],
+  [theme.colors.primary, '#FF4E81'],
   ['#7C5CFF', '#33C2FF'],
   ['#3DD68C', '#FFC46A'],
   ['#FFB566', '#FF6B6B'],

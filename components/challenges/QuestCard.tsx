@@ -147,7 +147,7 @@ export function QuestCard({
                   variant="caption"
                   style={{
                     fontFamily: theme.fonts.bodyBold,
-                    color: locked ? VIOLET_SOFT : lit ? '#031A2D' : theme.colors.text
+                    color: locked ? VIOLET_SOFT : lit ? theme.colors.bg : theme.colors.text
                   }}
                 >
                   {locked ? 'Unlock' : lit ? 'Continue' : 'Start'}
@@ -155,7 +155,7 @@ export function QuestCard({
                 <Ionicons
                   name={locked ? 'lock-closed-outline' : 'arrow-forward'}
                   size={12}
-                  color={locked ? VIOLET_SOFT : lit ? '#031A2D' : theme.colors.text}
+                  color={locked ? VIOLET_SOFT : lit ? theme.colors.bg : theme.colors.text}
                 />
               </View>
             </View>

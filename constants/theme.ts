@@ -4,13 +4,13 @@
 
 export const theme = {
   colors: {
-    bg: '#031A2D',
+    bg: '#001827',
     surface: '#082743',
     surfaceHighlight: '#0A2F50',
     surface2: '#0C3152',
     surface3: '#13446C',
-    primary: '#FF8A1F',
-    primary2: '#FF9D45',
+    primary: '#FE8C00',
+    primary2: '#FFAB45',
     secondary: '#FFB566',
     accent: '#FFD2A2',
     text: '#F7FAFC',
@@ -29,24 +29,24 @@ export const theme = {
     // Campfire hero — logs, embers, smoke.
     log: '#8A5230',
     logDark: '#5C371F',
-    ember: '#FF8A1F',
+    ember: '#FE8C00',
     emberDim: '#B34A2A',
     smoke: '#5E7186'
   },
   // Tuple form so consumers can spread into expo-linear-gradient's `colors` prop.
   gradients: {
-    warm: ['#FF8A1F', '#FF4E81'] as const,
-    glow: ['#FFB566', '#FF8A1F'] as const,
-    calm: ['#0A2F50', '#031A2D'] as const,
+    warm: ['#FE8C00', '#FF4E81'] as const,
+    glow: ['#FFB566', '#FE8C00'] as const,
+    calm: ['#0A2F50', '#001827'] as const,
     success: ['#3DD68C', '#7FE3A1'] as const,
     sky: ['#1F6FFF', '#33C2FF'] as const,
-    paywall: ['#FF8A1F', '#FF4E81', '#7C5CFF'] as const,
+    paywall: ['#FE8C00', '#FF4E81', '#7C5CFF'] as const,
     // Time-of-day backdrops for the campfire home hero. Bottom stop always
     // leans toward ember tones so the flame glow blends into the sky.
-    skyDawn: ['#031A2D', '#123457', '#5C3A56', '#A85340'] as const,
+    skyDawn: ['#001827', '#123457', '#5C3A56', '#A85340'] as const,
     skyDay: ['#052238', '#0A2F50', '#123457'] as const,
     skyDusk: ['#020E1A', '#2A1F3D', '#5C2F45', '#8A4A3A'] as const,
-    skyNight: ['#020610', '#020E1A', '#031A2D'] as const
+    skyNight: ['#020610', '#020E1A', '#001827'] as const
   },
   radius: {
     xs: 8,
@@ -79,7 +79,7 @@ export const theme = {
       elevation: 8
     },
     glow: {
-      shadowColor: '#FF8A1F',
+      shadowColor: '#FE8C00',
       shadowOpacity: 0.4,
       shadowRadius: 20,
       shadowOffset: { width: 0, height: 0 },

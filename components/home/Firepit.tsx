@@ -49,7 +49,7 @@ function FlameShape() {
       <Defs>
         <SvgGradient id="flameBody" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#FF4E81" />
-          <Stop offset="0.55" stopColor="#FF8A1F" />
+          <Stop offset="0.55" stopColor={theme.colors.ember} />
           <Stop offset="1" stopColor="#FFB566" />
         </SvgGradient>
         <SvgGradient id="flameCore" x1="0" y1="0" x2="0" y2="1">
