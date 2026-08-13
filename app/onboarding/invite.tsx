@@ -15,14 +15,21 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/input';
 import { useOnboarding } from '@/features/onboarding/context';
+import { useIsInvitee } from '@/features/onboarding/invitee';
 import { goalToTemplateSlug, suggestedHabitTitle } from '@/features/onboarding/mappings';
-import { getTemplateBySlug, getTemplates, getDefaultChallenges, ensureDefaultChallenges } from '@/features/challenges/api';
-import { useCreateInvite, useResendInvite, usePartnerStatus } from '@/features/community/hooks';
+import {
+  getTemplateBySlug,
+  getTemplates,
+  getDefaultChallenges,
+  ensureDefaultChallenges,
+  challengeHabitTitle
+} from '@/features/challenges/api';
+import { useDefaultChallenges } from '@/features/challenges/hooks';
+import { useCreateInvite, useResendInvite } from '@/features/community/hooks';
 import { useSession } from '@/providers/session-provider';
 import { useProfile } from '@/features/profile/hooks';
 import { useReduceMotion } from '@/lib/motion';
 import { buildInviteLink, shareInviteLink } from '@/lib/invite-link';
-import { getPendingInviteToken } from '@/lib/pending-invite';
 import { LoadingState } from '@/components/ui/StateViews';
 import { captureError } from '@/lib/observability';
 import { theme } from '@/constants/theme';
@@ -35,8 +42,15 @@ export default function InviteScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const profileQ = useProfile(userId);
-  const { goal, struggle, startedChallengeId, setStartedChallengeId, sentInvite, setSentInvite } =
-    useOnboarding();
+  const {
+    goal,
+    struggle,
+    chosenChallenge,
+    startedChallengeId,
+    setStartedChallengeId,
+    sentInvite,
+    setSentInvite
+  } = useOnboarding();
 
   const [phase, setPhase] = useState<Phase>(sentInvite ? 'pending' : 'idle');
   const [email, setEmail] = useState('');
@@ -47,20 +61,8 @@ export default function InviteScreen() {
 
   const createInvite = useCreateInvite();
   const resendInvite = useResendInvite();
-  const partnerQ = usePartnerStatus(userId);
-
-  // null = still checking. Distinguished from false so the screen can hold
-  // rather than flash the invite UI at an invitee.
-  const [hasPendingInvite, setHasPendingInvite] = useState<boolean | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    getPendingInviteToken()
-      .then((t) => !cancelled && setHasPendingInvite(Boolean(t)))
-      .catch(() => !cancelled && setHasPendingInvite(false));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const challengesQ = useDefaultChallenges(userId);
+  const { isInvitee, resolving } = useIsInvitee(userId);
 
   const slug = goalToTemplateSlug(goal);
   // Prefetched so the send tap doesn't wait on a template lookup; the
@@ -79,12 +81,14 @@ export default function InviteScreen() {
     const existing = await getDefaultChallenges(userId!);
     if (existing.partner?.id) return existing.partner.id;
 
-    const template = templateQ.data ?? (await getTemplates())[0];
-    if (!template) throw new Error('No challenge templates available yet.');
+    // Prefer what they actually picked at Step 1 over the goal-derived guess.
+    const templateId = chosenChallenge?.templateId ?? (templateQ.data ?? (await getTemplates())[0])?.id;
+    if (!templateId) throw new Error('No challenge templates available yet.');
     await ensureDefaultChallenges({
       userId: userId!,
-      soloTemplateId: template.id,
-      partnerTemplateId: template.id
+      soloTemplateId: templateId,
+      partnerTemplateId: templateId,
+      customHabitTitle: chosenChallenge?.customTitle ?? null
     });
     const after = await getDefaultChallenges(userId!);
     if (!after.partner?.id) throw new Error('Could not set up your partner challenge.');
@@ -153,28 +157,26 @@ export default function InviteScreen() {
     }
   };
 
-  const habit = suggestedHabitTitle(goal);
+  // The habit the user actually chose at Step 1. The goal-derived suggestion
+  // is only a fallback for a context lost to a remount.
+  const habit =
+    chosenChallenge?.title ??
+    challengeHabitTitle(challengesQ.data?.partner) ??
+    challengeHabitTitle(challengesQ.data?.solo) ??
+    suggestedHabitTitle(goal);
   const showLeadIn = struggle === 'lack_accountability';
 
-  // An INVITEE must never be asked to invite someone.
-  //
-  // They arrive here because signing up through an invite link still walks the
-  // full onboarding flow, which ends on this screen — so the person who was
-  // just invited got told "Choner works best with two. Invite someone." while
-  // their own partner sat one row above in the database.
-  //
-  // Two signals, because the redemption is asynchronous: `linked` is the
-  // settled truth, and a still-stashed token covers the window between signing
-  // up and app/_layout.tsx redeeming it.
+  // An INVITEE must never be asked to invite someone. They walk the same
+  // onboarding flow, so without this the person who was just invited would be
+  // told "Choner works best with two. Invite someone." while their own partner
+  // sat one row above in the database. Their path ends at their own Step 2.
   useEffect(() => {
-    if (partnerQ.data?.linked || hasPendingInvite) {
-      router.replace('/(tabs)/home');
-    }
-  }, [partnerQ.data?.linked, hasPendingInvite]);
+    if (isInvitee) router.replace('/onboarding/why');
+  }, [isInvitee]);
 
   // Hold the frame while we find out, rather than flashing "invite a partner"
   // at the one person who must not see it.
-  if (partnerQ.isLoading || hasPendingInvite === null || partnerQ.data?.linked || hasPendingInvite) {
+  if (resolving || isInvitee) {
     return (
       <SafeAreaView style={styles.root}>
         <LoadingState label="Setting up your challenge…" />

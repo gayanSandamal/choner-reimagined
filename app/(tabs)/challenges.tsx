@@ -9,6 +9,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { QuestCard, type FireState } from '@/components/challenges/QuestCard';
 import { useChallengeTemplates, useDefaultChallenges, useStreak } from '@/features/challenges/hooks';
+import { challengeHabitTitle } from '@/features/challenges/api';
 import { useIsPremium } from '@/features/billing/hooks';
 import { useSession } from '@/providers/session-provider';
 import { features } from '@/constants/features';
@@ -51,6 +52,35 @@ export default function ChallengesScreen() {
   const solo = challengesQ.data?.solo ?? null;
   const partner = challengesQ.data?.partner ?? null;
   const streak = streakQ.data ?? 0;
+
+  // A live challenge can point at a template this list never shows: a custom
+  // habit (hidden by design so one user's text doesn't reach everyone else's
+  // Quests) or one that has since been retired. Either way the user's own fire
+  // would be missing from the list entirely, so it gets rendered from the
+  // challenge row instead of the template.
+  //
+  // Deduped by template preferring solo, matching fireStateFor below — a pair
+  // on one habit is one card with one ribbon, not two near-identical cards.
+  const offListTracks = useMemo(() => {
+    const visible = new Set((filtered as any[]).map((t) => t.id));
+    const seen = new Set<string>();
+    const tracks: Array<{ mode: 'solo' | 'partner'; challenge: any }> = [];
+    for (const [mode, challenge] of [
+      ['solo', solo],
+      ['partner', partner]
+    ] as const) {
+      const templateId = challenge?.challenge_template_id;
+      if (!challenge || !templateId) continue;
+      if (visible.has(templateId) || seen.has(templateId)) continue;
+      seen.add(templateId);
+      tracks.push({ mode, challenge });
+    }
+    return tracks;
+  }, [filtered, solo, partner]);
+
+  // Their category ('custom', or a retired habit's) has no chip, so they only
+  // belong under "All" — a category filter is an explicit narrowing.
+  const showOffList = selectedCategory === 'All' && offListTracks.length > 0;
 
   const fireStateFor = (templateId: string): FireState | undefined => {
     if (solo?.challenge_template_id === templateId) {
@@ -123,7 +153,7 @@ export default function ChallengesScreen() {
             message={(templatesQ.error as Error).message}
             onRetry={() => templatesQ.refetch()}
           />
-        ) : filtered.length === 0 ? (
+        ) : filtered.length === 0 && !showOffList ? (
           <EmptyState
             icon="compass-outline"
             title="Nothing in this category yet"
@@ -133,6 +163,27 @@ export default function ChallengesScreen() {
           />
         ) : (
           <View style={{ gap: theme.spacing(1.5) }}>
+            {showOffList
+              ? offListTracks.map(({ mode, challenge }, i) => {
+                  const template = challenge.challenge_templates;
+                  return (
+                    <QuestCard
+                      key={challenge.id}
+                      title={challengeHabitTitle(challenge) ?? 'Your habit'}
+                      description={template?.description ?? template?.summary}
+                      category={template?.category ?? 'custom'}
+                      durationDays={template?.duration_days ?? 7}
+                      difficulty={template?.difficulty ?? 'beginner'}
+                      fireState={{ mode, status: challenge.status, streak }}
+                      // Home, never the template detail screen: that screen
+                      // reads the template, so a custom habit would open under
+                      // the placeholder title and offer to start it fresh.
+                      onPress={() => router.push('/(tabs)/home')}
+                      delay={i * 50}
+                    />
+                  );
+                })
+              : null}
             {filtered.map((t: any, i: number) => {
               const fireState = fireStateFor(t.id);
               return (

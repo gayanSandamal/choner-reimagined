@@ -4,11 +4,21 @@ import { EnergyValue, GoalValue, StruggleValue, ToneValue } from './constants';
 // Quiz answers live in memory until the single profile write on the
 // Screen 5 -> 6 transition, so back-navigation between steps keeps
 // selections and skipped questions never null-out legacy profile values.
+// The habit picked on Step 1. `title` is what to show the user — the custom
+// text when they wrote their own, the template's title otherwise — so screens
+// downstream never have to re-derive it.
+export interface ChosenChallenge {
+  templateId: string;
+  title: string;
+  customTitle: string | null;
+}
+
 interface OnboardingState {
   goal: GoalValue | null;
   struggle: StruggleValue | null;
   tone: ToneValue | null;
   energy: EnergyValue | null;
+  chosenChallenge: ChosenChallenge | null;
   // Screen 7 progress, kept here so a failed invite can be retried
   // without starting a second challenge.
   startedChallengeId: string | null;
@@ -19,6 +29,7 @@ interface OnboardingState {
   setStruggle: (v: StruggleValue | null) => void;
   setTone: (v: ToneValue) => void;
   setEnergy: (v: EnergyValue) => void;
+  setChosenChallenge: (v: ChosenChallenge | null) => void;
   setStartedChallengeId: (id: string) => void;
   setSentInvite: (invite: { email: string; token?: string | null; emailed?: boolean } | null) => void;
 }
@@ -30,6 +41,7 @@ export function OnboardingProvider({ children }: PropsWithChildren) {
   const [struggle, setStruggle] = useState<StruggleValue | null>(null);
   const [tone, setTone] = useState<ToneValue | null>(null);
   const [energy, setEnergy] = useState<EnergyValue | null>(null);
+  const [chosenChallenge, setChosenChallenge] = useState<ChosenChallenge | null>(null);
   const [startedChallengeId, setStartedChallengeId] = useState<string | null>(null);
   const [sentInvite, setSentInvite] = useState<{
     email: string;
@@ -43,16 +55,18 @@ export function OnboardingProvider({ children }: PropsWithChildren) {
       struggle,
       tone,
       energy,
+      chosenChallenge,
       startedChallengeId,
       sentInvite,
       setGoal,
       setStruggle,
       setTone,
       setEnergy,
+      setChosenChallenge,
       setStartedChallengeId,
       setSentInvite
     }),
-    [goal, struggle, tone, energy, startedChallengeId, sentInvite]
+    [goal, struggle, tone, energy, chosenChallenge, startedChallengeId, sentInvite]
   );
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;

@@ -19,6 +19,11 @@ export default function OnboardingLayout() {
         <Stack.Screen name="energy" />
         {/* Once the profile is saved the quiz shouldn't be swipe-back reachable. */}
         <Stack.Screen name="reveal" options={{ gestureEnabled: false }} />
+        {/* Challenge setup: pick the habit, then say why. Swiping back into
+            the picker after the habit is applied would let someone change it
+            behind a partner who already joined it. */}
+        <Stack.Screen name="challenge" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="why" options={{ gestureEnabled: false }} />
         <Stack.Screen name="invite" options={{ gestureEnabled: false }} />
       </Stack>
     </OnboardingProvider>

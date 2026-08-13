@@ -15,6 +15,9 @@ import {
   resumeChallenge,
   abandonChallenge,
   getStreak,
+  getReflections,
+  saveReflections,
+  setDefaultChallengesHabit,
 } from '@/features/challenges/api';
 
 export function useChallengeTemplates() {
@@ -55,6 +58,36 @@ export function useEnsureDefaultChallenges() {
     onSuccess: (_d, vars) => {
       queryClient.invalidateQueries({ queryKey: ['default-challenges', vars.userId] });
       queryClient.invalidateQueries({ queryKey: ['active-challenge', vars.userId] });
+    },
+  });
+}
+
+// Step 1: apply the chosen habit to both default tracks.
+export function useSetDefaultChallengesHabit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setDefaultChallengesHabit,
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['default-challenges', vars.userId] });
+      queryClient.invalidateQueries({ queryKey: ['active-challenge', vars.userId] });
+    },
+  });
+}
+
+export function useReflections(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['reflections', userId],
+    queryFn: () => getReflections(userId!),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useSaveReflections() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveReflections,
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['reflections', vars.userId] });
     },
   });
 }

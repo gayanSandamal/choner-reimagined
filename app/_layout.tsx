@@ -126,6 +126,10 @@ function RootLayoutNav() {
         name="modals/premium"
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
+      <Stack.Screen
+        name="modals/edit-why"
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
       <Stack.Screen name="settings/index" />
       <Stack.Screen name="settings/notifications" />
       <Stack.Screen name="profile/edit" options={{ presentation: 'modal' }} />
