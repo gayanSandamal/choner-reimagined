@@ -7,7 +7,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews
 import { ChallengeCard } from '@/components/home/ChallengeCard';
 import { WhyReminder } from '@/components/home/WhyReminder';
 import { useSession } from '@/providers/session-provider';
-import { useDefaultChallenges, useStreak } from '@/features/challenges/hooks';
+import { useMyChallenge, useStreak } from '@/features/challenges/hooks';
 import { usePendingInvites, usePartnerStatus } from '@/features/community/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
@@ -26,19 +26,19 @@ export default function HomeScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const profileQ = useProfile(userId);
-  const challengesQ = useDefaultChallenges(userId);
+  const challengesQ = useMyChallenge(userId);
   const streakQ = useStreak(userId);
   const invitesQ = usePendingInvites(userId);
   const partnerStatusQ = usePartnerStatus(userId);
   const { gradient: skyGradient, isEvening, timeLeftLabel } = useTimeOfDay();
 
-  const soloChallenge = challengesQ.data?.solo ?? null;
-  const partnerChallenge = challengesQ.data?.partner ?? null;
+  // One challenge now, with a partner slot on it rather than a second row.
+  const challenge = challengesQ.data ?? null;
   const streak = streakQ.data ?? 0;
 
-  // The invite still awaiting acceptance for the partner track, if any.
-  const waitingInvite = partnerChallenge
-    ? (invitesQ.data ?? []).find((i: any) => i.user_challenge_id === partnerChallenge.id)
+  // The invite still awaiting acceptance, if the partner half is 'invited'.
+  const waitingInvite = challenge
+    ? (invitesQ.data ?? []).find((i: any) => i.user_challenge_id === challenge.id)
     : undefined;
 
   const refreshing = challengesQ.isRefetching || profileQ.isRefetching;
@@ -73,7 +73,7 @@ export default function HomeScreen() {
             <LoadingState />
           ) : challengesQ.isError ? (
             <ErrorState message={(challengesQ.error as Error).message} onRetry={() => challengesQ.refetch()} />
-          ) : !soloChallenge && !partnerChallenge ? (
+          ) : !challenge ? (
             <EmptyState
               title="Ready when you are"
               body="Choner works best with two. Invite a partner to start your first challenge."
@@ -82,37 +82,23 @@ export default function HomeScreen() {
             />
           ) : (
             <>
-              {/* Above both fires: the reason is about the person, not the
-                  track, and belongs where they see it before logging. */}
+              {/* Above the card: the reason is about the person, not the
+                  challenge, and belongs where they see it before logging. */}
               <WhyReminder
                 userId={userId}
-                challenge={soloChallenge ?? partnerChallenge}
+                challenge={challenge}
                 dailyDeadline={profileQ.data?.daily_deadline}
               />
-              {soloChallenge ? (
-                <ChallengeCard
-                  mode="solo"
-                  challenge={soloChallenge}
-                  streak={streak}
-                  isEvening={isEvening}
-                  timeLeftLabel={timeLeftLabel}
-                  userName={fullName}
-                  userAvatarUri={avatarUri}
-                />
-              ) : null}
-              {partnerChallenge ? (
-                <ChallengeCard
-                  mode="partner"
-                  challenge={partnerChallenge}
-                  streak={streak}
-                  isEvening={isEvening}
-                  timeLeftLabel={timeLeftLabel}
-                  userName={fullName}
-                  userAvatarUri={avatarUri}
-                  waitingPartnerEmail={waitingInvite?.email}
-                  partnerStatus={partnerStatusQ.data}
-                />
-              ) : null}
+              <ChallengeCard
+                challenge={challenge}
+                streak={streak}
+                isEvening={isEvening}
+                timeLeftLabel={timeLeftLabel}
+                userName={fullName}
+                userAvatarUri={avatarUri}
+                waitingPartnerEmail={waitingInvite?.email}
+                partnerStatus={partnerStatusQ.data}
+              />
             </>
           )}
         </ScrollView>

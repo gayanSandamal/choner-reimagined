@@ -8,8 +8,8 @@ import { Chip } from '@/components/ui/Chip';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { QuestCard, type FireState } from '@/components/challenges/QuestCard';
-import { useChallengeTemplates, useDefaultChallenges, useStreak } from '@/features/challenges/hooks';
-import { challengeHabitTitle } from '@/features/challenges/api';
+import { useChallengeTemplates, useMyChallenge, useStreak } from '@/features/challenges/hooks';
+import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
 import { useIsPremium } from '@/features/billing/hooks';
 import { useSession } from '@/providers/session-provider';
 import { features } from '@/constants/features';
@@ -29,7 +29,7 @@ export default function ChallengesScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const templatesQ = useChallengeTemplates();
-  const challengesQ = useDefaultChallenges(userId);
+  const challengesQ = useMyChallenge(userId);
   const streakQ = useStreak(userId);
   const { isPremium } = useIsPremium();
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -49,8 +49,7 @@ export default function ChallengesScreen() {
       : all.filter((t: any) => capitalize(t.category) === selectedCategory);
   }, [templatesQ.data, selectedCategory]);
 
-  const solo = challengesQ.data?.solo ?? null;
-  const partner = challengesQ.data?.partner ?? null;
+  const challenge = challengesQ.data ?? null;
   const streak = streakQ.data ?? 0;
 
   // A live challenge can point at a template this list never shows: a custom
@@ -59,37 +58,29 @@ export default function ChallengesScreen() {
   // would be missing from the list entirely, so it gets rendered from the
   // challenge row instead of the template.
   //
-  // Deduped by template preferring solo, matching fireStateFor below — a pair
-  // on one habit is one card with one ribbon, not two near-identical cards.
   const offListTracks = useMemo(() => {
     const visible = new Set((filtered as any[]).map((t) => t.id));
-    const seen = new Set<string>();
-    const tracks: Array<{ mode: 'solo' | 'partner'; challenge: any }> = [];
-    for (const [mode, challenge] of [
-      ['solo', solo],
-      ['partner', partner]
-    ] as const) {
-      const templateId = challenge?.challenge_template_id;
-      if (!challenge || !templateId) continue;
-      if (visible.has(templateId) || seen.has(templateId)) continue;
-      seen.add(templateId);
-      tracks.push({ mode, challenge });
-    }
-    return tracks;
-  }, [filtered, solo, partner]);
+    const templateId = challenge?.challenge_template_id;
+    if (!challenge || !templateId || visible.has(templateId)) return [];
+    return [
+      {
+        mode: (partnerStateOf(challenge) === 'partnered' ? 'partner' : 'solo') as 'solo' | 'partner',
+        challenge
+      }
+    ];
+  }, [filtered, challenge]);
 
   // Their category ('custom', or a retired habit's) has no chip, so they only
   // belong under "All" — a category filter is an explicit narrowing.
   const showOffList = selectedCategory === 'All' && offListTracks.length > 0;
 
   const fireStateFor = (templateId: string): FireState | undefined => {
-    if (solo?.challenge_template_id === templateId) {
-      return { mode: 'solo', status: solo.status, streak };
-    }
-    if (partner?.challenge_template_id === templateId) {
-      return { mode: 'partner', status: partner.status, streak };
-    }
-    return undefined;
+    if (challenge?.challenge_template_id !== templateId) return undefined;
+    return {
+      mode: partnerStateOf(challenge) === 'partnered' ? 'partner' : 'solo',
+      status: challenge.status,
+      streak
+    };
   };
 
   const onOpenQuest = (templateId: string, fireState: FireState | undefined) => {
@@ -165,7 +156,7 @@ export default function ChallengesScreen() {
           <View style={{ gap: theme.spacing(1.5) }}>
             {showOffList
               ? offListTracks.map(({ mode, challenge }, i) => {
-                  const template = challenge.challenge_templates;
+                  const template = challenge.challenge_templates as any;
                   return (
                     <QuestCard
                       key={challenge.id}

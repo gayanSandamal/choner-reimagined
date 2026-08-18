@@ -13,7 +13,7 @@ import { useOnboarding } from '@/features/onboarding/context';
 import { useIsInvitee } from '@/features/onboarding/invitee';
 import { challengeOptionSlugs, goalToTemplateSlug } from '@/features/onboarding/mappings';
 import { getTemplateBySlug } from '@/features/challenges/api';
-import { useChallengeTemplates, useSetDefaultChallengesHabit } from '@/features/challenges/hooks';
+import { useChallengeTemplates, useSetMyChallengeHabit } from '@/features/challenges/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 
@@ -33,7 +33,7 @@ export default function ChallengeScreen() {
   const userId = session?.user.id;
   const { goal, setChosenChallenge } = useOnboarding();
   const templatesQ = useChallengeTemplates();
-  const applyHabit = useSetDefaultChallengesHabit();
+  const applyHabit = useSetMyChallengeHabit();
   const { isInvitee, resolving } = useIsInvitee(userId);
 
   const customTemplateQ = useQuery({

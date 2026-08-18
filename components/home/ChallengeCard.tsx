@@ -13,11 +13,10 @@ import { LateNote } from '@/components/home/LateNote';
 import { useCompleteTask, useUndoTaskCheckin } from '@/features/challenges/hooks';
 import { captureProofPhoto, resolveProofType } from '@/features/challenges/capture';
 import { useSession } from '@/providers/session-provider';
+import { partnerStateOf } from '@/features/challenges/api';
 import type { PartnerStatus } from '@/features/community/api';
 import type { ProofType } from '@/types/database';
 import { theme } from '@/constants/theme';
-
-type Mode = 'solo' | 'partner';
 
 function firstName(name?: string | null) {
   return (name ?? 'Your partner').trim().split(/\s+/)[0] || 'Your partner';
@@ -42,7 +41,6 @@ function sortedTasks(challenge: any): ChallengeTask[] {
 }
 
 interface Props {
-  mode: Mode;
   challenge: any;
   streak: number;
   isEvening: boolean;
@@ -56,10 +54,10 @@ interface Props {
   partnerStatus?: PartnerStatus;
 }
 
-// One challenge's full block: the fire, its task-logging, and the pending state.
-// Rendered once per track (solo + partner) so Home can show both without a toggle.
+// The user's challenge: the fire, its task-logging, and whatever the partner
+// half is currently doing. One card now — the partner lives on this challenge
+// rather than in a second one alongside it.
 export function ChallengeCard({
-  mode,
   challenge,
   streak,
   isEvening,
@@ -74,20 +72,20 @@ export function ChallengeCard({
   const { session } = useSession();
   const userId = session?.user.id;
 
-  // The pairing lives in the accepted invite, not on the challenge row, so a
-  // partner track can sit at 'active' with nobody on the other side — after a
-  // partner leaves, or a pairing is removed. Keying the invite prompt off
-  // status alone left that case rendering a two-person fire with an empty seat
-  // and no way to invite anyone. Trust the derived link instead.
+  // partner_state is the truth about the right half of the heart. It covers
+  // the case status alone never could: a challenge sitting 'active' with
+  // nobody on the other side, which used to render a two-person fire with an
+  // empty seat and no way to invite anyone.
   //
   // partnerStatus is undefined while it loads; only treat someone as unpaired
   // once there's a definitive answer, so a paired user never flashes the
   // invite state on open.
+  const partnerState = partnerStateOf(challenge);
+  const partnered = partnerState === 'partnered';
   const partnerKnown = partnerStatus !== undefined;
-  const isPending = mode === 'partner' && challenge?.status === 'pending';
-  const unpaired = mode === 'partner' && partnerKnown && !partnerStatus?.linked;
-  const needsPartner = isPending || unpaired;
-  const showPartnerStatus = mode === 'partner' && !needsPartner && Boolean(partnerStatus?.linked);
+  const needsPartner = !partnered && (partnerState === 'solo' || (partnerKnown && !partnerStatus?.linked));
+  const showPartnerStatus = partnered && Boolean(partnerStatus?.linked);
+  const mode: 'solo' | 'partner' = partnered ? 'partner' : 'solo';
   const tasks = useMemo(() => sortedTasks(challenge), [challenge]);
 
   const today = todayString();
@@ -178,7 +176,7 @@ export function ChallengeCard({
       {/* Only on the partner track, and only while today is still unlogged —
           there is nothing to explain once the fire is fed. */}
       {/* A late note is a message to a partner — pointless with nobody there. */}
-      {mode === 'partner' && !needsPartner && challenge && pendingTasks.length > 0 ? (
+      {partnered && challenge && pendingTasks.length > 0 ? (
         <LateNote userChallengeId={challenge.id} />
       ) : null}
 

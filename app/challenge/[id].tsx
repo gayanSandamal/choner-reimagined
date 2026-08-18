@@ -10,7 +10,7 @@ import { ChallengeTaskItem } from '@/components/challenges/ChallengeTaskItem';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { useSession } from '@/providers/session-provider';
 import {
-  useActiveChallenge,
+  useMyChallenge,
   useChallengeTemplate,
   useCompleteTask,
   useUndoTaskCheckin,
@@ -32,7 +32,7 @@ export default function ChallengeDetailScreen() {
   const userId = session?.user.id;
 
   const templateQ = useChallengeTemplate(id);
-  const activeQ = useActiveChallenge(userId);
+  const activeQ = useMyChallenge(userId);
   const { isPremium } = useIsPremium();
 
   const startMut = useStartChallenge();

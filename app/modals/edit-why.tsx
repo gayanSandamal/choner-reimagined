@@ -14,7 +14,7 @@ import {
   emptyDraft
 } from '@/features/challenges/reflections';
 import {
-  useDefaultChallenges,
+  useMyChallenge,
   useReflections,
   useSaveReflections
 } from '@/features/challenges/hooks';
@@ -29,7 +29,7 @@ export default function EditWhyModal() {
   const { session } = useSession();
   const userId = session?.user.id;
   const reflectionsQ = useReflections(userId);
-  const challengesQ = useDefaultChallenges(userId);
+  const challengesQ = useMyChallenge(userId);
   const saveReflections = useSaveReflections();
 
   // Null until the stored answers arrive, so an empty form can never be saved
@@ -44,7 +44,7 @@ export default function EditWhyModal() {
     try {
       await saveReflections.mutateAsync({
         userId,
-        userChallengeId: challengesQ.data?.partner?.id ?? challengesQ.data?.solo?.id ?? null,
+        userChallengeId: challengesQ.data?.id ?? null,
         answers: draftToAnswers(draft)
       });
       router.back();

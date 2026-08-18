@@ -2,9 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getTemplates,
   getTemplate,
-  getActiveChallenge,
-  getDefaultChallenges,
-  ensureDefaultChallenges,
+  getMyChallenge,
+  ensureUserChallenge,
   getChallengeHistory,
   startChallenge,
   completeTask,
@@ -17,7 +16,13 @@ import {
   getStreak,
   getReflections,
   saveReflections,
-  setDefaultChallengesHabit,
+  getPartnerReflections,
+  setMyChallengeHabit,
+  joinMatchPool,
+  leaveMatchPool,
+  getMyMatch,
+  confirmMatch,
+  declineMatch,
 } from '@/features/challenges/api';
 
 export function useChallengeTemplates() {
@@ -35,41 +40,96 @@ export function useChallengeTemplate(templateId: string | undefined) {
   });
 }
 
-export function useActiveChallenge(userId: string | undefined) {
+// The user's single live challenge. One query key everywhere, so a check-in,
+// a habit change and a partner joining all invalidate the same thing.
+export function useMyChallenge(userId: string | undefined) {
   return useQuery({
-    queryKey: ['active-challenge', userId],
-    queryFn: () => getActiveChallenge(userId!),
+    queryKey: ['my-challenge', userId],
+    queryFn: () => getMyChallenge(userId!),
     enabled: Boolean(userId),
   });
 }
 
-export function useDefaultChallenges(userId: string | undefined) {
-  return useQuery({
-    queryKey: ['default-challenges', userId],
-    queryFn: () => getDefaultChallenges(userId!),
-    enabled: Boolean(userId),
-  });
-}
-
-export function useEnsureDefaultChallenges() {
+export function useEnsureUserChallenge() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ensureDefaultChallenges,
+    mutationFn: ensureUserChallenge,
     onSuccess: (_d, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['default-challenges', vars.userId] });
-      queryClient.invalidateQueries({ queryKey: ['active-challenge', vars.userId] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge', vars.userId] });
     },
   });
 }
 
-// Step 1: apply the chosen habit to both default tracks.
-export function useSetDefaultChallengesHabit() {
+export function usePartnerReflections(partnerId: string | undefined) {
+  return useQuery({
+    queryKey: ['partner-reflections', partnerId],
+    queryFn: () => getPartnerReflections(partnerId!),
+    enabled: Boolean(partnerId),
+  });
+}
+
+// ---- finding a partner ----
+
+export function useMyMatch(enabled = true) {
+  return useQuery({
+    queryKey: ['my-match'],
+    queryFn: getMyMatch,
+    enabled,
+  });
+}
+
+export function useJoinMatchPool() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: setDefaultChallengesHabit,
+    mutationFn: joinMatchPool,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['partner-status'] });
+    },
+  });
+}
+
+export function useLeaveMatchPool() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: leaveMatchPool,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['partner-status'] });
+    },
+  });
+}
+
+export function useConfirmMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: confirmMatch,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-match'] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['partner-status'] });
+    },
+  });
+}
+
+export function useDeclineMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: declineMatch,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-match'] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+    },
+  });
+}
+
+// Step 1: apply the chosen habit to the user's challenge.
+export function useSetMyChallengeHabit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setMyChallengeHabit,
     onSuccess: (_d, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['default-challenges', vars.userId] });
-      queryClient.invalidateQueries({ queryKey: ['active-challenge', vars.userId] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge', vars.userId] });
     },
   });
 }
@@ -113,7 +173,7 @@ export function useStartChallenge() {
   return useMutation({
     mutationFn: startChallenge,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['active-challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
       queryClient.invalidateQueries({ queryKey: ['challenge-templates'] });
     },
   });
@@ -124,8 +184,7 @@ export function useCompleteTask() {
   return useMutation({
     mutationFn: completeTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['active-challenge'] });
-      queryClient.invalidateQueries({ queryKey: ['default-challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
       queryClient.invalidateQueries({ queryKey: ['insights'] });
       queryClient.invalidateQueries({ queryKey: ['streak'] });
     },
@@ -140,8 +199,7 @@ export function useUndoTaskCheckin() {
     mutationFn: (input: { checkinId: string; photoPath?: string | null }) =>
       undoTaskCheckin(input.checkinId, input.photoPath),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['active-challenge'] });
-      queryClient.invalidateQueries({ queryKey: ['default-challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
       queryClient.invalidateQueries({ queryKey: ['streak'] });
     },
   });
@@ -151,7 +209,7 @@ export function usePauseChallenge() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: pauseChallenge,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['active-challenge'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-challenge'] }),
   });
 }
 
@@ -159,7 +217,7 @@ export function useResumeChallenge() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: resumeChallenge,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['active-challenge'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-challenge'] }),
   });
 }
 
@@ -168,7 +226,7 @@ export function useAbandonChallenge() {
   return useMutation({
     mutationFn: abandonChallenge,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['active-challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
       queryClient.invalidateQueries({ queryKey: ['challenge-history'] });
     },
   });

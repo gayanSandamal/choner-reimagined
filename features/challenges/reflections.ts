@@ -6,7 +6,10 @@
 // touching the screens — and so a stored choice_key never has to be turned
 // back into prose by string-munging the label.
 
-export type ReflectionQuestionKey = 'purpose' | 'matters' | 'gain' | 'lose';
+// Sourced from the database types so this union and the check constraint on
+// challenge_reflections.question_key cannot drift apart.
+import type { ReflectionQuestionKey } from '@/types/database';
+export type { ReflectionQuestionKey };
 
 // The escape hatch on every question. Selecting it reveals a text field; the
 // typed answer is what gets resurfaced.

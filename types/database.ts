@@ -4,6 +4,13 @@ export type Json = string | number | boolean | null | { [key: string]: Json } | 
 // for a photo when it's explicitly opted in, never the other way round.
 export type ProofType = 'photo' | 'tap';
 
+// How the partner half of a challenge is currently filled. Mirrors the check
+// constraint on user_challenges.partner_state.
+export type PartnerState = 'solo' | 'invited' | 'finding' | 'matched' | 'partnered';
+
+// The four "Why" questions. Mirrors challenge_reflections.question_key.
+export type ReflectionQuestionKey = 'purpose' | 'matters' | 'gain' | 'lose';
+
 export interface Database {
   public: {
     Tables: {
@@ -67,6 +74,7 @@ export interface Database {
           is_premium: boolean | null;
           sort_order: number | null;
           proof_type: ProofType;
+          is_active: boolean;
           created_at: string | null;
         };
         Insert: {
@@ -80,6 +88,7 @@ export interface Database {
           is_premium?: boolean | null;
           sort_order?: number | null;
           proof_type?: ProofType;
+          is_active?: boolean;
           created_at?: string | null;
         };
         Update: {
@@ -93,7 +102,110 @@ export interface Database {
           is_premium?: boolean | null;
           sort_order?: number | null;
           proof_type?: ProofType;
+          is_active?: boolean;
           created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      challenge_reflections: {
+        Row: {
+          id: string;
+          user_id: string;
+          user_challenge_id: string | null;
+          question_key: ReflectionQuestionKey;
+          choice_key: string | null;
+          custom_text: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          user_challenge_id?: string | null;
+          question_key: ReflectionQuestionKey;
+          choice_key?: string | null;
+          custom_text?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          user_challenge_id?: string | null;
+          question_key?: ReflectionQuestionKey;
+          choice_key?: string | null;
+          custom_text?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      partner_match_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          user_challenge_id: string;
+          challenge_template_id: string;
+          timezone: string | null;
+          status: 'waiting' | 'matched' | 'cancelled';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          user_challenge_id: string;
+          challenge_template_id: string;
+          timezone?: string | null;
+          status?: 'waiting' | 'matched' | 'cancelled';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          status?: 'waiting' | 'matched' | 'cancelled';
+          timezone?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      partner_matches: {
+        Row: {
+          id: string;
+          user_a: string;
+          user_b: string;
+          challenge_template_id: string;
+          blurb_about_a: string | null;
+          blurb_about_b: string | null;
+          a_confirmed: boolean;
+          b_confirmed: boolean;
+          status: 'pending' | 'confirmed' | 'declined' | 'expired';
+          declined_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_a: string;
+          user_b: string;
+          challenge_template_id: string;
+          blurb_about_a?: string | null;
+          blurb_about_b?: string | null;
+          a_confirmed?: boolean;
+          b_confirmed?: boolean;
+          status?: 'pending' | 'confirmed' | 'declined' | 'expired';
+          declined_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          blurb_about_a?: string | null;
+          blurb_about_b?: string | null;
+          a_confirmed?: boolean;
+          b_confirmed?: boolean;
+          status?: 'pending' | 'confirmed' | 'declined' | 'expired';
+          declined_by?: string | null;
+          updated_at?: string;
         };
         Relationships: [];
       };
@@ -108,6 +220,9 @@ export interface Database {
           ends_at: string | null;
           completed_at: string | null;
           created_at: string | null;
+          custom_habit_title: string | null;
+          partner_user_id: string | null;
+          partner_state: PartnerState;
         };
         Insert: {
           id?: string;
@@ -119,6 +234,9 @@ export interface Database {
           ends_at?: string | null;
           completed_at?: string | null;
           created_at?: string | null;
+          custom_habit_title?: string | null;
+          partner_user_id?: string | null;
+          partner_state?: PartnerState;
         };
         Update: {
           id?: string;
@@ -130,6 +248,9 @@ export interface Database {
           ends_at?: string | null;
           completed_at?: string | null;
           created_at?: string | null;
+          custom_habit_title?: string | null;
+          partner_user_id?: string | null;
+          partner_state?: PartnerState;
         };
         Relationships: [
           {

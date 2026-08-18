@@ -35,16 +35,26 @@ export async function getTemplate(templateId: string) {
   return data;
 }
 
-export async function getActiveChallenge(userId: string) {
-  // Pinned to the solo track: once a partner joins, a user has two 'active'
-  // rows, so filtering on status alone would return multiple. The
-  // challenge-detail screen only cares about the user's own solo challenge.
+
+// How the partner half of the heart is currently filled.
+//   solo      — no partner, not looking. Dashed half.
+//   invited   — invite sent, waiting on a specific person.
+//   finding   — in the matching pool. Pulsing half.
+//   matched   — paired, waiting on one or both to confirm.
+//   partnered — confirmed and live. Filled half.
+export type PartnerState = 'solo' | 'invited' | 'finding' | 'matched' | 'partnered';
+
+// The user's single live challenge.
+//
+// Replaces the old solo+partner pair: the Challenges tab is built on one heart
+// whose left half is you and right half is your partner, which is one challenge
+// with an optional partner rather than two parallel ones.
+export async function getMyChallenge(userId: string) {
   const { data, error } = await supabase
     .from('user_challenges')
     .select('*, challenge_templates(*), challenge_tasks(*, task_checkins(*))')
     .eq('user_id', userId)
-    .eq('accountability_mode', 'solo')
-    .eq('status', 'active')
+    .in('status', ['active', 'pending', 'paused'])
     .order('started_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -52,43 +62,24 @@ export async function getActiveChallenge(userId: string) {
   return data;
 }
 
-export type DefaultChallenges = {
-  solo: any | null;
-  partner: any | null;
-};
-
-// Home's two default tracks. Returns the newest live row for each mode so a
-// stray abandoned/duplicate challenge can't shadow the current one.
-export async function getDefaultChallenges(userId: string): Promise<DefaultChallenges> {
-  const { data, error } = await supabase
-    .from('user_challenges')
-    .select('*, challenge_templates(*), challenge_tasks(*, task_checkins(*))')
-    .eq('user_id', userId)
-    .in('accountability_mode', ['solo', 'partner'])
-    .in('status', ['active', 'pending', 'paused'])
-    .order('started_at', { ascending: false });
-  if (error) throw error;
-
-  const rows = data ?? [];
-  return {
-    solo: rows.find((r: any) => r.accountability_mode === 'solo') ?? null,
-    partner: rows.find((r: any) => r.accountability_mode === 'partner') ?? null
-  };
+export function partnerStateOf(challenge: any): PartnerState {
+  return (challenge?.partner_state as PartnerState) ?? 'solo';
 }
 
-export async function ensureDefaultChallenges(payload: {
+// Idempotent: returns the existing challenge's id when there already is one, so
+// this can be called freely without risking a second row.
+export async function ensureUserChallenge(payload: {
   userId: string;
-  soloTemplateId?: string;
-  partnerTemplateId?: string;
+  templateId?: string;
   customHabitTitle?: string | null;
-}) {
-  const { error } = await (supabase.rpc as any)('ensure_default_challenges', {
+}): Promise<string | null> {
+  const { data, error } = await (supabase.rpc as any)('ensure_user_challenge', {
     p_user_id: payload.userId,
-    p_solo_template_id: payload.soloTemplateId ?? undefined,
-    p_partner_template_id: payload.partnerTemplateId ?? undefined,
+    p_template_id: payload.templateId ?? undefined,
     p_custom_habit_title: payload.customHabitTitle ?? null
   });
   if (error) throw error;
+  return (data as string) ?? null;
 }
 
 // The habit a challenge is actually running, which is the user's own text
@@ -116,35 +107,27 @@ export async function setChallengeHabit(payload: {
   if (error) throw error;
 }
 
-// Apply the Step 1 choice to both default tracks. The partner track carries
-// the shared commitment, but the solo track shows the same habit on Home, so
-// leaving it on the goal-derived default would show the user two different
-// habits for one decision.
-export async function setDefaultChallengesHabit(payload: {
+// Apply the Step 1 choice to the user's challenge, provisioning it first if
+// the best-effort call on Screen 5 didn't manage to.
+export async function setMyChallengeHabit(payload: {
   userId: string;
   templateId: string;
   customHabitTitle?: string | null;
 }) {
-  const tracks = await getDefaultChallenges(payload.userId);
-  const ids = [tracks.solo?.id, tracks.partner?.id].filter(Boolean) as string[];
-  if (ids.length === 0) {
-    // Nothing provisioned yet (the best-effort call on Screen 5 failed).
-    // Create the tracks on the chosen habit rather than dropping the choice.
-    await ensureDefaultChallenges({
+  const existing = await getMyChallenge(payload.userId);
+  if (!existing?.id) {
+    await ensureUserChallenge({
       userId: payload.userId,
-      soloTemplateId: payload.templateId,
-      partnerTemplateId: payload.templateId,
+      templateId: payload.templateId,
       customHabitTitle: payload.customHabitTitle
     });
     return;
   }
-  for (const id of ids) {
-    await setChallengeHabit({
-      userChallengeId: id,
-      templateId: payload.templateId,
-      customHabitTitle: payload.customHabitTitle
-    });
-  }
+  await setChallengeHabit({
+    userChallengeId: existing.id,
+    templateId: payload.templateId,
+    customHabitTitle: payload.customHabitTitle
+  });
 }
 
 export async function getChallengeHistory(userId: string) {
@@ -313,6 +296,82 @@ export async function saveReflections(payload: {
     })),
     { onConflict: 'user_id,question_key' }
   );
+  if (error) throw error;
+}
+
+// A confirmed partner's reasons. Readable because the pairing opens a SELECT
+// policy on challenge_reflections — a pending match or someone still in the
+// pool gets nothing back, which is the point.
+export async function getPartnerReflections(partnerId: string): Promise<ReflectionAnswer[]> {
+  const { data, error } = await (supabase as any)
+    .from('challenge_reflections')
+    .select('question_key, choice_key, custom_text')
+    .eq('user_id', partnerId);
+  if (error) throw error;
+  return (data ?? []) as ReflectionAnswer[];
+}
+
+// ============================================================
+// Finding a partner
+//
+// Manual/concierge at this stage: joining the pool means "I'm waiting", and a
+// human does the pairing. Nothing here auto-matches.
+// ============================================================
+
+// Move the partner half of the heart. Owner-only via RLS on user_challenges.
+export async function setPartnerState(userChallengeId: string, state: PartnerState) {
+  const { error } = await (supabase as any)
+    .from('user_challenges')
+    .update({ partner_state: state })
+    .eq('id', userChallengeId);
+  if (error) throw error;
+}
+
+export async function joinMatchPool(payload: { userChallengeId: string; timezone?: string }) {
+  const { data, error } = await (supabase.rpc as any)('join_match_pool', {
+    p_user_challenge_id: payload.userChallengeId,
+    p_timezone:
+      payload.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? null
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function leaveMatchPool(userChallengeId: string) {
+  const { error } = await (supabase.rpc as any)('leave_match_pool', {
+    p_user_challenge_id: userChallengeId
+  });
+  if (error) throw error;
+}
+
+export type MyMatch =
+  | { matched: false }
+  | {
+      matched: true;
+      match_id: string;
+      partner_first_name: string;
+      // The one curated line written at pairing time — never the other
+      // person's raw reflections, who are strangers until both confirm.
+      blurb: string | null;
+      habit: string;
+      duration_days: number;
+      i_confirmed: boolean;
+    };
+
+export async function getMyMatch(): Promise<MyMatch> {
+  const { data, error } = await (supabase.rpc as any)('get_my_match');
+  if (error) throw error;
+  return (data as MyMatch) ?? { matched: false };
+}
+
+export async function confirmMatch(matchId: string): Promise<{ confirmed: boolean; both: boolean }> {
+  const { data, error } = await (supabase.rpc as any)('confirm_match', { p_match_id: matchId });
+  if (error) throw error;
+  return data as { confirmed: boolean; both: boolean };
+}
+
+export async function declineMatch(matchId: string) {
+  const { error } = await (supabase.rpc as any)('decline_match', { p_match_id: matchId });
   if (error) throw error;
 }
 
