@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import type { PartnerState } from '@/types/database';
 
 export type GroupVisibility = 'public' | 'private';
 
@@ -284,6 +285,9 @@ export type PartnerProofPhoto = {
 
 export type PartnerStatus = {
   linked: boolean;
+  // Mirrors user_challenges.partner_state, so callers can tell "solo" from
+  // "in the pool" from "waiting on an invite" without a second query.
+  partner_state?: PartnerState;
   partner_id?: string;
   name?: string | null;
   avatar_url?: string | null;

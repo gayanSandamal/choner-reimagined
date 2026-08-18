@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { AppText } from '@/components/ui/text';
 import { useSession } from '@/providers/session-provider';
 import { useCreateInvite } from '@/features/community/hooks';
-import { useDefaultChallenges } from '@/features/challenges/hooks';
+import { useMyChallenge } from '@/features/challenges/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { buildInviteLink, shareInviteLink } from '@/lib/invite-link';
 import { theme } from '@/constants/theme';
@@ -18,7 +18,7 @@ export default function InviteScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const profileQ = useProfile(userId);
-  const challengesQ = useDefaultChallenges(userId);
+  const challengesQ = useMyChallenge(userId);
   const inviteMut = useCreateInvite();
   const [email, setEmail] = useState('');
   // Set once an invite exists, so the link is always shareable even if the
@@ -31,9 +31,9 @@ export default function InviteScreen() {
     if (!userId || !email.trim()) return;
     try {
       const result = await inviteMut.mutateAsync({
-        // Attach the pending partner track so accepting lights this exact
-        // fire (and Home's "waiting for partner" state can match the invite).
-        userChallengeId: challengesQ.data?.partner?.id,
+        // Attach the challenge so accepting joins this exact habit (and the
+        // "waiting for [name]" state can match the invite to it).
+        userChallengeId: challengesQ.data?.id,
         email: email.trim(),
         inviterId: userId,
         inviterName: profileQ.data?.full_name ?? undefined,

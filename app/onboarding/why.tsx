@@ -19,7 +19,7 @@ import {
 } from '@/features/challenges/reflections';
 import { challengeHabitTitle } from '@/features/challenges/api';
 import {
-  useDefaultChallenges,
+  useMyChallenge,
   useReflections,
   useSaveReflections
 } from '@/features/challenges/hooks';
@@ -33,7 +33,7 @@ export default function WhyScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const { chosenChallenge } = useOnboarding();
-  const challengesQ = useDefaultChallenges(userId);
+  const challengesQ = useMyChallenge(userId);
   const reflectionsQ = useReflections(userId);
   const saveReflections = useSaveReflections();
   const { isInvitee, resolving } = useIsInvitee(userId);
@@ -47,15 +47,11 @@ export default function WhyScreen() {
   }, [reflectionsQ.data, draft]);
   const value = draft ?? emptyDraft();
 
-  const partnerTrack = challengesQ.data?.partner ?? null;
-  const soloTrack = challengesQ.data?.solo ?? null;
+  const challenge = challengesQ.data ?? null;
 
   // An invitee never saw Step 1, so the habit has to come from the challenge
   // they were just joined to.
-  const habit =
-    chosenChallenge?.title ??
-    challengeHabitTitle(partnerTrack) ??
-    challengeHabitTitle(soloTrack);
+  const habit = chosenChallenge?.title ?? challengeHabitTitle(challenge);
 
   const filledIn = answeredCount(value);
 
@@ -71,7 +67,7 @@ export default function WhyScreen() {
     try {
       await saveReflections.mutateAsync({
         userId,
-        userChallengeId: partnerTrack?.id ?? soloTrack?.id ?? null,
+        userChallengeId: challenge?.id ?? null,
         answers: draftToAnswers(value)
       });
       goNext();

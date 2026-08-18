@@ -8,7 +8,7 @@ import { ENERGY_LEVELS } from '@/features/onboarding/constants';
 import { useOnboarding } from '@/features/onboarding/context';
 import { goalToTemplateSlug } from '@/features/onboarding/mappings';
 import { getTemplateBySlug } from '@/features/challenges/api';
-import { useEnsureDefaultChallenges } from '@/features/challenges/hooks';
+import { useEnsureUserChallenge } from '@/features/challenges/hooks';
 import { useSession } from '@/providers/session-provider';
 import { useUpdateProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
@@ -17,7 +17,7 @@ export default function EnergyScreen() {
   const { session } = useSession();
   const qc = useQueryClient();
   const updateProfile = useUpdateProfile();
-  const ensureChallenges = useEnsureDefaultChallenges();
+  const ensureChallenge = useEnsureUserChallenge();
   const { goal, struggle, tone, energy, setEnergy } = useOnboarding();
 
   const onSeeProfile = async () => {
@@ -40,17 +40,13 @@ export default function EnergyScreen() {
       // Prime the cache so the routing gate sees onboarding_complete=true.
       qc.setQueryData(['profile', userId], row);
 
-      // Provision the two default tracks (Solo active, Partner pending) from
-      // the goal-matched habit, so Home always has both. Best-effort: a
-      // failure here must not trap the user on onboarding — the RPC is
-      // idempotent and the invite screen re-ensures if needed.
+      // Provision the user's challenge from the goal-matched habit so Home has
+      // something the moment onboarding ends. Best-effort: a failure here must
+      // not trap the user on onboarding — the RPC is idempotent and Step 1
+      // re-ensures if needed.
       try {
         const template = await getTemplateBySlug(goalToTemplateSlug(goal));
-        await ensureChallenges.mutateAsync({
-          userId,
-          soloTemplateId: template?.id,
-          partnerTemplateId: template?.id
-        });
+        await ensureChallenge.mutateAsync({ userId, templateId: template?.id });
       } catch {
         // Swallowed on purpose — see note above.
       }

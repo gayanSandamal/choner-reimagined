@@ -22,7 +22,7 @@ function typeIcon(taskType: string): GlyphName {
   if (t.includes('sleep') || t.includes('rest')) return 'moon-outline';
   if (t.includes('food') || t.includes('nutrition') || t.includes('water')) return 'nutrition-outline';
   if (t.includes('social') || t.includes('connect')) return 'people-outline';
-  return 'flame-outline';
+  return 'heart-outline';
 }
 
 function dueMeta(dueWindow: string | null): { label: string; icon: GlyphName } {
@@ -46,8 +46,8 @@ export function LogTaskItem({ title, taskType, dueWindow, onFeedFire }: Props) {
   const opacity = useSharedValue(1);
   const due = dueMeta(dueWindow);
 
-  // Feeding is triggered only by the Feed button — the log flies up into the
-  // fire, then commits the check-in once it's gone.
+  // Logging is triggered only by the button — the row animates out, then
+  // commits the check-in once it's gone.
   const onFeed = () => {
     haptics.bold();
     if (reduceMotion) {
@@ -83,7 +83,7 @@ export function LogTaskItem({ title, taskType, dueWindow, onFeedFire }: Props) {
         haptic="none"
         scaleTo="bold"
         accessibilityRole="button"
-        accessibilityLabel={`Feed the fire with ${title}`}
+        accessibilityLabel={`Mark ${title} as done`}
         accessibilityHint="Marks this as done today"
       >
         <LinearGradient
@@ -92,8 +92,8 @@ export function LogTaskItem({ title, taskType, dueWindow, onFeedFire }: Props) {
           end={{ x: 1, y: 1 }}
           style={styles.feedBtn}
         >
-          <Ionicons name="flame" size={15} color="#3A1600" />
-          <AppText style={styles.feedLabel}>Feed</AppText>
+          <Ionicons name="checkmark" size={15} color="#3A1600" />
+          <AppText style={styles.feedLabel}>Done</AppText>
         </LinearGradient>
       </PressableScale>
     </Animated.View>

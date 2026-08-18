@@ -12,7 +12,7 @@ import { useProfile } from '@/features/profile/hooks';
 import { goalLabel, toneLabel } from '@/features/onboarding/mappings';
 import { TONES } from '@/features/onboarding/constants';
 import { useIsPremium } from '@/features/billing/hooks';
-import { useDefaultChallenges, useStreak } from '@/features/challenges/hooks';
+import { useMyChallenge, useStreak } from '@/features/challenges/hooks';
 import { signOut } from '@/features/auth/api';
 import { features } from '@/constants/features';
 import { theme } from '@/constants/theme';
@@ -36,13 +36,12 @@ export default function ProfileScreen() {
   const userId = session?.user.id;
   const profileQ = useProfile(userId);
   const streakQ = useStreak(userId);
-  const challengesQ = useDefaultChallenges(userId);
+  const challengesQ = useMyChallenge(userId);
   const { isPremium } = useIsPremium();
 
-  const solo = challengesQ.data?.solo ?? null;
-  const partner = challengesQ.data?.partner ?? null;
-  const firesLit = [solo, partner].filter((c) => c && c.status === 'active').length;
-  const fedToday = logsToday(solo) + logsToday(partner);
+  const challenge = challengesQ.data ?? null;
+  const firesLit = challenge && challenge.status === 'active' ? 1 : 0;
+  const fedToday = logsToday(challenge);
 
   const hasTone = TONES.some((t) => t.value === profileQ.data?.accountability_mode);
 

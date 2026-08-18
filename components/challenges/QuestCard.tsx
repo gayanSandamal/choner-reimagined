@@ -20,7 +20,7 @@ const CATEGORY_VISUALS: Record<string, { icon: GlyphName; color: string }> = {
 };
 
 function categoryVisual(category: string) {
-  return CATEGORY_VISUALS[category?.toLowerCase()] ?? { icon: 'flame-outline' as GlyphName, color: theme.colors.muted };
+  return CATEGORY_VISUALS[category?.toLowerCase()] ?? { icon: 'heart-outline' as GlyphName, color: theme.colors.muted };
 }
 
 const DIFFICULTY_PIPS: Record<string, number> = {
@@ -53,10 +53,12 @@ interface Props {
 
 function ribbonLabel(fireState: FireState) {
   if (fireState.mode === 'partner' && fireState.status === 'pending') {
-    return 'Your partner fire · waiting';
+    return 'Your challenge · waiting';
   }
-  const who = fireState.mode === 'solo' ? 'solo' : 'partner';
-  return fireState.streak > 0 ? `Your ${who} fire · day ${fireState.streak}` : `Your ${who} fire`;
+  const who = fireState.mode === 'solo' ? 'solo' : 'shared';
+  return fireState.streak > 0
+    ? `Your ${who} challenge · day ${fireState.streak}`
+    : `Your ${who} challenge`;
 }
 
 export function QuestCard({
@@ -87,7 +89,7 @@ export function QuestCard({
       >
         {lit ? (
           <View style={styles.ribbon}>
-            <Ionicons name="flame" size={12} color={theme.colors.secondary} />
+            <Ionicons name="heart" size={12} color={theme.colors.secondary} />
             <AppText variant="caption" style={styles.ribbonText}>
               {ribbonLabel(fireState!)}
             </AppText>

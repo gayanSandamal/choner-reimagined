@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
@@ -14,17 +13,11 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/input';
+import { OptionCard } from '@/components/onboarding/OptionCard';
 import { useOnboarding } from '@/features/onboarding/context';
 import { useIsInvitee } from '@/features/onboarding/invitee';
-import { goalToTemplateSlug, suggestedHabitTitle } from '@/features/onboarding/mappings';
-import {
-  getTemplateBySlug,
-  getTemplates,
-  getDefaultChallenges,
-  ensureDefaultChallenges,
-  challengeHabitTitle
-} from '@/features/challenges/api';
-import { useDefaultChallenges } from '@/features/challenges/hooks';
+import { challengeHabitTitle, setPartnerState } from '@/features/challenges/api';
+import { useMyChallenge, useJoinMatchPool } from '@/features/challenges/hooks';
 import { useCreateInvite, useResendInvite } from '@/features/community/hooks';
 import { useSession } from '@/providers/session-provider';
 import { useProfile } from '@/features/profile/hooks';
@@ -34,88 +27,65 @@ import { LoadingState } from '@/components/ui/StateViews';
 import { captureError } from '@/lib/observability';
 import { theme } from '@/constants/theme';
 
-type Phase = 'idle' | 'emailEntry' | 'pending' | 'skipped';
+// Step 3 — how do you want to do this?
+//
+// Three real paths rather than one invite with a buried fallback. Invite and
+// Find carry equal visual weight; Solo is deliberately lighter, because it is
+// a valid choice but not the one that makes the product work.
+type Phase = 'choose' | 'emailEntry' | 'pending' | 'finding';
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
-export default function InviteScreen() {
+export default function PartnerPathScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const profileQ = useProfile(userId);
-  const {
-    goal,
-    struggle,
-    chosenChallenge,
-    startedChallengeId,
-    setStartedChallengeId,
-    sentInvite,
-    setSentInvite
-  } = useOnboarding();
+  const { chosenChallenge, startedChallengeId, setStartedChallengeId, sentInvite, setSentInvite } =
+    useOnboarding();
 
-  const [phase, setPhase] = useState<Phase>(sentInvite ? 'pending' : 'idle');
+  const challengeQ = useMyChallenge(userId);
+  const createInvite = useCreateInvite();
+  const resendInvite = useResendInvite();
+  const joinPool = useJoinMatchPool();
+  const { isInvitee, resolving } = useIsInvitee(userId);
+
+  const [phase, setPhase] = useState<Phase>(sentInvite ? 'pending' : 'choose');
   const [email, setEmail] = useState('');
   // Seeded from context so a remount mid-onboarding doesn't strand the invite
   // with no way to share or resend it.
   const [lastToken, setLastToken] = useState<string | null>(sentInvite?.token ?? null);
-  const [attaching, setAttaching] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const createInvite = useCreateInvite();
-  const resendInvite = useResendInvite();
-  const challengesQ = useDefaultChallenges(userId);
-  const { isInvitee, resolving } = useIsInvitee(userId);
+  const challenge = challengeQ.data ?? null;
+  const challengeId = startedChallengeId ?? challenge?.id ?? null;
+  const habit = chosenChallenge?.title ?? challengeHabitTitle(challenge) ?? 'your challenge';
 
-  const slug = goalToTemplateSlug(goal);
-  // Prefetched so the send tap doesn't wait on a template lookup; the
-  // first-templates fallback covers a database missing the seeds.
-  const templateQ = useQuery({
-    queryKey: ['challenge-template-slug', slug],
-    queryFn: async () => (await getTemplateBySlug(slug)) ?? (await getTemplates())[0] ?? null
-  });
+  // A habit someone wrote themselves has nobody else in the pool doing it, so
+  // Find is not offered at all — with a reason, rather than a dead control.
+  const isCustomHabit = Boolean(chosenChallenge?.customTitle ?? challenge?.custom_habit_title);
 
-  const sending = attaching || createInvite.isPending;
-
-  // Resolve the partner track to attach this invite to. Onboarding already
-  // provisioned a pending partner challenge; reuse it rather than creating a
-  // second one. Falls back to provisioning if it's somehow missing.
-  const resolvePartnerChallengeId = async (): Promise<string> => {
-    const existing = await getDefaultChallenges(userId!);
-    if (existing.partner?.id) return existing.partner.id;
-
-    // Prefer what they actually picked at Step 1 over the goal-derived guess.
-    const templateId = chosenChallenge?.templateId ?? (templateQ.data ?? (await getTemplates())[0])?.id;
-    if (!templateId) throw new Error('No challenge templates available yet.');
-    await ensureDefaultChallenges({
-      userId: userId!,
-      soloTemplateId: templateId,
-      partnerTemplateId: templateId,
-      customHabitTitle: chosenChallenge?.customTitle ?? null
-    });
-    const after = await getDefaultChallenges(userId!);
-    if (!after.partner?.id) throw new Error('Could not set up your partner challenge.');
-    return after.partner.id;
-  };
+  // Someone who arrived through an invite already has a partner; they must
+  // never be asked to find or invite one.
+  useEffect(() => {
+    if (isInvitee) router.replace('/onboarding/why');
+  }, [isInvitee]);
 
   const onSendInvite = async () => {
-    if (!userId || !EMAIL_RE.test(email)) return;
+    if (!userId || !EMAIL_RE.test(email) || !challengeId) return;
+    setBusy(true);
     try {
-      let challengeId = startedChallengeId;
-      if (!challengeId) {
-        setAttaching(true);
-        challengeId = await resolvePartnerChallengeId();
-        setAttaching(false);
-        // Kept in context so a failed invite retry can't start a second one.
-        setStartedChallengeId(challengeId!);
-      }
+      setStartedChallengeId(challengeId);
       const invite = await createInvite.mutateAsync({
-        userChallengeId: challengeId!,
+        userChallengeId: challengeId,
         email: email.trim(),
         inviterId: userId,
         inviterName: profileQ.data?.full_name ?? undefined
       });
+      await setPartnerState(challengeId, 'invited');
       setLastToken(invite.token ?? null);
       setSentInvite({ email: email.trim(), token: invite.token ?? null, emailed: invite.emailed });
       setPhase('pending');
-      // No alert on a failed email: the pending state below says so plainly and
+      // No alert on a failed email: the pending state says so plainly and
       // offers the share link, which brings the partner in just as well. The
       // reason still needs to reach us, though, or delivery breaks silently.
       if (!invite.emailed) {
@@ -125,13 +95,22 @@ export default function InviteScreen() {
         });
       }
     } catch (error: any) {
-      setAttaching(false);
-      Alert.alert(
-        startedChallengeId ? "The invite didn't send" : 'Could not set up your challenge',
-        startedChallengeId
-          ? `Your challenge is ready, but we couldn't send the invite. ${error.message}`
-          : error.message
-      );
+      Alert.alert("The invite didn't send", error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onFindPartner = async () => {
+    if (!challengeId) return;
+    setBusy(true);
+    try {
+      await joinPool.mutateAsync({ userChallengeId: challengeId });
+      setPhase('finding');
+    } catch (error: any) {
+      Alert.alert('Could not start looking', error.message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -148,7 +127,7 @@ export default function InviteScreen() {
       await resendInvite.mutateAsync({
         email: sentInvite.email,
         token: lastToken,
-        user_challenge_id: startedChallengeId,
+        user_challenge_id: challengeId,
         inviterName: profileQ.data?.full_name ?? undefined
       });
       Alert.alert('Invite resent', `We sent another email to ${sentInvite.email}.`);
@@ -157,26 +136,9 @@ export default function InviteScreen() {
     }
   };
 
-  // The habit the user actually chose at Step 1. The goal-derived suggestion
-  // is only a fallback for a context lost to a remount.
-  const habit =
-    chosenChallenge?.title ??
-    challengeHabitTitle(challengesQ.data?.partner) ??
-    challengeHabitTitle(challengesQ.data?.solo) ??
-    suggestedHabitTitle(goal);
-  const showLeadIn = struggle === 'lack_accountability';
+  const goHome = () => router.replace('/(tabs)/home');
 
-  // An INVITEE must never be asked to invite someone. They walk the same
-  // onboarding flow, so without this the person who was just invited would be
-  // told "Choner works best with two. Invite someone." while their own partner
-  // sat one row above in the database. Their path ends at their own Step 2.
-  useEffect(() => {
-    if (isInvitee) router.replace('/onboarding/why');
-  }, [isInvitee]);
-
-  // Hold the frame while we find out, rather than flashing "invite a partner"
-  // at the one person who must not see it.
-  if (resolving || isInvitee) {
+  if (resolving || isInvitee || challengeQ.isLoading) {
     return (
       <SafeAreaView style={styles.root}>
         <LoadingState label="Setting up your challenge…" />
@@ -195,61 +157,71 @@ export default function InviteScreen() {
           <AppText variant="label" muted>
             Your first challenge
           </AppText>
-          {phase !== 'skipped' ? (
+          {phase === 'finding' ? (
             <>
-              {showLeadIn ? (
-                <AppText variant="subtitle" style={styles.leadIn}>
-                  This is exactly what you told us you needed
-                </AppText>
-              ) : null}
-              <AppText variant="title">Let's set this up with a partner</AppText>
+              <AppText variant="title">Looking for your partner</AppText>
               <AppText muted>
-                Choner works best with two. Invite someone to hold you accountable — and you do the
-                same for them.
+                We're matching you with someone doing {habit} who wants the same thing. Since we're
+                just getting started, this usually takes a day or two — we'll notify you the moment
+                you're matched.
+              </AppText>
+            </>
+          ) : phase === 'pending' && sentInvite ? (
+            <>
+              <AppText variant="title">
+                {sentInvite.emailed ? `Waiting for ${sentInvite.email}` : 'Send them the link'}
+              </AppText>
+              <AppText muted>
+                {sentInvite.emailed
+                  ? 'Your challenge starts the moment they join.'
+                  : "We couldn't email them, but the invite is saved. Share this link and it works the same."}
               </AppText>
             </>
           ) : (
             <>
-              <AppText variant="title">We'll find you a partner</AppText>
-              <AppText muted>
-                We'll match you with someone doing the same challenge when you're ready.
-              </AppText>
+              <AppText variant="title">How do you want to do this?</AppText>
+              <AppText muted>Choner works best with two — but the choice is yours.</AppText>
             </>
           )}
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(140).duration(360)}>
-          <Card variant={phase === 'pending' ? 'glow' : 'default'} style={styles.challengeCard}>
-            {phase === 'pending' && sentInvite ? (
-              <>
-                <AppText variant="subtitle">
-                  {sentInvite.emailed
-                    ? `Waiting for ${sentInvite.email} to join Choner`
-                    : `Send ${sentInvite.email} their invite link`}
-                </AppText>
-                <AppText variant="caption" muted>
-                  {sentInvite.emailed
-                    ? 'Your challenge starts the moment they sign up.'
-                    : `We couldn't email them, but the invite is saved. Share this link and it works the same:`}
-                </AppText>
-                {!sentInvite.emailed && lastToken ? (
-                  <View style={styles.linkBox}>
-                    <AppText variant="caption" selectable style={{ color: theme.colors.text }}>
-                      {buildInviteLink(lastToken)}
-                    </AppText>
-                  </View>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <AppText variant="subtitle">{habit}</AppText>
-                <AppText variant="caption" muted>
-                  7-day challenge · Starts once you're both in
-                </AppText>
-              </>
-            )}
+        <Animated.View entering={FadeInDown.delay(120).duration(360)}>
+          <Card style={styles.habitCard}>
+            <AppText variant="subtitle">{habit}</AppText>
+            <AppText variant="caption" muted>
+              7-day challenge
+              {phase === 'finding' || phase === 'pending' ? ' · not started yet' : ''}
+            </AppText>
           </Card>
         </Animated.View>
+
+        {phase === 'choose' ? (
+          <Animated.View entering={FadeInDown.delay(200).duration(360)} style={styles.options}>
+            <OptionCard
+              icon="👋"
+              label="Invite someone you know"
+              description="A friend, sibling, or gym buddy — anyone chasing the same goal."
+              selected={false}
+              onPress={() => setPhase('emailEntry')}
+            />
+            {isCustomHabit ? (
+              <View style={styles.customNote}>
+                <AppText variant="caption" muted>
+                  Finding a partner works best with our suggested challenges — since you picked your
+                  own, try inviting someone you know.
+                </AppText>
+              </View>
+            ) : (
+              <OptionCard
+                icon="🔎"
+                label="Find the right partner"
+                description="We'll match you with someone who wants the same thing."
+                selected={false}
+                onPress={onFindPartner}
+              />
+            )}
+          </Animated.View>
+        ) : null}
 
         {phase === 'emailEntry' ? (
           <Animated.View entering={FadeInDown.duration(280)} style={styles.emailBlock}>
@@ -267,6 +239,14 @@ export default function InviteScreen() {
               show up.
             </AppText>
           </Animated.View>
+        ) : null}
+
+        {phase === 'pending' && sentInvite && !sentInvite.emailed && lastToken ? (
+          <View style={styles.linkBox}>
+            <AppText variant="caption" selectable style={{ color: theme.colors.text }}>
+              {buildInviteLink(lastToken)}
+            </AppText>
+          </View>
         ) : null}
 
         {phase === 'pending' && sentInvite ? (
@@ -303,14 +283,15 @@ export default function InviteScreen() {
         ) : null}
       </ScrollView>
 
-      <Animated.View entering={FadeInDown.delay(240).duration(360)} style={styles.footer}>
-        {phase === 'idle' ? (
+      <Animated.View entering={FadeInDown.delay(280).duration(360)} style={styles.footer}>
+        {phase === 'choose' ? (
           <>
-            <Button label="Invite your partner" onPress={() => setPhase('emailEntry')} />
+            {/* Deliberately lighter than the two options above: solo is a real
+                choice, not the one we're steering toward. */}
+            <Button label="Continue solo, for now" variant="ghost" onPress={goHome} />
             <AppText variant="caption" muted style={styles.supporting}>
-              Send it to a friend, partner, sibling, or gym buddy — anyone who'll actually show up.
+              Start today. You can add a partner anytime.
             </AppText>
-            <Button label="Skip for now" variant="ghost" onPress={() => setPhase('skipped')} />
           </>
         ) : null}
         {phase === 'emailEntry' ? (
@@ -318,26 +299,30 @@ export default function InviteScreen() {
             <Button
               label="Send invite"
               disabled={!EMAIL_RE.test(email)}
-              loading={sending}
+              loading={busy || createInvite.isPending}
               onPress={onSendInvite}
             />
-            <Button label="Skip for now" variant="ghost" onPress={() => setPhase('skipped')} />
+            <Button label="Back" variant="ghost" onPress={() => setPhase('choose')} />
+          </>
+        ) : null}
+        {phase === 'finding' ? (
+          <>
+            <PulsingWaitButton label="Looking for your partner…" />
+            <AppText variant="caption" muted style={styles.supporting}>
+              In the meantime, you can still start today on your own.
+            </AppText>
+            <Button label="Take me home" variant="ghost" onPress={goHome} />
+            <Button
+              label="Invite someone you know instead"
+              variant="ghost"
+              onPress={() => setPhase('emailEntry')}
+            />
           </>
         ) : null}
         {phase === 'pending' && sentInvite ? (
           <>
             <PulsingWaitButton label={`Waiting for ${sentInvite.email}...`} />
-            <Button
-              label="Done — take me home"
-              variant="ghost"
-              onPress={() => router.replace('/(tabs)/home')}
-            />
-          </>
-        ) : null}
-        {phase === 'skipped' ? (
-          <>
-            <Button label="Go to my home" onPress={() => router.replace('/(tabs)/home')} />
-            <Button label="Actually, let me invite someone" variant="ghost" onPress={() => setPhase('idle')} />
+            <Button label="Done — take me home" variant="ghost" onPress={goHome} />
           </>
         ) : null}
       </Animated.View>
@@ -345,8 +330,8 @@ export default function InviteScreen() {
   );
 }
 
-// The disabled post-invite CTA with the spec's subtle pulse; static under
-// reduced motion.
+// The disabled waiting CTA with the spec's subtle pulse; static under reduced
+// motion.
 function PulsingWaitButton({ label }: { label: string }) {
   const reduceMotion = useReduceMotion();
   const pulse = useSharedValue(1);
@@ -372,17 +357,23 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
   content: { padding: 20, paddingTop: theme.spacing(3), gap: theme.spacing(2.5), flexGrow: 1 },
   header: { gap: theme.spacing(1) },
-  leadIn: { color: theme.colors.primary2 },
-  challengeCard: { gap: theme.spacing(0.5) },
+  habitCard: { gap: theme.spacing(0.5) },
+  options: { gap: theme.spacing(1.5) },
+  customNote: {
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: theme.colors.border,
+    padding: theme.spacing(2)
+  },
+  emailBlock: { gap: theme.spacing(1) },
   linkBox: {
     backgroundColor: theme.colors.surface2,
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: theme.radius.sm,
-    padding: theme.spacing(1.5),
-    marginTop: theme.spacing(0.5)
+    padding: theme.spacing(1.5)
   },
-  emailBlock: { gap: theme.spacing(1) },
   pendingActions: { gap: theme.spacing(1) },
   supporting: { textAlign: 'center' },
   footer: { padding: 20, paddingTop: theme.spacing(1), gap: theme.spacing(1) }
