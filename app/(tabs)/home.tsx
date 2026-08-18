@@ -1,6 +1,5 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
@@ -11,7 +10,6 @@ import { useMyChallenge, useStreak } from '@/features/challenges/hooks';
 import { usePendingInvites, usePartnerStatus } from '@/features/community/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
-import { useTimeOfDay } from '@/lib/time-of-day';
 
 function greetingFor(date = new Date()) {
   const h = date.getHours();
@@ -30,7 +28,6 @@ export default function HomeScreen() {
   const streakQ = useStreak(userId);
   const invitesQ = usePendingInvites(userId);
   const partnerStatusQ = usePartnerStatus(userId);
-  const { gradient: skyGradient, isEvening, timeLeftLabel } = useTimeOfDay();
 
   // One challenge now, with a partner slot on it rather than a second row.
   const challenge = challengesQ.data ?? null;
@@ -52,14 +49,9 @@ export default function HomeScreen() {
 
   const fullName = profileQ.data?.full_name;
   const firstName = fullName?.split(' ')[0];
-  const avatarUri = profileQ.data?.avatar_url;
 
   return (
     <View style={styles.root}>
-      <LinearGradient
-        colors={skyGradient as unknown as readonly [string, string, ...string[]]}
-        style={StyleSheet.absoluteFill}
-      />
       <SafeAreaView style={styles.safe}>
         <ScrollView
           contentContainerStyle={styles.content}
@@ -76,9 +68,9 @@ export default function HomeScreen() {
           ) : !challenge ? (
             <EmptyState
               title="Ready when you are"
-              body="Choner works best with two. Invite a partner to start your first challenge."
-              actionLabel="Invite a partner"
-              onAction={() => router.push('/group/invite')}
+              body="Pick a challenge, then find someone to do it with."
+              actionLabel="Choose a challenge"
+              onAction={() => router.push('/challenge/browse')}
             />
           ) : (
             <>
@@ -92,10 +84,7 @@ export default function HomeScreen() {
               <ChallengeCard
                 challenge={challenge}
                 streak={streak}
-                isEvening={isEvening}
-                timeLeftLabel={timeLeftLabel}
                 userName={fullName}
-                userAvatarUri={avatarUri}
                 waitingPartnerEmail={waitingInvite?.email}
                 partnerStatus={partnerStatusQ.data}
               />

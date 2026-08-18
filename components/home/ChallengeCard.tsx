@@ -6,7 +6,8 @@ import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/StateViews';
-import { Firepit } from '@/components/home/Firepit';
+import { Heart } from '@/components/challenges/Heart';
+import { PairRow } from '@/components/challenges/PairRow';
 import { LogTaskItem } from '@/components/home/LogTaskItem';
 import { PartnerProof } from '@/components/home/PartnerProof';
 import { LateNote } from '@/components/home/LateNote';
@@ -43,10 +44,7 @@ function sortedTasks(challenge: any): ChallengeTask[] {
 interface Props {
   challenge: any;
   streak: number;
-  isEvening: boolean;
-  timeLeftLabel: string;
   userName?: string | null;
-  userAvatarUri?: string | null;
   // Only meaningful for the partner card — the invite still awaiting a partner.
   waitingPartnerEmail?: string;
   // Only meaningful for the partner card once paired — the partner's identity
@@ -54,16 +52,13 @@ interface Props {
   partnerStatus?: PartnerStatus;
 }
 
-// The user's challenge: the fire, its task-logging, and whatever the partner
+// The user's challenge: the heart, its task-logging, and whatever the partner
 // half is currently doing. One card now — the partner lives on this challenge
 // rather than in a second one alongside it.
 export function ChallengeCard({
   challenge,
   streak,
-  isEvening,
-  timeLeftLabel,
   userName,
-  userAvatarUri,
   waitingPartnerEmail,
   partnerStatus
 }: Props) {
@@ -74,7 +69,7 @@ export function ChallengeCard({
 
   // partner_state is the truth about the right half of the heart. It covers
   // the case status alone never could: a challenge sitting 'active' with
-  // nobody on the other side, which used to render a two-person fire with an
+  // nobody on the other side, which used to render a two-person heart with an
   // empty seat and no way to invite anyone.
   //
   // partnerStatus is undefined while it loads; only treat someone as unpaired
@@ -125,26 +120,24 @@ export function ChallengeCard({
 
   return (
     <View style={styles.card}>
-      <Firepit
-        mode={mode}
+      {/* The heart, not a flame: one symbol across the product, split so the
+          left half is you and the right half is your partner. */}
+      <Heart
+        youCheckedIn={completedToday > 0 && completedToday === tasks.length}
+        partnerCheckedIn={Boolean(partnerStatus?.checked_in_today)}
+        partnerState={partnerState}
+      />
+
+      <PairRow
+        youName={userName}
+        youCheckedIn={completedToday > 0 && completedToday === tasks.length}
         streak={streak}
-        completedToday={needsPartner ? 0 : completedToday}
-        totalTasks={needsPartner ? 0 : tasks.length}
-        isEvening={isEvening}
-        timeLeftLabel={timeLeftLabel}
-        userName={userName}
-        userAvatarUri={userAvatarUri}
-        partnerName={partnerStatus?.name}
-        partnerAvatarUri={partnerStatus?.avatar_url}
-        waitingPartnerEmail={needsPartner ? (waitingPartnerEmail ?? 'a partner') : undefined}
-        aiPriority={
-          needsPartner || tasks.length === 0
-            ? undefined
-            : completedToday === 0
-            ? 'A small win now sets the day. Start with the easiest log.'
-            : completedToday < tasks.length
-            ? "You're moving. One more log protects your streak."
-            : 'Streak protected. Rest is part of recovery.'
+        partner={
+          partnerState === 'finding'
+            ? { kind: 'seeking' }
+            : partnered
+            ? { kind: 'person', name: partnerStatus?.name, on: Boolean(partnerStatus?.checked_in_today) }
+            : { kind: 'open' }
         }
       />
 
@@ -174,7 +167,7 @@ export function ChallengeCard({
       ) : null}
 
       {/* Only on the partner track, and only while today is still unlogged —
-          there is nothing to explain once the fire is fed. */}
+          there is nothing to explain once today is logged. */}
       {/* A late note is a message to a partner — pointless with nobody there. */}
       {partnered && challenge && pendingTasks.length > 0 ? (
         <LateNote userChallengeId={challenge.id} />
@@ -184,8 +177,8 @@ export function ChallengeCard({
         <View style={styles.pendingBlock}>
           <AppText variant="caption" muted style={styles.centerText}>
             {waitingPartnerEmail
-              ? `Your shared fire lights the moment ${waitingPartnerEmail} joins.`
-              : 'Invite someone to keep this fire together — you hold each other to it.'}
+              ? `Your challenge starts the moment ${waitingPartnerEmail} joins.`
+              : 'Invite someone to do this with — you hold each other to it.'}
           </AppText>
           <Button
             label={waitingPartnerEmail ? 'Invite someone else' : 'Invite a partner'}

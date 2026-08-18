@@ -35,7 +35,7 @@ function deadlineHourFrom(deadline?: string | null): number | null {
 // Step 5 — one of the user's own "Why" answers, rotated daily.
 //
 // Rendered once per user rather than once per track: this is personal
-// motivation, not a property of the solo or partner fire, and seeing the same
+// motivation, not a property of either half of the heart, and seeing the same
 // line twice on one screen would undo the point of rotating it.
 export function WhyReminder({ userId, challenge, dailyDeadline }: Props) {
   const reflectionsQ = useReflections(userId);
