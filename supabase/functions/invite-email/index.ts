@@ -2,12 +2,29 @@ import { Resend } from "npm:resend@4.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
+// Browsers preflight any cross-origin POST carrying an Authorization header,
+// which is every call supabase-js makes. Without these the preflight fails and
+// the invite is never sent — silently, because the row is already written by
+// then. Native apps don't preflight, so this only ever broke on web.
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
+};
+
 Deno.serve(async (req) => {
+  // Answer the preflight before touching the body: an OPTIONS request has none,
+  // so req.json() would throw and return a 400 with no CORS headers at all.
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS });
+  }
+
   let body: { inviterName?: string; email?: string; challengeId?: string; token?: string };
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: "Invalid request body" }, { status: 400 });
+    return Response.json({ error: "Invalid request body" }, { status: 400, headers: CORS });
   }
   const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "hello@choner.io";
 
@@ -73,9 +90,9 @@ Deno.serve(async (req) => {
           ? "No verified sending domain. Verify one at resend.com/domains and set RESEND_FROM_EMAIL to an address on it."
           : undefined
       },
-      { status: 502 }
+      { status: 502, headers: CORS }
     );
   }
 
-  return Response.json(result);
+  return Response.json(result, { headers: CORS });
 });
