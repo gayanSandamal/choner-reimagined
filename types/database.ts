@@ -27,6 +27,9 @@ export interface Database {
           // IANA zone, e.g. 'Asia/Colombo'. The missed-day sweep resolves each
           // user's local day and deadline from this.
           timezone: string;
+          // Derived from timezone on signup ('Asia/Colombo' -> 'Colombo') and
+          // editable after. Scopes the Community feed and the matching pool.
+          city: string | null;
           // 'HH:MM:SS' local time the day is measured against.
           daily_deadline: string;
           created_at: string | null;
@@ -42,6 +45,7 @@ export interface Database {
           stress_level?: string | null;
           onboarding_complete?: boolean | null;
           timezone?: string;
+          city?: string | null;
           daily_deadline?: string;
           created_at?: string | null;
           updated_at?: string | null;
@@ -56,6 +60,7 @@ export interface Database {
           stress_level?: string | null;
           onboarding_complete?: boolean | null;
           timezone?: string;
+          city?: string | null;
           daily_deadline?: string;
           created_at?: string | null;
           updated_at?: string | null;

@@ -75,7 +75,10 @@ export default function ChallengesScreen() {
   const totalDays = challenge?.challenge_templates?.duration_days ?? 7;
   const habit = challengeHabitTitle(challenge) ?? 'Your habit';
   const completed = challenge?.status === 'completed';
-  const notStarted = partnerState === 'finding' || partnerState === 'invited';
+  // Only an unaccepted INVITE is genuinely not started. Someone in the
+  // matching pool keeps logging today — a human may take a day or two to pair
+  // them, and freezing their habit for that long punishes them for asking.
+  const notStarted = partnerState === 'invited';
 
   // One line of the partner's own reasoning, now that a confirmed pairing can
   // read it. Attributed to them by name — an unattributed quote reads as the
@@ -193,7 +196,7 @@ export default function ChallengesScreen() {
         {/* A match landing while you're mid-challenge shouldn't blow the whole
             screen away — it arrives as a banner above whatever you were
             already looking at. */}
-        <MatchBanner />
+        <MatchBanner city={profileQ.data?.city} />
 
         {!challenge ? (
           <Animated.View entering={FadeInDown.duration(360)} style={styles.empty}>
@@ -259,7 +262,11 @@ export default function ChallengesScreen() {
                 {notStarted
                   ? `${totalDays}-day challenge · not started`
                   : `Day ${Math.min(dayIndex, totalDays)} of ${totalDays}${
-                      partnered ? ` · with ${firstName(partnerStatus?.name)}` : ''
+                      partnered
+                        ? ` · with ${firstName(partnerStatus?.name)}`
+                        : partnerState === 'finding'
+                        ? ' · going solo until then'
+                        : ''
                     }`}
               </AppText>
               {notStarted ? null : youCheckedIn ? (

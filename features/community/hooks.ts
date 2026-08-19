@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from './api';
+import * as milestones from './milestones';
 
 export function useGroups(opts?: { mineOnly?: boolean; userId?: string }) {
   return useQuery({
@@ -130,8 +131,7 @@ export function useAcceptInvite() {
     onSuccess: () => {
       // Both fires may have just lit — refresh challenges, streak, and the
       // partner-status read that Home's partner card depends on.
-      qc.invalidateQueries({ queryKey: ['default-challenges'] });
-      qc.invalidateQueries({ queryKey: ['active-challenge'] });
+      qc.invalidateQueries({ queryKey: ['my-challenge'] });
       qc.invalidateQueries({ queryKey: ['partner-status'] });
       qc.invalidateQueries({ queryKey: ['pending-invites'] });
     },
@@ -148,4 +148,42 @@ export function usePartnerStatus(userId: string | undefined) {
 
 export function useReportContent() {
   return useMutation({ mutationFn: api.reportContent });
+}
+
+// ---- Community milestones ----
+
+export function useCityFeed() {
+  return useQuery({
+    queryKey: ['city-feed'],
+    queryFn: () => milestones.getCityFeed(),
+  });
+}
+
+// Which milestone prompts this user has already answered for a challenge, so
+// the prompt can stay quiet about ones they've seen.
+export function useDecidedMilestones(userId: string | undefined, userChallengeId: string | null) {
+  return useQuery({
+    queryKey: ['decided-milestones', userId, userChallengeId],
+    queryFn: () => milestones.getDecidedMilestoneKinds(userId!, userChallengeId),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useRecordMilestoneDecision() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: milestones.recordMilestoneDecision,
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['decided-milestones', vars.userId] });
+      qc.invalidateQueries({ queryKey: ['city-feed'] });
+    },
+  });
+}
+
+export function useToggleMilestoneReaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: milestones.toggleMilestoneReaction,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['city-feed'] }),
+  });
 }

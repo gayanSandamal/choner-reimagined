@@ -27,14 +27,17 @@ import { useReduceMotion } from '@/lib/motion';
 const LABELS: Record<string, string> = {
   home: 'Home',
   challenges: 'Challenges',
+  find: 'Find',
   community: 'Community',
   insights: 'Insights',
   profile: 'Profile'
 };
 
 // The only tabs shown in the bar, in this order. Any other registered route
-// (e.g. `insights`) stays reachable programmatically but is hidden here.
-const VISIBLE_ORDER = ['home', 'challenges', 'community', 'profile'];
+// stays reachable programmatically but is hidden here — `insights` is still
+// unfinished, and `profile` now lives in the top bar's avatar instead, which
+// is what freed the fourth slot for Find.
+const VISIBLE_ORDER = ['home', 'challenges', 'find', 'community'];
 
 // Fixed geometry so every tab is laid out identically regardless of which
 // glyph it draws: each icon is centered in the same box, and the label and
@@ -51,6 +54,7 @@ const DOT_SLOT = 10;
 const ICONS: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
   home: 'home-outline',
   challenges: 'target',
+  find: 'account-search-outline',
   community: 'account-multiple-outline',
   profile: 'account-outline'
 };
