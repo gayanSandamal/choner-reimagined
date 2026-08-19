@@ -4,12 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { AppTopBar } from '@/components/navigation/AppTopBar';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { Heart } from '@/components/challenges/Heart';
 import { PairRow } from '@/components/challenges/PairRow';
 import { MatchBanner } from '@/components/challenges/MatchBanner';
+import { SharePrompt } from '@/components/community/SharePrompt';
 import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
 import {
   useMyChallenge,
@@ -177,6 +179,7 @@ export default function ChallengesScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
+      <AppTopBar />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -197,6 +200,10 @@ export default function ChallengesScreen() {
             screen away — it arrives as a banner above whatever you were
             already looking at. */}
         <MatchBanner city={profileQ.data?.city} />
+
+        {/* Community has no post button; sharing is offered here, right after
+            the moment it refers to. */}
+        <SharePrompt userId={userId} challenge={challenge} streak={streak} />
 
         {!challenge ? (
           <Animated.View entering={FadeInDown.duration(360)} style={styles.empty}>

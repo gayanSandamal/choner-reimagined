@@ -133,13 +133,10 @@ function RootLayoutNav() {
       <Stack.Screen name="settings/index" />
       <Stack.Screen name="settings/notifications" />
       <Stack.Screen name="profile/edit" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="group/[id]" />
-      <Stack.Screen name="group/new" options={{ presentation: 'modal' }} />
       <Stack.Screen
         name="group/invite"
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
-      <Stack.Screen name="post/[id]" />
       <Stack.Screen name="invite/[token]" options={{ animation: 'fade' }} />
       <Stack.Screen name="legal/privacy" />
       <Stack.Screen name="legal/terms" />

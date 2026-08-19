@@ -1,246 +1,196 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Screen } from '@/components/ui/screen';
+import { AppTopBar } from '@/components/navigation/AppTopBar';
 import { AppText } from '@/components/ui/AppText';
-import { Avatar } from '@/components/ui/Avatar';
-import { PressableScale } from '@/components/ui/PressableScale';
-import { InviteCard } from '@/components/community/InviteCard';
-import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
+import { LoadingState, ErrorState } from '@/components/ui/StateViews';
+import { Heart } from '@/components/challenges/Heart';
+import { MilestoneRow } from '@/components/community/MilestoneRow';
+import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
+import { useMyChallenge, useStreak } from '@/features/challenges/hooks';
+import {
+  useCityFeed,
+  usePartnerStatus,
+  useToggleMilestoneReaction
+} from '@/features/community/hooks';
 import { useSession } from '@/providers/session-provider';
-import { useGroups, usePosts } from '@/features/community/hooks';
 import { theme } from '@/constants/theme';
 
-type GlyphName = keyof typeof Ionicons.glyphMap;
+const ORANGE = '#FE8C00';
+const DIM = '#2c4759';
 
+function firstName(name?: string | null) {
+  return (name ?? '').trim().split(/\s+/)[0] || '';
+}
+
+function todayString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Community — ambient social proof, local and opt-in.
+//
+// Not a directory and not a feed to act on. Find is where you decide to get
+// matched; this is where you see that the whole thing actually works, including
+// for people who were matched as strangers. There is deliberately no post
+// button here: the prompt to share lives on Home/Challenges, right after a real
+// milestone, so nothing is published without a specific choice.
 export default function CommunityScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
-  const myGroupsQ = useGroups({ mineOnly: true, userId });
-  const discoverQ = useGroups();
-  const feedQ = usePosts(null);
+  const challengeQ = useMyChallenge(userId);
+  const partnerStatusQ = usePartnerStatus(userId);
+  const streakQ = useStreak(userId);
+  const feedQ = useCityFeed();
+  const react = useToggleMilestoneReaction();
 
-  const refreshing = myGroupsQ.isRefetching || feedQ.isRefetching;
+  const challenge = challengeQ.data ?? null;
+  const partnerState = partnerStateOf(challenge);
+  const partnered = partnerState === 'partnered';
+  const partnerStatus = partnerStatusQ.data;
+  const city = feedQ.data?.city ?? null;
+  const items = feedQ.data?.items ?? [];
+
+  const tasks = (challenge?.challenge_tasks ?? []) as any[];
+  const today = todayString();
+  const youCheckedIn =
+    tasks.length > 0 &&
+    tasks.every((t) =>
+      (t.task_checkins ?? []).some((c: any) => (c.completed_at ?? '').slice(0, 10) === today)
+    );
+
   const onRefresh = () => {
-    myGroupsQ.refetch();
-    discoverQ.refetch();
     feedQ.refetch();
+    challengeQ.refetch();
+    partnerStatusQ.refetch();
   };
 
-  const otherGroups = (discoverQ.data ?? []).filter(
-    (g: any) => !(myGroupsQ.data ?? []).some((mg: any) => mg.id === g.id)
-  );
+  const onReact = (id: string, reacted: boolean) => {
+    if (!userId) return;
+    react.mutate({ milestoneId: id, userId, reacted });
+  };
 
   return (
-    <Screen scroll={false}>
+    <SafeAreaView style={styles.root}>
+      <AppTopBar />
       <ScrollView
-        contentContainerStyle={{ gap: theme.spacing(2.5), paddingBottom: theme.spacing(4) }}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={feedQ.isRefetching}
             onRefresh={onRefresh}
-            tintColor={theme.colors.primary}
-            colors={[theme.colors.primary]}
+            tintColor={ORANGE}
           />
         }
       >
-        <View style={{ gap: 4 }}>
-          <AppText variant="title">Community</AppText>
-          <AppText variant="caption" muted>Gather round other fires</AppText>
-        </View>
-
-        <InviteCard onPress={() => router.push('/group/invite')} />
-
-        <View style={styles.section}>
-          <SectionHead
-            icon="bonfire-outline"
-            title="Your circles"
-            actionLabel="New"
-            onAction={() => router.push('/group/new')}
-          />
-          {myGroupsQ.isLoading ? (
-            <LoadingState />
-          ) : myGroupsQ.isError ? (
-            <ErrorState
-              icon="people-outline"
-              title="We couldn't load your groups"
-              message={(myGroupsQ.error as Error)?.message ?? 'Give it another shot.'}
-              onRetry={() => myGroupsQ.refetch()}
-            />
-          ) : (myGroupsQ.data ?? []).length === 0 ? (
-            <EmptyState
-              icon="bonfire-outline"
-              title="No circles yet"
-              body="Find your people — create a circle or join a public one below."
-              actionLabel="Create a circle"
-              onAction={() => router.push('/group/new')}
-            />
-          ) : (
-            (myGroupsQ.data ?? []).map((g: any, i: number) => (
-              <GroupRow key={g.id} group={g} tint={theme.colors.primary2} delay={i * 50} />
-            ))
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <SectionHead icon="telescope-outline" title="Discover" />
-          {discoverQ.isLoading ? (
-            <LoadingState />
-          ) : discoverQ.isError ? (
-            <ErrorState
-              icon="telescope-outline"
-              title="Discover is hiding"
-              message={(discoverQ.error as Error)?.message ?? 'Pull to refresh and try again.'}
-              onRetry={() => discoverQ.refetch()}
-            />
-          ) : otherGroups.length === 0 ? (
-            <EmptyState
-              icon="telescope-outline"
-              title="No public circles yet"
-              body="When new circles go public, they'll show up here."
-            />
-          ) : (
-            otherGroups.slice(0, 5).map((g: any, i: number) => (
-              <GroupRow key={g.id} group={g} tint={theme.colors.link} delay={i * 50} />
-            ))
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <SectionHead icon="flame-outline" title="Round the fire" subtitle="Wins and wobbles from your circles" />
-          {feedQ.isLoading ? (
-            <LoadingState />
-          ) : feedQ.isError ? (
-            <ErrorState
-              icon="megaphone-outline"
-              title="The feed needs a moment"
-              message={(feedQ.error as Error)?.message ?? "We couldn't reach the feed — try again."}
-              onRetry={() => feedQ.refetch()}
-            />
-          ) : (feedQ.data ?? []).length === 0 ? (
-            <EmptyState
-              icon="chatbubbles-outline"
-              title="Quiet by the fire"
-              body="Be the first to share a win or a wobble — your circle will love it."
-              actionLabel="Open a circle"
-              onAction={() => {
-                const first = (myGroupsQ.data ?? [])[0];
-                if (first) router.push({ pathname: '/group/[id]', params: { id: first.id } });
-              }}
-            />
-          ) : (
-            (feedQ.data ?? []).slice(0, 10).map((p: any, i: number) => (
-              <Animated.View key={p.id} entering={FadeInDown.delay(i * 40).duration(280)}>
-                <PressableScale
-                  onPress={() => router.push({ pathname: '/post/[id]', params: { id: p.id } })}
-                  haptic="light"
-                  scaleTo="subtle"
-                  style={styles.postCard}
-                >
-                  <Avatar name={p.profiles?.full_name ?? 'Someone'} uri={p.profiles?.avatar_url} size={40} />
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <AppText style={{ fontFamily: theme.fonts.bodyBold }}>
-                      {p.profiles?.full_name ?? 'Someone'}
-                    </AppText>
-                    <AppText muted numberOfLines={3}>{p.body}</AppText>
-                  </View>
-                </PressableScale>
-              </Animated.View>
-            ))
-          )}
-        </View>
-      </ScrollView>
-    </Screen>
-  );
-}
-
-function SectionHead({
-  icon,
-  title,
-  subtitle,
-  actionLabel,
-  onAction
-}: {
-  icon: GlyphName;
-  title: string;
-  subtitle?: string;
-  actionLabel?: string;
-  onAction?: () => void;
-}) {
-  return (
-    <View style={styles.sectionHead}>
-      <View style={styles.sectionHeadLeft}>
-        <Ionicons name={icon} size={16} color={theme.colors.primary2} />
-        <View>
-          <AppText variant="subtitle">{title}</AppText>
-          {subtitle ? <AppText variant="caption" muted>{subtitle}</AppText> : null}
-        </View>
-      </View>
-      {actionLabel && onAction ? (
-        <PressableScale onPress={onAction} haptic="light" scaleTo="subtle" style={styles.sectionAction}>
-          <AppText variant="caption" style={styles.sectionActionText}>{actionLabel}</AppText>
-          <Ionicons name="add" size={13} color={theme.colors.primary2} />
-        </PressableScale>
-      ) : null}
-    </View>
-  );
-}
-
-function GroupRow({ group, tint, delay }: { group: any; tint: string; delay: number }) {
-  return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(280)}>
-      <PressableScale
-        onPress={() => router.push({ pathname: '/group/[id]', params: { id: group.id } })}
-        haptic="light"
-        scaleTo="subtle"
-        style={styles.groupCard}
-      >
-        <View style={[styles.groupIcon, { backgroundColor: `${tint}22` }]}>
-          <Ionicons name="people" size={19} color={tint} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <AppText style={{ fontFamily: theme.fonts.bodyBold }}>{group.title}</AppText>
-          {group.description ? (
-            <AppText variant="caption" muted numberOfLines={2}>{group.description}</AppText>
+        <View style={styles.head}>
+          <AppText style={styles.pageTitle}>Community</AppText>
+          {city ? (
+            <View style={styles.cityPill}>
+              <Ionicons name="location-outline" size={11} color={theme.colors.muted} />
+              <AppText style={styles.cityText}>{city}</AppText>
+            </View>
           ) : null}
         </View>
-        <Ionicons name="chevron-forward" size={18} color={theme.colors.muted} />
-      </PressableScale>
-    </Animated.View>
+
+        {/* Pinned first, always. This tab is never fully blank — even with no
+            feed, you can see your own pair. */}
+        <Animated.View entering={FadeInDown.duration(320)} style={styles.pinned}>
+          <View style={styles.pinnedHeart}>
+            <Heart
+              youCheckedIn={youCheckedIn}
+              partnerCheckedIn={Boolean(partnerStatus?.checked_in_today)}
+              partnerState={partnerState}
+              width={62}
+            />
+          </View>
+          <View style={styles.pinnedBody}>
+            <AppText style={styles.pinnedTitle}>
+              {partnered
+                ? `You & ${firstName(partnerStatus?.name) || 'your partner'}`
+                : 'Doing this solo right now'}
+            </AppText>
+            <AppText style={styles.pinnedSub}>
+              {challengeHabitTitle(challenge) ?? 'No challenge yet'}
+            </AppText>
+          </View>
+          {(streakQ.data ?? 0) > 0 ? (
+            <View style={styles.streak}>
+              <AppText style={styles.streakNum}>{streakQ.data}</AppText>
+              <AppText style={styles.streakLabel}>days</AppText>
+            </View>
+          ) : null}
+        </Animated.View>
+
+        {feedQ.isLoading ? (
+          <LoadingState />
+        ) : feedQ.isError ? (
+          <ErrorState
+            message={(feedQ.error as Error).message}
+            onRetry={() => feedQ.refetch()}
+          />
+        ) : items.length === 0 ? (
+          // Early-launch emptiness is expected, not an error — say so warmly.
+          <View style={styles.empty}>
+            <Ionicons name="leaf-outline" size={24} color={theme.colors.muted} />
+            <AppText style={styles.emptyText}>
+              {city ? `${city} is just getting started.` : 'Your city is just getting started.'}
+              {'\n'}Be one of the first to share a milestone.
+            </AppText>
+          </View>
+        ) : (
+          <View style={styles.feed}>
+            {items.map((item) => (
+              <MilestoneRow
+                key={item.id}
+                item={item}
+                onReact={() => onReact(item.id, item.i_reacted)}
+              />
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { gap: theme.spacing(1.25) },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionAction: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  sectionActionText: { color: theme.colors.primary2, fontFamily: theme.fonts.bodyBold },
-  groupCard: {
+  root: { flex: 1, backgroundColor: theme.colors.bg },
+  content: { paddingHorizontal: 22, paddingBottom: theme.spacing(5) },
+  head: { marginTop: theme.spacing(1.5), marginBottom: theme.spacing(2), gap: 8 },
+  pageTitle: { fontFamily: theme.fonts.body, fontSize: 24, color: theme.colors.text },
+  cityPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 100,
+    paddingHorizontal: 9,
+    paddingVertical: 3
+  },
+  cityText: { color: theme.colors.muted, fontSize: 11 },
+  pinned: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing(1.5),
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
+    backgroundColor: '#04202f',
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: theme.spacing(1.75)
+    borderColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: theme.spacing(2)
   },
-  groupIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  postCard: {
-    flexDirection: 'row',
-    gap: theme.spacing(1.5),
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: theme.spacing(1.75)
-  }
+  pinnedHeart: { width: 62 },
+  pinnedBody: { flexShrink: 1, flexGrow: 1, gap: 2 },
+  pinnedTitle: { color: theme.colors.text, fontSize: 13.5, fontFamily: theme.fonts.bodyBold },
+  pinnedSub: { color: theme.colors.muted, fontSize: 11.5 },
+  streak: { alignItems: 'center' },
+  streakNum: { fontFamily: theme.fonts.bodyBold, fontSize: 20, color: theme.colors.text },
+  streakLabel: { fontSize: 10, color: theme.colors.muted },
+  feed: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
+  empty: { alignItems: 'center', paddingVertical: theme.spacing(5), gap: theme.spacing(1.5) },
+  emptyText: { color: theme.colors.muted, fontSize: 12, textAlign: 'center', lineHeight: 19 }
 });
