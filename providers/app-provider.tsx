@@ -116,9 +116,13 @@ function SessionWiring() {
           qc.invalidateQueries({ queryKey: ['notification-watch', userId] });
           qc.invalidateQueries({ queryKey: ['notifications', userId] });
           qc.invalidateQueries({ queryKey: ['notifications-unread', userId] });
-          // A partner joining changes the Home cards, not just the bell.
+          // A partner joining OR logging today changes the heart, not just
+          // the bell. These keys were renamed to 'my-challenge' when the
+          // two-track model collapsed, and this handler was never updated —
+          // so realtime fired and the UI still showed yesterday's state.
           qc.invalidateQueries({ queryKey: ['partner-status', userId] });
-          qc.invalidateQueries({ queryKey: ['default-challenges', userId] });
+          qc.invalidateQueries({ queryKey: ['my-challenge', userId] });
+          qc.invalidateQueries({ queryKey: ['streak', userId] });
         }
       )
       .subscribe();
@@ -140,8 +144,7 @@ function SessionWiring() {
     // "waiting for a partner" until they manually pulled to refresh.
     const refreshPairing = () => {
       qc.invalidateQueries({ queryKey: ['partner-status', userId] });
-      qc.invalidateQueries({ queryKey: ['default-challenges', userId] });
-      qc.invalidateQueries({ queryKey: ['active-challenge', userId] });
+      qc.invalidateQueries({ queryKey: ['my-challenge', userId] });
       qc.invalidateQueries({ queryKey: ['pending-invites', userId] });
     };
 
