@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -12,6 +12,7 @@ import { useSession } from '@/providers/session-provider';
 import { useActiveConversation, useAIMessages, useSendAIMessage, useTodayAICount } from '@/features/ai/hooks';
 import { useIsPremium } from '@/features/billing/hooks';
 import { theme } from '@/constants/theme';
+import { confirmAction, notify } from '@/lib/alert';
 
 const PROMPTS = [
   "I missed 3 days, help me restart",
@@ -46,17 +47,20 @@ export default function AiCoachModal() {
     const content = (text ?? input).trim();
     if (!content || !conversationId) return;
     if (blocked) {
-      Alert.alert('Daily limit reached', 'Upgrade to Premium for unlimited coaching.', [
-        { text: 'Not now' },
-        { text: 'See plans', onPress: () => router.push('/modals/premium') },
-      ]);
+      const seePlans = await confirmAction({
+        title: 'Daily limit reached',
+        message: 'Upgrade to Premium for unlimited coaching.',
+        confirmLabel: 'See plans',
+        cancelLabel: 'Not now'
+      });
+      if (seePlans) router.push('/modals/premium');
       return;
     }
     setInput('');
     try {
       await sendMut.mutateAsync({ conversationId, message: content });
     } catch (e: any) {
-      Alert.alert('Could not reach the coach', e.message ?? 'Please try again.');
+      notify('Could not reach the coach', e.message ?? 'Please try again.');
       setInput(content);
     }
   };

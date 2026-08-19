@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -16,6 +16,7 @@ import { getTemplateBySlug } from '@/features/challenges/api';
 import { useChallengeTemplates, useSetMyChallengeHabit } from '@/features/challenges/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 // The hidden template every "Create your own" habit is stored against — see
 // the migration that seeds it.
@@ -108,7 +109,7 @@ export default function ChallengeScreen() {
       }
       router.push('/onboarding/why');
     } catch (error: any) {
-      Alert.alert('Could not set your challenge', error.message);
+      notify('Could not set your challenge', error.message);
     }
   };
 

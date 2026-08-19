@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -11,6 +11,7 @@ import { LoadingState } from '@/components/ui/StateViews';
 import { useSession } from '@/providers/session-provider';
 import { useProfile, useUpdateProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 // Whole hours only. A prototype does not need minute precision, and a short
 // list is far quicker than a wheel picker.
@@ -61,7 +62,7 @@ export default function DeadlineSettingsScreen() {
       });
       router.back();
     } catch (e: any) {
-      Alert.alert("Couldn't save", e.message);
+      notify("Couldn't save", e.message);
     }
   };
 

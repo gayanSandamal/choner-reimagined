@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,13 +17,18 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AuthBackButton } from '@/components/auth/AuthBackButton';
 import { BrandMark } from '@/components/auth/BrandMark';
-import { signIn } from '@/features/auth/api';
+import { authErrorMessage, signIn } from '@/features/auth/api';
 import { SignInInput, signInSchema } from '@/features/auth/schema';
 import { theme } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
+import { notify } from '@/lib/alert';
 
 export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
+  // Shown on the form itself. A toast can be missed or scroll away, and a
+  // failed sign in is exactly the moment someone needs the reason in front of
+  // them — including the possibility that they never made an account.
+  const [formError, setFormError] = useState<string | null>(null);
   const {
     control,
     handleSubmit,
@@ -37,6 +41,7 @@ export default function SignInScreen() {
   const onSubmit = handleSubmit(async (values) => {
     try {
       setLoading(true);
+      setFormError(null);
       await signIn(values);
       haptics.success();
       // Land on the index gate: it decides between onboarding and home
@@ -44,7 +49,9 @@ export default function SignInScreen() {
       router.replace('/');
     } catch (error: any) {
       haptics.error();
-      Alert.alert('Sign in failed', error.message);
+      const message = authErrorMessage(error);
+      setFormError(message);
+      notify("Couldn't sign you in", message);
     } finally {
       setLoading(false);
     }
@@ -116,6 +123,12 @@ export default function SignInScreen() {
             />
           </Animated.View>
 
+          {formError ? (
+            <Animated.View entering={FadeInDown.duration(240)}>
+              <AppText style={styles.formError}>{formError}</AppText>
+            </Animated.View>
+          ) : null}
+
           <Animated.View entering={FadeInDown.delay(280).duration(360)}>
             <Button
               label={loading ? 'SIGNING IN…' : 'SIGN IN'}
@@ -171,6 +184,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     textAlign: 'center',
     textTransform: 'uppercase'
+  },
+  formError: {
+    color: theme.colors.danger,
+    fontFamily: theme.fonts.body,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center'
   },
   forgotWrap: { alignSelf: 'center' },
   forgot: {

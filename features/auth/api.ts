@@ -3,6 +3,32 @@ import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase';
 import { SignInInput, SignUpInput } from './schema';
 
+// Supabase answers "Invalid login credentials" for BOTH a wrong password and
+// an email with no account — deliberately, so nobody can probe which addresses
+// are registered. We must not undo that by testing whether the account exists,
+// so the copy covers both cases and points at sign-up instead of guessing.
+export function authErrorMessage(error: unknown): string {
+  const raw = (error as { message?: string })?.message ?? '';
+  const m = raw.toLowerCase();
+
+  if (m.includes('invalid login credentials')) {
+    return "That email and password don't match an account. Check them again — or sign up if you haven't made an account yet.";
+  }
+  if (m.includes('email not confirmed')) {
+    return 'Confirm your email first — we sent you a link when you signed up.';
+  }
+  if (m.includes('already registered') || m.includes('already been registered')) {
+    return 'That email already has an account. Try signing in instead.';
+  }
+  if (m.includes('rate limit') || m.includes('too many')) {
+    return 'Too many attempts. Wait a minute and try again.';
+  }
+  if (m.includes('failed to fetch') || m.includes('network')) {
+    return "Couldn't reach Choner. Check your connection and try again.";
+  }
+  return raw || 'Something went wrong. Please try again.';
+}
+
 export async function signIn(values: SignInInput) {
   const { error } = await supabase.auth.signInWithPassword(values);
   if (error) throw error;

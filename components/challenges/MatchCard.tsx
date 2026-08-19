@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useConfirmMatch, useDeclineMatch, useMyMatch } from '@/features/challenges/hooks';
 import { theme } from '@/constants/theme';
+import { confirmAction, notify } from '@/lib/alert';
 
 const ORANGE = '#FE8C00';
 const ORANGE_SOFT = '#ffb355';
@@ -47,33 +48,28 @@ export function MatchCard({ onDismiss, city }: Props) {
     try {
       const result = await confirm.mutateAsync(match.match_id);
       if (!result.both) {
-        Alert.alert(
-          "You're in",
-          `We'll start the moment ${match.partner_first_name} confirms too.`
-        );
+        notify("You're in", `We'll start the moment ${match.partner_first_name} confirms too.`);
       }
     } catch (error: any) {
-      Alert.alert('Could not confirm', error.message);
+      notify('Could not confirm', error.message);
     }
   };
 
-  const onDecline = () => {
+  const onDecline = async () => {
     // Declining sends BOTH people back to the pool, so it is worth a beat of
     // friction rather than a single stray tap.
-    Alert.alert('Keep looking?', "We'll find someone else for you both.", [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Keep looking',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await decline.mutateAsync(match.match_id);
-          } catch (error: any) {
-            Alert.alert('Could not do that', error.message);
-          }
-        }
-      }
-    ]);
+    const sure = await confirmAction({
+      title: 'Keep looking?',
+      message: "We'll find someone else for you both.",
+      confirmLabel: 'Keep looking',
+      destructive: true
+    });
+    if (!sure) return;
+    try {
+      await decline.mutateAsync(match.match_id);
+    } catch (error: any) {
+      notify('Could not do that', error.message);
+    }
   };
 
   const meta = [match.habit, `${match.duration_days}-day challenge`, city]

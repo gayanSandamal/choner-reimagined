@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { useSession } from '@/providers/session-provider';
 import { useUpdateProfile } from '@/features/profile/hooks';
 import { cityFromTimezone } from '@/features/community/milestones';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 export default function EnergyScreen() {
   const { session } = useSession();
@@ -62,7 +63,7 @@ export default function EnergyScreen() {
 
       router.push('/onboarding/reveal');
     } catch (error: any) {
-      Alert.alert('Could not save your profile', error.message);
+      notify('Could not save your profile', error.message);
     }
   };
 

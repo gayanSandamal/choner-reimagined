@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@/components/ui/screen';
@@ -13,6 +13,7 @@ import { useSession } from '@/providers/session-provider';
 import { useProfile, useUpdateProfile, useUploadAvatar } from '@/features/profile/hooks';
 import { GOALS, TONES } from '@/features/onboarding/constants';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 // Rows written before the onboarding rewrite store display labels
 // ('Move more') or old modes ('solo'). Chips highlight on value or label
@@ -45,7 +46,7 @@ export default function EditProfileScreen() {
     if (!userId) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission needed', 'Please allow photo library access to change your avatar.');
+      notify('Permission needed', 'Please allow photo library access to change your avatar.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -63,7 +64,7 @@ export default function EditProfileScreen() {
         contentType: result.assets[0].mimeType ?? 'image/jpeg',
       });
     } catch (e: any) {
-      Alert.alert('Upload failed', e.message);
+      notify('Upload failed', e.message);
     }
   };
 
@@ -80,7 +81,7 @@ export default function EditProfileScreen() {
       });
       router.back();
     } catch (e: any) {
-      Alert.alert('Save failed', e.message);
+      notify('Save failed', e.message);
     }
   };
 

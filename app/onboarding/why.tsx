@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -25,6 +25,7 @@ import {
 } from '@/features/challenges/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 // Step 2 of the challenge setup flow. Every user answers this individually,
 // including the partner who was invited in — the answers are personal notes,
@@ -72,7 +73,7 @@ export default function WhyScreen() {
       });
       goNext();
     } catch (error: any) {
-      Alert.alert('Could not save your answers', error.message);
+      notify('Could not save your answers', error.message);
     }
   };
 
