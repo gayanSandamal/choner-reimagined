@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -19,6 +18,7 @@ import { BrandMark } from '@/components/auth/BrandMark';
 import { updatePassword } from '@/features/auth/api';
 import { ResetPasswordInput, resetPasswordSchema } from '@/features/auth/schema';
 import { theme } from '@/constants/theme';
+import { confirmAction, notify } from '@/lib/alert';
 
 export default function ResetPasswordScreen() {
   const [loading, setLoading] = useState(false);
@@ -31,11 +31,10 @@ export default function ResetPasswordScreen() {
     try {
       setLoading(true);
       await updatePassword(password);
-      Alert.alert('Password updated', 'You are signed in with your new password.', [
-        { text: 'Continue', onPress: () => router.replace('/(tabs)/home') },
-      ]);
+      notify('Password updated', 'You are signed in with your new password.');
+      router.replace('/(tabs)/home');
     } catch (error: any) {
-      Alert.alert('Could not update password', error.message);
+      notify('Could not update password', error.message);
     } finally {
       setLoading(false);
     }

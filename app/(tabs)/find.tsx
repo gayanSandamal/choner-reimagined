@@ -1,4 +1,4 @@
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
 import { MATCHING_PROOF } from '@/constants/proof';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 const ORANGE = '#FE8C00';
 const ORANGE_SOFT = '#ffb355';
@@ -62,7 +63,7 @@ export default function FindScreen() {
     try {
       await joinPool.mutateAsync({ userChallengeId: challenge.id });
     } catch (error: any) {
-      Alert.alert('Could not start looking', error.message);
+      notify('Could not start looking', error.message);
     }
   };
 
@@ -71,7 +72,7 @@ export default function FindScreen() {
     try {
       await leavePool.mutateAsync(challenge.id);
     } catch (error: any) {
-      Alert.alert('Could not cancel', error.message);
+      notify('Could not cancel', error.message);
     }
   };
 

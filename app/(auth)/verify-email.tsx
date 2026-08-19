@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/auth/BrandMark';
 import { resendVerification } from '@/features/auth/api';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 export default function VerifyEmailScreen() {
   const { email } = useLocalSearchParams<{ email?: string }>();
@@ -19,9 +20,9 @@ export default function VerifyEmailScreen() {
     try {
       setLoading(true);
       await resendVerification(email);
-      Alert.alert('Sent', 'A new verification email is on its way.');
+      notify('Sent', 'A new verification email is on its way.');
     } catch (e: any) {
-      Alert.alert('Could not resend', e.message);
+      notify('Could not resend', e.message);
     } finally {
       setLoading(false);
     }

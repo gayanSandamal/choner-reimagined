@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/ui/screen';
@@ -13,6 +13,7 @@ import { useMyChallenge } from '@/features/challenges/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { buildInviteLink, shareInviteLink } from '@/lib/invite-link';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 export default function InviteScreen() {
   const { session } = useSession();
@@ -41,15 +42,15 @@ export default function InviteScreen() {
       setSent({ email: email.trim(), token: result.token, emailed: result.emailed });
       setEmail('');
     } catch (e: any) {
-      Alert.alert('Could not send invite', e.message);
+      notify('Could not send invite', e.message);
     }
   };
 
   const onShare = async () => {
     if (!sent?.token) return;
     const how = await shareInviteLink(sent.token, profileQ.data?.full_name);
-    if (how === 'copied') Alert.alert('Link copied', 'Paste it to your partner to bring them in.');
-    if (how === 'failed') Alert.alert('Could not share', 'Copy the link shown above instead.');
+    if (how === 'copied') notify('Link copied', 'Paste it to your partner to bring them in.');
+    if (how === 'failed') notify('Could not share', 'Copy the link shown above instead.');
   };
 
   if (sent) {

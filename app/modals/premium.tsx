@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,6 +24,7 @@ import { useIsPremium } from '@/features/billing/hooks';
 import { theme } from '@/constants/theme';
 import { useReduceMotion } from '@/lib/motion';
 import { haptics } from '@/lib/haptics';
+import { notify } from '@/lib/alert';
 
 const FEATURES: { icon: keyof typeof Ionicons.glyphMap; label: string; body: string }[] = [
   {
@@ -130,11 +131,11 @@ export default function PremiumModal() {
       await purchasePackage(pkg);
       haptics.success();
       await refetch();
-      Alert.alert('Welcome to Premium!', 'Your subscription is active.');
+      notify('Welcome to Premium!', 'Your subscription is active.');
     } catch (e: any) {
       if (!e?.userCancelled) {
         haptics.error();
-        Alert.alert('Purchase failed', e.message ?? 'Please try again.');
+        notify('Purchase failed', e.message ?? 'Please try again.');
       }
     } finally {
       setBusyPkg(null);
@@ -145,16 +146,16 @@ export default function PremiumModal() {
     try {
       await restorePurchases();
       await refetch();
-      Alert.alert('Restored', 'Your purchases have been restored.');
+      notify('Restored', 'Your purchases have been restored.');
     } catch (e: any) {
-      Alert.alert('Restore failed', e.message ?? 'No previous purchases found.');
+      notify('Restore failed', e.message ?? 'No previous purchases found.');
     }
   };
 
   const onManage = () => {
     const url = Platform.OS === 'ios' ? SUBSCRIPTION_URLS.ios : SUBSCRIPTION_URLS.android;
     Linking.openURL(url).catch(() =>
-      Alert.alert('Could not open', 'Manage your subscription from the App Store / Play Store.')
+      notify('Could not open', 'Manage your subscription from the App Store / Play Store.')
     );
   };
 

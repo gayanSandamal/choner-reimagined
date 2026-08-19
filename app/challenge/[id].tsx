@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Alert, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Card } from '@/components/ui/Card';
@@ -21,6 +21,7 @@ import { useIsPremium } from '@/features/billing/hooks';
 import { captureProofPhoto, resolveProofType } from '@/features/challenges/capture';
 import { features } from '@/constants/features';
 import { theme } from '@/constants/theme';
+import { confirmAction, notify } from '@/lib/alert';
 
 function todayString() {
   return new Date().toISOString().slice(0, 10);
@@ -56,50 +57,42 @@ export default function ChallengeDetailScreen() {
   const checkinFor = (task: any) =>
     (task.task_checkins ?? []).find((c: any) => (c.completed_at ?? '').slice(0, 10) === today);
 
-  const onStart = () => {
+  const onStart = async () => {
     if (!userId || !id) return;
     if (features.pro && templateQ.data?.is_premium && !isPremium) {
-      Alert.alert('Premium challenge', 'Upgrade to unlock this challenge.', [
-        { text: 'Cancel' },
-        { text: 'See plans', onPress: () => router.push('/modals/premium') },
-      ]);
+      const seePlans = await confirmAction({
+        title: 'Premium challenge',
+        message: 'Upgrade to unlock this challenge.',
+        confirmLabel: 'See plans'
+      });
+      if (seePlans) router.push('/modals/premium');
       return;
     }
     if (activeChallenge && !isActiveForThisTemplate) {
-      Alert.alert(
-        'You have an active challenge',
-        'Starting a new one will abandon your current challenge. Continue?',
-        [
-          { text: 'Cancel' },
-          {
-            text: 'Replace it',
-            style: 'destructive',
-            onPress: async () => {
-              await abandonMut.mutateAsync(activeChallenge.id);
-              startMut.mutate({
-                userId,
-                templateId: id,
-                accountabilityMode: 'solo',
-              });
-            },
-          },
-        ]
-      );
+      const replace = await confirmAction({
+        title: 'You have an active challenge',
+        message: 'Starting a new one will abandon your current challenge. Continue?',
+        confirmLabel: 'Replace it',
+        destructive: true
+      });
+      if (!replace) return;
+      await abandonMut.mutateAsync(activeChallenge.id);
+      startMut.mutate({ userId, templateId: id, accountabilityMode: 'solo' });
       return;
     }
     startMut.mutate({ userId, templateId: id, accountabilityMode: 'solo' });
   };
 
-  const onAbandon = () => {
+  const onAbandon = async () => {
     if (!activeChallenge) return;
-    Alert.alert('End this challenge?', 'Your progress will be saved in history.', [
-      { text: 'Keep going' },
-      {
-        text: 'End challenge',
-        style: 'destructive',
-        onPress: () => abandonMut.mutate(activeChallenge.id),
-      },
-    ]);
+    const end = await confirmAction({
+      title: 'End this challenge?',
+      message: 'Your progress will be saved in history.',
+      confirmLabel: 'End challenge',
+      cancelLabel: 'Keep going',
+      destructive: true
+    });
+    if (end) abandonMut.mutate(activeChallenge.id);
   };
 
   if (templateQ.isLoading) {

@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
+import { registerToastHandler } from '@/lib/alert';
 import { theme } from '@/constants/theme';
 
 export type InAppToast = {
@@ -55,6 +56,14 @@ export function ToastProvider({ children }: PropsWithChildren) {
   );
 
   useEffect(() => clear, [clear]);
+
+  // Lets lib/alert.ts reach the banner from plain (non-component) code, which
+  // is where most error handling lives. Without this, notify() on web would
+  // have to fall back to window.alert every time.
+  useEffect(() => {
+    registerToastHandler((t) => showToast({ title: t.title, body: t.body }));
+    return () => registerToastHandler(null);
+  }, [showToast]);
 
   const onPress = () => {
     const route = toast?.route;

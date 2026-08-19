@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/AppText';
@@ -20,6 +20,7 @@ import {
 } from '@/features/challenges/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 // Editing the "Why" mid-challenge.
 //
@@ -49,7 +50,7 @@ export default function EditWhyModal() {
       });
       router.back();
     } catch (error: any) {
-      Alert.alert('Could not save your answers', error.message);
+      notify('Could not save your answers', error.message);
     }
   };
 

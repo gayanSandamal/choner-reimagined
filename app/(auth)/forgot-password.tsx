@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -20,6 +19,7 @@ import { BrandMark } from '@/components/auth/BrandMark';
 import { requestPasswordReset } from '@/features/auth/api';
 import { ForgotPasswordInput, forgotPasswordSchema } from '@/features/auth/schema';
 import { theme } from '@/constants/theme';
+import { confirmAction, notify } from '@/lib/alert';
 
 export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
@@ -32,11 +32,10 @@ export default function ForgotPasswordScreen() {
     try {
       setLoading(true);
       await requestPasswordReset(email);
-      Alert.alert('Check your email', 'We sent you a link to reset your password.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      notify('Check your email', 'We sent you a link to reset your password.');
+      router.back();
     } catch (error: any) {
-      Alert.alert('Could not send reset email', error.message);
+      notify('Could not send reset email', error.message);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import { ProgressDots } from '@/components/onboarding/ProgressDots';
 import { useSession } from '@/providers/session-provider';
 import { useUpdateProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 const PROMISES = [
   {
@@ -52,7 +53,7 @@ export default function WelcomeScreen() {
       router.replace('/(tabs)/home');
     } catch (error: any) {
       setSkipping(false);
-      Alert.alert('Something went wrong', error.message);
+      notify('Something went wrong', error.message);
     }
   };
 

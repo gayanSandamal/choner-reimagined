@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,10 +18,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AuthBackButton } from '@/components/auth/AuthBackButton';
 import { BrandMark } from '@/components/auth/BrandMark';
-import { signUp } from '@/features/auth/api';
+import { signUp, authErrorMessage } from '@/features/auth/api';
 import { SignUpInput, signUpSchema } from '@/features/auth/schema';
 import { theme } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
+import { notify } from '@/lib/alert';
 
 export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
@@ -53,7 +53,7 @@ export default function SignUpScreen() {
       }
     } catch (error: any) {
       haptics.error();
-      Alert.alert('Sign up failed', error.message);
+      notify('Sign up failed', authErrorMessage(error));
     } finally {
       setLoading(false);
     }

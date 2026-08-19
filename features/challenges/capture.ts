@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import type { ProofType } from '@/types/database';
+import { notify } from '@/lib/alert';
 
 type TaskLike = {
   proof_type?: ProofType | null;
@@ -31,7 +32,7 @@ export async function captureProofPhoto(): Promise<CaptureResult> {
 
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert(
+    notify(
       'Camera needed for this one',
       'This habit is verified with a quick photo for your partner. Allow camera access to check in.'
     );

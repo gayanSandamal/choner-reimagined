@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, {
@@ -26,6 +26,7 @@ import { buildInviteLink, shareInviteLink } from '@/lib/invite-link';
 import { LoadingState } from '@/components/ui/StateViews';
 import { captureError } from '@/lib/observability';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 // Step 3 — how do you want to do this?
 //
@@ -95,7 +96,7 @@ export default function PartnerPathScreen() {
         });
       }
     } catch (error: any) {
-      Alert.alert("The invite didn't send", error.message);
+      notify("The invite didn't send", error.message);
     } finally {
       setBusy(false);
     }
@@ -108,7 +109,7 @@ export default function PartnerPathScreen() {
       await joinPool.mutateAsync({ userChallengeId: challengeId });
       setPhase('finding');
     } catch (error: any) {
-      Alert.alert('Could not start looking', error.message);
+      notify('Could not start looking', error.message);
     } finally {
       setBusy(false);
     }
@@ -117,8 +118,8 @@ export default function PartnerPathScreen() {
   const onShare = async () => {
     if (!lastToken) return;
     const how = await shareInviteLink(lastToken, profileQ.data?.full_name);
-    if (how === 'copied') Alert.alert('Link copied', 'Paste it to your partner to bring them in.');
-    if (how === 'failed') Alert.alert('Could not share', 'Copy the link shown above instead.');
+    if (how === 'copied') notify('Link copied', 'Paste it to your partner to bring them in.');
+    if (how === 'failed') notify('Could not share', 'Copy the link shown above instead.');
   };
 
   const onResend = async () => {
@@ -130,9 +131,9 @@ export default function PartnerPathScreen() {
         user_challenge_id: challengeId,
         inviterName: profileQ.data?.full_name ?? undefined
       });
-      Alert.alert('Invite resent', `We sent another email to ${sentInvite.email}.`);
+      notify('Invite resent', `We sent another email to ${sentInvite.email}.`);
     } catch (error: any) {
-      Alert.alert('Could not resend', error.message);
+      notify('Could not resend', error.message);
     }
   };
 

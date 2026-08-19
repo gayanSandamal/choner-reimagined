@@ -1,4 +1,4 @@
-import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
+import { Linking, Platform, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -9,6 +9,7 @@ import { useDeleteAccount } from '@/features/profile/hooks';
 import { useIsPremium } from '@/features/billing/hooks';
 import { features } from '@/constants/features';
 import { theme } from '@/constants/theme';
+import { confirmAction, notify } from '@/lib/alert';
 
 const SUBSCRIPTION_URLS = {
   ios: 'itms-apps://apps.apple.com/account/subscriptions',
@@ -21,43 +22,45 @@ export default function SettingsScreen() {
 
   const handleManageSubscription = () => {
     const url = Platform.OS === 'ios' ? SUBSCRIPTION_URLS.ios : SUBSCRIPTION_URLS.android;
-    Linking.openURL(url).catch(() => Alert.alert('Could not open', 'Manage your subscription from the App Store / Play Store.'));
-  };
-
-  const handleSignOut = () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => signOut() },
-    ]);
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete account',
-      'This will permanently delete your account and all data. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () =>
-            Alert.alert('Are you sure?', 'Please confirm one more time.', [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Yes, delete forever',
-                style: 'destructive',
-                onPress: async () => {
-                  try {
-                    await deleteMut.mutateAsync();
-                  } catch (e: any) {
-                    Alert.alert('Could not delete', e.message);
-                  }
-                },
-              },
-            ]),
-        },
-      ]
+    Linking.openURL(url).catch(() =>
+      notify('Could not open', 'Manage your subscription from the App Store / Play Store.')
     );
+  };
+
+  const handleSignOut = async () => {
+    const sure = await confirmAction({
+      title: 'Sign out',
+      message: 'Are you sure you want to sign out?',
+      confirmLabel: 'Sign out',
+      destructive: true
+    });
+    if (sure) signOut();
+  };
+
+  // Two confirmations on purpose: this is irreversible, and the second one
+  // spells out that it cannot be undone rather than repeating the question.
+  const handleDeleteAccount = async () => {
+    const first = await confirmAction({
+      title: 'Delete account',
+      message: 'This will permanently delete your account and all data. This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true
+    });
+    if (!first) return;
+
+    const second = await confirmAction({
+      title: 'Are you sure?',
+      message: 'Please confirm one more time.',
+      confirmLabel: 'Yes, delete forever',
+      destructive: true
+    });
+    if (!second) return;
+
+    try {
+      await deleteMut.mutateAsync();
+    } catch (e: any) {
+      notify('Could not delete', e.message);
+    }
   };
 
   return (
