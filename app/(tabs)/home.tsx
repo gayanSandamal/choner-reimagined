@@ -1,10 +1,12 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppTopBar } from '@/components/navigation/AppTopBar';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { ChallengeCard } from '@/components/home/ChallengeCard';
 import { WhyReminder } from '@/components/home/WhyReminder';
+import { SharePrompt } from '@/components/community/SharePrompt';
 import { useSession } from '@/providers/session-provider';
 import { useMyChallenge, useStreak } from '@/features/challenges/hooks';
 import { usePendingInvites, usePartnerStatus } from '@/features/community/hooks';
@@ -53,13 +55,19 @@ export default function HomeScreen() {
   return (
     <View style={styles.root}>
       <SafeAreaView style={styles.safe}>
+        <AppTopBar />
         <ScrollView
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
         >
-          <AppText variant="title">
-            {greetingFor()}{firstName ? `, ${firstName}` : ''}
-          </AppText>
+          {/* Time-of-day greeting above the name, per spec: the muted line
+              carries the time, the name carries the weight. */}
+          <View style={styles.greeting}>
+            <AppText variant="caption" muted>
+              {greetingFor()}
+            </AppText>
+            {firstName ? <AppText style={styles.name}>{firstName}</AppText> : null}
+          </View>
 
           {challengesQ.isLoading ? (
             <LoadingState />
@@ -88,6 +96,9 @@ export default function HomeScreen() {
                 waitingPartnerEmail={waitingInvite?.email}
                 partnerStatus={partnerStatusQ.data}
               />
+              {/* Offered here as well as on Challenges — whichever screen the
+                  user happens to be on when the moment lands. */}
+              <SharePrompt userId={userId} challenge={challenge} streak={streak} />
             </>
           )}
         </ScrollView>
@@ -99,5 +110,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
   safe: { flex: 1 },
-  content: { padding: 20, paddingBottom: theme.spacing(4), gap: theme.spacing(2) }
+  content: { padding: 20, paddingTop: theme.spacing(1), paddingBottom: theme.spacing(4), gap: theme.spacing(2) },
+  greeting: { gap: 2 },
+  name: { fontFamily: theme.fonts.body, fontSize: 21, color: theme.colors.text }
 });

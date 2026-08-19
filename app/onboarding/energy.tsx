@@ -11,6 +11,7 @@ import { getTemplateBySlug } from '@/features/challenges/api';
 import { useEnsureUserChallenge } from '@/features/challenges/hooks';
 import { useSession } from '@/providers/session-provider';
 import { useUpdateProfile } from '@/features/profile/hooks';
+import { cityFromTimezone } from '@/features/community/milestones';
 import { theme } from '@/constants/theme';
 
 export default function EnergyScreen() {
@@ -19,6 +20,8 @@ export default function EnergyScreen() {
   const updateProfile = useUpdateProfile();
   const ensureChallenge = useEnsureUserChallenge();
   const { goal, struggle, tone, energy, setEnergy } = useOnboarding();
+
+  const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
   const onSeeProfile = async () => {
     const userId = session?.user.id;
@@ -34,6 +37,12 @@ export default function EnergyScreen() {
           ...(struggle ? { main_struggle: struggle } : {}),
           accountability_mode: tone,
           stress_level: energy,
+          // Captured here rather than asked for. The column defaults to 'UTC',
+          // and until now it was only ever corrected if someone happened to
+          // open the deadline settings — which left the derived city wrong for
+          // everyone else, and the Community feed is scoped by city.
+          timezone: deviceTimezone,
+          city: cityFromTimezone(deviceTimezone),
           onboarding_complete: true
         }
       });
