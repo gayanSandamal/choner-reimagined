@@ -26,6 +26,7 @@
 - groups
 - group_members
 - invites
+- partner_match_requests / partner_matches (see PARTNER_MATCHING.md)
 - ai_recommendations
 - notifications
 - premium_entitlements
