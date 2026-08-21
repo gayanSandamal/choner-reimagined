@@ -16,8 +16,9 @@
 //
 //   node scripts/match-pool.js                 review the pairings, write nothing
 //   node scripts/match-pool.js --auto          commit them to partner_matches
-//   node scripts/match-pool.js --user <uuid>   only pairings involving one person
-//   node scripts/match-pool.js --limit 10      cap how many get written
+//   node scripts/match-pool.js --user <uuid>   shortlist the best partners for one
+//                                              person; --auto pairs them with #1
+//   node scripts/match-pool.js --limit 10      cap the list (and what gets written)
 //   node scripts/match-pool.js --min-score 60  raise the bar (default 45)
 //
 // Dry run is the default deliberately: this writes rows that two real people
@@ -155,10 +156,18 @@ const wrap = (code, s) => (COLOUR ? `\u001b[${code}m${s}\u001b[0m` : String(s));
 const bold = (s) => wrap(1, s);
 const dim = (s) => wrap(2, s);
 
-function report(pairs, unmatched, byId, willWrite) {
+function report(pairs, unmatched, byId, willWrite, singleUser = false) {
   console.log('');
-  console.log(bold(`${pairs.length} pairing${pairs.length === 1 ? '' : 's'} proposed`));
-  console.log(dim(`${unmatched.length} left in the pool`));
+  if (singleUser) {
+    console.log(bold(`${pairs.length} candidate partner${pairs.length === 1 ? '' : 's'}, best first`));
+    if (pairs.length === 0) {
+      console.log(dim('Nobody in the pool clears the minimum score for them.'));
+      console.log(dim('Same habit and same duration are hard requirements — try --min-score lower.'));
+    }
+  } else {
+    console.log(bold(`${pairs.length} pairing${pairs.length === 1 ? '' : 's'} proposed`));
+    console.log(dim(`${unmatched.length} left in the pool`));
+  }
   console.log('');
 
   pairs.forEach((pair, idx) => {
@@ -174,8 +183,14 @@ function report(pairs, unmatched, byId, willWrite) {
   });
 
   console.log('');
-  if (!willWrite) {
-    console.log(dim('Dry run - nothing written. Re-run with --auto to commit these.'));
+  if (!willWrite && pairs.length > 0) {
+    console.log(
+      dim(
+        singleUser
+          ? 'Dry run - nothing written. Re-run with --auto to pair them with #1.'
+          : 'Dry run - nothing written. Re-run with --auto to commit these.'
+      )
+    );
     console.log('');
   }
 }
@@ -224,7 +239,7 @@ function main() {
     return;
   }
 
-  const { matchPool, DEFAULT_MIN_SCORE } = loadMatching();
+  const { matchPool, scorePair, DEFAULT_MIN_SCORE } = loadMatching();
   const minScore = args.minScore ?? DEFAULT_MIN_SCORE;
 
   const candidates = psqlJson(POOL_QUERY) || [];
@@ -234,7 +249,10 @@ function main() {
   }
 
   const byId = new Map(candidates.map((c) => [c.userId, c]));
-  let { pairs, unmatched } = matchPool(candidates, minScore);
+  const now = Date.now();
+
+  let pairs;
+  let unmatched;
 
   if (args.user) {
     if (!byId.has(args.user)) {
@@ -242,21 +260,54 @@ function main() {
       process.exitCode = 1;
       return;
     }
-    pairs = pairs.filter((p) => p.a === args.user || p.b === args.user);
+
+    // Solve FOR this person, rather than running the global assignment and
+    // filtering it to them.
+    //
+    // matchPool optimises the pool as a whole and takes pairs greedily by
+    // score, so somebody who joined a minute ago — no fairness boost yet —
+    // routinely watches every viable partner get claimed by an
+    // established, higher-scoring pair before their own turn comes up. The
+    // first version of this flag filtered that global result and reported
+    // "0 pairings proposed" for a user who in fact had 31 viable partners
+    // scoring up to 83. That is the wrong question: asking to match one
+    // named person means finding the best partner available to THEM.
+    const me = byId.get(args.user);
+    pairs = candidates
+      .filter((c) => c.userId !== args.user)
+      .map((c) => scorePair(me, c, now))
+      .filter((r) => !r.blocked && r.score >= minScore)
+      .sort(
+        (x, y) =>
+          y.score - x.score ||
+          // Longest wait first, matching how matchPool breaks its own ties.
+          byId.get(x.a === args.user ? x.b : x.a).joinedPoolAt -
+            byId.get(y.a === args.user ? y.b : y.a).joinedPoolAt
+      );
+
+    unmatched = [];
+    // Default to a shortlist rather than all 31 — this is a review screen.
+    const shown = Number.isFinite(args.limit) ? args.limit : 5;
+    pairs = pairs.slice(0, shown);
+  } else {
+    ({ pairs, unmatched } = matchPool(candidates, minScore));
+    if (Number.isFinite(args.limit)) pairs = pairs.slice(0, args.limit);
   }
-  if (Number.isFinite(args.limit)) pairs = pairs.slice(0, args.limit);
 
   console.log(
     dim(
       `Pool: ${candidates.length} waiting - min score ${minScore}` +
-        (args.user ? ` - filtered to ${args.user}` : '')
+        (args.user ? ` - best partners for ${args.user}` : '')
     )
   );
-  report(pairs, unmatched, byId, args.auto);
+  report(pairs, unmatched, byId, args.auto, Boolean(args.user));
 
   if (args.auto && pairs.length > 0) {
-    writeMatches(pairs, byId);
-    console.log(bold(`Wrote ${pairs.length} pending match${pairs.length === 1 ? '' : 'es'}.`));
+    // One person gets one partner: in single-user mode only the top-ranked
+    // pairing is written, however many were listed for review.
+    const toWrite = args.user ? pairs.slice(0, 1) : pairs;
+    writeMatches(toWrite, byId);
+    console.log(bold(`Wrote ${toWrite.length} pending match${toWrite.length === 1 ? '' : 'es'}.`));
     console.log(dim('Both sides now see the match and must confirm before it goes live.'));
     console.log('');
   }

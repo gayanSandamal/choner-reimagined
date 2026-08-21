@@ -69,9 +69,9 @@ Decorrelating took it to 204 pairs led by genuine 100/48 and 50/19 anchor pairin
 ```bash
 npm run match                          # review the pairings, write nothing
 npm run match -- --auto                # commit them to partner_matches
-npm run match -- --user <uuid>         # only pairings involving one person
-npm run match -- --user <uuid> --auto  # ...and commit just that one
-npm run match -- --limit 10            # cap how many get written
+npm run match -- --user <uuid>         # shortlist the best partners for one person
+npm run match -- --user <uuid> --auto  # ...and pair them with the top one
+npm run match -- --limit 10            # cap the list (and what gets written)
 npm run match -- --min-score 60        # raise the bar (default 45)
 ```
 
@@ -85,6 +85,20 @@ The script compiles `matching.ts` from source on every run and calls the real
 pairing with both commitment signals and the plain-English reasons behind the
 score. **Dry run is the default** — `--auto` writes rows that two real people
 immediately see as "we found you a partner".
+
+### `--user` solves for one person, it does not filter
+
+Without `--user` the script runs the global assignment: `matchPool()` optimises
+the pool as a whole and claims pairs greedily by score.
+
+That makes filtering the global result to one person the wrong question, and the
+first version of this flag got it wrong. Somebody who joined the pool a minute
+ago has no fairness boost yet, so every viable partner gets claimed by an
+established higher-scoring pair before their turn — and the script reported
+**"0 pairings proposed"** for a user who actually had 31 viable partners scoring
+up to 83. Asking to match one named person means finding the best partner
+available *to them*, so `--user` now scores them against the whole pool directly
+and shortlists the top five. `--auto` writes only #1: one person, one partner.
 
 Writing a match inserts `partner_matches` (status `pending`, with a curated blurb
 about each person), flips both pool rows to `matched`, and moves both challenges
