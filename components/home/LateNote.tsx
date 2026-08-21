@@ -12,8 +12,9 @@ import { theme } from '@/constants/theme';
 // a bare "they haven't checked in".
 //
 // This is shown to the person who might miss — quietly, as their own status.
-// The spec is explicit that no guilt-push goes to them; the only notification
-// is the one their partner receives.
+// They do get a reminder BEFORE their deadline, but nothing after it: once the
+// day is genuinely missed the only notification is the one their partner
+// receives, which is the no-guilt-push rule the spec is explicit about.
 export function LateNote({ userChallengeId }: { userChallengeId: string }) {
   const statusQ = useTodayStatus(userChallengeId);
   const saveMut = useSetLateNote();

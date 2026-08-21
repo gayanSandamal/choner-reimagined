@@ -33,6 +33,11 @@ interface SendPushBody {
 
 const KIND_PREF_MAP: Record<string, string> = {
   partner_activity: 'accountability_alerts',
+  // A nudge is partner accountability by another name, so it honours the same
+  // opt-out. Without this entry the kind is unmapped and the check below is
+  // skipped entirely — the nudge would reach someone who had turned
+  // accountability alerts off.
+  partner_nudge: 'accountability_alerts',
   streak_risk: 'streak_alerts',
   ai_suggestion: 'ai_recovery_alerts',
 };

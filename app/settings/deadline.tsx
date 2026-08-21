@@ -24,15 +24,38 @@ function label(hhmm: string) {
   return `${display}:00 ${suffix}`;
 }
 
-// What actually happens after this deadline, spelled out. The grace window is
-// a clamp rather than a fixed offset: 3 hours, but never after 22:00 local, so
-// a nudge always arrives while there is still some day left to act on.
+function hour(h: number) {
+  return label(`${String(h).padStart(2, '0')}:00`);
+}
+
+// Two different things happen around this deadline and they are easy to
+// conflate, so both are spelled out.
+//
+// Before it, you get a reminder — 2 hours ahead, never before 8am. That is not
+// the guilt-push the spec rules out: nothing has been missed yet and the whole
+// point is that it still can be avoided.
+//
+// After it, your partner is told. That grace is a clamp rather than a fixed
+// offset — 3 hours, but never past 22:00 local — so the nudge always lands
+// while there is still some day left to act on.
 function explain(hhmm: string) {
   const h = Number(hhmm.slice(0, 2));
+
+  const remindAt = Math.max(h - 2, 8);
+  const mine =
+    remindAt < h
+      ? `We'll remind you at ${hour(remindAt)} if you haven't logged.`
+      : `Too early for a reminder before it.`;
+
   const naive = h + 3;
-  if (naive <= 22) return `Your partner is told at ${label(`${String(naive).padStart(2, '0')}:00`)} if you haven't checked in.`;
-  if (h < 22) return `Your partner is told at 10:00 pm if you haven't checked in.`;
-  return `Too late for a same-day nudge — your partner is told at 8:00 am tomorrow instead.`;
+  const theirs =
+    naive <= 22
+      ? `Your partner is told at ${hour(naive)} if you still haven't.`
+      : h < 22
+      ? `Your partner is told at 10:00 pm if you still haven't.`
+      : `Too late for a same-day nudge — your partner is told at 8:00 am tomorrow instead.`;
+
+  return `${mine} ${theirs}`;
 }
 
 export default function DeadlineSettingsScreen() {
@@ -75,8 +98,8 @@ export default function DeadlineSettingsScreen() {
       ) : (
         <>
           <AppText muted>
-            The time your day is measured against. Miss it and your partner gets a gentle nudge —
-            never you.
+            The time your day is measured against. We'll remind you before it. Miss it, and your
+            partner is the one who's told.
           </AppText>
 
           <Card style={styles.list}>
