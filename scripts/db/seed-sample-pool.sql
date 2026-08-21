@@ -24,16 +24,32 @@
 
 \set ON_ERROR_STOP on
 
+-- :wipe and :count are supplied by the wrapper. Top-up mode (wipe=false) adds
+-- people to the existing pool instead of replacing everybody, which is how you
+-- refill after auto-matching has drained it.
+\if :wipe
+\echo 'MODE: wipe and reseed'
+\else
+\echo 'MODE: top up (no accounts deleted)'
+\endif
+
 begin;
 
+-- psql does NOT substitute :variables inside a dollar-quoted block, so the
+-- count is handed to the do-block as a session setting instead of as :count.
+select set_config('choner.seed_count', :'count', false);
+select set_config('choner.seed_anchors', :'anchors', false);
+
 -- ============================================================
--- 1. Wipe
+-- 1. Wipe  (skipped entirely in top-up mode)
 -- ============================================================
+\if :wipe
 delete from public.challenge_invites;   -- NO ACTION: blocks the cascade
 delete from public.groups;              -- NO ACTION: blocks the cascade
 truncate public.analytics_events;       -- SET NULL: would survive as orphans
 
 delete from auth.users;                 -- cascades the other 30-odd tables
+\endif
 
 -- Storage is NOT handled here. storage.protect_delete() rejects direct deletes
 -- from storage.objects ("Use the Storage API instead") to stop rows being
@@ -48,7 +64,7 @@ declare
   -- Reproducible: same seed, same 500 people. Makes a re-run diffable instead
   -- of a fresh roll of the dice every time.
   c_password constant text := 'ChonerTest123!';
-  c_count    constant int  := 500;
+  c_count    constant int  := current_setting('choner.seed_count')::int;
 
   first_names constant text[] := array[
     'Nimal','Kamal','Saman','Ruwan','Chamara','Dilhan','Kasun','Tharindu','Sanjaya','Isuru',
@@ -121,6 +137,7 @@ declare
   n_templates int;
 
   i int;
+  v_offset int;
   v_uid uuid;
   v_email text;
   v_name text;
@@ -147,7 +164,13 @@ begin
     raise exception 'no active challenge_templates to seed against';
   end if;
 
-  for i in 1..c_count loop
+  -- Carry on from the highest sampleNNN already present, so a top-up cannot
+  -- collide with an existing account and the emails stay readable.
+  select coalesce(max((substring(email from '^sample([0-9]+)@'))::int), 0)
+    into v_offset
+  from auth.users where email ~ '^sample[0-9]+@choner\.test$';
+
+  for i in (v_offset + 1)..(v_offset + c_count) loop
     v_uid := gen_random_uuid();
     v_email := 'sample' || lpad(i::text, 3, '0') || '@choner.test';
     v_name := first_names[1 + (i * 7) % array_length(first_names, 1)]
@@ -248,7 +271,21 @@ begin
     -- productive asymmetry -- the entire hypothesis the algorithm is built on
     -- -- could never occur. The first run of this seed did exactly that: 146
     -- pairs, every one of them "no clear anchor".
-    v_tier := abs(hashtext('tier' || i::text)) % 5;
+    -- :anchors restricts the mix to tiers 0-2 (signals 100 / 90 / 50), all of
+    -- which clear the commitment floor and can therefore anchor somebody.
+    --
+    -- This matters because of an asymmetry that is easy to miss: a low-signal
+    -- person is only matchable via an anchor, an anchor gets consumed by the
+    -- first low-signal person it is paired with, and two low-signal people can
+    -- NEVER pair (the -40 both-low penalty caps them at 25 against a floor of
+    -- 45). So a uniform 5-tier top-up adds 2 unmatchable people for every 3
+    -- anchors and the pool trends toward permanent gridlock. Refills are
+    -- anchors only.
+    if current_setting('choner.seed_anchors') = 'true' then
+      v_tier := abs(hashtext('tier' || i::text)) % 3;
+    else
+      v_tier := abs(hashtext('tier' || i::text)) % 5;
+    end if;
 
     insert into public.challenge_reflections (user_id, user_challenge_id, question_key, choice_key, custom_text)
     values (v_uid, v_challenge, 'purpose',
@@ -297,7 +334,9 @@ begin
     end if;
   end loop;
 
-  raise notice 'seeded % sample users, password %', c_count, c_password;
+  raise notice 'seeded % sample users (sample% .. sample%), password %',
+    c_count, lpad((v_offset + 1)::text, 3, '0'),
+    lpad((v_offset + c_count)::text, 3, '0'), c_password;
 end $$;
 
 commit;

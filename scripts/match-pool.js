@@ -196,6 +196,11 @@ async function main() {
     return;
   }
 
+  if (out.written === 0) {
+    console.log(bold('Nothing written — no pairing cleared the score floor.'));
+    console.log('');
+    return;
+  }
   console.log(bold(`Wrote ${out.written} pending match${out.written === 1 ? '' : 'es'}.`));
   if (out.skipped?.length) {
     // Someone was claimed between reading the pool and writing — the cron and a

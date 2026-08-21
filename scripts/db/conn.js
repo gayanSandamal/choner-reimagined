@@ -63,12 +63,25 @@ function connectionString() {
 const PSQL = findPsql();
 const CONN = connectionString();
 
+// execFileSync puts the whole argv in the thrown error's message, and argv[0]
+// here is a connection string containing the database password. A failing query
+// would print it to the terminal and into any log or transcript that captured
+// the output, so every call site goes through this.
+function run(args) {
+  try {
+    return execFileSync(PSQL, args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  } catch (err) {
+    const redact = (t) => String(t ?? '').split(CONN).join('<connection string>');
+    const e = new Error(`psql failed:\n${redact(err.stderr) || redact(err.message)}`);
+    e.stderr = redact(err.stderr);
+    e.status = err.status;
+    throw e;
+  }
+}
+
 /** Run SQL and return raw stdout. */
 function psql(sql, extraArgs = []) {
-  return execFileSync(PSQL, [CONN, '-v', 'ON_ERROR_STOP=1', '-At', ...extraArgs, '-c', sql], {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024
-  });
+  return run([CONN, '-v', 'ON_ERROR_STOP=1', '-At', ...extraArgs, '-c', sql]);
 }
 
 /** Run a query whose single column is JSON, and parse it. */
@@ -77,12 +90,10 @@ function psqlJson(sql) {
   return out ? JSON.parse(out) : null;
 }
 
-/** Run a .sql file. */
-function psqlFile(file) {
-  return execFileSync(PSQL, [CONN, '-v', 'ON_ERROR_STOP=1', '-f', file], {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024
-  });
+/** Run a .sql file, optionally with psql variables ({ name: value }). */
+function psqlFile(file, vars = {}) {
+  const varArgs = Object.entries(vars).flatMap(([k, v]) => ['-v', `${k}=${v}`]);
+  return run([CONN, '-v', 'ON_ERROR_STOP=1', ...varArgs, '-f', file]);
 }
 
 module.exports = { ROOT, PSQL, CONN, psql, psqlJson, psqlFile };

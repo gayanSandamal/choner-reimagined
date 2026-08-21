@@ -3,7 +3,13 @@
 // Wipe every account and seed 500 sample users into the partner pool.
 //
 //   node scripts/seed-sample-pool.js              show what would be destroyed
-//   node scripts/seed-sample-pool.js --confirm    actually do it
+//   node scripts/seed-sample-pool.js --confirm    wipe everything, seed 500
+//   node scripts/seed-sample-pool.js --top-up 100 ADD 100 people, delete nothing
+//
+// Top-up exists because auto-matching drains the pool, and what it leaves behind
+// is specifically the people the matcher refuses to pair: two low commitment
+// signals carry a -40 penalty they can never score past, so a residue of them
+// is permanently unmatchable with each other. Topping up puts anchors back in.
 //
 // THIS DELETES EVERY auth.users ROW, including yours, and there is no backup.
 // The confirm flag is not decoration: the difference between reviewing this and
@@ -103,17 +109,42 @@ function show(label, counts) {
 }
 
 async function main() {
-  const confirmed = process.argv.includes('--confirm');
-  const before = psqlJson(COUNTS);
+  const argv = process.argv.slice(2);
+  const confirmed = argv.includes('--confirm');
+  const topUpIdx = argv.indexOf('--top-up');
+  const topUp = topUpIdx === -1 ? null : Number(argv[topUpIdx + 1]);
 
+  if (topUp !== null && (!Number.isInteger(topUp) || topUp < 1)) {
+    console.error('--top-up needs a positive whole number, e.g. --top-up 100');
+    process.exitCode = 1;
+    return;
+  }
+
+  const before = psqlJson(COUNTS);
   show('Current state', before);
+
+  // Top-up deletes nothing, so it does not need the confirm gate.
+  if (topUp !== null) {
+    console.log(`\nAdding ${topUp} sample users to the pool. Nothing is deleted.`);
+    console.log('All of them anchor-capable — that is what a drained pool is short of.');
+    const out = psqlFile(SQL_FILE, { wipe: 'false', count: topUp, anchors: 'true' });
+    out.split('\n').filter((l) => l.startsWith('NOTICE') || l.startsWith('MODE')).forEach((n) => console.log(`  ${n}`));
+
+    const after = psqlJson(COUNTS);
+    show('New state', after);
+    console.log('\nPassword for every sample account: ChonerTest123!');
+    console.log('\nThey are matched automatically within a minute or two.');
+    console.log('Force a run now with: npm run match -- --auto\n');
+    return;
+  }
 
   if (!confirmed) {
     console.log('\nThis would DELETE all %d accounts and everything belonging to them,', before.auth_users);
     console.log('then create 500 sample users waiting in the partner pool.');
     console.log('\nchallenge_templates, app_config and the cron jobs are left alone —');
     console.log('app_config holds the keys both notification sweeps depend on.');
-    console.log('\nRe-run with --confirm to do it. There is no undo.\n');
+    console.log('\nRe-run with --confirm to do it. There is no undo.');
+    console.log('To ADD people without deleting anyone: --top-up <n>\n');
     return;
   }
 
@@ -121,7 +152,7 @@ async function main() {
   // Files first: once auth.users is gone we have lost the only record of which
   // objects belonged to anybody.
   await emptyBuckets();
-  const out = psqlFile(SQL_FILE);
+  const out = psqlFile(SQL_FILE, { wipe: 'true', count: 500, anchors: 'false' });
   const notices = out.split('\n').filter((l) => l.startsWith('NOTICE'));
   notices.forEach((n) => console.log(`  ${n}`));
 
