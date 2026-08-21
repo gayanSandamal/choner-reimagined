@@ -235,20 +235,23 @@ export type DailyStatus = {
   local_date: string;
   late_note: string | null;
   missed_notified_at: string | null;
+  reminded_at: string | null;
 };
 
 // Today's row for a challenge, if one exists. Used to show the user their own
 // state quietly — never to push guilt at them.
+//
+// Goes through an RPC rather than selecting on local_date directly: this date
+// has to be the user's own, and the client can only offer UTC. Those disagree
+// for five and a half hours a night in Asia/Colombo, which was long enough for
+// someone's "running late" note to disappear off their own screen right after
+// they wrote it.
 export async function getTodayStatus(userChallengeId: string): Promise<DailyStatus | null> {
-  const today = new Date().toISOString().slice(0, 10);
-  const { data, error } = await (supabase as any)
-    .from('daily_status')
-    .select('local_date, late_note, missed_notified_at')
-    .eq('user_challenge_id', userChallengeId)
-    .eq('local_date', today)
-    .maybeSingle();
+  const { data, error } = await (supabase.rpc as any)('get_today_status', {
+    p_user_challenge_id: userChallengeId
+  });
   if (error) throw error;
-  return data ?? null;
+  return (data as DailyStatus) ?? null;
 }
 
 // The user's four "Why" answers. Owner-only under RLS by design — these are
@@ -373,6 +376,49 @@ export async function confirmMatch(matchId: string): Promise<{ confirmed: boolea
 export async function declineMatch(matchId: string) {
   const { error } = await (supabase.rpc as any)('decline_match', { p_match_id: matchId });
   if (error) throw error;
+}
+
+// ============================================================
+// Nudging
+// ============================================================
+
+// Why the refusals are values and not exceptions: four of these five are
+// ordinary states the UI has something specific to say about, not failures.
+export type NudgeResult =
+  | { sent: true }
+  | {
+      sent: false;
+      reason:
+        | 'no_partner'
+        | 'already_logged'
+        | 'already_nudged'
+        | 'quiet_hours'
+        | 'not_configured';
+    };
+
+// Takes no arguments on purpose. The partner, both timezones and the once-a-day
+// limit are all resolved server-side — a client that got to name its recipient
+// would be a way to nudge strangers.
+export async function nudgePartner(): Promise<NudgeResult> {
+  const { data, error } = await (supabase.rpc as any)('nudge_partner');
+  if (error) throw error;
+  return data as NudgeResult;
+}
+
+export function nudgeRefusalMessage(reason: string, partnerName?: string | null): string {
+  const who = (partnerName ?? '').trim().split(/\s+/)[0] || 'They';
+  switch (reason) {
+    case 'already_logged':
+      return `${who} already logged today.`;
+    case 'already_nudged':
+      return `You've already nudged ${who} today.`;
+    case 'quiet_hours':
+      return `It's late where ${who} is — try in the morning.`;
+    case 'no_partner':
+      return 'No partner to nudge yet.';
+    default:
+      return "Couldn't send that nudge.";
+  }
 }
 
 export async function undoTaskCheckin(checkinId: string, photoPath?: string | null) {

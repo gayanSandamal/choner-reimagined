@@ -23,6 +23,7 @@ import {
   getMyMatch,
   confirmMatch,
   declineMatch,
+  nudgePartner,
 } from '@/features/challenges/api';
 
 export function useChallengeTemplates() {
@@ -108,6 +109,19 @@ export function useConfirmMatch() {
       queryClient.invalidateQueries({ queryKey: ['my-match'] });
       queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
       queryClient.invalidateQueries({ queryKey: ['partner-status'] });
+    },
+  });
+}
+
+// Nudge state lives on partner-status (the server knows both timezones), so a
+// successful nudge has to invalidate it or the button stays offering a second
+// one it would then refuse.
+export function useNudgePartner(userId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: nudgePartner,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['partner-status', userId] });
     },
   });
 }

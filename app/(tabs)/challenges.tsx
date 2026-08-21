@@ -12,11 +12,12 @@ import { Heart } from '@/components/challenges/Heart';
 import { PairRow } from '@/components/challenges/PairRow';
 import { MatchBanner } from '@/components/challenges/MatchBanner';
 import { SharePrompt } from '@/components/community/SharePrompt';
-import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
+import { challengeHabitTitle, partnerStateOf, nudgeRefusalMessage } from '@/features/challenges/api';
 import {
   useMyChallenge,
   useChallengeHistory,
   useCompleteTask,
+  useNudgePartner,
   usePartnerReflections,
   useStreak
 } from '@/features/challenges/hooks';
@@ -38,8 +39,14 @@ function firstName(name?: string | null) {
   return (name ?? '').trim().split(/\s+/)[0] || 'your partner';
 }
 
-function todayString() {
-  return new Date().toISOString().slice(0, 10);
+// The device's own calendar day. `toISOString()` reports UTC, so at UTC+5:30
+// everything logged before 05:30 reads as yesterday — the tab would show an
+// empty checkbox for a habit that is demonstrably done, and offer a nudge for
+// a partner who already logged. Shifting by the local offset first makes the
+// date part of the ISO string the local one.
+function localDay(value: string | Date) {
+  const d = typeof value === 'string' ? new Date(value) : value;
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
 
 // The Challenges tab, per the v3 spec: one heart, and whichever of the eight
@@ -54,7 +61,12 @@ export default function ChallengesScreen() {
   const partnerStatusQ = usePartnerStatus(userId);
   const historyQ = useChallengeHistory(userId);
   const completeTask = useCompleteTask();
+  const nudgeMut = useNudgePartner(userId);
   const [pastOpen, setPastOpen] = useState(false);
+  // The outcome line under the button. Kept local rather than derived, because
+  // "Nudged Dinesh." and "Dinesh already logged today." are both answers to a
+  // tap and neither is a state the server reports back on its own.
+  const [nudgeNote, setNudgeNote] = useState<string | null>(null);
 
   const challenge = challengeQ.data ?? null;
   const partnerState = partnerStateOf(challenge);
@@ -67,11 +79,14 @@ export default function ChallengesScreen() {
   );
 
   const tasks = (challenge?.challenge_tasks ?? []) as any[];
-  const today = todayString();
+  const today = localDay(new Date());
   const checkinFor = (task: any) =>
-    (task.task_checkins ?? []).find((c: any) => (c.completed_at ?? '').slice(0, 10) === today);
+    (task.task_checkins ?? []).find(
+      (c: any) => c.completed_at && localDay(c.completed_at) === today
+    );
   const youCheckedIn = tasks.length > 0 && tasks.every((t) => checkinFor(t));
   const partnerCheckedIn = Boolean(partnerStatus?.checked_in_today);
+  const nudgedToday = Boolean((partnerStatus as any)?.nudged_today);
 
   const dayIndex = challengeDayIndex(challenge?.started_at);
   const totalDays = challenge?.challenge_templates?.duration_days ?? 7;
@@ -117,6 +132,23 @@ export default function ChallengesScreen() {
       if (shot.status === 'captured') photoBase64 = shot.base64;
     }
     completeTask.mutate({ taskId: task.id, userChallengeId: challenge.id, userId, photoBase64 });
+  };
+
+  // Every refusal is a sentence, not a red error: "already logged" and "it's
+  // 1am where they are" are the system working, and the person who tapped
+  // deserves to know which one happened.
+  const onNudge = async () => {
+    setNudgeNote(null);
+    try {
+      const res = await nudgeMut.mutateAsync();
+      setNudgeNote(
+        res.sent
+          ? `Nudged ${firstName(partnerStatus?.name)}.`
+          : nudgeRefusalMessage(res.reason, partnerStatus?.name)
+      );
+    } catch {
+      setNudgeNote(nudgeRefusalMessage('unknown', partnerStatus?.name));
+    }
   };
 
   const onRefresh = () => {
@@ -286,6 +318,33 @@ export default function ChallengesScreen() {
               )}
             </View>
 
+            {/* The action the missed-day push has been asking for since July.
+                Only while there is something to nudge about: once they log,
+                this disappears rather than going grey. */}
+            {partnered && !partnerCheckedIn && !notStarted ? (
+              <View style={styles.nudge}>
+                {nudgedToday ? (
+                  <AppText style={styles.nudgeDone}>
+                    You nudged {firstName(partnerStatus?.name)} today.
+                  </AppText>
+                ) : (
+                  <Pressable
+                    style={styles.nudgeBtn}
+                    disabled={nudgeMut.isPending}
+                    onPress={onNudge}
+                  >
+                    <Ionicons name="hand-left-outline" size={15} color={ORANGE} />
+                    <AppText style={styles.nudgeBtnText}>
+                      {nudgeMut.isPending
+                        ? 'Sending…'
+                        : `Nudge ${firstName(partnerStatus?.name)}`}
+                    </AppText>
+                  </Pressable>
+                )}
+                {nudgeNote ? <AppText style={styles.nudgeNote}>{nudgeNote}</AppText> : null}
+              </View>
+            ) : null}
+
             {/* Solo: calm and complete, never urgent. Two equal options, and
                 nothing on this screen moves or glows — that stillness is what
                 makes a partnered heart feel like something. */}
@@ -407,6 +466,21 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(79,201,138,0.25)'
   },
   doneText: { color: GREEN, fontSize: 14 },
+  nudge: { marginTop: 14, alignItems: 'center', gap: 8 },
+  nudgeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(254,140,0,0.35)',
+    backgroundColor: 'rgba(254,140,0,0.08)'
+  },
+  nudgeBtnText: { color: ORANGE, fontSize: 12.5 },
+  nudgeDone: { color: theme.colors.muted, fontSize: 11.5 },
+  nudgeNote: { color: theme.colors.muted, fontSize: 11, textAlign: 'center' },
   soloPanel: {
     marginTop: 14,
     padding: 16,

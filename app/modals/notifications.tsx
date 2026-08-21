@@ -14,6 +14,7 @@ import { theme } from '@/constants/theme';
 
 const ICON_BY_KIND: Record<string, keyof typeof Ionicons.glyphMap> = {
   partner_activity: 'people',
+  partner_nudge: 'hand-left',
   streak_risk: 'flame',
   ai_suggestion: 'sparkles',
   group_post: 'chatbubbles',

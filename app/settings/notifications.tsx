@@ -11,8 +11,8 @@ import { theme } from '@/constants/theme';
 
 const PREFS: { key: 'push_enabled' | 'streak_alerts' | 'accountability_alerts' | 'ai_recovery_alerts'; title: string; subtitle: string }[] = [
   { key: 'push_enabled', title: 'Push notifications', subtitle: 'Master switch for all push notifications.' },
-  { key: 'streak_alerts', title: 'Streak alerts', subtitle: 'Reminders before your streak is at risk.' },
-  { key: 'accountability_alerts', title: 'Accountability', subtitle: 'When a partner or group member checks in.' },
+  { key: 'streak_alerts', title: 'Streak alerts', subtitle: 'A reminder to log, shortly before your daily deadline.' },
+  { key: 'accountability_alerts', title: 'Accountability', subtitle: 'When your partner logs, misses a day, or nudges you.' },
   { key: 'ai_recovery_alerts', title: 'AI suggestions', subtitle: 'Personalized nudges from your coach.' },
 ];
 

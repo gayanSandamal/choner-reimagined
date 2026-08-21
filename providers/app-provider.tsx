@@ -9,6 +9,7 @@ import { queryClient } from '@/lib/query-client';
 import { attachNotificationResponseListener, registerForPushNotificationsAsync } from '@/lib/notifications';
 import { configurePurchases } from '@/lib/billing';
 import { registerPushToken, listNotifications } from '@/features/notifications/api';
+import { getProfile, updateProfile } from '@/features/profile/api';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -98,6 +99,27 @@ function SessionWiring() {
         }
       } catch {
         // ignore — push isn't required to use the app
+      }
+    })();
+
+    // profiles.timezone is what every deadline, reminder and nudge is measured
+    // against, and the only thing that has ever written it is the daily
+    // deadline settings screen. Anyone who never opened that screen keeps the
+    // 'UTC' default — so their 8pm deadline fires at 8pm UTC, which is 1:30am
+    // in Colombo, where most of the current users are. One of three live
+    // profiles was sitting in exactly that state.
+    //
+    // Read-then-write rather than a blind upsert: this runs on every sign-in,
+    // and a timezone that hasn't changed shouldn't cost a round trip.
+    (async () => {
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (!tz) return;
+        const profile = await getProfile(userId);
+        if (cancelled || (profile as { timezone?: string | null })?.timezone === tz) return;
+        await updateProfile(userId, { timezone: tz } as never);
+      } catch {
+        // A stale timezone is a bad reminder; a throw here is a broken launch.
       }
     })();
 
