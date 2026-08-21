@@ -16,8 +16,9 @@
 //
 //   node scripts/match-pool.js                 review the pairings, write nothing
 //   node scripts/match-pool.js --auto          commit them to partner_matches
-//   node scripts/match-pool.js --user <uuid>   shortlist the best partners for one
+//   node scripts/match-pool.js --email <you>   shortlist the best partners for one
 //                                              person; --auto pairs them with #1
+//   node scripts/match-pool.js --user <uuid>   same, by id instead of email
 //   node scripts/match-pool.js --limit 10      cap the list (and what gets written)
 //   node scripts/match-pool.js --min-score 60  raise the bar (default 45)
 //
@@ -35,11 +36,12 @@ const { ROOT, psql, psqlJson } = require('./db/conn');
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const args = { auto: false, user: null, limit: Infinity, minScore: null, help: false };
+  const args = { auto: false, user: null, email: null, limit: Infinity, minScore: null, help: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--auto') args.auto = true;
     else if (a === '--user') args.user = argv[++i];
+    else if (a === '--email') args.email = argv[++i];
     else if (a === '--limit') args.limit = Number(argv[++i]);
     else if (a === '--min-score') args.minScore = Number(argv[++i]);
     else if (a === '--help' || a === '-h') args.help = true;
@@ -242,6 +244,21 @@ function main() {
   const { matchPool, scorePair, DEFAULT_MIN_SCORE } = loadMatching();
   const minScore = args.minScore ?? DEFAULT_MIN_SCORE;
 
+  // Resolve --email up front so the rest of the script only deals in ids. This
+  // exists because the id is not visible anywhere in the app, and looking it up
+  // by hand was the one step of testing that needed a database client.
+  if (args.email) {
+    const found = psqlJson(
+      `select coalesce(json_agg(id), '[]'::json) from auth.users where lower(email) = lower(${q(args.email)});`
+    );
+    if (found.length === 0) {
+      console.error(`No account with the email ${args.email}.`);
+      process.exitCode = 1;
+      return;
+    }
+    args.user = found[0];
+  }
+
   const candidates = psqlJson(POOL_QUERY) || [];
   if (candidates.length === 0) {
     console.log('Pool is empty - nobody is waiting.');
@@ -256,7 +273,37 @@ function main() {
 
   if (args.user) {
     if (!byId.has(args.user)) {
-      console.error(`${args.user} is not in the pool.`);
+      // Being absent from the pool and not existing are different problems with
+      // different fixes, and the common one by far is simply not having tapped
+      // Find a partner yet.
+      const who = psqlJson(`
+        select coalesce(json_agg(row_to_json(x)), '[]'::json) from (
+          select u.email, uc.partner_state, uc.status as challenge_status,
+                 uc.custom_habit_title, r.status as pool_status
+          from auth.users u
+          left join public.user_challenges uc on uc.user_id = u.id and uc.status = 'active'
+          left join public.partner_match_requests r on r.user_id = u.id
+          where u.id = ${q(args.user)}
+        ) x;`);
+
+      if (who.length === 0) {
+        console.error(`No account with the id ${args.user}.`);
+      } else {
+        const w = who[0];
+        console.error(`${w.email} is not in the matching pool.`);
+        if (!w.challenge_status) {
+          console.error('  They have no active challenge yet - finish onboarding first.');
+        } else if (w.custom_habit_title) {
+          console.error(
+            `  Their habit is one they wrote themselves ("${w.custom_habit_title}").`
+          );
+          console.error('  Find a partner is hidden for custom habits - nobody else is doing it.');
+        } else if (w.partner_state === 'matched' || w.partner_state === 'partnered') {
+          console.error(`  They are already ${w.partner_state}.`);
+        } else if (w.pool_status !== 'waiting') {
+          console.error('  They have not tapped "Find a partner" yet.');
+        }
+      }
       process.exitCode = 1;
       return;
     }

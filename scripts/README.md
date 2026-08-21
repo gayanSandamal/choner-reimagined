@@ -69,8 +69,9 @@ Decorrelating took it to 204 pairs led by genuine 100/48 and 50/19 anchor pairin
 ```bash
 npm run match                          # review the pairings, write nothing
 npm run match -- --auto                # commit them to partner_matches
-npm run match -- --user <uuid>         # shortlist the best partners for one person
-npm run match -- --user <uuid> --auto  # ...and pair them with the top one
+npm run match -- --email you@x.com     # shortlist the best partners for one person
+npm run match -- --email you@x.com --auto  # ...and pair them with the top one
+npm run match -- --user <uuid>         # same, by id instead of email
 npm run match -- --limit 10            # cap the list (and what gets written)
 npm run match -- --min-score 60        # raise the bar (default 45)
 ```
@@ -117,15 +118,19 @@ both sides confirm, these two are strangers.
 2. Pick a habit **from the list** — "Find a partner" is deliberately hidden for a
    habit you wrote yourself, since nobody else in the pool is doing it.
 3. Tap **Find a partner**. You are now `finding`, with 500 people waiting.
-4. Find your user id and match yourself:
+4. Match yourself, by the email you signed up with:
    ```bash
-   npm run match -- --user <your-uuid>          # review
-   npm run match -- --user <your-uuid> --auto   # commit
+   npm run match -- --email you@example.com          # review the shortlist
+   npm run match -- --email you@example.com --auto   # pair with #1
    ```
 5. Reopen the app — the match banner appears. Confirm.
 6. To see the other side, sign in as your matched partner
    (`sampleNNN@choner.test` / `ChonerTest123!`) and confirm there too. Both
    hearts go live.
+
+If step 4 says you are not in the pool, it also says why — no active challenge,
+a custom habit (Find is hidden for those), already matched, or simply not having
+tapped Find a partner yet.
 
 To reset the pool after experimenting:
 
