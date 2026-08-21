@@ -163,6 +163,25 @@ group by 1, 2 order by 1;
 `runs = 0` on a job older than its interval means it is not scheduled, whatever
 `cron.job.active` claims.
 
+### How fast it actually is
+
+Measured on the live project, tapping Find to the notification landing:
+
+| | |
+|---|---|
+| `join_match_pool()` returns | 36 ms |
+| matcher has scored the pool and replied | 43 ms |
+| `partner_matches` row written | 756 ms |
+| user notified | 2.2 s |
+
+Matching was never the slow part. What was missing was telling the app: the
+match was written in well under a second and nothing informed the client, so it
+surfaced only on the next poll — while the onboarding screen had always promised
+"we'll notify you the moment you're matched" and sent nothing at all. The
+matcher now writes a `partner_matched` notification for both people, which is in
+the realtime publication the client already subscribes to, so the UI wakes
+immediately and a backgrounded phone still gets a push.
+
 ### The pool drains, and that is correct
 
 Auto-matching empties the pool as people get paired — in production that is the

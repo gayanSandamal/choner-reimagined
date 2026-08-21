@@ -145,6 +145,10 @@ function SessionWiring() {
           qc.invalidateQueries({ queryKey: ['partner-status', userId] });
           qc.invalidateQueries({ queryKey: ['my-challenge', userId] });
           qc.invalidateQueries({ queryKey: ['streak', userId] });
+          // A 'we found your partner' notification is the fastest signal that a
+          // match exists — this table is published and subscribed, partner_matches
+          // is neither — so it has to refresh the match too, not just the bell.
+          qc.invalidateQueries({ queryKey: ['my-match', userId] });
         }
       )
       .subscribe();

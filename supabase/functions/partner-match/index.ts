@@ -154,6 +154,40 @@ Deno.serve(async (req) => {
   // One person gets one partner, however many were ranked for review.
   const toWrite = body.userId ? pairs.slice(0, 1) : pairs;
 
+  // Telling people is what makes matching feel instant.
+  //
+  // Writing the match takes ~40ms, but nothing informed the app, so it only
+  // noticed on its next poll or when something else happened to invalidate the
+  // query -- and the onboarding screen has always promised "we'll notify you
+  // the moment you're matched" while sending nothing at all. notifications is
+  // in the realtime publication and the client already subscribes to it, so one
+  // row both delivers the promise and wakes the UI immediately. It also reaches
+  // someone who has put their phone down, which no amount of polling does.
+  async function announce(toUser: string, otherName: string, habit: string) {
+    try {
+      await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId: toUser,
+          kind: 'partner_matched',
+          title: 'We found your partner',
+          body: `${otherName} is doing ${habit} too — say yes to start.`,
+          route: '/(tabs)/find'
+        })
+      });
+    } catch (err) {
+      // Never fatal: the pairing is already written, and the app still picks it
+      // up on its next poll. A failed announcement must not undo a good match.
+      console.error('match announcement failed', err);
+    }
+  }
+
+  const firstName = (n?: string) => String(n ?? 'Someone').trim().split(/\s+/)[0];
+
   let written = 0;
   const skipped: string[] = [];
 
@@ -174,8 +208,14 @@ Deno.serve(async (req) => {
       }
       // false means somebody was claimed between reading the pool and writing —
       // an ordinary race between the cron and a manual run, not an error.
-      if (ok) written++;
-      else skipped.push(`${pair.a}+${pair.b}`);
+      if (ok) {
+        written++;
+        const habit = String(a.habit ?? 'the same habit');
+        await Promise.all([
+          announce(pair.a, firstName(b.fullName), habit),
+          announce(pair.b, firstName(a.fullName), habit)
+        ]);
+      } else skipped.push(`${pair.a}+${pair.b}`);
     }
   }
 
