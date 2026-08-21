@@ -17,3 +17,7 @@ expo-env.d.ts
 
 # BMAD-METHOD: personal install answers, regenerated per machine
 _bmad/config.user.toml
+
+# Compiled output for scripts/match-pool.js
+.tmp-match/
+
