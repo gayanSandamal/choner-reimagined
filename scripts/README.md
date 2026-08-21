@@ -136,6 +136,33 @@ it reported **"0 pairings proposed"** for a user who had 31 viable partners
 scoring up to 83. `--user` now scores that person against the whole pool and
 shortlists their top five; `--auto` writes only #1.
 
+### pg_cron will not notice a new job until you reload
+
+`cron.schedule()` inserts a row, returns a jobid, and `cron.job` shows the job
+active. Everything looks fine. But the pg_cron launcher caches its job list and
+on this project does not pick up rows added afterwards — the job simply never
+runs, and `cron.job_run_details` stays empty for it indefinitely.
+
+`choner-daily-reminders` was scheduled at `15 * * * *` one morning and had not
+run once six hours later, while `choner-missed-checkins` — scheduled in July,
+before the launcher last reloaded — ran every hour exactly as expected. A
+throwaway `select 1` job on `* * * * *` confirmed it: no new job of any kind
+fired. `select pg_reload_conf();` sends the launcher a SIGHUP, it re-reads
+`cron.job`, and the next probe fired within twenty seconds.
+
+**Any migration that schedules a job must end with `select pg_reload_conf();`**
+or it ships a feature that is dead on arrival and looks correct from every angle
+you would normally check. To verify a job is genuinely alive:
+
+```sql
+select j.jobname, j.schedule, count(d.runid) as runs, max(d.start_time) as last_run
+from cron.job j left join cron.job_run_details d on d.jobid = j.jobid
+group by 1, 2 order by 1;
+```
+
+`runs = 0` on a job older than its interval means it is not scheduled, whatever
+`cron.job.active` claims.
+
 ### The pool drains, and that is correct
 
 Auto-matching empties the pool as people get paired — in production that is the

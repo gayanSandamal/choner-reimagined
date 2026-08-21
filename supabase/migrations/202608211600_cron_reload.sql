@@ -1,0 +1,27 @@
+-- Make pg_cron notice jobs that a migration just created.
+--
+-- THE BUG THIS FIXES IS SILENT AND HAS ALREADY BITTEN US ONCE
+--
+-- cron.schedule() inserts a row and returns a jobid, so a migration adding a
+-- job looks completely successful. cron.job shows it active. Nothing anywhere
+-- reports a problem. But the pg_cron launcher caches its job list and, on this
+-- project, does not pick up rows added after it last read that cache -- so the
+-- job simply never runs, and cron.job_run_details stays empty for it forever.
+--
+-- Found on 2026-08-21: choner-daily-reminders had been scheduled that morning
+-- at '15 * * * *' and had not run once in six hours, while
+-- choner-missed-checkins -- scheduled back in July, before the launcher last
+-- reloaded -- ran every hour exactly as expected. A throwaway
+-- `select 1` job on '* * * * *' confirmed it: no new job of any kind fired.
+-- pg_reload_conf() sends the launcher a SIGHUP, it re-reads cron.job, and the
+-- next probe fired within twenty seconds.
+--
+-- So: any migration that schedules a job must finish with this, or it ships a
+-- feature that is dead on arrival and looks fine from every angle you would
+-- normally check.
+--
+-- This file reloads once for the jobs already added today, and exists mostly so
+-- the next person to write a cron.schedule() finds out why before losing an
+-- afternoon to it.
+
+select pg_reload_conf();
