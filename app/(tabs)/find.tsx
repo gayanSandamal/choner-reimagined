@@ -208,7 +208,7 @@ function NoRequestState({
           />
           {/* Honesty: matching is a person reading a list, not an algorithm. */}
           <AppText style={styles.note}>
-            Matching is hands-on right now while we're small — usually a day or two.
+            We look as soon as you ask, and keep looking every few minutes after that.
           </AppText>
         </>
       )}
@@ -253,7 +253,7 @@ function SearchingState({
         <AppText style={styles.searchHead}>Looking for your partner</AppText>
         <AppText style={styles.searchDetail}>
           Matching people doing <AppText style={styles.searchHabit}>{habit ?? 'your habit'}</AppText>{' '}
-          right now.{'\n'}Usually a day or two while we're getting started.
+          right now.{'\n'}Usually within a minute or two.
         </AppText>
       </View>
 

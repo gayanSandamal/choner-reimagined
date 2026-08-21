@@ -162,9 +162,9 @@ export default function PartnerPathScreen() {
             <>
               <AppText variant="title">Looking for your partner</AppText>
               <AppText muted>
-                We're matching you with someone doing {habit} who wants the same thing. Since we're
-                just getting started, this usually takes a day or two — we'll notify you the moment
-                you're matched.
+                We're matching you with someone doing {habit} who wants the same thing. We're
+                looking now, and again every few minutes — we'll notify you the moment you're
+                matched.
               </AppText>
             </>
           ) : phase === 'pending' && sentInvite ? (
