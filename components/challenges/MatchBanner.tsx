@@ -8,8 +8,8 @@ import { MatchCard } from './MatchCard';
 // the whole screen at that moment is jarring — the gentler read is an arrival
 // above what they were already doing. "Later" only hides it for this session;
 // the match is still waiting on them next time.
-export function MatchBanner({ city }: { city?: string | null }) {
+export function MatchBanner({ city, watch }: { city?: string | null; watch?: boolean }) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
-  return <MatchCard city={city} onDismiss={() => setDismissed(true)} />;
+  return <MatchCard city={city} watch={watch} onDismiss={() => setDismissed(true)} />;
 }

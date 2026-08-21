@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -38,7 +39,12 @@ function firstName(name?: string | null) {
 export default function FindScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
-  const challengeQ = useMyChallenge(userId);
+  // Poll while this screen is the one waiting on the matcher. The state it
+  // renders comes from partner_state, which the matcher changes server-side, so
+  // without this the Searching screen depends entirely on a realtime frame
+  // arriving.
+  const [watchForMatch, setWatchForMatch] = useState(false);
+  const challengeQ = useMyChallenge(userId, watchForMatch);
   const profileQ = useProfile(userId);
   const partnerStatusQ = usePartnerStatus(userId);
   const joinPool = useJoinMatchPool();
@@ -46,6 +52,12 @@ export default function FindScreen() {
 
   const challenge = challengeQ.data ?? null;
   const partnerState = partnerStateOf(challenge);
+
+  // Derived after the fact rather than passed in, because the value it depends
+  // on comes out of the very query it controls.
+  useEffect(() => {
+    setWatchForMatch(partnerState === 'finding' || partnerState === 'matched');
+  }, [partnerState]);
   const habit = challengeHabitTitle(challenge);
   const city = profileQ.data?.city ?? null;
   const totalDays = challenge?.challenge_templates?.duration_days ?? 7;
@@ -107,7 +119,7 @@ export default function FindScreen() {
         <AppText style={styles.pageTitle}>Find</AppText>
 
         {partnerState === 'matched' ? (
-          <MatchCard city={city} />
+          <MatchCard city={city} watch />
         ) : partnerState === 'partnered' ? (
           <PairedState
             partnerName={firstName(partnerStatusQ.data?.name)}

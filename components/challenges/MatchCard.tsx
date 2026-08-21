@@ -5,6 +5,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useConfirmMatch, useDeclineMatch, useMyMatch } from '@/features/challenges/hooks';
+import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { confirmAction, notify } from '@/lib/alert';
 
@@ -18,6 +19,10 @@ interface Props {
   // there is nothing to dismiss it back to.
   onDismiss?: () => void;
   city?: string | null;
+  // Poll for a match arriving. Set while the user is in the pool or has one
+  // waiting; left off for everyone else so a solo user is not asking a question
+  // whose answer cannot change.
+  watch?: boolean;
 }
 
 // "We found your partner."
@@ -25,8 +30,9 @@ interface Props {
 // Deliberately ONE component shared by Challenges and Find: a match should feel
 // identical regardless of which tab surfaced it, so this is never re-skinned
 // per tab. Only the dismiss affordance differs.
-export function MatchCard({ onDismiss, city }: Props) {
-  const matchQ = useMyMatch();
+export function MatchCard({ onDismiss, city, watch = false }: Props) {
+  const { session } = useSession();
+  const matchQ = useMyMatch(session?.user.id, watch);
   const confirm = useConfirmMatch();
   const decline = useDeclineMatch();
 

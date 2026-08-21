@@ -18,7 +18,12 @@
 // explain each score to whoever makes the call.
 
 import type { ToneValue } from '@/features/onboarding/constants';
-import { REFLECTION_QUESTIONS, ReflectionAnswer, isAnswered } from './reflections';
+// Explicit .ts extension, and a relative path in reflections.ts rather than the
+// @/ alias, so this module resolves under Deno as well as Metro. The
+// partner-match edge function imports it directly -- running the same tested
+// scoring server-side rather than a second copy of it in SQL, which is the one
+// thing PARTNER_MATCHING.md warns against.
+import { REFLECTION_QUESTIONS, ReflectionAnswer, isAnswered } from './reflections.ts';
 
 // The four onboarding tones, used here as accountability styles.
 export type AccountabilityStyle = ToneValue;
@@ -89,11 +94,35 @@ export const DEFAULT_MIN_SCORE = 45;
 // also means a DST change is reflected the moment it happens.
 // ---------------------------------------------------------------------------
 
+// Building an Intl.DateTimeFormat is by far the most expensive thing in this
+// module, and scoring a pool calls this twice per pair -- a 500-person pool
+// meant a quarter of a million constructions, which is what put the edge
+// function over its CPU limit. A zone's offset is fixed for a given instant, so
+// one computation per (zone, instant) is all that is ever needed; matchPool
+// passes a single `now` through a whole run, making this a handful of entries.
+const offsetCache = new Map<string, number | null>();
+
 export function offsetMinutesFor(
   timezone: string | null | undefined,
   at: number = Date.now()
 ): number | null {
   if (!timezone) return null;
+
+  const key = `${timezone}@${at}`;
+  const cached = offsetCache.get(key);
+  if (cached !== undefined) return cached;
+
+  const value = computeOffsetMinutes(timezone, at);
+
+  // Bounded so a long-lived process cannot grow this without limit. The cache
+  // is a within-run optimisation, not a durable store, so dropping it wholesale
+  // is fine.
+  if (offsetCache.size > 500) offsetCache.clear();
+  offsetCache.set(key, value);
+  return value;
+}
+
+function computeOffsetMinutes(timezone: string, at: number): number | null {
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
@@ -372,10 +401,24 @@ export function matchPool(
   const byId = new Map(candidates.map((c) => [c.userId, c]));
   const scored: MatchScore[] = [];
 
-  for (let i = 0; i < candidates.length; i++) {
-    for (let j = i + 1; j < candidates.length; j++) {
-      const result = scorePair(candidates[i], candidates[j], now);
-      if (!result.blocked && result.score >= minScore) scored.push(result);
+  // Bucket by habit before pairing. hardBlock rejects two people on different
+  // templates outright, so every cross-template pair is wasted work -- and
+  // there are a lot of them: comparing the whole pool is O(n^2), which for 500
+  // people across 15 habits is ~122k scorePair calls to keep ~8k of them.
+  // Bucketing is the same answer for a fifteenth of the cost.
+  const byTemplate = new Map<string, Candidate[]>();
+  for (const c of candidates) {
+    const group = byTemplate.get(c.challengeTemplateId);
+    if (group) group.push(c);
+    else byTemplate.set(c.challengeTemplateId, [c]);
+  }
+
+  for (const group of byTemplate.values()) {
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const result = scorePair(group[i], group[j], now);
+        if (!result.blocked && result.score >= minScore) scored.push(result);
+      }
     }
   }
 

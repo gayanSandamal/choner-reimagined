@@ -43,11 +43,17 @@ export function useChallengeTemplate(templateId: string | undefined) {
 
 // The user's single live challenge. One query key everywhere, so a check-in,
 // a habit change and a partner joining all invalidate the same thing.
-export function useMyChallenge(userId: string | undefined) {
+// `watch` polls while the user is waiting on something that changes this row
+// from the outside — chiefly partner_state flipping to 'matched' when the
+// matcher pairs them. Realtime normally delivers that first, but a device that
+// misses the frame would otherwise sit on "Looking for your partner" forever,
+// which is precisely the screen where being stuck is least acceptable.
+export function useMyChallenge(userId: string | undefined, watch = false) {
   return useQuery({
     queryKey: ['my-challenge', userId],
     queryFn: () => getMyChallenge(userId!),
     enabled: Boolean(userId),
+    refetchInterval: watch ? 15_000 : false,
   });
 }
 
@@ -71,11 +77,21 @@ export function usePartnerReflections(partnerId: string | undefined) {
 
 // ---- finding a partner ----
 
-export function useMyMatch(enabled = true) {
+// Keyed by user, because the cache outlives a sign-out: the key used to be a
+// bare ['my-match'], so signing into a second account could be served the
+// previous account's match. That is a real hazard here, where testing means
+// switching between accounts constantly.
+//
+// `watch` polls while the user is somewhere a match could plausibly land (in
+// the pool, or matched and waiting to confirm). Realtime is the fast path, but
+// delivery to a device is never guaranteed — same reasoning as
+// NotificationWatcher — so a slow poll is the backstop that makes it certain.
+export function useMyMatch(userId: string | undefined, watch = false) {
   return useQuery({
-    queryKey: ['my-match'],
+    queryKey: ['my-match', userId],
     queryFn: getMyMatch,
-    enabled,
+    enabled: Boolean(userId),
+    refetchInterval: watch ? 15_000 : false,
   });
 }
 

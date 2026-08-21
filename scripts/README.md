@@ -64,51 +64,86 @@ Decorrelating took it to 204 pairs led by genuine 100/48 and 50/19 anchor pairin
 
 ---
 
-## `npm run match` — concierge partner matching
+## `npm run match` — look at what the matcher is doing
+
+Matching is **automatic**. `choner-partner-matching` runs every 5 minutes and
+pairs anyone waiting in the pool. This script is no longer the matcher — it is a
+client for the same `partner-match` edge function the cron calls, so there is one
+implementation and it cannot drift.
 
 ```bash
-npm run match                          # review the pairings, write nothing
-npm run match -- --auto                # commit them to partner_matches
-npm run match -- --email you@x.com     # shortlist the best partners for one person
-npm run match -- --email you@x.com --auto  # ...and pair them with the top one
-npm run match -- --user <uuid>         # same, by id instead of email
-npm run match -- --limit 10            # cap the list (and what gets written)
-npm run match -- --min-score 60        # raise the bar (default 45)
+npm run match                              # review what the matcher WOULD do
+npm run match -- --auto                    # run it for real, now
+npm run match -- --email you@example.com   # the best partners for one person
+npm run match -- --user <uuid>             # same, by id
+npm run match -- --limit 10                # cap the list
+npm run match -- --min-score 60            # raise the bar (default 45)
 ```
 
-This is the missing half of "Find a partner". `join_match_pool()` puts someone in
-the pool and sets their challenge to `finding`; nothing in the app ever moved
-them on, because pairing has always been a human inserting a `partner_matches`
-row, and `features/challenges/matching.ts` was never wired to the database.
+### Consent
 
-The script compiles `matching.ts` from source on every run and calls the real
-`matchPool()`, so the scoring cannot drift from the tested module. It prints each
-pairing with both commitment signals and the plain-English reasons behind the
-score. **Dry run is the default** — `--auto` writes rows that two real people
-immediately see as "we found you a partner".
+Only people who tapped **Find a partner** are ever considered. That is
+structural, not a filter: `partner_match_requests` has a row only because
+`join_match_pool()` inserted one when the user asked. Someone who never asked is
+invisible to matching. `leave_match_pool()` takes them out; `decline_match()`
+deliberately puts both people back to `waiting`, because turning down one
+suggestion is not withdrawing consent to be matched at all.
+
+Nothing is auto-**confirmed**. Matches are written `pending` and both people
+still say yes in the app before a pairing goes live. That is the part that
+genuinely needed to stay a human decision.
+
+### Why an edge function
+
+The scoring lives in `features/challenges/matching.ts` and is tested there.
+`PARTNER_MATCHING.md` warns specifically against a second copy of the rules, so
+`supabase/functions/partner-match` imports that module directly rather than
+reimplementing it in SQL. pg_cron cannot call TypeScript, so
+`run_partner_matching()` posts to the function the same way the notification
+sweeps post to `send-push`.
+
+Two changes were needed to make one module run under both Metro and Deno:
+`matching.ts` imports `./reflections.ts` with an explicit extension, and
+`reflections.ts` uses a relative path instead of the `@/` alias. Deno has no path
+aliases and requires extensions. `allowImportingTsExtensions` is on in
+`tsconfig.json`, and `jest.config.js` maps the extension back off.
+
+### It had to get faster to run server-side
+
+The first deploy died with `WORKER_RESOURCE_LIMIT`. Scoring is O(n²), so a
+500-person pool was ~122k `scorePair` calls, and `offsetMinutesFor` built a fresh
+`Intl.DateTimeFormat` on every one — roughly a quarter of a million of the most
+expensive operation in the module. Node absorbed that; an edge worker will not.
+
+Two behaviour-preserving fixes, both in `matching.ts` (all 78 tests unchanged):
+
+- **Memoise the timezone offset** per `(zone, instant)`. `matchPool` passes one
+  `now` through a whole run, so this is a handful of entries instead of 244k
+  constructions.
+- **Bucket by habit before pairing.** `hardBlock` rejects two people on different
+  templates outright, so every cross-template pair was wasted work — ~122k
+  comparisons to keep ~8k. Same answer for a fifteenth of the cost.
+
+Full 495-person pool now scores in about 3 seconds.
 
 ### `--user` solves for one person, it does not filter
 
-Without `--user` the script runs the global assignment: `matchPool()` optimises
-the pool as a whole and claims pairs greedily by score.
+Without `--user` the pool is optimised as a whole, greedily by score. Filtering
+that result to one person is the wrong question, and the first version of this
+flag got it wrong: somebody who joined a minute ago has no fairness boost, so
+every viable partner gets claimed by an established pair before their turn, and
+it reported **"0 pairings proposed"** for a user who had 31 viable partners
+scoring up to 83. `--user` now scores that person against the whole pool and
+shortlists their top five; `--auto` writes only #1.
 
-That makes filtering the global result to one person the wrong question, and the
-first version of this flag got it wrong. Somebody who joined the pool a minute
-ago has no fairness boost yet, so every viable partner gets claimed by an
-established higher-scoring pair before their turn — and the script reported
-**"0 pairings proposed"** for a user who actually had 31 viable partners scoring
-up to 83. Asking to match one named person means finding the best partner
-available *to them*, so `--user` now scores them against the whole pool directly
-and shortlists the top five. `--auto` writes only #1: one person, one partner.
+### The pool drains, and that is correct
 
-Writing a match inserts `partner_matches` (status `pending`, with a curated blurb
-about each person), flips both pool rows to `matched`, and moves both challenges
-to `partner_state = 'matched'`. Both sides must then confirm in the app before
-the pairing goes live.
-
-Blurbs quote the person's own words when they wrote any, cut to one sentence, and
-otherwise fall back to their tone and city. Never their raw reflections: until
-both sides confirm, these two are strangers.
+Auto-matching empties the pool as people get paired — in production that is the
+point. For testing it means the 500 seeded users thin out, and the ones left are
+specifically those the matcher could not place (mostly low commitment signal).
+That is still useful: a new account with well-written "Why" answers becomes the
+anchor those people need, which scores well. Re-run `npm run seed:pool --
+--confirm` to refill.
 
 ---
 

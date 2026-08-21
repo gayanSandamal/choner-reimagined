@@ -231,7 +231,10 @@ export default function ChallengesScreen() {
         {/* A match landing while you're mid-challenge shouldn't blow the whole
             screen away — it arrives as a banner above whatever you were
             already looking at. */}
-        <MatchBanner city={profileQ.data?.city} />
+        <MatchBanner
+          city={profileQ.data?.city}
+          watch={partnerState === 'finding' || partnerState === 'matched'}
+        />
 
         {/* Community has no post button; sharing is offered here, right after
             the moment it refers to. */}
