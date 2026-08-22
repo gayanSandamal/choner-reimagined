@@ -163,7 +163,18 @@ Deno.serve(async (req) => {
   // in the realtime publication and the client already subscribes to it, so one
   // row both delivers the promise and wakes the UI immediately. It also reaches
   // someone who has put their phone down, which no amount of polling does.
-  async function announce(toUser: string, otherName: string, habit: string) {
+  //
+  // The two sides get different wording because they are in different
+  // situations. One of them tapped Find and is being shown the result of their
+  // own request; the other was waiting and is being asked to take somebody on.
+  // "We found your partner" is right for the first and slightly presumptuous
+  // for the second, who has not asked for anything just now.
+  async function announce(
+    toUser: string,
+    otherName: string,
+    habit: string,
+    isRequester: boolean
+  ) {
     try {
       await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
         method: 'POST',
@@ -174,8 +185,10 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           userId: toUser,
           kind: 'partner_matched',
-          title: 'We found your partner',
-          body: `${otherName} is doing ${habit} too — say yes to start.`,
+          title: isRequester ? 'We found your partner' : `${otherName} wants to pair up`,
+          body: isRequester
+            ? `${otherName} is doing ${habit} too — say yes to start.`
+            : `They're doing ${habit} as well. Accept to start together.`,
           route: '/(tabs)/find'
         })
       });
@@ -200,7 +213,10 @@ Deno.serve(async (req) => {
         p_user_b: pair.b,
         p_template: a.challengeTemplateId,
         p_blurb_a: blurbFor(a),
-        p_blurb_b: blurbFor(b)
+        p_blurb_b: blurbFor(b),
+        // Null on a sweep run: both were already waiting and neither asked for
+        // this pairing specifically, so neither is shown as the requester.
+        p_requested_by: body.userId ?? null
       });
       if (wErr) {
         console.error('create_partner_match failed', wErr);
@@ -212,11 +228,22 @@ Deno.serve(async (req) => {
         written++;
         const habit = String(a.habit ?? 'the same habit');
         await Promise.all([
-          announce(pair.a, firstName(b.fullName), habit),
-          announce(pair.b, firstName(a.fullName), habit)
+          announce(pair.a, firstName(b.fullName), habit, body.userId === pair.a || !body.userId),
+          announce(pair.b, firstName(a.fullName), habit, body.userId === pair.b || !body.userId)
         ]);
       } else skipped.push(`${pair.a}+${pair.b}`);
     }
+  }
+
+  // Tell the pool row what happened. Without this the app cannot distinguish
+  // "still looking" from "we looked and there is nobody", and shows an
+  // indefinite spinner for a state that may never resolve.
+  if (!dryRun && body.userId) {
+    const { error: rErr } = await admin.rpc('record_match_search', {
+      p_user_id: body.userId,
+      p_found: written > 0
+    });
+    if (rErr) console.error('record_match_search failed', rErr);
   }
 
   return Response.json({

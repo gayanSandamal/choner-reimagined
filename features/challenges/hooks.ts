@@ -23,6 +23,7 @@ import {
   getMyMatch,
   confirmMatch,
   declineMatch,
+  findAnotherMatch,
   nudgePartner,
 } from '@/features/challenges/api';
 
@@ -45,15 +46,19 @@ export function useChallengeTemplate(templateId: string | undefined) {
 // a habit change and a partner joining all invalidate the same thing.
 // `watch` polls while the user is waiting on something that changes this row
 // from the outside — chiefly partner_state flipping to 'matched' when the
-// matcher pairs them. Realtime normally delivers that first, but a device that
-// misses the frame would otherwise sit on "Looking for your partner" forever,
-// which is precisely the screen where being stuck is least acceptable.
+// matcher pairs them.
+//
+// A minute, not fifteen seconds. A match now writes a notification, and that
+// table is published and subscribed, so realtime carries the news in well under
+// a second; this only has to cover a device realtime never reached. Three
+// queries all polling at 15s was constant visible reloading to shave a delay
+// that no longer exists.
 export function useMyChallenge(userId: string | undefined, watch = false) {
   return useQuery({
     queryKey: ['my-challenge', userId],
     queryFn: () => getMyChallenge(userId!),
     enabled: Boolean(userId),
-    refetchInterval: watch ? 15_000 : false,
+    refetchInterval: watch ? 60_000 : false,
   });
 }
 
@@ -91,7 +96,7 @@ export function useMyMatch(userId: string | undefined, watch = false) {
     queryKey: ['my-match', userId],
     queryFn: getMyMatch,
     enabled: Boolean(userId),
-    refetchInterval: watch ? 15_000 : false,
+    refetchInterval: watch ? 60_000 : false,
   });
 }
 
@@ -138,6 +143,21 @@ export function useNudgePartner(userId: string | undefined) {
     mutationFn: nudgePartner,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partner-status', userId] });
+    },
+  });
+}
+
+// Declining and re-searching in one step, for the person who asked. Invalidates
+// the same keys as a decline plus the match itself, because the replacement can
+// land within a second of this resolving.
+export function useFindAnotherMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: findAnotherMatch,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-match'] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['partner-status'] });
     },
   });
 }

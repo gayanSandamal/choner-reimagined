@@ -34,8 +34,14 @@ function NotificationWatcher({ userId }: { userId: string }) {
     enabled: Boolean(userId),
     // Foreground only — react-query pauses this while the app is backgrounded,
     // which is exactly when a push notification takes over instead.
-    refetchInterval: 15_000,
-    staleTime: 0
+    //
+    // A minute, not fifteen seconds. The realtime handler below invalidates this
+    // query the instant a row lands, so polling is purely the backstop for a
+    // device realtime never reached — and at 15s it was refetching four times a
+    // minute forever, alongside two other watchers, which is visible churn for
+    // no benefit.
+    refetchInterval: 60_000,
+    staleTime: 10_000
   });
 
   useEffect(() => {
