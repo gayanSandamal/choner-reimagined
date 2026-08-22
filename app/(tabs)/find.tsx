@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -9,8 +10,13 @@ import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
 import { Heart } from '@/components/challenges/Heart';
 import { MatchCard } from '@/components/challenges/MatchCard';
-import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
-import { useMyChallenge, useJoinMatchPool, useLeaveMatchPool } from '@/features/challenges/hooks';
+import { challengeHabitTitle, isDailySearchLimit, partnerStateOf } from '@/features/challenges/api';
+import {
+  useMyChallenge,
+  useJoinMatchPool,
+  useLeaveMatchPool,
+  useMyMatch
+} from '@/features/challenges/hooks';
 import { usePartnerStatus } from '@/features/community/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
@@ -38,7 +44,15 @@ function firstName(name?: string | null) {
 export default function FindScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
-  const challengeQ = useMyChallenge(userId);
+  // Poll while this screen is the one waiting on the matcher. The state it
+  // renders comes from partner_state, which the matcher changes server-side, so
+  // without this the Searching screen depends entirely on a realtime frame
+  // arriving.
+  const [watchForMatch, setWatchForMatch] = useState(false);
+  const challengeQ = useMyChallenge(userId, watchForMatch);
+  // Carries the no-match flag and the day's remaining searches, not just the
+  // match itself — this one call answers every state this screen can be in.
+  const searchState = useMyMatch(userId, watchForMatch).data;
   const profileQ = useProfile(userId);
   const partnerStatusQ = usePartnerStatus(userId);
   const joinPool = useJoinMatchPool();
@@ -46,6 +60,12 @@ export default function FindScreen() {
 
   const challenge = challengeQ.data ?? null;
   const partnerState = partnerStateOf(challenge);
+
+  // Derived after the fact rather than passed in, because the value it depends
+  // on comes out of the very query it controls.
+  useEffect(() => {
+    setWatchForMatch(partnerState === 'finding' || partnerState === 'matched');
+  }, [partnerState]);
   const habit = challengeHabitTitle(challenge);
   const city = profileQ.data?.city ?? null;
   const totalDays = challenge?.challenge_templates?.duration_days ?? 7;
@@ -63,6 +83,15 @@ export default function FindScreen() {
     try {
       await joinPool.mutateAsync({ userChallengeId: challenge.id });
     } catch (error: any) {
+      // The limit is an ordinary answer, not a failure — the raw Postgres
+      // exception text is no use to anybody reading it on a phone.
+      if (isDailySearchLimit(error)) {
+        notify(
+          "That's today's searches",
+          'You get three partner searches a day. Try again tomorrow, or invite someone you know.'
+        );
+        return;
+      }
       notify('Could not start looking', error.message);
     }
   };
@@ -107,7 +136,7 @@ export default function FindScreen() {
         <AppText style={styles.pageTitle}>Find</AppText>
 
         {partnerState === 'matched' ? (
-          <MatchCard city={city} />
+          <MatchCard city={city} watch />
         ) : partnerState === 'partnered' ? (
           <PairedState
             partnerName={firstName(partnerStatusQ.data?.name)}
@@ -120,6 +149,11 @@ export default function FindScreen() {
             totalDays={totalDays}
             onCancel={onCancel}
             cancelling={leavePool.isPending}
+            noMatch={Boolean(searchState?.matched === false && searchState.no_match)}
+            searchesLeft={
+              searchState?.matched === false ? searchState.searches_left ?? null : null
+            }
+            dailyLimit={searchState?.matched === false ? searchState.daily_limit ?? null : null}
           />
         ) : (
           <NoRequestState
@@ -196,7 +230,7 @@ function NoRequestState({
           />
           {/* Honesty: matching is a person reading a list, not an algorithm. */}
           <AppText style={styles.note}>
-            Matching is hands-on right now while we're small — usually a day or two.
+            We look as soon as you ask, and keep looking every few minutes after that.
           </AppText>
         </>
       )}
@@ -225,24 +259,52 @@ function SearchingState({
   city,
   totalDays,
   onCancel,
-  cancelling
+  cancelling,
+  noMatch,
+  searchesLeft,
+  dailyLimit
 }: {
   habit: string | null;
   city: string | null;
   totalDays: number;
   onCancel: () => void;
   cancelling: boolean;
+  // We looked and nobody cleared the bar. Not the same as "give it a second":
+  // with nobody suitable doing this habit, waiting may never resolve at all.
+  noMatch: boolean;
+  searchesLeft: number | null;
+  dailyLimit: number | null;
 }) {
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
       <Heart youCheckedIn={false} partnerCheckedIn={false} partnerState="finding" />
 
       <View style={styles.searchStatus}>
-        <AppText style={styles.searchHead}>Looking for your partner</AppText>
-        <AppText style={styles.searchDetail}>
-          Matching people doing <AppText style={styles.searchHabit}>{habit ?? 'your habit'}</AppText>{' '}
-          right now.{'\n'}Usually a day or two while we're getting started.
-        </AppText>
+        {noMatch ? (
+          <>
+            <AppText style={styles.searchHead}>Nobody free right now</AppText>
+            <AppText style={styles.searchDetail}>
+              We looked, and no one doing{' '}
+              <AppText style={styles.searchHabit}>{habit ?? 'your habit'}</AppText> is available to
+              pair with today.{'\n'}You'll stay in the queue and we'll keep checking — or invite
+              someone you know.
+            </AppText>
+          </>
+        ) : (
+          <>
+            <AppText style={styles.searchHead}>Looking for your partner</AppText>
+            <AppText style={styles.searchDetail}>
+              Matching people doing{' '}
+              <AppText style={styles.searchHabit}>{habit ?? 'your habit'}</AppText> right now.
+              {'\n'}Usually within a minute or two.
+            </AppText>
+          </>
+        )}
+        {searchesLeft !== null && dailyLimit !== null ? (
+          <AppText style={styles.searchQuota}>
+            {searchesLeft} of {dailyLimit} searches left today
+          </AppText>
+        ) : null}
       </View>
 
       <View style={styles.card}>
@@ -355,6 +417,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing(1.5)
   },
   customNoteText: { color: theme.colors.muted, fontSize: 11.5, lineHeight: 18 },
+  searchQuota: { fontSize: 10.5, color: DIM, marginTop: 10, textAlign: 'center' },
   searchStatus: { alignItems: 'center', marginTop: 6, marginBottom: 22 },
   searchHead: { color: ORANGE_SOFT, fontSize: 14, marginBottom: 6 },
   searchDetail: { color: theme.colors.muted, fontSize: 11.5, lineHeight: 18, textAlign: 'center' },

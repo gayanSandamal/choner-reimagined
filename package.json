@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "seed:pool": "node scripts/seed-sample-pool.js",
+    "match": "node scripts/match-pool.js"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",

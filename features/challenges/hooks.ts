@@ -23,6 +23,7 @@ import {
   getMyMatch,
   confirmMatch,
   declineMatch,
+  findAnotherMatch,
   nudgePartner,
 } from '@/features/challenges/api';
 
@@ -43,11 +44,21 @@ export function useChallengeTemplate(templateId: string | undefined) {
 
 // The user's single live challenge. One query key everywhere, so a check-in,
 // a habit change and a partner joining all invalidate the same thing.
-export function useMyChallenge(userId: string | undefined) {
+// `watch` polls while the user is waiting on something that changes this row
+// from the outside — chiefly partner_state flipping to 'matched' when the
+// matcher pairs them.
+//
+// A minute, not fifteen seconds. A match now writes a notification, and that
+// table is published and subscribed, so realtime carries the news in well under
+// a second; this only has to cover a device realtime never reached. Three
+// queries all polling at 15s was constant visible reloading to shave a delay
+// that no longer exists.
+export function useMyChallenge(userId: string | undefined, watch = false) {
   return useQuery({
     queryKey: ['my-challenge', userId],
     queryFn: () => getMyChallenge(userId!),
     enabled: Boolean(userId),
+    refetchInterval: watch ? 60_000 : false,
   });
 }
 
@@ -71,11 +82,21 @@ export function usePartnerReflections(partnerId: string | undefined) {
 
 // ---- finding a partner ----
 
-export function useMyMatch(enabled = true) {
+// Keyed by user, because the cache outlives a sign-out: the key used to be a
+// bare ['my-match'], so signing into a second account could be served the
+// previous account's match. That is a real hazard here, where testing means
+// switching between accounts constantly.
+//
+// `watch` polls while the user is somewhere a match could plausibly land (in
+// the pool, or matched and waiting to confirm). Realtime is the fast path, but
+// delivery to a device is never guaranteed — same reasoning as
+// NotificationWatcher — so a slow poll is the backstop that makes it certain.
+export function useMyMatch(userId: string | undefined, watch = false) {
   return useQuery({
-    queryKey: ['my-match'],
+    queryKey: ['my-match', userId],
     queryFn: getMyMatch,
-    enabled,
+    enabled: Boolean(userId),
+    refetchInterval: watch ? 60_000 : false,
   });
 }
 
@@ -122,6 +143,21 @@ export function useNudgePartner(userId: string | undefined) {
     mutationFn: nudgePartner,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partner-status', userId] });
+    },
+  });
+}
+
+// Declining and re-searching in one step, for the person who asked. Invalidates
+// the same keys as a decline plus the match itself, because the replacement can
+// land within a second of this resolving.
+export function useFindAnotherMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: findAnotherMatch,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-match'] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['partner-status'] });
     },
   });
 }

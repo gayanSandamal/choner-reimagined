@@ -38,6 +38,7 @@ const KIND_PREF_MAP: Record<string, string> = {
   // skipped entirely — the nudge would reach someone who had turned
   // accountability alerts off.
   partner_nudge: 'accountability_alerts',
+  partner_matched: 'accountability_alerts',
   streak_risk: 'streak_alerts',
   ai_suggestion: 'ai_recovery_alerts',
 };

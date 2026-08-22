@@ -8,7 +8,9 @@
 
 // Sourced from the database types so this union and the check constraint on
 // challenge_reflections.question_key cannot drift apart.
-import type { ReflectionQuestionKey } from '@/types/database';
+// Relative, not '@/': Deno has no path aliases, and the edge function reaches
+// this file through matching.ts.
+import type { ReflectionQuestionKey } from '../../types/database.ts';
 export type { ReflectionQuestionKey };
 
 // The escape hatch on every question. Selecting it reveals a text field; the

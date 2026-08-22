@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { OptionCard } from '@/components/onboarding/OptionCard';
 import { useOnboarding } from '@/features/onboarding/context';
 import { useIsInvitee } from '@/features/onboarding/invitee';
-import { challengeHabitTitle, setPartnerState } from '@/features/challenges/api';
+import { challengeHabitTitle, isDailySearchLimit, setPartnerState } from '@/features/challenges/api';
 import { useMyChallenge, useJoinMatchPool } from '@/features/challenges/hooks';
 import { useCreateInvite, useResendInvite } from '@/features/community/hooks';
 import { useSession } from '@/providers/session-provider';
@@ -109,6 +109,13 @@ export default function PartnerPathScreen() {
       await joinPool.mutateAsync({ userChallengeId: challengeId });
       setPhase('finding');
     } catch (error: any) {
+      if (isDailySearchLimit(error)) {
+        notify(
+          "That's today's searches",
+          'You get three partner searches a day. Try again tomorrow, or invite someone you know.'
+        );
+        return;
+      }
       notify('Could not start looking', error.message);
     } finally {
       setBusy(false);
@@ -162,9 +169,9 @@ export default function PartnerPathScreen() {
             <>
               <AppText variant="title">Looking for your partner</AppText>
               <AppText muted>
-                We're matching you with someone doing {habit} who wants the same thing. Since we're
-                just getting started, this usually takes a day or two — we'll notify you the moment
-                you're matched.
+                We're matching you with someone doing {habit} who wants the same thing. We're
+                looking now, and again every few minutes — we'll notify you the moment you're
+                matched.
               </AppText>
             </>
           ) : phase === 'pending' && sentInvite ? (

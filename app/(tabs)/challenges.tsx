@@ -93,8 +93,8 @@ export default function ChallengesScreen() {
   const habit = challengeHabitTitle(challenge) ?? 'Your habit';
   const completed = challenge?.status === 'completed';
   // Only an unaccepted INVITE is genuinely not started. Someone in the
-  // matching pool keeps logging today — a human may take a day or two to pair
-  // them, and freezing their habit for that long punishes them for asking.
+  // matching pool keeps logging today — pairing is usually a minute or two but
+  // is not instant, and freezing their habit meanwhile punishes them for asking.
   const notStarted = partnerState === 'invited';
 
   // One line of the partner's own reasoning, now that a confirmed pairing can
@@ -163,7 +163,7 @@ export default function ChallengesScreen() {
         return (
           <>
             <AppText style={styles.statusWarm}>Looking for your partner</AppText>
-            {'\n'}Usually a day or two while we're getting started.
+            {'\n'}Usually within a minute or two.
           </>
         );
       }
@@ -231,7 +231,10 @@ export default function ChallengesScreen() {
         {/* A match landing while you're mid-challenge shouldn't blow the whole
             screen away — it arrives as a banner above whatever you were
             already looking at. */}
-        <MatchBanner city={profileQ.data?.city} />
+        <MatchBanner
+          city={profileQ.data?.city}
+          watch={partnerState === 'finding' || partnerState === 'matched'}
+        />
 
         {/* Community has no post button; sharing is offered here, right after
             the moment it refers to. */}

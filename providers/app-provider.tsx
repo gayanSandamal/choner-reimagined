@@ -34,8 +34,14 @@ function NotificationWatcher({ userId }: { userId: string }) {
     enabled: Boolean(userId),
     // Foreground only — react-query pauses this while the app is backgrounded,
     // which is exactly when a push notification takes over instead.
-    refetchInterval: 15_000,
-    staleTime: 0
+    //
+    // A minute, not fifteen seconds. The realtime handler below invalidates this
+    // query the instant a row lands, so polling is purely the backstop for a
+    // device realtime never reached — and at 15s it was refetching four times a
+    // minute forever, alongside two other watchers, which is visible churn for
+    // no benefit.
+    refetchInterval: 60_000,
+    staleTime: 10_000
   });
 
   useEffect(() => {
@@ -145,6 +151,10 @@ function SessionWiring() {
           qc.invalidateQueries({ queryKey: ['partner-status', userId] });
           qc.invalidateQueries({ queryKey: ['my-challenge', userId] });
           qc.invalidateQueries({ queryKey: ['streak', userId] });
+          // A 'we found your partner' notification is the fastest signal that a
+          // match exists — this table is published and subscribed, partner_matches
+          // is neither — so it has to refresh the match too, not just the bell.
+          qc.invalidateQueries({ queryKey: ['my-match', userId] });
         }
       )
       .subscribe();
@@ -168,6 +178,14 @@ function SessionWiring() {
       qc.invalidateQueries({ queryKey: ['partner-status', userId] });
       qc.invalidateQueries({ queryKey: ['my-challenge', userId] });
       qc.invalidateQueries({ queryKey: ['pending-invites', userId] });
+      // The match itself, which this handler used to leave stale. partner_matches
+      // is not in the realtime publication, but a match always flips
+      // user_challenges.partner_state to 'matched' — which IS published and is
+      // what fires this. On Find that was survivable because MatchCard only
+      // mounts once the state flips and so fetches fresh; on Challenges the card
+      // is always mounted (it renders null with no match), so the banner stayed
+      // invisible until the app was backgrounded and reopened.
+      qc.invalidateQueries({ queryKey: ['my-match', userId] });
     };
 
     const pairingChannel = supabase

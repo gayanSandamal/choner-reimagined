@@ -348,7 +348,17 @@ export async function leaveMatchPool(userChallengeId: string) {
 }
 
 export type MyMatch =
-  | { matched: false }
+  | {
+      matched: false;
+      // Still in the pool.
+      searching?: boolean;
+      // We looked and nobody cleared the bar. Distinct from `searching` alone,
+      // which cannot tell "give it a moment" apart from "there is nobody",
+      // and the second can be permanent rather than slow.
+      no_match?: boolean;
+      searches_left?: number;
+      daily_limit?: number;
+    }
   | {
       matched: true;
       match_id: string;
@@ -359,6 +369,12 @@ export type MyMatch =
       habit: string;
       duration_days: number;
       i_confirmed: boolean;
+      they_confirmed: boolean;
+      // Whether this user's own tap produced the pairing. Decides which
+      // question they are asked: "keep them?" versus "will you take them on?".
+      i_requested: boolean;
+      searches_left: number;
+      daily_limit: number;
     };
 
 export async function getMyMatch(): Promise<MyMatch> {
@@ -376,6 +392,29 @@ export async function confirmMatch(matchId: string): Promise<{ confirmed: boolea
 export async function declineMatch(matchId: string) {
   const { error } = await (supabase.rpc as any)('decline_match', { p_match_id: matchId });
   if (error) throw error;
+}
+
+export type FindAnotherResult =
+  | { ok: true; searches_left: number }
+  | { ok: false; reason: 'daily_limit' | 'match_not_found'; daily_limit?: number };
+
+// "Not this one." Different from declineMatch, which is the symmetric
+// "neither of us wants this" — this declines and immediately looks again for
+// the caller, and spends one of their three daily searches to do it.
+export async function findAnotherMatch(matchId: string): Promise<FindAnotherResult> {
+  const { data, error } = await (supabase.rpc as any)('find_another_match', {
+    p_match_id: matchId
+  });
+  if (error) throw error;
+  return data as FindAnotherResult;
+}
+
+// join_match_pool raises this when the day's three searches are gone. Postgres
+// gives us the raw exception text, which is not something to put on screen.
+export function isDailySearchLimit(error: unknown): boolean {
+  return String((error as { message?: string })?.message ?? '').includes(
+    'daily_search_limit_reached'
+  );
 }
 
 // ============================================================
