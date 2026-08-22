@@ -13,7 +13,8 @@
     "test": "jest",
     "format": "prettier --write .",
     "seed:pool": "node scripts/seed-sample-pool.js",
-    "match": "node scripts/match-pool.js"
+    "match": "node scripts/match-pool.js",
+    "reset:partners": "node scripts/reset-partners.js"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",

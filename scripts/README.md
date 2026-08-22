@@ -64,6 +64,41 @@ Decorrelating took it to 204 pairs led by genuine 100/48 and 50/19 anchor pairin
 
 ---
 
+## `npm run reset:partners` — unpair everyone, restock the pool
+
+```bash
+npm run reset:partners              # show what would change
+npm run reset:partners -- --confirm # do it
+npm run reset:partners -- --resume  # turn the 5-minute sweep back on
+```
+
+Clears every pairing and puts the sample accounts back in the pool so there is
+something to match against. **Deletes pairings only** — no account, profile,
+challenge, reflection or check-in is touched.
+
+Real (non-sample) accounts are deliberately left OUT of the pool. Somebody is
+only ever in it because they tapped Find; putting them back would be matching a
+person who never asked, which is the consent rule the rest of the feature is
+built on. Tap Find yourself and the normal flow runs.
+
+### It pauses the sweep, and that is the point
+
+`choner-partner-matching` pairs everyone waiting every five minutes. Restock the
+pool with 870 sample users and leave it running and they pair off with each
+other before you can open the app — the reset undoes itself.
+
+Pausing costs the tester nothing, because the two paths are different:
+`join_match_pool()` fires a run scoped to the ONE person who tapped Find and
+that still happens instantly. Only everyone-with-everyone stops. Measured with
+the sweep off: tap to matched in about a second.
+
+Use `cron.alter_job(jobid, active := ...)`, never `update cron.job` — that table
+is not writable by this role ("permission denied for table job") and pg_cron
+expects changes through its own API. Follow it with `pg_reload_conf()` or the
+launcher keeps running the version it has cached.
+
+---
+
 ## `npm run match` — look at what the matcher is doing
 
 Matching is **automatic**. `choner-partner-matching` runs every 5 minutes and
