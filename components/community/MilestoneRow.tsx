@@ -3,24 +3,11 @@ import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import type { FeedItem, MilestoneKind } from '@/features/community/milestones';
+import { relativeTime } from '@/lib/time';
 import { theme } from '@/constants/theme';
 
 const ORANGE_SOFT = '#ffb355';
 const GREEN = '#4fc98a';
-
-// Relative time, coarse on purpose — an exact timestamp on someone else's
-// streak is noise, and "3d" is all the reader needs.
-function relativeTime(iso: string) {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '';
-  const mins = Math.max(0, Math.round((Date.now() - then) / 60000));
-  if (mins < 60) return `${Math.max(1, mins)}m`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.round(hours / 24);
-  if (days < 7) return `${days}d`;
-  return `${Math.round(days / 7)}w`;
-}
 
 const BADGES: Record<MilestoneKind, { label: string; color: string }> = {
   streak: { label: 'Streak', color: ORANGE_SOFT },

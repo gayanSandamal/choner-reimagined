@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
+import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import {
@@ -141,6 +142,9 @@ export function MatchCard({ onDismiss, city, watch = false }: Props) {
         <AppText style={styles.heading}>
           {match.i_requested ? 'We found your partner' : `${match.partner_first_name} wants to pair up`}
         </AppText>
+        <View style={styles.avatarWrap}>
+          <Avatar uri={match.partner_avatar_url} name={match.partner_first_name} size={64} ring />
+        </View>
         <AppText style={styles.name}>{match.partner_first_name}</AppText>
         <AppText style={styles.meta}>{meta}</AppText>
         {/* One curated line, written when the pairing was made. Not their raw
@@ -207,6 +211,7 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 9, letterSpacing: 2, color: ORANGE, fontFamily: theme.fonts.bodyBold },
   dismiss: { fontSize: 11, color: theme.colors.muted },
   heading: { fontSize: 19, color: theme.colors.text, marginBottom: 8 },
+  avatarWrap: { marginBottom: 4 },
   name: { fontSize: 16, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
   meta: { fontSize: 11.5, color: theme.colors.muted },
   quote: {

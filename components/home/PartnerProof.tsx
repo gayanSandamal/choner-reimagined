@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui/AppText';
 import { getCheckinPhotoUrl } from '@/features/challenges/api';
+import { useMarkCheckinPhotoViewed } from '@/features/challenges/hooks';
 import type { PartnerProofPhoto } from '@/features/community/api';
 import { theme } from '@/constants/theme';
 
@@ -11,6 +12,11 @@ import { theme } from '@/constants/theme';
 // Photos live in a private bucket, so each render signs a short-lived URL
 // rather than holding a permanent link. Storage RLS is what actually enforces
 // "partner only"; this component just displays what it is allowed to fetch.
+//
+// Ephemeral: every photo shown here belongs to the partner, never the viewer
+// themselves, so simply rendering one here IS the "view" that starts its
+// countdown to deletion. `seen` dedupes so remounts/re-renders don't refire
+// the mutation for a photo already marked.
 export function PartnerProof({
   photos,
   partnerName
@@ -20,6 +26,8 @@ export function PartnerProof({
 }) {
   const [urls, setUrls] = useState<string[]>([]);
   const [failed, setFailed] = useState(false);
+  const markViewed = useMarkCheckinPhotoViewed();
+  const seen = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +50,17 @@ export function PartnerProof({
     };
     // Path list is the identity here — re-sign only when the photos change.
   }, [photos.map((p) => p.photo_path).join('|')]);
+
+  useEffect(() => {
+    if (urls.length === 0 || failed) return;
+    for (const photo of photos) {
+      if (seen.current.has(photo.id)) continue;
+      seen.current.add(photo.id);
+      markViewed.mutate(photo.id);
+    }
+    // Fires once per successfully-signed batch; `seen` is what prevents a
+    // repeat call, not this dependency list.
+  }, [urls, failed]);
 
   if (photos.length === 0) return null;
 

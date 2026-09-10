@@ -11,6 +11,7 @@ import { PairRow } from '@/components/challenges/PairRow';
 import { LogTaskItem } from '@/components/home/LogTaskItem';
 import { PartnerProof } from '@/components/home/PartnerProof';
 import { LateNote } from '@/components/home/LateNote';
+import { PairTimeline } from '@/components/challenges/PairTimeline';
 import { useCompleteTask, useUndoTaskCheckin } from '@/features/challenges/hooks';
 import { captureProofPhoto, resolveProofType } from '@/features/challenges/capture';
 import { useSession } from '@/providers/session-provider';
@@ -141,6 +142,12 @@ export function ChallengeCard({
         }
       />
 
+      {partnered && streak > 0 ? (
+        <AppText variant="caption" muted style={styles.centerText}>
+          {streak} day streak — you + {firstName(partnerStatus?.name)}
+        </AppText>
+      ) : null}
+
       {showPartnerStatus ? (
         <View style={styles.partnerStatusRow}>
           <Ionicons
@@ -171,6 +178,13 @@ export function ChallengeCard({
       {/* A late note is a message to a partner — pointless with nobody there. */}
       {partnered && challenge && pendingTasks.length > 0 ? (
         <LateNote userChallengeId={challenge.id} />
+      ) : null}
+
+      {challenge && userId ? (
+        <PairTimeline
+          userId={userId}
+          partnerName={partnered ? firstName(partnerStatus?.name) : undefined}
+        />
       ) : null}
 
       {needsPartner ? (

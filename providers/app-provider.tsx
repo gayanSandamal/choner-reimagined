@@ -13,6 +13,7 @@ import { getProfile, updateProfile } from '@/features/profile/api';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { MissReasonGate } from '@/components/challenges/MissReasonGate';
 import { clearUser, identifyUser, initObservability } from '@/lib/observability';
 import { ReduceMotionContext } from '@/lib/motion';
 
@@ -151,6 +152,7 @@ function SessionWiring() {
           qc.invalidateQueries({ queryKey: ['partner-status', userId] });
           qc.invalidateQueries({ queryKey: ['my-challenge', userId] });
           qc.invalidateQueries({ queryKey: ['streak', userId] });
+          qc.invalidateQueries({ queryKey: ['pair-checkins', userId] });
           // A 'we found your partner' notification is the fastest signal that a
           // match exists — this table is published and subscribed, partner_matches
           // is neither — so it has to refresh the match too, not just the bell.
@@ -178,6 +180,7 @@ function SessionWiring() {
       qc.invalidateQueries({ queryKey: ['partner-status', userId] });
       qc.invalidateQueries({ queryKey: ['my-challenge', userId] });
       qc.invalidateQueries({ queryKey: ['pending-invites', userId] });
+      qc.invalidateQueries({ queryKey: ['pair-checkins', userId] });
       // The match itself, which this handler used to leave stale. partner_matches
       // is not in the realtime publication, but a match always flips
       // user_challenges.partner_state to 'matched' — which IS published and is
@@ -257,6 +260,7 @@ export function AppProvider({ children }: PropsWithChildren) {
                 <ToastProvider>
                   <SessionWiring />
                   <NotificationGate />
+                  <MissReasonGate />
                   {children}
                 </ToastProvider>
               </SessionProvider>

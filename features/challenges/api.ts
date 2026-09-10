@@ -220,6 +220,39 @@ export async function getCheckinPhotoUrl(path: string, expiresInSeconds = 60 * 1
   return data.signedUrl;
 }
 
+// Starts a check-in photo's countdown to deletion. Only meaningful when the
+// caller is the partner, not the owner — the RPC itself no-ops for the owner
+// rather than the client having to know that rule.
+export async function markCheckinPhotoViewed(checkinId: string) {
+  const { error } = await (supabase.rpc as any)('mark_checkin_photo_viewed', {
+    p_checkin_id: checkinId
+  });
+  if (error) throw error;
+}
+
+export type PairCheckinEvent = {
+  id: string;
+  user_id: string;
+  name: string | null;
+  avatar_url: string | null;
+  task_title: string;
+  note: string | null;
+  photo_path: string | null;
+  completed_at: string;
+};
+
+// Both partners' individual check-ins, newest first — the pair timeline's
+// data source. Falls back to just the caller's own check-ins when unpartnered,
+// so the empty state and a brand-new pair both work correctly.
+export async function getPairCheckins(userId: string, limit = 30): Promise<PairCheckinEvent[]> {
+  const { data, error } = await (supabase.rpc as any)('get_pair_checkins', {
+    p_user_id: userId,
+    p_limit: limit
+  });
+  if (error) throw error;
+  return (data as PairCheckinEvent[]) ?? [];
+}
+
 // "Running late, doing it tonight." Saved against the caller's own local day,
 // which the server resolves from their timezone so the client and the
 // missed-day sweep can never disagree about which day it is.
@@ -252,6 +285,46 @@ export async function getTodayStatus(userChallengeId: string): Promise<DailyStat
   });
   if (error) throw error;
   return (data as DailyStatus) ?? null;
+}
+
+export type MissReason =
+  | 'too_busy'
+  | 'too_tired'
+  | 'forgot'
+  | 'didnt_feel_like_it'
+  | 'something_came_up';
+
+export type YesterdayStatus = {
+  local_date: string;
+  missed: boolean;
+  reason: MissReason | null;
+  needs_prompt: boolean;
+};
+
+// Yesterday's row for a challenge, resolved in the caller's own local day for
+// the same reason getTodayStatus is: the client can only offer UTC, and that
+// disagrees with Asia/Colombo for five and a half hours a night.
+export async function getYesterdayStatus(userChallengeId: string): Promise<YesterdayStatus | null> {
+  const { data, error } = await (supabase.rpc as any)('get_yesterday_status', {
+    p_user_challenge_id: userChallengeId
+  });
+  if (error) throw error;
+  return (data as YesterdayStatus) ?? null;
+}
+
+// p_reason = null records a dismiss-without-answering — it still stamps
+// reason_prompted_at, which is what stops the prompt reappearing on next open.
+export async function setMissReason(
+  userChallengeId: string,
+  localDate: string,
+  reason: MissReason | null
+) {
+  const { error } = await (supabase.rpc as any)('set_miss_reason', {
+    p_user_challenge_id: userChallengeId,
+    p_local_date: localDate,
+    p_reason: reason
+  });
+  if (error) throw error;
 }
 
 // The user's four "Why" answers. Owner-only under RLS by design — these are
@@ -363,6 +436,7 @@ export type MyMatch =
       matched: true;
       match_id: string;
       partner_first_name: string;
+      partner_avatar_url: string | null;
       // The one curated line written at pairing time — never the other
       // person's raw reflections, who are strangers until both confirm.
       blurb: string | null;
