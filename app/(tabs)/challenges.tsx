@@ -173,11 +173,7 @@ export default function ChallengesScreen() {
       return <>Half a heart is still a start.</>;
     }
     if (youCheckedIn && partnerCheckedIn) {
-      return (
-        <>
-          You're <AppText style={styles.statusStrong}>both in</AppText> today. Streak alive.
-        </>
-      );
+      return <>Day {streak} done. See you tomorrow.</>;
     }
     if (youCheckedIn) {
       return (
@@ -187,7 +183,7 @@ export default function ChallengesScreen() {
         </>
       );
     }
-    return <>Neither of you has checked in today.</>;
+    return <>{firstName(partnerStatus?.name)} is counting on you today.</>;
   };
 
   if (challengeQ.isLoading) {

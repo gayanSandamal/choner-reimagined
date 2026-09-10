@@ -277,6 +277,9 @@ export async function acceptInvite(token: string) {
 }
 
 export type PartnerProofPhoto = {
+  // task_checkins.id — needed to call markCheckinPhotoViewed once this photo
+  // is actually shown to the partner.
+  id: string;
   task_title: string;
   // Storage path in the private checkin-photos bucket. Sign it to display;
   // there is deliberately no public URL for check-in photos.

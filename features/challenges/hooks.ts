@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { MissReason } from '@/features/challenges/api';
 import {
   getTemplates,
   getTemplate,
@@ -10,6 +11,10 @@ import {
   undoTaskCheckin,
   setLateNote,
   getTodayStatus,
+  getPairCheckins,
+  markCheckinPhotoViewed,
+  getYesterdayStatus,
+  setMissReason,
   pauseChallenge,
   resumeChallenge,
   abandonChallenge,
@@ -237,6 +242,7 @@ export function useCompleteTask() {
       queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
       queryClient.invalidateQueries({ queryKey: ['insights'] });
       queryClient.invalidateQueries({ queryKey: ['streak'] });
+      queryClient.invalidateQueries({ queryKey: ['pair-checkins'] });
     },
   });
 }
@@ -251,6 +257,26 @@ export function useUndoTaskCheckin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
       queryClient.invalidateQueries({ queryKey: ['streak'] });
+      queryClient.invalidateQueries({ queryKey: ['pair-checkins'] });
+    },
+  });
+}
+
+export function usePairCheckins(userId: string | undefined, limit = 30) {
+  return useQuery({
+    queryKey: ['pair-checkins', userId],
+    queryFn: () => getPairCheckins(userId!, limit),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useMarkCheckinPhotoViewed() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markCheckinPhotoViewed,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pair-checkins'] });
+      queryClient.invalidateQueries({ queryKey: ['partner-status'] });
     },
   });
 }
@@ -297,6 +323,25 @@ export function useSetLateNote() {
       setLateNote(input.userChallengeId, input.note),
     onSuccess: (_d, vars) => {
       queryClient.invalidateQueries({ queryKey: ['daily-status', vars.userChallengeId] });
+    },
+  });
+}
+
+export function useYesterdayStatus(userChallengeId: string | undefined) {
+  return useQuery({
+    queryKey: ['yesterday-status', userChallengeId],
+    queryFn: () => getYesterdayStatus(userChallengeId!),
+    enabled: Boolean(userChallengeId),
+  });
+}
+
+export function useSetMissReason() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { userChallengeId: string; localDate: string; reason: MissReason | null }) =>
+      setMissReason(input.userChallengeId, input.localDate, input.reason),
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['yesterday-status', vars.userChallengeId] });
     },
   });
 }
