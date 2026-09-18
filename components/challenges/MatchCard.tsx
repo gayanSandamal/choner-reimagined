@@ -15,9 +15,9 @@ import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { confirmAction, notify } from '@/lib/alert';
 
-const ORANGE = '#FE8C00';
-const ORANGE_SOFT = '#ffb355';
-const DIM = '#2c4759';
+const ORANGE = '#FD8302';
+const ORANGE_SOFT = '#FDA340';
+const DIM = '#D8D2CC';
 
 interface Props {
   // Challenges shows this above whatever state the user was already in, so it
@@ -121,7 +121,7 @@ export function MatchCard({ onDismiss, city, watch = false }: Props) {
   return (
     <Animated.View entering={FadeInDown.duration(400)} exiting={FadeOut}>
       <LinearGradient
-        colors={['rgba(254,140,0,0.14)', 'rgba(254,140,0,0.02)', 'transparent']}
+        colors={['rgba(253,131,2,0.14)', 'rgba(253,131,2,0.02)', 'transparent']}
         style={styles.card}
       >
         <View style={styles.tagRow}>
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(254,140,0,0.28)'
+    borderColor: 'rgba(253,131,2,0.28)'
   },
   tagRow: {
     flexDirection: 'row',
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   tag: {
     borderWidth: 1,
-    borderColor: 'rgba(254,140,0,0.35)',
+    borderColor: 'rgba(253,131,2,0.35)',
     borderRadius: 100,
     paddingHorizontal: 11,
     paddingVertical: 4
@@ -226,8 +226,8 @@ const styles = StyleSheet.create({
   waiting: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(254,140,0,0.25)',
-    backgroundColor: 'rgba(254,140,0,0.06)',
+    borderColor: 'rgba(253,131,2,0.25)',
+    backgroundColor: 'rgba(253,131,2,0.06)',
     padding: 14,
     marginBottom: 8
   },

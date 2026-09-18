@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MissReason } from '@/features/challenges/api';
+import { requestCheckinValue } from '@/features/challenges/checkin-value-bus';
+import { getLocations } from '@/features/challenges/locations';
 import {
   getTemplates,
   getTemplate,
@@ -23,6 +25,10 @@ import {
   saveReflections,
   getPartnerReflections,
   setMyChallengeHabit,
+  setChallengeTarget,
+  getStartingPointStatus,
+  setStartingPoint,
+  setCheckinValue,
   joinMatchPool,
   leaveMatchPool,
   getMyMatch,
@@ -189,6 +195,44 @@ export function useSetMyChallengeHabit() {
   });
 }
 
+export function useSetChallengeTarget() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setChallengeTarget,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+    },
+  });
+}
+
+export function useStartingPointStatus(userChallengeId: string | undefined) {
+  return useQuery({
+    queryKey: ['starting-point', userChallengeId],
+    queryFn: () => getStartingPointStatus(userChallengeId!),
+    enabled: Boolean(userChallengeId),
+  });
+}
+
+export function useSetStartingPoint() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setStartingPoint,
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['starting-point', vars.userChallengeId] });
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+    },
+  });
+}
+
+export function useLocations() {
+  return useQuery({
+    queryKey: ['locations'],
+    queryFn: getLocations,
+    // Reference data — it changes only when a migration corrects the tagging.
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
 export function useReflections(userId: string | undefined) {
   return useQuery({
     queryKey: ['reflections', userId],
@@ -234,15 +278,46 @@ export function useStartChallenge() {
   });
 }
 
+// The single choke point for check-ins — all three call sites (Home's
+// ChallengeCard, the Challenges tab, and challenge detail) route through here,
+// so raising the "what number did you reach?" prompt once here covers them all.
 export function useCompleteTask() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: completeTask,
-    onSuccess: () => {
+    onSuccess: (row: any, vars) => {
       queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
       queryClient.invalidateQueries({ queryKey: ['insights'] });
       queryClient.invalidateQueries({ queryKey: ['streak'] });
       queryClient.invalidateQueries({ queryKey: ['pair-checkins'] });
+
+      // Only ask when the habit has a unit worth asking about, and only when
+      // the caller didn't already supply the number.
+      const challenge: any = queryClient.getQueryData(['my-challenge', vars.userId]);
+      const template = challenge?.challenge_templates;
+      if (!row?.id || vars.value != null || !template?.metric_type) return;
+
+      requestCheckinValue({
+        checkinId: row.id,
+        userChallengeId: vars.userChallengeId,
+        activityKey: template.activity_key ?? null,
+        unit: template.unit ?? null,
+        metricType: template.metric_type ?? null,
+        initialValue: challenge?.commitment_value ?? template.default_target ?? 1,
+        isFirstNumber: challenge?.capability_value == null
+      });
+    },
+  });
+}
+
+export function useSetCheckinValue() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setCheckinValue,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['pair-checkins'] });
+      queryClient.invalidateQueries({ queryKey: ['starting-point'] });
     },
   });
 }

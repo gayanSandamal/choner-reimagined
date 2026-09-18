@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: theme.colors.overlayDim,
     justifyContent: 'flex-end',
     zIndex: 2000
   },
@@ -85,11 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     padding: theme.spacing(2),
     gap: theme.spacing(1.5),
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 10
+    ...theme.shadow.lg
   },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing(1) },
   title: { flex: 1 },

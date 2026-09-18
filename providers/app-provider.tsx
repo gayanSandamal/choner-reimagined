@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from '@/providers/session-provider';
 import { ToastProvider, useToast } from '@/providers/toast-provider';
+import { ConfirmProvider } from '@/providers/confirm-provider';
 import { queryClient } from '@/lib/query-client';
 import { attachNotificationResponseListener, registerForPushNotificationsAsync } from '@/lib/notifications';
 import { configurePurchases } from '@/lib/billing';
@@ -14,6 +15,8 @@ import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MissReasonGate } from '@/components/challenges/MissReasonGate';
+import { StartingPointGate } from '@/components/challenges/StartingPointGate';
+import { CheckinValueGate } from '@/components/challenges/CheckinValueGate';
 import { clearUser, identifyUser, initObservability } from '@/lib/observability';
 import { ReduceMotionContext } from '@/lib/motion';
 
@@ -258,10 +261,16 @@ export function AppProvider({ children }: PropsWithChildren) {
                     in-app banner, and sits above children so it draws over
                     whatever screen is showing. */}
                 <ToastProvider>
-                  <SessionWiring />
-                  <NotificationGate />
-                  <MissReasonGate />
-                  {children}
+                  {/* Innermost so its dialog draws above the gates' sheets —
+                      a confirm raised from one has to sit on top of it. */}
+                  <ConfirmProvider>
+                    <SessionWiring />
+                    <NotificationGate />
+                    <MissReasonGate />
+                    <StartingPointGate />
+                    <CheckinValueGate />
+                    {children}
+                  </ConfirmProvider>
                 </ToastProvider>
               </SessionProvider>
             </ReduceMotionContext.Provider>

@@ -6,8 +6,8 @@ import type { FeedItem, MilestoneKind } from '@/features/community/milestones';
 import { relativeTime } from '@/lib/time';
 import { theme } from '@/constants/theme';
 
-const ORANGE_SOFT = '#ffb355';
-const GREEN = '#4fc98a';
+const ORANGE_SOFT = '#FDA340';
+const GREEN = '#2E9E6B';
 
 const BADGES: Record<MilestoneKind, { label: string; color: string }> = {
   streak: { label: 'Streak', color: ORANGE_SOFT },
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6
   },
-  reactOn: { borderColor: 'rgba(254,140,0,0.45)', backgroundColor: 'rgba(254,140,0,0.10)' },
+  reactOn: { borderColor: 'rgba(253,131,2,0.45)', backgroundColor: 'rgba(253,131,2,0.10)' },
   reactEmoji: { fontSize: 13 },
   reactCount: { color: theme.colors.muted, fontSize: 11 }
 });

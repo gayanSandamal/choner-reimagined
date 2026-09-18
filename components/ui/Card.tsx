@@ -49,7 +49,7 @@ export function Card({
       ) : null}
       {variant === 'glow' ? (
         <LinearGradient
-          colors={['rgba(255,138,31,0.18)', 'rgba(255,138,31,0)']}
+          colors={['rgba(253,131,2,0.18)', 'rgba(253,131,2,0)']}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={StyleSheet.absoluteFill}

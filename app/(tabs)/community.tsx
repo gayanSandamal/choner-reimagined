@@ -17,8 +17,8 @@ import {
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 
-const ORANGE = '#FE8C00';
-const DIM = '#2c4759';
+const ORANGE = '#FD8302';
+const DIM = '#D8D2CC';
 
 function firstName(name?: string | null) {
   return (name ?? '').trim().split(/\s+/)[0] || '';
@@ -176,9 +176,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing(1.5),
-    backgroundColor: '#04202f',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(28,43,51,0.04)',
     borderRadius: 18,
     padding: 14,
     marginBottom: theme.spacing(2)
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   streak: { alignItems: 'center' },
   streakNum: { fontFamily: theme.fonts.bodyBold, fontSize: 20, color: theme.colors.text },
   streakLabel: { fontSize: 10, color: theme.colors.muted },
-  feed: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
+  feed: { borderTopWidth: 1, borderTopColor: 'rgba(28,43,51,0.04)' },
   empty: { alignItems: 'center', paddingVertical: theme.spacing(5), gap: theme.spacing(1.5) },
   emptyText: { color: theme.colors.muted, fontSize: 12, textAlign: 'center', lineHeight: 19 }
 });

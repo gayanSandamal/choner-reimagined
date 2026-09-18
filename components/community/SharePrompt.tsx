@@ -12,7 +12,7 @@ import { useProfile } from '@/features/profile/hooks';
 import type { MilestoneKind } from '@/features/community/milestones';
 import { theme } from '@/constants/theme';
 
-const ORANGE = '#FE8C00';
+const ORANGE = '#FD8302';
 
 // A streak only becomes worth mentioning once it's a real run.
 const STREAK_THRESHOLD = 7;
@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing(1.5),
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(254,140,0,0.28)',
-    backgroundColor: 'rgba(254,140,0,0.07)',
+    borderColor: 'rgba(253,131,2,0.28)',
+    backgroundColor: 'rgba(253,131,2,0.07)',
     padding: 14
   },
   body: { flexShrink: 1, flexGrow: 1, gap: 2 },
@@ -105,5 +105,5 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     backgroundColor: ORANGE
   },
-  yesText: { color: '#2a1400', fontSize: 12, fontFamily: theme.fonts.bodyBold }
+  yesText: { color: '#FFFFFF', fontSize: 12, fontFamily: theme.fonts.bodyBold }
 });

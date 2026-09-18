@@ -7,14 +7,14 @@ import { useAcceptInvite } from '@/features/community/hooks';
 import { getPendingInviteToken, clearPendingInviteToken } from '@/lib/pending-invite';
 import { useCallback, useEffect, useRef } from 'react';
 import {
-  Nunito_400Regular,
-  Nunito_600SemiBold,
-  Nunito_700Bold,
-  Nunito_800ExtraBold,
-  Nunito_800ExtraBold_Italic,
-  Nunito_900Black,
+  Poppins_300Light,
+  Poppins_300Light_Italic,
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
   useFonts
-} from '@expo-google-fonts/nunito';
+} from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -148,12 +148,12 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Nunito_400Regular,
-    Nunito_600SemiBold,
-    Nunito_700Bold,
-    Nunito_800ExtraBold,
-    Nunito_800ExtraBold_Italic,
-    Nunito_900Black
+    Poppins_300Light,
+    Poppins_300Light_Italic,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold
   });
 
   const onLayoutRootView = useCallback(() => {

@@ -36,14 +36,20 @@ export function AppTopBar() {
 }
 
 const styles = StyleSheet.create({
+  // A floating navy pill on the paper page — one of only two places the deep
+  // navy survives the light-theme switch (the other is the bottom nav).
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 22,
-    paddingTop: theme.spacing(1),
-    paddingBottom: theme.spacing(0.5)
+    backgroundColor: theme.colors.navy,
+    borderRadius: 24,
+    marginHorizontal: 16,
+    marginTop: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    ...theme.shadow.lg
   },
-  logo: { fontFamily: theme.fonts.bodyBold, fontSize: 15, color: theme.colors.text },
+  logo: { fontFamily: theme.fonts.bodyBold, fontSize: 16, color: theme.colors.onNavy },
   dot: { color: theme.colors.primary }
 });

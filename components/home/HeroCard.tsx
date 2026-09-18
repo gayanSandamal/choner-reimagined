@@ -92,7 +92,7 @@ export function HeroCard({ title, subtitle, progress, aiPriority, streak }: Hero
           style={styles.aiBox}
         >
           <LinearGradient
-            colors={['rgba(255,138,31,0.16)', 'rgba(124,92,255,0.12)']}
+            colors={['rgba(253,131,2,0.16)', 'rgba(124,92,255,0.12)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}

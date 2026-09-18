@@ -14,9 +14,9 @@ import { AppText } from '@/components/ui/AppText';
 import { useReduceMotion } from '@/lib/motion';
 import { theme } from '@/constants/theme';
 
-const DIM = '#2c4759';
-const SURFACE_2 = '#072839';
-const BORDER = '#0e3448';
+const DIM = '#D8D2CC';
+const SURFACE_2 = '#FFFFFF';
+const BORDER = '#F4F2EF';
 
 function initialsOf(name?: string | null) {
   const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
@@ -29,7 +29,7 @@ function Seat({ label, on }: { label: string; on: boolean }) {
   if (on) {
     return (
       <LinearGradient
-        colors={['#FE8C00', '#e07600']}
+        colors={['#FD8302', '#FD5B01']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.seat, styles.seatOn]}
@@ -141,11 +141,11 @@ const styles = StyleSheet.create({
   },
   seatOn: { borderColor: 'transparent' },
   seatOpen: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: DIM, backgroundColor: 'transparent' },
-  seatSeek: { borderWidth: 1.5, borderColor: 'rgba(254,140,0,0.4)', backgroundColor: 'transparent' },
+  seatSeek: { borderWidth: 1.5, borderColor: 'rgba(253,131,2,0.4)', backgroundColor: 'transparent' },
   seatText: { fontFamily: theme.fonts.bodyBold, fontSize: 10.5, color: DIM, letterSpacing: 0.3 },
-  seatTextOn: { fontFamily: theme.fonts.bodyBold, fontSize: 10.5, color: '#2a1400', letterSpacing: 0.3 },
+  seatTextOn: { fontFamily: theme.fonts.bodyBold, fontSize: 10.5, color: '#FFFFFF', letterSpacing: 0.3 },
   seatPlus: { fontSize: 15, color: DIM },
-  blip: { width: 3.5, height: 3.5, borderRadius: 2, backgroundColor: '#FE8C00' },
+  blip: { width: 3.5, height: 3.5, borderRadius: 2, backgroundColor: '#FD8302' },
   streak: { alignItems: 'center' },
   streakNum: { fontFamily: theme.fonts.bodyBold, fontSize: 26, color: theme.colors.text, lineHeight: 28 },
   streakLabel: { fontSize: 10.5, color: theme.colors.muted, marginTop: 2 }

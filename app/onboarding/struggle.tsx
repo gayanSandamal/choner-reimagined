@@ -14,7 +14,8 @@ export default function StruggleScreen() {
     <OnboardingScaffold
       dot={3}
       step={2}
-      title="What's stopped you before?"
+      title="What's stopped you "
+      titleEmphasis="before?"
       subtitle="Be honest — this is how Choner knows where to support you most."
       reassurance="This is more common than you think."
       footer={

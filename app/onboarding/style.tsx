@@ -12,14 +12,15 @@ export default function StyleScreen() {
     <OnboardingScaffold
       dot={4}
       step={3}
-      title="How do you want Choner to talk to you?"
+      title="How do you want Choner to "
+      titleEmphasis="talk to you?"
       subtitle="This shapes your nudges and how your partner challenge feels day to day."
       reassurance="You can change this any time in your settings."
       footer={
         <Button
           label="This is me — let's go"
           disabled={!tone}
-          onPress={() => router.push('/onboarding/energy')}
+          onPress={() => router.push('/onboarding/age')}
         />
       }
     >

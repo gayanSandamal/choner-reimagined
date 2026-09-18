@@ -163,6 +163,8 @@ export async function completeTask(payload: {
   note?: string;
   // Base64 JPEG straight from the camera. Only supplied for 'photo' habits.
   photoBase64?: string;
+  // Usually absent — the number is captured by the prompt after this resolves.
+  value?: number | null;
 }) {
   // Upload BEFORE inserting so the path goes in with the row. Attaching it
   // afterwards would need a second write, and a failed upload would otherwise
@@ -175,13 +177,16 @@ export async function completeTask(payload: {
     });
   }
 
-  const { data, error } = await supabase.from('task_checkins').insert({
-    challenge_task_id: payload.taskId,
-    user_challenge_id: payload.userChallengeId,
-    note: payload.note,
-    photo_path: photoPath,
-    status: 'completed'
-  }).select().single();
+  // Through an RPC rather than a bare insert: the row can rewrite
+  // capability_value for a beginner, and it validates that the task actually
+  // belongs to this challenge — neither belongs on the client.
+  const { data, error } = await (supabase.rpc as any)('log_task_checkin', {
+    p_task_id: payload.taskId,
+    p_user_challenge_id: payload.userChallengeId,
+    p_note: payload.note ?? null,
+    p_photo_path: photoPath ?? null,
+    p_value: payload.value ?? null
+  });
 
   if (error) {
     // Don't leave the orphaned image behind in a private bucket.
@@ -189,6 +194,17 @@ export async function completeTask(payload: {
     throw error;
   }
   return data;
+}
+
+// The value prompt is shown AFTER the check-in lands, so the number is a
+// follow-up write rather than part of the original tap. For a user whose
+// capability is still null, this is what backfills it.
+export async function setCheckinValue(payload: { checkinId: string; value: number }) {
+  const { error } = await (supabase.rpc as any)('set_checkin_value', {
+    p_checkin_id: payload.checkinId,
+    p_value: payload.value
+  });
+  if (error) throw error;
 }
 
 // Path is <user_id>/<unique>.jpg — the leading folder is what the storage RLS
@@ -394,6 +410,76 @@ export async function getPartnerReflections(partnerId: string): Promise<Reflecti
 // human does the pairing. Nothing here auto-matches.
 // ============================================================
 
+// ============================================================
+// The Home starting-point prompt ("Where are you starting from?")
+// ============================================================
+
+export interface BeginnerOption {
+  // Null is the "Not sure" choice — a beginner who can't estimate still gets
+  // to move on rather than being forced to invent a number.
+  value: number | null;
+  label: string;
+}
+
+export interface StartingPointStatus {
+  needs_prompt: boolean;
+  answered?: boolean;
+  capability_value?: number | null;
+  beginner_start_value?: number | null;
+  commitment_value?: number | null;
+  metric_type?: 'distance' | 'duration' | 'reps' | null;
+  unit?: string | null;
+  default_target?: number | null;
+  beginner_options?: BeginnerOption[];
+  activity_key?: string | null;
+}
+
+export async function getStartingPointStatus(userChallengeId: string) {
+  const { data, error } = await (supabase.rpc as any)('get_starting_point_status', {
+    p_user_challenge_id: userChallengeId
+  });
+  if (error) throw error;
+  return data as StartingPointStatus;
+}
+
+// Capability null + beginnerStart set = the "I'm new to this" branch. All
+// three null is a dismiss, which only stamps the date so it returns tomorrow.
+export async function setStartingPoint(payload: {
+  userChallengeId: string;
+  capability?: number | null;
+  beginnerStart?: number | null;
+  commitment?: number | null;
+}) {
+  const { error } = await (supabase.rpc as any)('set_starting_point', {
+    p_user_challenge_id: payload.userChallengeId,
+    p_capability: payload.capability ?? null,
+    p_beginner_start: payload.beginnerStart ?? null,
+    p_commitment: payload.commitment ?? null
+  });
+  if (error) throw error;
+}
+
+// Onboarding Step 8 — "how much / how often". Same owner-only update pattern
+// as setPartnerState below. Mode defaults to the template's forced_mode when
+// the activity doesn't leave it to the user (e.g. Badminton is always
+// 'together'); callers resolve that before calling this.
+export async function setChallengeTarget(payload: {
+  userChallengeId: string;
+  commitmentValue: number;
+  daysPerWeek: number;
+  mode?: 'together' | 'separate';
+}) {
+  const { error } = await (supabase as any)
+    .from('user_challenges')
+    .update({
+      commitment_value: payload.commitmentValue,
+      days_per_week: payload.daysPerWeek,
+      ...(payload.mode ? { mode: payload.mode } : {})
+    })
+    .eq('id', payload.userChallengeId);
+  if (error) throw error;
+}
+
 // Move the partner half of the heart. Owner-only via RLS on user_challenges.
 export async function setPartnerState(userChallengeId: string, state: PartnerState) {
   const { error } = await (supabase as any)
@@ -403,14 +489,45 @@ export async function setPartnerState(userChallengeId: string, state: PartnerSta
   if (error) throw error;
 }
 
-export async function joinMatchPool(payload: { userChallengeId: string; timezone?: string }) {
+export interface FindPreferences {
+  mode?: 'together' | 'separate';
+  preferredLocation?: string | null;
+  genderPreference?: 'no_preference' | 'same_gender_only';
+  pace?: 'slow' | 'moderate' | 'fast' | null;
+  skillLevel?: 'beginner' | 'casual' | 'intermediate' | 'advanced' | null;
+  courtAccess?: string | null;
+  bikeAccess?: string | null;
+  gymAccess?: string | null;
+  sameGym?: boolean | null;
+}
+
+export async function joinMatchPool(
+  payload: { userChallengeId: string; timezone?: string } & FindPreferences
+) {
   const { data, error } = await (supabase.rpc as any)('join_match_pool', {
     p_user_challenge_id: payload.userChallengeId,
     p_timezone:
-      payload.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? null
+      payload.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? null,
+    p_mode: payload.mode ?? null,
+    p_preferred_location: payload.preferredLocation ?? null,
+    p_gender_preference: payload.genderPreference ?? null,
+    p_pace: payload.pace ?? null,
+    p_skill_level: payload.skillLevel ?? null,
+    p_court_access: payload.courtAccess ?? null,
+    p_bike_access: payload.bikeAccess ?? null,
+    p_gym_access: payload.gymAccess ?? null,
+    p_same_gym: payload.sameGym ?? null
   });
   if (error) throw error;
   return data as string;
+}
+
+// The server refuses a request without capability/commitment — matching
+// quality depends on them. The client routes to the Home prompt instead of
+// showing a raw Postgres error.
+export function isStartingPointRequired(error: unknown): boolean {
+  const message = (error as { message?: string } | null)?.message ?? '';
+  return message.includes('starting_point_required');
 }
 
 export async function leaveMatchPool(userChallengeId: string) {

@@ -9,12 +9,16 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
 import { Heart } from '@/components/challenges/Heart';
+import { Radar } from '@/components/challenges/Radar';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { MatchCard } from '@/components/challenges/MatchCard';
 import { challengeHabitTitle, isDailySearchLimit, partnerStateOf } from '@/features/challenges/api';
 import {
   useMyChallenge,
   useJoinMatchPool,
+  useDeclineMatch,
   useLeaveMatchPool,
+  useLocations,
   useMyMatch
 } from '@/features/challenges/hooks';
 import { usePartnerStatus } from '@/features/community/hooks';
@@ -22,13 +26,13 @@ import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
 import { MATCHING_PROOF } from '@/constants/proof';
 import { theme } from '@/constants/theme';
-import { notify } from '@/lib/alert';
+import { confirmAction, notify } from '@/lib/alert';
 
-const ORANGE = '#FE8C00';
-const ORANGE_SOFT = '#ffb355';
-const GREEN = '#4fc98a';
-const DIM = '#2c4759';
-const BORDER = '#0e3448';
+const ORANGE = '#FD8302';
+const ORANGE_SOFT = '#FDA340';
+const GREEN = '#2E9E6B';
+const DIM = '#D8D2CC';
+const BORDER = '#F4F2EF';
 
 function firstName(name?: string | null) {
   return (name ?? '').trim().split(/\s+/)[0] || 'your partner';
@@ -57,6 +61,7 @@ export default function FindScreen() {
   const partnerStatusQ = usePartnerStatus(userId);
   const joinPool = useJoinMatchPool();
   const leavePool = useLeaveMatchPool();
+  const declineMatch = useDeclineMatch();
 
   const challenge = challengeQ.data ?? null;
   const partnerState = partnerStateOf(challenge);
@@ -69,30 +74,70 @@ export default function FindScreen() {
   const habit = challengeHabitTitle(challenge);
   const city = profileQ.data?.city ?? null;
   const totalDays = challenge?.challenge_templates?.duration_days ?? 7;
+  // The template carries the unit and activity the copy is built from.
+  const template = challenge?.challenge_templates ?? null;
+  // Real suburb once they've set one; the timezone-derived city is a poor
+  // stand-in (it is 'Colombo' for everyone here) so it is only a fallback.
+  const locationsQ = useLocations();
+  const suburbLabel =
+    locationsQ.data?.find((l) => l.value === (challenge as any)?.preferred_location)?.label ?? null;
 
   // A habit someone invented has nobody else in the pool doing it, so Find
   // cannot help — the same rule Step 3 enforces, stated here rather than
   // failing at the RPC.
   const isCustomHabit = Boolean(challenge?.custom_habit_title);
 
-  const onFind = async () => {
+  // The tap is intent, not submission: it opens the form, and the pool join
+  // happens there once the matching questions are answered.
+  const onFind = () => {
     if (!challenge?.id) {
       router.push('/challenge/browse');
       return;
     }
+    router.push('/find/form');
+  };
+
+  // Back out of THIS pairing but stay in the pool — the spec's "keep looking":
+  // the request stays open and the form doesn't need re-filling. Declining
+  // (rather than just withdrawing the yes) matters because leaving it pending
+  // with nobody committed would strand the other person too.
+  const onFindSomeoneElse = async () => {
+    const matchId = searchState?.matched ? searchState.match_id : null;
+    if (!matchId) return;
+    const ok = await confirmAction({
+      title: 'Find someone else?',
+      message:
+        "You'll go back to looking, and so will they. This pairing won't be suggested again.",
+      confirmLabel: 'Find someone else',
+      cancelLabel: 'Keep waiting'
+    });
+    if (!ok) return;
     try {
-      await joinPool.mutateAsync({ userChallengeId: challenge.id });
+      await declineMatch.mutateAsync(matchId);
     } catch (error: any) {
-      // The limit is an ordinary answer, not a failure — the raw Postgres
-      // exception text is no use to anybody reading it on a phone.
-      if (isDailySearchLimit(error)) {
-        notify(
-          "That's today's searches",
-          'You get three partner searches a day. Try again tomorrow, or invite someone you know.'
-        );
-        return;
-      }
-      notify('Could not start looking', error.message);
+      notify('Could not do that', error.message);
+    }
+  };
+
+  // Out of the pool altogether. Declining first so the other person is
+  // released rather than left waiting on a match that can never complete.
+  const onStopLooking = async () => {
+    const matchId = searchState?.matched ? searchState.match_id : null;
+    if (!challenge?.id) return;
+    const ok = await confirmAction({
+      title: 'Stop looking?',
+      message:
+        "We'll take you out of the pool. Your challenge carries on solo, and you can start looking again whenever you want.",
+      confirmLabel: 'Stop looking',
+      cancelLabel: 'Keep waiting',
+      destructive: true
+    });
+    if (!ok) return;
+    try {
+      if (matchId) await declineMatch.mutateAsync(matchId);
+      await leavePool.mutateAsync(challenge.id);
+    } catch (error: any) {
+      notify('Could not stop', error.message);
     }
   };
 
@@ -136,7 +181,18 @@ export default function FindScreen() {
         <AppText style={styles.pageTitle}>Find</AppText>
 
         {partnerState === 'matched' ? (
-          <MatchCard city={city} watch />
+          // One-sided confirmation gets its own holding state rather than
+          // jumping straight to Paired.
+          searchState?.matched && searchState.i_confirmed && !searchState.they_confirmed ? (
+            <WaitingConfirmState
+              partnerName={searchState.partner_first_name ?? 'them'}
+              onFindSomeoneElse={onFindSomeoneElse}
+              onStopLooking={onStopLooking}
+              busy={declineMatch.isPending || leavePool.isPending}
+            />
+          ) : (
+            <MatchCard city={suburbLabel ?? city} watch />
+          )
         ) : partnerState === 'partnered' ? (
           <PairedState
             partnerName={firstName(partnerStatusQ.data?.name)}
@@ -145,8 +201,9 @@ export default function FindScreen() {
         ) : partnerState === 'finding' ? (
           <SearchingState
             habit={habit}
-            city={city}
-            totalDays={totalDays}
+            suburb={suburbLabel}
+            commitment={challenge?.commitment_value ?? null}
+            unit={template?.unit ?? null}
             onCancel={onCancel}
             cancelling={leavePool.isPending}
             noMatch={Boolean(searchState?.matched === false && searchState.no_match)}
@@ -156,11 +213,15 @@ export default function FindScreen() {
             dailyLimit={searchState?.matched === false ? searchState.daily_limit ?? null : null}
           />
         ) : (
-          <NoRequestState
+          <LandingState
             isCustomHabit={isCustomHabit}
             hasChallenge={Boolean(challenge)}
-            busy={joinPool.isPending}
-            onFind={onFind}
+            habit={habit}
+            commitment={challenge?.commitment_value ?? null}
+            unit={template?.unit ?? null}
+            cadence={challenge?.days_per_week ?? null}
+            suburb={suburbLabel}
+            onStart={onFind}
           />
         )}
       </ScrollView>
@@ -170,72 +231,86 @@ export default function FindScreen() {
 
 // State 1 — the real landing page for this tab, and for many people the first
 // real exposure to the whole mechanic.
-function NoRequestState({
+// State 1 — Landing. Almost no UI on purpose: one tappable object and one
+// line of copy. Find's only job here is to make someone WANT a partner, and
+// it gets one shot at that.
+function LandingState({
   isCustomHabit,
   hasChallenge,
-  busy,
-  onFind
+  habit,
+  commitment,
+  unit,
+  cadence,
+  suburb,
+  onStart
 }: {
   isCustomHabit: boolean;
   hasChallenge: boolean;
-  busy: boolean;
-  onFind: () => void;
+  habit: string | null;
+  commitment: number | null;
+  unit: string | null;
+  cadence: number | null;
+  suburb: string | null;
+  onStart: () => void;
 }) {
+  if (isCustomHabit) {
+    return (
+      <Animated.View entering={FadeInDown.duration(360)}>
+        <AppText style={styles.sub}>
+          Find can't help with a habit you wrote yourself — nobody else in the pool picked it.
+          Swap to one of the set habits, or invite someone you know.
+        </AppText>
+        <Button label="Invite someone instead" onPress={() => router.push('/onboarding/invite')} />
+      </Animated.View>
+    );
+  }
+
+  if (!hasChallenge) {
+    return (
+      <Animated.View entering={FadeInDown.duration(360)}>
+        <AppText style={styles.sub}>Pick a challenge first, then we can look for someone.</AppText>
+        <Button label="Browse challenges" onPress={() => router.push('/challenge/browse')} />
+      </Animated.View>
+    );
+  }
+
+  const amount = commitment ? `${commitment}${unit ? ` ${unit}` : ''}` : null;
+
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
-      <View style={styles.hero}>
-        <Heart youCheckedIn={false} partnerCheckedIn={false} partnerState="solo" width={150} />
-      </View>
-
-      <AppText style={styles.headline}>
-        Not everyone has a partner.{'\n'}
-        <AppText style={styles.headlineAccent}>That's the point.</AppText>
-      </AppText>
+      {/* A statement of likelihood about the pool, never a claim that a
+          specific person has been found. */}
       <AppText style={styles.sub}>
-        If you don't know someone chasing the same habit, we'll help you find them.
+        {suburb && amount ? (
+          <>
+            Someone in <AppText style={styles.subStrong}>{suburb}</AppText> wants to do{' '}
+            <AppText style={styles.subStrong}>{amount}</AppText> {timeOfDayWord()} too.
+          </>
+        ) : (
+          <>Someone else is chasing the same habit {timeOfDayWord()}.</>
+        )}
       </AppText>
 
-      <View style={styles.proof}>
-        <AppText style={styles.proofNum}>{MATCHING_PROOF.ratio}</AppText>
-        <AppText style={styles.proofText}>
-          <AppText style={styles.proofTextStrong}>{MATCHING_PROOF.lead}</AppText>{' '}
-          {MATCHING_PROOF.tail}
+      <Radar searching={false} onPress={onStart} />
+
+      <View style={styles.radarActivity}>
+        <AppText style={styles.radarName}>{habit ?? 'Your challenge'}</AppText>
+        <AppText style={styles.radarMeta}>
+          {[amount, cadence === 7 ? 'every day' : cadence ? `${cadence}× a week` : null]
+            .filter(Boolean)
+            .join(' · ')}
         </AppText>
       </View>
-
-      <View style={styles.steps}>
-        <Step n="1" title="Pick your habit" detail="Same one you're already committed to." />
-        <Step n="2" title="We look for a match" detail="Someone nearby, same habit, same goal." />
-        <Step n="3" title="You both confirm" detail="Nothing starts until you both say yes." />
-      </View>
-
-      {isCustomHabit ? (
-        <View style={styles.customNote}>
-          <AppText style={styles.customNoteText}>
-            Finding a partner works best with our suggested challenges — since you picked your own,
-            try inviting someone you know.
-          </AppText>
-          <Button
-            label="Invite someone"
-            variant="secondary"
-            onPress={() => router.push('/group/invite')}
-          />
-        </View>
-      ) : (
-        <>
-          <Button
-            label={hasChallenge ? 'Find my partner' : 'Pick a challenge first'}
-            loading={busy}
-            onPress={onFind}
-          />
-          {/* Honesty: matching is a person reading a list, not an algorithm. */}
-          <AppText style={styles.note}>
-            We look as soon as you ask, and keep looking every few minutes after that.
-          </AppText>
-        </>
-      )}
     </Animated.View>
   );
+}
+
+// Same clock logic as the Home greeting rather than a second definition.
+function timeOfDayWord() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'this morning';
+  if (hour < 17) return 'this afternoon';
+  return 'tonight';
 }
 
 function Step({ n, title, detail }: { n: string; title: string; detail: string }) {
@@ -254,10 +329,13 @@ function Step({ n, title, detail }: { n: string; title: string; detail: string }
 
 // State 2 — the search itself, now this tab's primary content rather than a
 // sub-state of somewhere else.
+// State 3 — Searching. Same radar, visually escalated so it reads as the
+// search waking up rather than a different screen.
 function SearchingState({
   habit,
-  city,
-  totalDays,
+  suburb,
+  commitment,
+  unit,
   onCancel,
   cancelling,
   noMatch,
@@ -265,8 +343,9 @@ function SearchingState({
   dailyLimit
 }: {
   habit: string | null;
-  city: string | null;
-  totalDays: number;
+  suburb: string | null;
+  commitment: number | null;
+  unit: string | null;
   onCancel: () => void;
   cancelling: boolean;
   // We looked and nobody cleared the bar. Not the same as "give it a second":
@@ -275,82 +354,167 @@ function SearchingState({
   searchesLeft: number | null;
   dailyLimit: number | null;
 }) {
+  const amount = commitment ? `${commitment}${unit ? ` ${unit}` : ''}` : null;
+
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
-      <Heart youCheckedIn={false} partnerCheckedIn={false} partnerState="finding" />
-
-      <View style={styles.searchStatus}>
-        {noMatch ? (
+      <AppText style={styles.sub}>
+        {suburb && amount ? (
           <>
-            <AppText style={styles.searchHead}>Nobody free right now</AppText>
-            <AppText style={styles.searchDetail}>
-              We looked, and no one doing{' '}
-              <AppText style={styles.searchHabit}>{habit ?? 'your habit'}</AppText> is available to
-              pair with today.{'\n'}You'll stay in the queue and we'll keep checking — or invite
-              someone you know.
-            </AppText>
+            We're looking for someone in <AppText style={styles.subStrong}>{suburb}</AppText> doing{' '}
+            <AppText style={styles.subStrong}>{amount}</AppText>.
           </>
         ) : (
-          <>
-            <AppText style={styles.searchHead}>Looking for your partner</AppText>
-            <AppText style={styles.searchDetail}>
-              Matching people doing{' '}
-              <AppText style={styles.searchHabit}>{habit ?? 'your habit'}</AppText> right now.
-              {'\n'}Usually within a minute or two.
-            </AppText>
-          </>
+          <>We're looking for someone doing {habit ?? 'the same habit'}.</>
         )}
-        {searchesLeft !== null && dailyLimit !== null ? (
-          <AppText style={styles.searchQuota}>
-            {searchesLeft} of {dailyLimit} searches left today
-          </AppText>
-        ) : null}
-      </View>
+      </AppText>
 
-      <View style={styles.card}>
-        <AppText style={styles.cardLabel}>YOUR REQUEST</AppText>
-        <AppText style={styles.cardHabit}>{habit ?? 'Your habit'}</AppText>
-        <AppText style={styles.cardSub}>
-          {[`${totalDays}-day challenge`, city].filter(Boolean).join(' · ')}
+      <Radar searching />
+
+      <View style={styles.searchStatus}>
+        <AppText style={styles.searchStatusTitle}>Looking for your partner</AppText>
+        <AppText style={styles.searchStatusBody}>
+          We'll let you know the moment we find them.{'\n'}
+          Keep doing your challenge in the meantime.
         </AppText>
       </View>
 
-      <View style={styles.linkRow}>
-        <Pressable onPress={() => router.push('/group/invite')}>
-          <AppText style={styles.link}>Invite someone instead</AppText>
-        </Pressable>
-        <Pressable onPress={onCancel} disabled={cancelling}>
-          <AppText style={styles.linkQuiet}>{cancelling ? 'Cancelling…' : 'Cancel search'}</AppText>
-        </Pressable>
-      </View>
+      {noMatch ? (
+        <AppText style={styles.note}>
+          Nobody suitable is doing this habit right now. We'll keep looking, and you can carry on
+          solo in the meantime.
+        </AppText>
+      ) : null}
+
+      {searchesLeft != null && dailyLimit != null ? (
+        <AppText style={styles.note}>
+          {searchesLeft} of {dailyLimit} searches left today.
+        </AppText>
+      ) : null}
+
+      <Button
+        label="Stop looking"
+        variant="ghost"
+        loading={cancelling}
+        onPress={onCancel}
+      />
     </Animated.View>
   );
 }
 
-// State 4 — where most returning users land. Deliberately hands off to
-// Challenges rather than repeating what Challenges already owns.
-function PairedState({ partnerName, habit }: { partnerName: string; habit: string | null }) {
+// State 4b — one side has confirmed, the other hasn't. Without this the
+// button appears to do nothing until the partner acts.
+function WaitingConfirmState({
+  partnerName,
+  onFindSomeoneElse,
+  onStopLooking,
+  busy
+}: {
+  partnerName: string;
+  onFindSomeoneElse: () => void;
+  onStopLooking: () => void;
+  busy: boolean;
+}) {
   return (
     <Animated.View entering={FadeInDown.duration(360)} style={styles.paired}>
       <View style={styles.pairedIcon}>
-        <Ionicons name="checkmark" size={24} color={GREEN} />
+        <Ionicons name="hourglass-outline" size={22} color={theme.colors.primary} />
       </View>
-      <AppText style={styles.pairedTitle}>You're all set</AppText>
+      <AppText style={styles.pairedTitle}>Waiting for {partnerName} to confirm</AppText>
       <AppText style={styles.pairedBody}>
-        You and <AppText style={styles.pairedStrong}>{partnerName}</AppText> are already partners on{' '}
-        <AppText style={styles.pairedStrong}>{habit ?? 'your challenge'}</AppText>. Manage your
-        streak and check-ins from Challenges.
+        You're in. As soon as they say yes, Day 1 starts for both of you.
       </AppText>
-      <Button label="Go to Challenges" onPress={() => router.push('/(tabs)/challenges')} />
-      <AppText style={styles.note}>
-        Starting a new habit later? You can find a partner for that one too.
-      </AppText>
+
+      {/* Two distinct intents, stated separately. A single "cancel" conflated
+          them: backing out of THIS pairing and leaving the pool entirely are
+          different things, and the word "cancel" reads as the second while
+          declining a match actually does the first. */}
+      <Button
+        label="Find someone else"
+        variant="ghost"
+        disabled={busy}
+        onPress={onFindSomeoneElse}
+      />
+      <Button label="Stop looking" variant="ghost" disabled={busy} onPress={onStopLooking} />
+    </Animated.View>
+  );
+}
+
+// State 5 — Paired. Hands off to Challenges rather than repeating what
+// Challenges already owns.
+function PairedState({ partnerName, habit }: { partnerName: string; habit: string | null }) {
+  return (
+    <Animated.View entering={FadeInDown.duration(360)}>
+      <View style={styles.paired}>
+        <View style={styles.pairedIcon}>
+          <Ionicons name="checkmark" size={24} color={GREEN} />
+        </View>
+        <AppText style={styles.pairedTitle}>You're all set</AppText>
+        <AppText style={styles.pairedBody}>
+          You and <AppText style={styles.pairedStrong}>{partnerName}</AppText> are partners on{' '}
+          <AppText style={styles.pairedStrong}>{habit ?? 'your challenge'}</AppText>. Track it from
+          Challenges.
+        </AppText>
+        <Button label="Go to Challenges" onPress={() => router.push('/(tabs)/challenges')} />
+      </View>
+
+      {/* Find works per-challenge, not per-user — without this the tab becomes
+          a dead end the moment someone matches once. */}
+      <View style={styles.anotherCard}>
+        <AppText style={styles.anotherTitle}>Starting another habit?</AppText>
+        <AppText style={styles.anotherBody}>
+          You can find a different partner for each challenge.
+        </AppText>
+        <PressableScale
+          onPress={() => router.push('/challenge/browse')}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Find another partner"
+        >
+          <AppText style={styles.anotherLink}>Find another partner</AppText>
+        </PressableScale>
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
+  subStrong: { color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
+  radarActivity: { alignItems: 'center', marginTop: 6 },
+  radarName: { fontSize: 15, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
+  radarMeta: { fontSize: 12, color: theme.colors.muted, marginTop: 2 },
+  searchStatusTitle: {
+    fontSize: 14.5,
+    color: theme.colors.primary2,
+    fontFamily: theme.fonts.bodyMedium,
+    textAlign: 'center'
+  },
+  searchStatusBody: {
+    fontSize: 12,
+    color: theme.colors.muted,
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 18
+  },
+  anotherCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.sm,
+    padding: theme.spacing(2),
+    alignItems: 'center',
+    marginTop: theme.spacing(3),
+    ...theme.shadow.sm
+  },
+  anotherTitle: { fontSize: 13, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
+  anotherBody: {
+    fontSize: 11.5,
+    color: theme.colors.muted,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 14,
+    lineHeight: 17
+  },
+  anotherLink: { fontSize: 13, color: theme.colors.primary2, fontFamily: theme.fonts.bodyMedium },
   content: { paddingHorizontal: 22, paddingBottom: theme.spacing(5) },
   pageTitle: {
     fontFamily: theme.fonts.body,
@@ -380,9 +544,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: 'rgba(254,140,0,0.06)',
+    backgroundColor: 'rgba(253,131,2,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(254,140,0,0.2)',
+    borderColor: 'rgba(253,131,2,0.2)',
     borderRadius: 16,
     padding: 16,
     marginBottom: 22
@@ -399,7 +563,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(254,140,0,0.4)',
+    borderColor: 'rgba(253,131,2,0.4)',
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -423,9 +587,9 @@ const styles = StyleSheet.create({
   searchDetail: { color: theme.colors.muted, fontSize: 11.5, lineHeight: 18, textAlign: 'center' },
   searchHabit: { color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
   card: {
-    backgroundColor: '#04202f',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(28,43,51,0.04)',
     borderRadius: 18,
     padding: 18,
     marginBottom: 16

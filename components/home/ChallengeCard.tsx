@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(28,43,51,0.04)',
     padding: theme.spacing(2),
     gap: theme.spacing(1.5)
   },
