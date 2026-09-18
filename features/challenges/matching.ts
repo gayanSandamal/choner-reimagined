@@ -28,6 +28,13 @@ import { REFLECTION_QUESTIONS, ReflectionAnswer, isAnswered } from './reflection
 // The four onboarding tones, used here as accountability styles.
 export type AccountabilityStyle = ToneValue;
 
+export type Mode = 'together' | 'separate';
+export type AgeBand = '18-24' | '25-34' | '35-44' | '45-54' | '55+';
+export type Gender = 'male' | 'female' | 'prefer_not_to_say';
+export type ExperienceLevel = 'new' | 'some' | 'experienced';
+export type Pace = 'slow' | 'moderate' | 'fast';
+export type SkillLevel = 'beginner' | 'casual' | 'intermediate' | 'advanced';
+
 export interface Candidate {
   userId: string;
   // partner_match_requests.challenge_template_id — both must be doing the
@@ -48,6 +55,37 @@ export interface Candidate {
   joinedPoolAt: number;
   // People they've already been paired with where it didn't work out.
   previouslyUnmatchedWith?: string[];
+
+  // ---- v2 ----
+  // Which of the 6 activities. Null for a habit with no activity (Journaling,
+  // No caffeine) — those are solo-only and never reach the pool.
+  activityKey?: string | null;
+  mode?: Mode;
+  daysPerWeek?: number;
+  // Null capability = beginner. Deliberately never guessed: see
+  // Choner_Activity_Input_Fields_Spec_Final.md §4.
+  capabilityValue?: number | null;
+  commitmentValue?: number | null;
+  ageBand?: AgeBand | null;
+  gender?: Gender | null;
+  // "Same gender only" is an absolute filter, never traded off against a
+  // strong score elsewhere.
+  sameGenderOnly?: boolean;
+  isMinor?: boolean;
+  experience?: ExperienceLevel | null;
+  // Corridor tags for preferred_location, from location_tags.
+  locationTags?: string[];
+  timeOfDay?: string | null;
+  specificDays?: string[];
+  pace?: Pace | null;
+  skillLevel?: SkillLevel | null;
+  // Access gates. Blocking is asymmetric for court/session: one person having
+  // access is enough, because they can bring the other.
+  gymAccess?: string | null;
+  bikeAccess?: string | null;
+  courtAccess?: string | null;
+  sameGym?: boolean | null;
+  specificExercise?: string | null;
 }
 
 export interface MatchScore {
@@ -67,12 +105,26 @@ export interface MatchScore {
 // Tunable weights — keep all magic numbers in one place
 // ---------------------------------------------------------------------------
 
+// v2 weights (Choner_Matching_Algorithm_v2_Scoring.md §5). These are NOT a
+// fixed-100 budget any more: only the rules that apply to a given pairing
+// count toward max_possible, so a `separate` home-workout match and a
+// `together` running match produce comparable scores despite having different
+// rules available.
 export const WEIGHTS = {
-  commitmentAsymmetry: 35, // the big one — our core hypothesis
+  commitmentAsymmetry: 30,
+  stretchRatio: 20,
+  // Attendance doesn't scale the way reps do, so the ratio means less for
+  // meet-in-person activities.
+  stretchRatioTogether: 8,
+  styleCompatibility: 15,
+  ageProximity: 12,
+  experienceLevel: 10,
+  locationProximity: 25,
+  timeOfDay: 15,
+  specificDays: 10,
+  paceMatch: 15,
+  skillLevel: 20,
   bothLowCommitment: -40, // penalty: the known failure case
-  styleCompatibility: 20,
-  timezoneProximity: 25,
-  sameCity: 10,
   waitingFairness: 10 // don't leave people in the pool forever
 };
 
@@ -82,8 +134,16 @@ export const MAX_TZ_GAP_MINUTES = 5 * 60;
 /** After this long in the pool, a user starts getting a fairness boost. */
 export const FAIRNESS_THRESHOLD_MS = 48 * 60 * 60 * 1000;
 
-/** Below this, a pairing isn't made at all — see matchPool(). */
-export const DEFAULT_MIN_SCORE = 45;
+/**
+ * Below this, a pairing isn't made at all — see matchPool().
+ *
+ * Raised from v1's 45: v2 has far more hard filters, so pairs that reach
+ * scoring are already better qualified and the bar should rise with them.
+ * Still a product decision, not a measurement — no match beats a bad match,
+ * because a failed first pairing loses the user and an honest short wait
+ * doesn't.
+ */
+export const DEFAULT_MIN_SCORE = 50;
 
 // ---------------------------------------------------------------------------
 // Time zones
@@ -231,6 +291,60 @@ function hardBlock(a: Candidate, b: Candidate, now: number): string | null {
   const gap = timezoneGap(a, b, now);
   if (gap !== null && gap > MAX_TZ_GAP_MINUTES) return 'timezone gap too wide';
 
+  // ---- v2 hard filters ----
+
+  // Home workouts: the specific exercise has to match, not just the activity.
+  if (a.specificExercise && b.specificExercise && a.specificExercise !== b.specificExercise) {
+    return 'different exercise';
+  }
+
+  // Doing it together vs separately is structural, not a preference.
+  if (a.mode && b.mode && a.mode !== b.mode) return 'different mode';
+
+  if (a.daysPerWeek && b.daysPerWeek && a.daysPerWeek !== b.daysPerWeek) {
+    return 'different cadence';
+  }
+
+  // Absolute, and never traded off against a strong score elsewhere.
+  if (a.sameGenderOnly && a.gender && b.gender && a.gender !== b.gender) {
+    return 'gender preference';
+  }
+  if (b.sameGenderOnly && a.gender && b.gender && a.gender !== b.gender) {
+    return 'gender preference';
+  }
+
+  // Never pair a minor with an adult. This one is a safety rule, so it is
+  // checked on the raw flag rather than inferred from an age band.
+  if (Boolean(a.isMinor) !== Boolean(b.isMinor)) return 'minor with adult';
+
+  // Access gates. Gym and bike block on EITHER side having none — you can't
+  // lend someone a gym membership. Court blocks only when NEITHER has access,
+  // because one person with a court can bring the other.
+  if (a.gymAccess === 'not_yet' || b.gymAccess === 'not_yet') return 'no gym access';
+  if (a.bikeAccess === 'none_yet' || b.bikeAccess === 'none_yet') return 'no bike access';
+  if (
+    a.courtAccess === 'need_partner_to_arrange' &&
+    b.courtAccess === 'need_partner_to_arrange'
+  ) {
+    return 'no court access';
+  }
+
+  const inPerson = a.mode === 'together' && b.mode === 'together';
+  if (inPerson) {
+    // Two people meeting at different gyms isn't meeting.
+    if (a.sameGym === false || b.sameGym === false) return 'different gyms';
+
+    // No shared corridor tag — the tag-based replacement for the old
+    // same-zone/adjacent-zone bands.
+    if (locationProximity(a, b) === 0) return 'no shared location corridor';
+
+    // Meeting up means actually being there at the same time.
+    if (a.timeOfDay && b.timeOfDay && a.timeOfDay !== b.timeOfDay) return 'different time of day';
+    if (dayOverlap(a, b) === 0 && (a.specificDays?.length || b.specificDays?.length)) {
+      return 'no overlapping days';
+    }
+  }
+
   return null;
 }
 
@@ -292,36 +406,171 @@ const STYLE_FIT: Record<AccountabilityStyle, Record<AccountabilityStyle, number>
   team: { competitive: 0.6, momentum: 0.8, encouraging: 0.9, team: 1.0 }
 };
 
+// Total by construction: profiles.accountability_mode defaults to 'solo' and
+// get_match_pool only guards NULL, so a non-tone value really does reach here.
+// Indexing STYLE_FIT['solo'] used to be `undefined`, and STYLE_FIT[a][b] then
+// threw a TypeError that aborted the whole matching run for every user.
+function styleFit(a: AccountabilityStyle, b: AccountabilityStyle): number {
+  return STYLE_FIT[a]?.[b] ?? 0.5;
+}
+
 function scoreStyle(
   a: AccountabilityStyle,
   b: AccountabilityStyle,
   reasons: string[]
 ): number {
-  const fit = STYLE_FIT[a][b];
+  const fit = styleFit(a, b);
   if (fit <= 0.3) reasons.push(`style clash (${a} vs ${b})`);
   else if (fit >= 0.9) reasons.push(`styles fit well (${a} / ${b})`);
-  return Math.round(WEIGHTS.styleCompatibility * fit);
+  return WEIGHTS.styleCompatibility * fit;
 }
 
-function scoreTimezone(a: Candidate, b: Candidate, now: number, reasons: string[]): number {
-  const gap = timezoneGap(a, b, now);
-  if (gap === null) {
-    reasons.push('timezone unknown — no overlap guarantee');
-    return 0;
-  }
-  if (gap === 0) reasons.push('same timezone');
-  else if (gap <= 90) reasons.push('close timezones');
+// ---- v2 soft rules ----
 
-  const closeness = 1 - gap / MAX_TZ_GAP_MINUTES; // 1 = identical, 0 = at the limit
-  return Math.round(WEIGHTS.timezoneProximity * Math.max(closeness, 0));
+const AGE_ORDER: AgeBand[] = ['18-24', '25-34', '35-44', '45-54', '55+'];
+
+// Deliberately permissive: a 33- and a 37-year-old land in different bands but
+// are a perfectly good pairing, and over-restricting age shrinks an already
+// small early pool.
+function scoreAge(a: Candidate, b: Candidate, reasons: string[]): number | null {
+  if (!a.ageBand || !b.ageBand) return null;
+  const distance = Math.abs(AGE_ORDER.indexOf(a.ageBand) - AGE_ORDER.indexOf(b.ageBand));
+  const factor = distance === 0 ? 1 : distance === 1 ? 0.75 : distance === 2 ? 0.4 : 0.15;
+  if (distance === 0) reasons.push('same age band');
+  else if (distance >= 3) reasons.push('very different age bands');
+  return WEIGHTS.ageProximity * factor;
 }
 
-function scoreCity(a: Candidate, b: Candidate, reasons: string[]): number {
-  if (a.city && b.city && a.city === b.city) {
-    reasons.push(`both in ${a.city}`);
-    return WEIGHTS.sameCity;
+// stretch_ratio = commitment ÷ capability. Prefers MILD ASYMMETRY over
+// similarity, mirroring the commitment rule: two people both at 95% fail on
+// the same day, two both at 40% quietly stop together.
+function stretchBand(c: Candidate): 'stretching' | 'healthy' | 'coasting' | null {
+  if (c.capabilityValue == null || !c.commitmentValue) return null;
+  const ratio = c.commitmentValue / c.capabilityValue;
+  if (ratio > 0.9) return 'stretching';
+  if (ratio >= 0.6) return 'healthy';
+  return 'coasting';
+}
+
+function scoreStretch(a: Candidate, b: Candidate, inPerson: boolean, reasons: string[]): number | null {
+  const weight = inPerson ? WEIGHTS.stretchRatioTogether : WEIGHTS.stretchRatio;
+  const aBand = stretchBand(a);
+  const bBand = stretchBand(b);
+
+  // A null capability is a beginner, not missing data — never compute a ratio
+  // from it.
+  if (aBand === null || bBand === null) {
+    if (aBand === null && bBand === null) {
+      reasons.push('two beginners — higher risk');
+      return weight * 0.35;
+    }
+    reasons.push('beginner paired with someone experienced');
+    return weight * 0.7;
   }
-  return 0;
+
+  const pair = [aBand, bBand].sort().join('+');
+  const table: Record<string, number> = {
+    'stretching+stretching': 0.3,
+    'coasting+coasting': 0.4,
+    'healthy+healthy': 0.8,
+    'healthy+stretching': 1.0,
+    'coasting+healthy': 0.85,
+    'coasting+stretching': 0.55
+  };
+  const factor = table[pair] ?? 0.5;
+  if (factor >= 1) reasons.push('one anchoring, one stretching — ideal');
+  else if (factor <= 0.4) reasons.push(`both ${aBand} — risky`);
+  return weight * factor;
+}
+
+const EXPERIENCE_ORDER: ExperienceLevel[] = ['new', 'some', 'experienced'];
+
+// One level apart scores HIGHER than identical, for the same reason as the
+// commitment rule — a slight gap gives one person something to anchor.
+function scoreExperience(a: Candidate, b: Candidate, reasons: string[]): number | null {
+  if (!a.experience || !b.experience) return null;
+  const distance = Math.abs(
+    EXPERIENCE_ORDER.indexOf(a.experience) - EXPERIENCE_ORDER.indexOf(b.experience)
+  );
+  const factor = distance === 0 ? 0.9 : distance === 1 ? 1.0 : 0.45;
+  if (distance === 2) reasons.push('new paired with experienced — intimidation risk');
+  return WEIGHTS.experienceLevel * factor;
+}
+
+// Shared corridor tags over combined tags — mirrors the SQL
+// location_proximity(), so client and server agree on one definition.
+function locationProximity(a: Candidate, b: Candidate): number {
+  const at = a.locationTags ?? [];
+  const bt = b.locationTags ?? [];
+  if (!at.length || !bt.length) return 0;
+  const shared = at.filter((t) => bt.includes(t)).length;
+  const combined = new Set([...at, ...bt]).size;
+  return combined === 0 ? 0 : shared / combined;
+}
+
+function scoreLocation(a: Candidate, b: Candidate, reasons: string[]): number {
+  const proximity = locationProximity(a, b);
+  if (proximity >= 1) reasons.push('same area');
+  else if (proximity > 0) reasons.push('nearby areas');
+  return WEIGHTS.locationProximity * proximity;
+}
+
+const SLOT_ORDER = ['early_morning', 'morning', 'afternoon', 'evening', 'night'];
+
+function scoreTimeOfDay(a: Candidate, b: Candidate, inPerson: boolean, reasons: string[]): number | null {
+  if (!a.timeOfDay || !b.timeOfDay) return null;
+  // Already forced equal by the hard filter when meeting in person.
+  if (inPerson) return WEIGHTS.timeOfDay;
+
+  const distance = Math.abs(SLOT_ORDER.indexOf(a.timeOfDay) - SLOT_ORDER.indexOf(b.timeOfDay));
+  const factor = distance === 0 ? 1 : distance === 1 ? 0.7 : distance === 2 ? 0.4 : 0.2;
+  if (distance === 0) reasons.push('same time of day');
+  return WEIGHTS.timeOfDay * factor;
+}
+
+function dayOverlap(a: Candidate, b: Candidate): number {
+  const ad = a.specificDays ?? [];
+  const bd = b.specificDays ?? [];
+  return ad.filter((d) => bd.includes(d)).length;
+}
+
+function scoreDays(a: Candidate, b: Candidate, inPerson: boolean, reasons: string[]): number | null {
+  if (!a.specificDays?.length || !b.specificDays?.length) return null;
+  const required = a.daysPerWeek ?? a.specificDays.length ?? 1;
+  const raw = Math.min(dayOverlap(a, b) / Math.max(required, 1), 1);
+  // Separate-mode partners don't strictly need the same days, so a total
+  // mismatch still scores something rather than dragging the pair down.
+  const factor = inPerson ? raw : Math.max(raw, 0.3);
+  if (raw >= 1) reasons.push('same days');
+  return WEIGHTS.specificDays * factor;
+}
+
+const PACE_ORDER: Pace[] = ['slow', 'moderate', 'fast'];
+const PACE_ACTIVITIES = ['running', 'cycling', 'walking'];
+
+// Mismatched pace is one of the fastest ways to ruin a shared session —
+// someone is always either waiting or struggling.
+function scorePace(a: Candidate, b: Candidate, inPerson: boolean, reasons: string[]): number | null {
+  if (!inPerson || !a.pace || !b.pace) return null;
+  if (!PACE_ACTIVITIES.includes(a.activityKey ?? '')) return null;
+  const distance = Math.abs(PACE_ORDER.indexOf(a.pace) - PACE_ORDER.indexOf(b.pace));
+  const factor = distance === 0 ? 1 : distance === 1 ? 0.45 : 0.1;
+  if (distance === 2) reasons.push('pace mismatch — hard to run together');
+  return WEIGHTS.paceMatch * factor;
+}
+
+const SKILL_ORDER: SkillLevel[] = ['beginner', 'casual', 'intermediate', 'advanced'];
+
+// Badminton only, and weighted high: it's 1v1, so a large skill gap makes the
+// game unenjoyable for both people.
+function scoreSkill(a: Candidate, b: Candidate, reasons: string[]): number | null {
+  if (a.activityKey !== 'badminton' || !a.skillLevel || !b.skillLevel) return null;
+  const distance = Math.abs(
+    SKILL_ORDER.indexOf(a.skillLevel) - SKILL_ORDER.indexOf(b.skillLevel)
+  );
+  const factor = distance === 0 ? 1 : distance === 1 ? 0.55 : distance === 2 ? 0.15 : 0;
+  if (distance >= 2) reasons.push('large skill gap');
+  return WEIGHTS.skillLevel * factor;
 }
 
 /**
@@ -354,15 +603,50 @@ export function scorePair(a: Candidate, b: Candidate, now: number = Date.now()):
   }
 
   const reasons: string[] = [];
-  let score = 0;
-  score += scoreCommitment(aSignal, bSignal, reasons);
-  score += scoreStyle(a.style, b.style, reasons);
-  score += scoreTimezone(a, b, now, reasons);
-  score += scoreCity(a, b, reasons);
-  score += scoreFairness(a, b, now, reasons);
+  const inPerson = a.mode === 'together' && b.mode === 'together';
 
-  // Clamp to 0–100
-  score = Math.max(0, Math.min(100, score));
+  let raw = 0;
+  let maxPossible = 0;
+
+  // Only rules that actually APPLY to this pairing count toward max_possible.
+  // That's the whole point of v2's normalization: a `separate` home-workout
+  // match has no location or pace rule, and under v1's fixed-100 budget it
+  // could never score as well as a `together` running match even when it was
+  // the better pairing.
+  const apply = (points: number | null, weight: number) => {
+    if (points === null) return;
+    raw += points;
+    maxPossible += weight;
+  };
+
+  // Commitment asymmetry is special: the "both low" case is a PENALTY applied
+  // to raw before normalization, not a zero-scoring rule.
+  const commitment = scoreCommitment(aSignal, bSignal, reasons);
+  raw += commitment;
+  maxPossible += WEIGHTS.commitmentAsymmetry;
+
+  apply(scoreStyle(a.style, b.style, reasons), WEIGHTS.styleCompatibility);
+  apply(scoreAge(a, b, reasons), WEIGHTS.ageProximity);
+  apply(
+    scoreStretch(a, b, inPerson, reasons),
+    inPerson ? WEIGHTS.stretchRatioTogether : WEIGHTS.stretchRatio
+  );
+  apply(scoreExperience(a, b, reasons), WEIGHTS.experienceLevel);
+  // Location genuinely doesn't matter when each does their own session, so it
+  // is excluded from max_possible entirely rather than scoring zero.
+  if (inPerson) apply(scoreLocation(a, b, reasons), WEIGHTS.locationProximity);
+  apply(scoreTimeOfDay(a, b, inPerson, reasons), WEIGHTS.timeOfDay);
+  apply(scoreDays(a, b, inPerson, reasons), WEIGHTS.specificDays);
+  apply(scorePace(a, b, inPerson, reasons), WEIGHTS.paceMatch);
+  apply(scoreSkill(a, b, reasons), WEIGHTS.skillLevel);
+
+  const normalized = maxPossible > 0 ? (raw / maxPossible) * 100 : 0;
+
+  // Fairness is added AFTER normalization, so it can push a borderline pair
+  // over the threshold rather than being diluted by it.
+  const fairness = scoreFairness(a, b, now, reasons);
+
+  const score = Math.max(0, Math.min(100, Math.round(normalized + fairness)));
 
   return { a: a.userId, b: b.userId, score, aSignal, bSignal, reasons };
 }

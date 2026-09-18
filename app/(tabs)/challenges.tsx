@@ -29,11 +29,11 @@ import { reminderFor } from '@/features/challenges/reflections';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 
-const ORANGE = '#FE8C00';
-const ORANGE_SOFT = '#ffb355';
-const GREEN = '#4fc98a';
-const DIM = '#2c4759';
-const BORDER = '#0e3448';
+const ORANGE = '#FD8302';
+const ORANGE_SOFT = '#FDA340';
+const GREEN = '#2E9E6B';
+const DIM = '#D8D2CC';
+const BORDER = '#F4F2EF';
 
 function firstName(name?: string | null) {
   return (name ?? '').trim().split(/\s+/)[0] || 'your partner';
@@ -443,9 +443,9 @@ const styles = StyleSheet.create({
   statusStrong: { color: ORANGE, fontFamily: theme.fonts.bodyBold },
   statusWarm: { color: ORANGE_SOFT },
   card: {
-    backgroundColor: '#04202f',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(28,43,51,0.04)',
     borderRadius: 18,
     padding: 18
   },
@@ -474,8 +474,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(254,140,0,0.35)',
-    backgroundColor: 'rgba(254,140,0,0.08)'
+    borderColor: 'rgba(253,131,2,0.35)',
+    backgroundColor: 'rgba(253,131,2,0.08)'
   },
   nudgeBtnText: { color: ORANGE, fontSize: 12.5 },
   nudgeDone: { color: theme.colors.muted, fontSize: 11.5 },
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     borderWidth: 1,
     borderColor: BORDER,
-    backgroundColor: '#04202f',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center'
   },
   optText: { color: theme.colors.text, fontSize: 11.5 },
@@ -516,9 +516,9 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.025)',
     borderLeftWidth: 2,
-    borderLeftColor: 'rgba(254,140,0,0.4)'
+    borderLeftColor: 'rgba(253,131,2,0.4)'
   },
-  whyText: { color: '#b9cddb', fontSize: 11.5, lineHeight: 18 },
+  whyText: { color: '#7C8C96', fontSize: 11.5, lineHeight: 18 },
   whyQuote: { color: theme.colors.text, fontStyle: 'italic' },
   stakes: { textAlign: 'center', color: DIM, fontSize: 10, marginTop: 14 },
   empty: { alignItems: 'center', paddingVertical: 48, gap: theme.spacing(1.5) },
@@ -532,13 +532,13 @@ const styles = StyleSheet.create({
   past: {
     marginTop: 26,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopColor: 'rgba(28,43,51,0.04)',
     paddingTop: 16
   },
   pastHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   pastTitle: { color: theme.colors.muted, fontSize: 11.5 },
   pastEmpty: { color: DIM, fontSize: 11, marginTop: 12 },
   pastRow: { marginTop: 14 },
-  pastHabit: { color: '#c3d5e0', fontSize: 11.5 },
+  pastHabit: { color: '#7C8C96', fontSize: 11.5 },
   pastMeta: { color: DIM, fontSize: 10, marginTop: 2 }
 });

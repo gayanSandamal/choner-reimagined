@@ -92,7 +92,9 @@ function TabButton({
     transform: [{ scale: t.value }]
   }));
 
-  const color = focused ? theme.colors.primary : theme.colors.muted;
+  // Reads on navy, not on paper: the nav pill keeps the dark background even
+  // though the page around it is light.
+  const color = focused ? theme.colors.primary2 : theme.colors.onNavyMuted;
 
   return (
     <Pressable
@@ -131,8 +133,8 @@ export function CustomTabBar({ state, navigation }: TabBarProps) {
   );
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-      <View style={styles.row}>
+    <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={styles.pill}>
         {visible.map((route, index) => {
           const focused = index === activeIndex;
           return (
@@ -160,16 +162,22 @@ export function CustomTabBar({ state, navigation }: TabBarProps) {
 }
 
 const styles = StyleSheet.create({
+  // The bar itself is transparent; the navy pill floats inside it over the
+  // paper page, matching the prototype's detached nav.
   wrapper: {
-    backgroundColor: theme.colors.bg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.border,
-    paddingTop: 8
+    backgroundColor: 'transparent',
+    paddingHorizontal: 16
   },
-  row: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'space-around'
+    justifyContent: 'space-around',
+    backgroundColor: theme.colors.navy,
+    borderRadius: 28,
+    paddingTop: 14,
+    paddingBottom: 12,
+    paddingHorizontal: 6,
+    ...theme.shadow.lg
   },
   tab: {
     flex: 1,

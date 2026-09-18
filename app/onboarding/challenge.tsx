@@ -107,7 +107,7 @@ export default function ChallengeScreen() {
           customTitle: null
         });
       }
-      router.push('/onboarding/why');
+      router.push('/onboarding/target');
     } catch (error: any) {
       notify('Could not set your challenge', error.message);
     }

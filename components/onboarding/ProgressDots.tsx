@@ -17,7 +17,7 @@ interface Props {
 const DOT_SIZE = 8;
 const ACTIVE_WIDTH = 24;
 
-export function ProgressDots({ current, total = 5 }: Props) {
+export function ProgressDots({ current, total = 6 }: Props) {
   return (
     <View style={styles.row} accessibilityLabel={`Step ${current} of ${total}`}>
       {Array.from({ length: total }, (_, i) => (
@@ -34,12 +34,14 @@ function Dot({ state }: { state: 'done' | 'active' | 'off' }) {
     active.value = withSpring(state === 'active' ? 1 : 0, theme.motion.spring.gentle);
   }, [state]);
 
+  // Sits inside the navy step bar, so the "off" colour is a white wash rather
+  // than the paper border colour — which would be invisible on navy.
   const animatedStyle = useAnimatedStyle(() => ({
     width: DOT_SIZE + active.value * (ACTIVE_WIDTH - DOT_SIZE),
     backgroundColor: interpolateColor(
       active.value,
       [0, 1],
-      [state === 'done' ? theme.colors.primary2 : theme.colors.border, theme.colors.primary]
+      [state === 'done' ? theme.colors.primary2 : 'rgba(255,255,255,0.25)', theme.colors.primary]
     ),
     opacity: state === 'done' ? 0.6 : 1
   }));

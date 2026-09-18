@@ -32,6 +32,10 @@ export interface Database {
           city: string | null;
           // 'HH:MM:SS' local time the day is measured against.
           daily_deadline: string;
+          // Onboarding Step 4 of 5. Reuses the column from the initial schema
+          // (never read/written before this).
+          age_range: '18-24' | '25-34' | '35-44' | '45-54' | '55+' | null;
+          gender: 'male' | 'female' | 'prefer_not_to_say' | null;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -47,6 +51,8 @@ export interface Database {
           timezone?: string;
           city?: string | null;
           daily_deadline?: string;
+          age_range?: '18-24' | '25-34' | '35-44' | '45-54' | '55+' | null;
+          gender?: 'male' | 'female' | 'prefer_not_to_say' | null;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -62,6 +68,8 @@ export interface Database {
           timezone?: string;
           city?: string | null;
           daily_deadline?: string;
+          age_range?: '18-24' | '25-34' | '35-44' | '45-54' | '55+' | null;
+          gender?: 'male' | 'female' | 'prefer_not_to_say' | null;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -80,6 +88,18 @@ export interface Database {
           sort_order: number | null;
           proof_type: ProofType;
           is_active: boolean;
+          // Groups templates into one of the 6 matchable activities. Null
+          // means "not matchable" (Journaling, No caffeine, custom-habit, …).
+          activity_key: 'running' | 'home_workouts' | 'cycling' | 'yoga' | 'walking' | 'badminton' | null;
+          metric_type: 'distance' | 'duration' | 'reps' | null;
+          unit: string | null;
+          default_target: number | null;
+          // Set only when the activity itself dictates mode (Badminton ->
+          // 'together', Home workouts -> 'separate'); null leaves it to the user.
+          forced_mode: 'together' | 'separate' | null;
+          // Small list of { value, label } starting-point presets for the
+          // "I'm new to this" branch — e.g. [{ value: 1, label: "1 km" }, ...].
+          beginner_options: unknown;
           created_at: string | null;
         };
         Insert: {
@@ -94,6 +114,12 @@ export interface Database {
           sort_order?: number | null;
           proof_type?: ProofType;
           is_active?: boolean;
+          activity_key?: 'running' | 'home_workouts' | 'cycling' | 'yoga' | 'walking' | 'badminton' | null;
+          metric_type?: 'distance' | 'duration' | 'reps' | null;
+          unit?: string | null;
+          default_target?: number | null;
+          forced_mode?: 'together' | 'separate' | null;
+          beginner_options?: unknown;
           created_at?: string | null;
         };
         Update: {
@@ -108,6 +134,12 @@ export interface Database {
           sort_order?: number | null;
           proof_type?: ProofType;
           is_active?: boolean;
+          activity_key?: 'running' | 'home_workouts' | 'cycling' | 'yoga' | 'walking' | 'badminton' | null;
+          metric_type?: 'distance' | 'duration' | 'reps' | null;
+          unit?: string | null;
+          default_target?: number | null;
+          forced_mode?: 'together' | 'separate' | null;
+          beginner_options?: unknown;
           created_at?: string | null;
         };
         Relationships: [];
@@ -153,6 +185,10 @@ export interface Database {
           challenge_template_id: string;
           timezone: string | null;
           status: 'waiting' | 'matched' | 'cancelled';
+          // Written by record_match_search after a pool sweep touches this
+          // row; no_match_at is cleared the moment a fresh join/match happens.
+          last_searched_at: string | null;
+          no_match_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -163,6 +199,8 @@ export interface Database {
           challenge_template_id: string;
           timezone?: string | null;
           status?: 'waiting' | 'matched' | 'cancelled';
+          last_searched_at?: string | null;
+          no_match_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -170,6 +208,8 @@ export interface Database {
           id?: string;
           status?: 'waiting' | 'matched' | 'cancelled';
           timezone?: string | null;
+          last_searched_at?: string | null;
+          no_match_at?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -228,6 +268,13 @@ export interface Database {
           custom_habit_title: string | null;
           partner_user_id: string | null;
           partner_state: PartnerState;
+          // Null capability means "beginner" — never a guessed value (spec:
+          // Choner_Activity_Input_Fields_Spec_Final.md §4).
+          capability_value: number | null;
+          beginner_start_value: number | null;
+          commitment_value: number | null;
+          days_per_week: 3 | 4 | 5 | 7;
+          mode: 'together' | 'separate';
         };
         Insert: {
           id?: string;
@@ -242,6 +289,11 @@ export interface Database {
           custom_habit_title?: string | null;
           partner_user_id?: string | null;
           partner_state?: PartnerState;
+          capability_value?: number | null;
+          beginner_start_value?: number | null;
+          commitment_value?: number | null;
+          days_per_week?: 3 | 4 | 5 | 7;
+          mode?: 'together' | 'separate';
         };
         Update: {
           id?: string;
@@ -256,6 +308,11 @@ export interface Database {
           custom_habit_title?: string | null;
           partner_user_id?: string | null;
           partner_state?: PartnerState;
+          capability_value?: number | null;
+          beginner_start_value?: number | null;
+          commitment_value?: number | null;
+          days_per_week?: 3 | 4 | 5 | 7;
+          mode?: 'together' | 'separate';
         };
         Relationships: [
           {
@@ -318,6 +375,9 @@ export interface Database {
           note: string | null;
           // Storage path in the private checkin-photos bucket, never a URL.
           photo_path: string | null;
+          // Set the moment the partner views it — the RPC suppression that
+          // makes a photo "disappear" once seen keys off this being non-null.
+          photo_viewed_at: string | null;
           completed_at: string | null;
           created_at: string | null;
         };
@@ -328,6 +388,7 @@ export interface Database {
           status?: string;
           note?: string | null;
           photo_path?: string | null;
+          photo_viewed_at?: string | null;
           completed_at?: string | null;
           created_at?: string | null;
         };
@@ -338,6 +399,7 @@ export interface Database {
           status?: string;
           note?: string | null;
           photo_path?: string | null;
+          photo_viewed_at?: string | null;
           completed_at?: string | null;
           created_at?: string | null;
         };

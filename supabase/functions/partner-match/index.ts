@@ -216,7 +216,15 @@ Deno.serve(async (req) => {
         p_blurb_b: blurbFor(b),
         // Null on a sweep run: both were already waiting and neither asked for
         // this pairing specifically, so neither is shown as the requester.
-        p_requested_by: body.userId ?? null
+        p_requested_by: body.userId ?? null,
+        // Persist why this pair was chosen. Without this the MatchScore is
+        // discarded after the announce, and the eventual outcome has nothing
+        // to be correlated against — which is the only training set a future
+        // learned version would have.
+        p_score: pair.score,
+        p_signal_a: pair.aSignal,
+        p_signal_b: pair.bSignal,
+        p_reasons: pair.reasons
       });
       if (wErr) {
         console.error('create_partner_match failed', wErr);

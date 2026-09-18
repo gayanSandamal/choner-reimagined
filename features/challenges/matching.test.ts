@@ -2,6 +2,8 @@ import { CUSTOM_CHOICE_KEY, ReflectionAnswer } from './reflections';
 import {
   Candidate,
   DEFAULT_MIN_SCORE,
+  SkillLevel,
+  WEIGHTS,
   commitmentSignal,
   matchPool,
   offsetMinutesFor,
@@ -182,20 +184,15 @@ describe('hard rules', () => {
     expect(result.blocked).toBeUndefined();
   });
 
-  it('does not block on an unknown zone, but gives it no proximity points', () => {
-    const known = scorePair(
-      mk('S', { reflections: why('rich', 3) }),
-      mk('T', { reflections: why('rich', 1) }),
-      NOW
-    );
+  // v2 retired timezone proximity as a SCORED rule -- it survives only as the
+  // MAX_TZ_GAP_MINUTES hard filter. An unknown zone therefore costs nothing.
+  it('does not block on an unknown zone', () => {
     const unknown = scorePair(
       mk('U', { reflections: why('rich', 3) }),
       mk('V', { reflections: why('rich', 1), timezone: null }),
       NOW
     );
     expect(unknown.blocked).toBeUndefined();
-    expect(unknown.reasons).toContain('timezone unknown — no overlap guarantee');
-    expect(unknown.score).toBe(known.score - 25);
   });
 });
 
@@ -216,26 +213,48 @@ describe('soft rules', () => {
     expect(harmony.reasons).toContain('styles fit well (team / encouraging)');
   });
 
-  it('scores closer time zones higher', () => {
+  // Timezone is a hard filter in v2, not a soft rule: inside the tolerance
+  // every pair scores the same, outside it they are blocked outright.
+  it('treats timezones as a filter, not a gradient', () => {
     const inZone = (timezone: string, id: string) =>
       scorePair(
         mk(`${id}1`, { reflections: why('rich', 3) }),
         mk(`${id}2`, { reflections: why('rich', 1), timezone }),
         NOW
       );
-    const same = inZone('Asia/Colombo', 'a');
-    const near = inZone('Asia/Kathmandu', 'b'); // 15 minutes apart
-    const far = inZone('Europe/London', 'c'); // 4h30 apart
-    expect(same.score).toBeGreaterThan(near.score);
-    expect(near.score).toBeGreaterThan(far.score);
-    expect(same.reasons).toContain('same timezone');
+    expect(inZone('Asia/Colombo', 'a').score).toBe(inZone('Asia/Kathmandu', 'b').score);
+    expect(inZone('Europe/London', 'c').blocked).toBeUndefined();
+    expect(inZone('America/New_York', 'd2').blocked).toBe('timezone gap too wide');
   });
 
-  it('rewards a shared city', () => {
-    const together = scorePair(mk('d1'), mk('d2'), NOW);
-    const apart = scorePair(mk('e1'), mk('e2', { city: 'Kandy' }), NOW);
-    expect(together.score - apart.score).toBe(10);
-    expect(together.reasons).toContain('both in Colombo');
+  // profiles.city is derived as split_part(timezone, '/', -1), so every Sri
+  // Lankan user is literally 'Colombo' -- it awarded its points to the entire
+  // local pool at once. v2 replaces it with corridor-tag proximity, which
+  // only applies when the pair is actually meeting in person.
+  it('scores location by shared corridor tags, for in-person pairs only', () => {
+    const together = (aTags: string[], bTags: string[]) =>
+      scorePair(
+        mk('f1', { mode: 'together', locationTags: aTags, reflections: why('rich', 3) }),
+        mk('f2', { mode: 'together', locationTags: bTags, reflections: why('rich', 1) }),
+        NOW
+      );
+    // Nugegoda {high_level, kotte_belt} vs Rajagiriya {kotte_belt, inner_east}
+    const partial = together(['high_level', 'kotte_belt'], ['kotte_belt', 'inner_east']);
+    const exact = together(['high_level', 'kotte_belt'], ['high_level', 'kotte_belt']);
+    expect(exact.score).toBeGreaterThan(partial.score);
+    expect(exact.reasons).toContain('same area');
+    expect(partial.reasons).toContain('nearby areas');
+
+    // No shared corridor is a hard block when meeting in person.
+    expect(together(['galle_road'], ['kandy_road']).blocked).toBe('no shared location corridor');
+
+    // ...and irrelevant when each does their own session.
+    const separate = scorePair(
+      mk('g1', { mode: 'separate', locationTags: ['galle_road'] }),
+      mk('g2', { mode: 'separate', locationTags: ['kandy_road'] }),
+      NOW
+    );
+    expect(separate.blocked).toBeUndefined();
   });
 
   it('boosts people who have been waiting', () => {
@@ -331,5 +350,201 @@ describe('matchPool', () => {
 
   it('handles an empty pool', () => {
     expect(matchPool([], DEFAULT_MIN_SCORE, NOW)).toEqual({ pairs: [], unmatched: [] });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// v2 rules (Choner_Matching_Algorithm_v2_Scoring.md)
+// ---------------------------------------------------------------------------
+
+describe('v2 hard filters', () => {
+  const cases: Array<[string, Partial<Candidate>, Partial<Candidate>]> = [
+    ['different exercise', { specificExercise: 'pushups' }, { specificExercise: 'squats' }],
+    ['different mode', { mode: 'together' }, { mode: 'separate' }],
+    ['different cadence', { daysPerWeek: 7 }, { daysPerWeek: 3 }],
+    ['gender preference', { sameGenderOnly: true, gender: 'female' }, { gender: 'male' }],
+    ['minor with adult', { isMinor: true }, { isMinor: false }],
+    ['no gym access', { gymAccess: 'not_yet' }, { gymAccess: 'have_membership' }],
+    ['no bike access', { bikeAccess: 'none_yet' }, { bikeAccess: 'own_bike' }]
+  ];
+
+  it.each(cases)('rejects: %s', (reason, aOpts, bOpts) => {
+    const result = scorePair(mk('p', aOpts), mk('q', bOpts), NOW);
+    expect(result.blocked).toBe(reason);
+  });
+
+  // Asymmetric on purpose: one person with a court can bring the other, so it
+  // only blocks when NEITHER has access.
+  it('blocks court access only when neither side has any', () => {
+    const neither = scorePair(
+      mk('r', { courtAccess: 'need_partner_to_arrange' }),
+      mk('s', { courtAccess: 'need_partner_to_arrange' }),
+      NOW
+    );
+    const one = scorePair(
+      mk('t', { courtAccess: 'need_partner_to_arrange' }),
+      mk('u', { courtAccess: 'have_regular_court' }),
+      NOW
+    );
+    expect(neither.blocked).toBe('no court access');
+    expect(one.blocked).toBeUndefined();
+  });
+
+  it('never blocks a same-gender pair on a gender preference', () => {
+    const result = scorePair(
+      mk('v', { sameGenderOnly: true, gender: 'female' }),
+      mk('w', { gender: 'female' }),
+      NOW
+    );
+    expect(result.blocked).toBeUndefined();
+  });
+});
+
+describe('v2 soft rules', () => {
+  // The spec's central bet: mild asymmetry beats similarity, because two
+  // people both at 95% fail on the same day and two both at 40% quietly stop.
+  it('prefers one anchoring and one stretching over two of a kind', () => {
+    const ratio = (capability: number, commitment: number) => ({
+      capabilityValue: capability,
+      commitmentValue: commitment
+    });
+    const ideal = scorePair(
+      mk('x1', { ...ratio(40, 25), reflections: why('rich', 3) }), // 0.63 healthy
+      mk('x2', { ...ratio(22, 20), reflections: why('rich', 1) }), // 0.91 stretching
+      NOW
+    );
+    const bothStretching = scorePair(
+      mk('y1', { ...ratio(22, 21), reflections: why('rich', 3) }),
+      mk('y2', { ...ratio(22, 21), reflections: why('rich', 1) }),
+      NOW
+    );
+    expect(ideal.score).toBeGreaterThan(bothStretching.score);
+    expect(ideal.reasons).toContain('one anchoring, one stretching — ideal');
+  });
+
+  // A null capability is a beginner, never missing data — no ratio is computed
+  // from it, and two total beginners on an unfamiliar activity score lowest.
+  it('treats a null capability as a beginner rather than computing a ratio', () => {
+    const twoBeginners = scorePair(
+      mk('z1', { capabilityValue: null, commitmentValue: 2, reflections: why('rich', 3) }),
+      mk('z2', { capabilityValue: null, commitmentValue: 2, reflections: why('rich', 1) }),
+      NOW
+    );
+    const mixed = scorePair(
+      mk('z3', { capabilityValue: null, commitmentValue: 2, reflections: why('rich', 3) }),
+      mk('z4', { capabilityValue: 10, commitmentValue: 7, reflections: why('rich', 1) }),
+      NOW
+    );
+    expect(twoBeginners.reasons).toContain('two beginners — higher risk');
+    expect(mixed.reasons).toContain('beginner paired with someone experienced');
+    expect(mixed.score).toBeGreaterThan(twoBeginners.score);
+  });
+
+  it('scores one experience level apart above an identical pair', () => {
+    const adjacent = scorePair(
+      mk('e1', { experience: 'some', reflections: why('rich', 3) }),
+      mk('e2', { experience: 'experienced', reflections: why('rich', 1) }),
+      NOW
+    );
+    const identical = scorePair(
+      mk('e3', { experience: 'some', reflections: why('rich', 3) }),
+      mk('e4', { experience: 'some', reflections: why('rich', 1) }),
+      NOW
+    );
+    expect(adjacent.score).toBeGreaterThan(identical.score);
+  });
+
+  it('weights badminton skill but ignores it for other activities', () => {
+    const badminton = (aSkill: SkillLevel, bSkill: SkillLevel) =>
+      scorePair(
+        mk('b1', { activityKey: 'badminton', skillLevel: aSkill }),
+        mk('b2', { activityKey: 'badminton', skillLevel: bSkill }),
+        NOW
+      );
+    expect(badminton('beginner', 'beginner').score).toBeGreaterThan(
+      badminton('beginner', 'advanced').score
+    );
+    // Not applicable to running, so it can't drag the score down there.
+    const running = scorePair(
+      mk('b3', { activityKey: 'running', skillLevel: 'beginner' }),
+      mk('b4', { activityKey: 'running', skillLevel: 'advanced' }),
+      NOW
+    );
+    expect(running.reasons).not.toContain('large skill gap');
+  });
+
+  it('penalises a pace mismatch only when actually running together', () => {
+    const together = scorePair(
+      mk('c1', { mode: 'together', activityKey: 'running', pace: 'slow', locationTags: ['galle_road'] }),
+      mk('c2', { mode: 'together', activityKey: 'running', pace: 'fast', locationTags: ['galle_road'] }),
+      NOW
+    );
+    const separate = scorePair(
+      mk('c3', { mode: 'separate', activityKey: 'running', pace: 'slow' }),
+      mk('c4', { mode: 'separate', activityKey: 'running', pace: 'fast' }),
+      NOW
+    );
+    expect(together.reasons).toContain('pace mismatch — hard to run together');
+    expect(separate.reasons).not.toContain('pace mismatch — hard to run together');
+  });
+});
+
+describe('v2 normalization', () => {
+  // The reason normalization exists: under v1's fixed-100 budget a `separate`
+  // pairing could never score as well as a `together` one, because the rules
+  // it had no way to earn still counted against it.
+  it('makes separate and together pairings comparable', () => {
+    const separate = scorePair(
+      mk('n1', { mode: 'separate', reflections: why('rich', 3) }),
+      mk('n2', { mode: 'separate', reflections: why('rich', 1) }),
+      NOW
+    );
+    const together = scorePair(
+      mk('n3', {
+        mode: 'together',
+        locationTags: ['high_level'],
+        reflections: why('rich', 3)
+      }),
+      mk('n4', {
+        mode: 'together',
+        locationTags: ['high_level'],
+        reflections: why('rich', 1)
+      }),
+      NOW
+    );
+    // Both are "as good as their applicable rules allow". Under v1's fixed-100
+    // budget the separate pair forfeited the whole 25-point location weight it
+    // had no way to earn; here the gap is far smaller than that.
+    expect(Math.abs(separate.score - together.score)).toBeLessThan(
+      WEIGHTS.locationProximity
+    );
+  });
+
+  it('keeps every score inside 0-100', () => {
+    const best = scorePair(
+      mk('m1', {
+        mode: 'together',
+        locationTags: ['high_level'],
+        ageBand: '25-34',
+        experience: 'some',
+        capabilityValue: 40,
+        commitmentValue: 25,
+        reflections: why('rich', 4),
+        joinedPoolAt: NOW - 200 * HOURS
+      }),
+      mk('m2', {
+        mode: 'together',
+        locationTags: ['high_level'],
+        ageBand: '25-34',
+        experience: 'experienced',
+        capabilityValue: 22,
+        commitmentValue: 20,
+        reflections: why('thin'),
+        joinedPoolAt: NOW - 200 * HOURS
+      }),
+      NOW
+    );
+    expect(best.score).toBeGreaterThan(0);
+    expect(best.score).toBeLessThanOrEqual(100);
   });
 });

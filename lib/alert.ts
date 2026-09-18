@@ -39,7 +39,7 @@ export function notify(title: string, message?: string) {
   }
 }
 
-interface ConfirmOptions {
+export interface ConfirmOptions {
   title: string;
   message?: string;
   confirmLabel?: string;
@@ -47,11 +47,25 @@ interface ConfirmOptions {
   destructive?: boolean;
 }
 
+type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
+
+let confirmHandler: ConfirmFn | null = null;
+
+// Called by ConfirmProvider on mount, mirroring registerToastHandler.
+export function registerConfirmHandler(fn: ConfirmFn | null) {
+  confirmHandler = fn;
+}
+
 // A real yes/no. Resolves false on cancel, so callers can
 // `if (!(await confirmAction(...))) return;`
 //
-// A toast can't ask a question, so web uses window.confirm here rather than the
-// banner — a custom modal is only worth building if these become common.
+// Web goes through the in-app dialog rather than window.confirm. The original
+// note here said a custom modal was "only worth building if these become
+// common" — there are ten call sites now, and window.confirm turned out to be
+// worse than clumsy: embedded webviews and sandboxed iframes SUPPRESS it,
+// returning false instantly with no dialog shown. Every confirm on web was
+// therefore silently answering "no" — sign out, delete account and ending a
+// challenge all looked like dead buttons.
 export async function confirmAction(options: ConfirmOptions): Promise<boolean> {
   const { title, message, confirmLabel = 'OK', cancelLabel = 'Cancel', destructive } = options;
 
@@ -68,6 +82,10 @@ export async function confirmAction(options: ConfirmOptions): Promise<boolean> {
     });
   }
 
+  if (confirmHandler) return confirmHandler(options);
+
+  // Only before the provider has mounted. Kept because a suppressed dialog
+  // that answers "no" is still the safe failure for a destructive action.
   if (typeof window === 'undefined' || typeof window.confirm !== 'function') return false;
   return window.confirm(message ? `${title}\n\n${message}` : title);
 }

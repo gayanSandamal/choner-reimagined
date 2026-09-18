@@ -20,7 +20,7 @@ export default function EnergyScreen() {
   const qc = useQueryClient();
   const updateProfile = useUpdateProfile();
   const ensureChallenge = useEnsureUserChallenge();
-  const { goal, struggle, tone, energy, setEnergy } = useOnboarding();
+  const { goal, struggle, tone, ageRange, gender, energy, setEnergy } = useOnboarding();
 
   const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
@@ -36,6 +36,8 @@ export default function EnergyScreen() {
         payload: {
           ...(goal ? { primary_goal: goal } : {}),
           ...(struggle ? { main_struggle: struggle } : {}),
+          ...(ageRange ? { age_range: ageRange } : {}),
+          ...(gender ? { gender } : {}),
           accountability_mode: tone,
           stress_level: energy,
           // Captured here rather than asked for. The column defaults to 'UTC',
@@ -69,9 +71,10 @@ export default function EnergyScreen() {
 
   return (
     <OnboardingScaffold
-      dot={5}
-      step={4}
-      title="How are you feeling this week?"
+      dot={6}
+      step={5}
+      title="How are you feeling "
+      titleEmphasis="this week?"
       subtitle="Choner adjusts your first week based on this — no pressure either way."
       reassurance="This isn't a test. There's no wrong answer."
       footer={

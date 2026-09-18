@@ -1,5 +1,5 @@
 import { createContext, PropsWithChildren, useContext, useMemo, useState } from 'react';
-import { EnergyValue, GoalValue, StruggleValue, ToneValue } from './constants';
+import { AgeRangeValue, EnergyValue, GenderValue, GoalValue, StruggleValue, ToneValue } from './constants';
 
 // Quiz answers live in memory until the single profile write on the
 // Screen 5 -> 6 transition, so back-navigation between steps keeps
@@ -17,6 +17,8 @@ interface OnboardingState {
   goal: GoalValue | null;
   struggle: StruggleValue | null;
   tone: ToneValue | null;
+  ageRange: AgeRangeValue | null;
+  gender: GenderValue | null;
   energy: EnergyValue | null;
   chosenChallenge: ChosenChallenge | null;
   // Screen 7 progress, kept here so a failed invite can be retried
@@ -28,6 +30,8 @@ interface OnboardingState {
   setGoal: (v: GoalValue | null) => void;
   setStruggle: (v: StruggleValue | null) => void;
   setTone: (v: ToneValue) => void;
+  setAgeRange: (v: AgeRangeValue | null) => void;
+  setGender: (v: GenderValue | null) => void;
   setEnergy: (v: EnergyValue) => void;
   setChosenChallenge: (v: ChosenChallenge | null) => void;
   setStartedChallengeId: (id: string) => void;
@@ -40,6 +44,8 @@ export function OnboardingProvider({ children }: PropsWithChildren) {
   const [goal, setGoal] = useState<GoalValue | null>(null);
   const [struggle, setStruggle] = useState<StruggleValue | null>(null);
   const [tone, setTone] = useState<ToneValue | null>(null);
+  const [ageRange, setAgeRange] = useState<AgeRangeValue | null>(null);
+  const [gender, setGender] = useState<GenderValue | null>(null);
   const [energy, setEnergy] = useState<EnergyValue | null>(null);
   const [chosenChallenge, setChosenChallenge] = useState<ChosenChallenge | null>(null);
   const [startedChallengeId, setStartedChallengeId] = useState<string | null>(null);
@@ -54,6 +60,8 @@ export function OnboardingProvider({ children }: PropsWithChildren) {
       goal,
       struggle,
       tone,
+      ageRange,
+      gender,
       energy,
       chosenChallenge,
       startedChallengeId,
@@ -61,12 +69,14 @@ export function OnboardingProvider({ children }: PropsWithChildren) {
       setGoal,
       setStruggle,
       setTone,
+      setAgeRange,
+      setGender,
       setEnergy,
       setChosenChallenge,
       setStartedChallengeId,
       setSentInvite
     }),
-    [goal, struggle, tone, energy, chosenChallenge, startedChallengeId, sentInvite]
+    [goal, struggle, tone, ageRange, gender, energy, chosenChallenge, startedChallengeId, sentInvite]
   );
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;

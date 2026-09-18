@@ -16,7 +16,8 @@ export default function GoalScreen() {
     <OnboardingScaffold
       dot={2}
       step={1}
-      title="What matters most to you right now?"
+      title="What matters most to you "
+      titleEmphasis="right now?"
       subtitle="Choner shapes your first challenge around this."
       footer={
         <>

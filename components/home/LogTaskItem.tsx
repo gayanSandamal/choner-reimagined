@@ -92,7 +92,7 @@ export function LogTaskItem({ title, taskType, dueWindow, onFeedFire }: Props) {
           end={{ x: 1, y: 1 }}
           style={styles.feedBtn}
         >
-          <Ionicons name="checkmark" size={15} color="#3A1600" />
+          <Ionicons name="checkmark" size={15} color="#FFFFFF" />
           <AppText style={styles.feedLabel}>Done</AppText>
         </LinearGradient>
       </PressableScale>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: theme.radius.sm,
-    backgroundColor: 'rgba(255,138,31,0.14)',
+    backgroundColor: 'rgba(253,131,2,0.14)',
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9
   },
   feedLabel: {
-    color: '#3A1600',
+    color: '#FFFFFF',
     fontFamily: theme.fonts.bodyBold,
     fontSize: 13,
     letterSpacing: 0.2

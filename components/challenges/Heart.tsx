@@ -31,10 +31,10 @@ const VB_H = 124;
 const LEFT_PATH = 'M66 30 C 56 14, 32 10, 20 24 C 6 39, 10 62, 24 78 C 34 90, 52 104, 66 114 Z';
 const RIGHT_PATH = 'M66 30 C 76 14, 100 10, 112 24 C 126 39, 122 62, 108 78 C 98 90, 80 104, 66 114 Z';
 
-const ORANGE = '#FE8C00';
-const ORANGE_SOFT = '#ffb355';
-const ORANGE_DEEP = '#e07600';
-const DIM = '#2c4759';
+const ORANGE = '#FD8302';
+const ORANGE_SOFT = '#FDA340';
+const ORANGE_DEEP = '#FD5B01';
+const DIM = '#D8D2CC';
 
 interface Props {
   // Has the user checked in today?

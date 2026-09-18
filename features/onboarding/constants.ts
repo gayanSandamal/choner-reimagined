@@ -14,6 +14,8 @@ export type GoalValue = 'move_more' | 'sleep_better' | 'reduce_stress' | 'improv
 export type StruggleValue = 'start_but_stop' | 'lack_accountability' | 'too_busy' | 'overwhelmed';
 export type ToneValue = 'competitive' | 'momentum' | 'encouraging' | 'team';
 export type EnergyValue = 'low' | 'medium' | 'high';
+export type AgeRangeValue = '18-24' | '25-34' | '35-44' | '45-54' | '55+';
+export type GenderValue = 'male' | 'female' | 'prefer_not_to_say';
 
 export const GOALS: QuizOption<GoalValue>[] = [
   { value: 'move_more', label: 'Move more', description: 'Build an active routine', icon: '🏃' },
@@ -40,4 +42,24 @@ export const ENERGY_LEVELS: QuizOption<EnergyValue>[] = [
   { value: 'low', label: 'Low', description: 'Running on empty', icon: '😴' },
   { value: 'medium', label: 'Medium', description: 'Getting by', icon: '⚡' },
   { value: 'high', label: 'High', description: 'Firing on all cylinders', icon: '🔥' }
+];
+
+// Reduces friction and keeps the data clean vs. free text. Used behind the
+// scenes for age-group matching (Choner_Matching_Algorithm_v2) — adjacent
+// bands still score well there, so the boundaries here don't need to be
+// exact.
+export const AGE_BANDS: QuizOption<AgeRangeValue>[] = [
+  { value: '18-24', label: '18–24', description: '', icon: '🌱' },
+  { value: '25-34', label: '25–34', description: '', icon: '🌿' },
+  { value: '35-44', label: '35–44', description: '', icon: '🌳' },
+  { value: '45-54', label: '45–54', description: '', icon: '🍃' },
+  { value: '55+', label: '55+', description: '', icon: '🍂' }
+];
+
+// Separate from the Find form's "gender preference" filter — this is the
+// user's own gender, captured once here.
+export const GENDERS: QuizOption<GenderValue>[] = [
+  { value: 'male', label: 'Male', description: '', icon: '♂️' },
+  { value: 'female', label: 'Female', description: '', icon: '♀️' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say', description: '', icon: '🤍' }
 ];
