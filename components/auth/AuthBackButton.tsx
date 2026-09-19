@@ -4,18 +4,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { theme } from '@/constants/theme';
 
+// Guards cold deep-links straight into a form screen.
+export function goBackOrWelcome() {
+  if (router.canGoBack()) {
+    router.back();
+  } else {
+    router.replace('/(auth)/welcome');
+  }
+}
+
 export function AuthBackButton() {
   return (
     <PressableScale
       haptic="light"
-      onPress={() => {
-        // Guards cold deep-links straight into a form screen.
-        if (router.canGoBack()) {
-          router.back();
-        } else {
-          router.replace('/(auth)/welcome');
-        }
-      }}
+      onPress={goBackOrWelcome}
       style={styles.button}
       accessibilityRole="button"
       accessibilityLabel="Go back"

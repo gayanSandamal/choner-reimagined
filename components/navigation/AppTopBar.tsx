@@ -29,7 +29,7 @@ export function AppTopBar() {
         accessibilityRole="button"
         accessibilityLabel="Your profile"
       >
-        <Avatar uri={profileQ.data?.avatar_url} name={profileQ.data?.full_name} size={30} />
+        <Avatar uri={profileQ.data?.avatar_url} name={profileQ.data?.full_name} size={32} />
       </PressableScale>
     </View>
   );
@@ -38,6 +38,8 @@ export function AppTopBar() {
 const styles = StyleSheet.create({
   // A floating navy pill on the paper page — one of only two places the deep
   // navy survives the light-theme switch (the other is the bottom nav).
+  // zIndex keeps its shadow drawing over the content scrolling below it, so the
+  // bar reads as floating rather than as a header the page is cut off by.
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -45,7 +47,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.navy,
     borderRadius: 24,
     marginHorizontal: 16,
-    marginTop: 14,
+    marginTop: 6,
+    zIndex: 10,
     paddingHorizontal: 20,
     paddingVertical: 16,
     ...theme.shadow.lg

@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppTopBar } from '@/components/navigation/AppTopBar';
+import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
@@ -47,6 +48,7 @@ function firstName(name?: string | null) {
 // being left for the user to raise.
 export default function FindScreen() {
   const { session } = useSession();
+  const tabBarClearance = useTabBarClearance();
   const userId = session?.user.id;
   // Poll while this screen is the one waiting on the matcher. The state it
   // renders comes from partner_state, which the matcher changes server-side, so
@@ -165,10 +167,10 @@ export default function FindScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top']}>
       <AppTopBar />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

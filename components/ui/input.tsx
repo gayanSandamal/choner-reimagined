@@ -1,5 +1,5 @@
 import { ForwardedRef, forwardRef, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, TextInputProps } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, TextInput, TextInputProps, TextStyle, ViewStyle } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -20,6 +20,8 @@ interface InputProps extends TextInputProps {
   // Renders an eye button that toggles secureTextEntry internally.
   secureToggle?: boolean;
   pill?: boolean;
+  // Overrides for the bordered box (radius, shadow) without touching the text style.
+  boxStyle?: StyleProp<TextStyle>;
 }
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -35,6 +37,7 @@ export const Input = forwardRef(function Input(
     rightIcon,
     secureToggle = false,
     pill = false,
+    boxStyle,
     secureTextEntry,
     ...props
   }: InputProps,
@@ -95,7 +98,7 @@ export const Input = forwardRef(function Input(
         <AnimatedTextInput
           ref={ref as any}
           placeholderTextColor={theme.colors.muted}
-          style={[styles.input, inputStyle, style]}
+          style={[styles.input, boxStyle, inputStyle, style]}
           onFocus={handleFocus}
           onBlur={handleBlur}
           secureTextEntry={secureTextEntry}
@@ -110,7 +113,7 @@ export const Input = forwardRef(function Input(
     <Animated.View style={[styles.wrapper, containerStyle]}>
       {label ? <Animated.Text style={styles.label}>{label}</Animated.Text> : null}
       <Animated.View
-        style={[styles.adornedBox, pill && { borderRadius: theme.radius.pill }, inputStyle]}
+        style={[styles.adornedBox, pill && { borderRadius: theme.radius.pill }, boxStyle as ViewStyle, inputStyle]}
       >
         {leftIcon}
         <TextInput

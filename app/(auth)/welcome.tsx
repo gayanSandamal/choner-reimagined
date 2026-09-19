@@ -1,19 +1,30 @@
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/button';
-import { BrandMark } from '@/components/auth/BrandMark';
+import { AppText } from '@/components/ui/AppText';
 import { TermsFooter } from '@/components/auth/TermsFooter';
 import { theme } from '@/constants/theme';
+
+const logo = require('../../assets/choner-logo.png');
 
 export default function WelcomeScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.spacer} />
       <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.brand}>
-        <BrandMark width={180} />
+        <Image source={logo} style={styles.logo} resizeMode="contain" accessibilityLabel="Choner logo" />
+        <View style={styles.copy}>
+          <AppText style={styles.headline}>
+            {'Turn "I should"\n'}
+            <AppText style={[styles.headline, styles.headlineEmphasis]}>{'into "I did"'}</AppText>
+          </AppText>
+          <AppText variant="caption" muted style={styles.tagline}>
+            Somewhere, someone is counting on you to show up.
+          </AppText>
+        </View>
       </Animated.View>
       <View style={styles.spacer} />
 
@@ -65,6 +76,18 @@ const styles = StyleSheet.create({
   },
   spacer: { flex: 1 },
   brand: { alignItems: 'center', gap: 20 },
+  logo: { width: 150, height: 102 },
+  copy: { alignItems: 'center', gap: 8 },
+  headline: {
+    fontFamily: theme.fonts.display,
+    fontSize: 25,
+    lineHeight: 32,
+    letterSpacing: -0.5,
+    color: theme.colors.text,
+    textAlign: 'center'
+  },
+  headlineEmphasis: { fontFamily: theme.fonts.bodyBold, color: theme.colors.primary2 },
+  tagline: { textAlign: 'center', fontSize: 13.5, lineHeight: 21, maxWidth: 260 },
   actions: {
     gap: 18,
     paddingBottom: theme.spacing(2)
