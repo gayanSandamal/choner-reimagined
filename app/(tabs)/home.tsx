@@ -2,6 +2,7 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppTopBar } from '@/components/navigation/AppTopBar';
+import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
 import { ChallengeCard } from '@/components/home/ChallengeCard';
@@ -25,6 +26,7 @@ function greetingFor(date = new Date()) {
 export default function HomeScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
+  const tabBarClearance = useTabBarClearance();
   const profileQ = useProfile(userId);
   const challengesQ = useMyChallenge(userId);
   const streakQ = useStreak(userId);
@@ -54,10 +56,10 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['top']}>
         <AppTopBar />
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
         >
           {/* Time-of-day greeting above the name, per spec: the muted line

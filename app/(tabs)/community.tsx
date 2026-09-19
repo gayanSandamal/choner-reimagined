@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppTopBar } from '@/components/navigation/AppTopBar';
+import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { Heart } from '@/components/challenges/Heart';
@@ -37,6 +38,7 @@ function todayString() {
 // milestone, so nothing is published without a specific choice.
 export default function CommunityScreen() {
   const { session } = useSession();
+  const tabBarClearance = useTabBarClearance();
   const userId = session?.user.id;
   const challengeQ = useMyChallenge(userId);
   const partnerStatusQ = usePartnerStatus(userId);
@@ -71,10 +73,10 @@ export default function CommunityScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top']}>
       <AppTopBar />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

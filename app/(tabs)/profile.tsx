@@ -6,6 +6,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { useSession } from '@/providers/session-provider';
 import { useProfile } from '@/features/profile/hooks';
@@ -33,6 +34,7 @@ function logsToday(challenge: any): number {
 
 export default function ProfileScreen() {
   const { session } = useSession();
+  const tabBarClearance = useTabBarClearance();
   const userId = session?.user.id;
   const profileQ = useProfile(userId);
   const streakQ = useStreak(userId);
@@ -47,7 +49,7 @@ export default function ProfileScreen() {
 
   return (
     <Screen scroll={false}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}>
         {profileQ.isLoading ? (
           <LoadingState />
         ) : profileQ.isError ? (
