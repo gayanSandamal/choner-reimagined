@@ -18,4 +18,8 @@ expo-env.d.ts
 # BMAD-METHOD: personal install answers, regenerated per machine
 _bmad/config.user.toml
 
+# graphify: generated knowledge-graph outputs
+graphify-out/
 
+# local-only running log of decisions reached in working sessions
+docs/DECISIONS_LOG.md

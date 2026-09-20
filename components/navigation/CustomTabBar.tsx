@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // expo-router supplies bottom-tabs internally; we don't import its types
@@ -14,15 +13,9 @@ type TabBarProps = {
     navigate: (name: never) => void;
   };
 };
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
-import { useReduceMotion } from '@/lib/motion';
 
 const LABELS: Record<string, string> = {
   home: 'Home',
@@ -39,13 +32,21 @@ const LABELS: Record<string, string> = {
 // is what freed the fourth slot for Find.
 const VISIBLE_ORDER = ['home', 'challenges', 'find', 'community'];
 
-// Fixed geometry so every tab is laid out identically regardless of which
-// glyph it draws: each icon is centered in the same box, and the label and
-// dot slots always reserve the same height.
-const ICON_SIZE = 26;
-const ICON_BOX = 30;
-const LABEL_LINE_HEIGHT = 16;
-const DOT_SLOT = 10;
+// Geometry from the prototype (393pt frame): 14 top + 22 icon + 4 gap + 14
+// label line + 12 bottom. The pill floats 16pt above the screen edge.
+const ICON_SIZE = 22;
+const LABEL_LINE_HEIGHT = 14;
+const PILL_HEIGHT = 14 + ICON_SIZE + 4 + LABEL_LINE_HEIGHT + 12;
+const FLOAT_MARGIN = 16;
+
+// The pill is an overlay, so every tab's scroll content has to leave room for
+// it. iOS' home indicator already sits below the 16pt margin; Android with
+// on-screen nav buttons reports an inset the pill has to clear.
+export function useTabBarClearance() {
+  const insets = useSafeAreaInsets();
+  const offset = Platform.OS === 'ios' ? FLOAT_MARGIN : Math.max(insets.bottom, FLOAT_MARGIN);
+  return offset + PILL_HEIGHT + 24;
+}
 
 // All glyphs come from one family (MaterialCommunityIcons) so stroke weight
 // and optical size match across the bar — mixing families made each icon
@@ -59,16 +60,6 @@ const ICONS: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
   profile: 'account-outline'
 };
 
-function TabIcon({ routeName, color }: { routeName: string; color: string }) {
-  return (
-    <MaterialCommunityIcons
-      name={ICONS[routeName] ?? 'circle-outline'}
-      size={ICON_SIZE}
-      color={color}
-    />
-  );
-}
-
 function TabButton({
   routeName,
   focused,
@@ -78,23 +69,11 @@ function TabButton({
   focused: boolean;
   onPress: () => void;
 }) {
-  const reduceMotion = useReduceMotion();
-  const t = useSharedValue(focused ? 1 : 0);
-
-  useEffect(() => {
-    t.value = reduceMotion ? (focused ? 1 : 0) : withSpring(focused ? 1 : 0, theme.motion.spring.gentle);
-  }, [focused, reduceMotion]);
-
-  // No scale/lift on the active tab — every icon must render at the same size
-  // and on the same baseline; color alone marks the active one.
-  const dotStyle = useAnimatedStyle(() => ({
-    opacity: t.value,
-    transform: [{ scale: t.value }]
-  }));
-
   // Reads on navy, not on paper: the nav pill keeps the dark background even
-  // though the page around it is light.
-  const color = focused ? theme.colors.primary2 : theme.colors.onNavyMuted;
+  // though the page around it is light. Inactive icons are white and their
+  // labels dimmed, as in the prototype.
+  const iconColor = focused ? theme.colors.primary2 : theme.colors.onNavy;
+  const labelColor = focused ? theme.colors.primary2 : theme.colors.onNavyMuted;
 
   return (
     <Pressable
@@ -105,21 +84,21 @@ function TabButton({
       accessibilityLabel={LABELS[routeName] ?? routeName}
       accessibilityState={{ selected: focused }}
     >
-      <View style={styles.iconBox}>
-        <TabIcon routeName={routeName} color={color} />
-      </View>
-      <Text style={[styles.label, { color }]} numberOfLines={1}>
+      <MaterialCommunityIcons
+        name={ICONS[routeName] ?? 'circle-outline'}
+        size={ICON_SIZE}
+        color={iconColor}
+      />
+      <Text style={[styles.label, { color: labelColor }]} numberOfLines={1}>
         {LABELS[routeName] ?? routeName}
       </Text>
-      <View style={styles.dotSlot}>
-        <Animated.View style={[styles.dot, dotStyle]} />
-      </View>
     </Pressable>
   );
 }
 
 export function CustomTabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const bottom = Platform.OS === 'ios' ? FLOAT_MARGIN : Math.max(insets.bottom, FLOAT_MARGIN);
 
   // Show only VISIBLE_ORDER, preserving each route's original key/index so
   // navigation and the active highlight stay correct after filtering.
@@ -133,7 +112,9 @@ export function CustomTabBar({ state, navigation }: TabBarProps) {
   );
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+    // box-none: the strip around the pill must not swallow touches meant for
+    // the content scrolling underneath it.
+    <View pointerEvents="box-none" style={[styles.wrapper, { paddingBottom: bottom }]}>
       <View style={styles.pill}>
         {visible.map((route, index) => {
           const focused = index === activeIndex;
@@ -162,9 +143,13 @@ export function CustomTabBar({ state, navigation }: TabBarProps) {
 }
 
 const styles = StyleSheet.create({
-  // The bar itself is transparent; the navy pill floats inside it over the
-  // paper page, matching the prototype's detached nav.
+  // Absolute so the navy pill floats over the page instead of reserving a
+  // strip of its own; content scrolls behind it.
   wrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'transparent',
     paddingHorizontal: 16
   },
@@ -182,32 +167,13 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingVertical: 4
-  },
-  iconBox: {
-    width: ICON_BOX,
-    height: ICON_BOX,
-    alignItems: 'center',
-    justifyContent: 'center'
+    gap: 4
   },
   label: {
     fontFamily: theme.fonts.bodyMedium,
-    fontSize: 12,
+    fontSize: 10,
     lineHeight: LABEL_LINE_HEIGHT,
     letterSpacing: 0.2,
-    textAlign: 'center',
-    marginTop: 2
-  },
-  dotSlot: {
-    height: DOT_SLOT,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: theme.colors.primary
+    textAlign: 'center'
   }
 });

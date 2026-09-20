@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppTopBar } from '@/components/navigation/AppTopBar';
+import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
@@ -54,6 +55,7 @@ function localDay(value: string | Date) {
 // lives behind "Choose a challenge" rather than competing with it.
 export default function ChallengesScreen() {
   const { session } = useSession();
+  const tabBarClearance = useTabBarClearance();
   const userId = session?.user.id;
   const challengeQ = useMyChallenge(userId);
   const streakQ = useStreak(userId);
@@ -206,10 +208,10 @@ export default function ChallengesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top']}>
       <AppTopBar />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

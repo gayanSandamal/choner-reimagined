@@ -1,23 +1,16 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { AppText } from '@/components/ui/text';
+import { AppText } from '@/components/ui/AppText';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { AuthBackButton } from '@/components/auth/AuthBackButton';
-import { BrandMark } from '@/components/auth/BrandMark';
+import { AuthTopBar } from '@/components/auth/AuthTopBar';
+import { AuthHeading, AuthSwitchLink, FieldLabel, authInputBox } from '@/components/auth/AuthFormParts';
 import { signUp, authErrorMessage } from '@/features/auth/api';
 import { SignUpInput, signUpSchema } from '@/features/auth/schema';
 import { theme } from '@/constants/theme';
@@ -60,35 +53,27 @@ export default function SignUpScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <AuthTopBar title="Create account" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-        >
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Animated.View entering={FadeInDown.duration(360)}>
-            <AuthBackButton />
+            <AuthHeading lead="Let's get " emphasis="started" sub="Takes about a minute." />
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.header}>
-            <BrandMark width={150} />
-            <AppText style={styles.heading}>CREATE ACCOUNT</AppText>
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.delay(160).duration(360)}>
+          <Animated.View entering={FadeInDown.delay(60).duration(360)} style={styles.field}>
+            <FieldLabel>Your name</FieldLabel>
             <Controller
               control={control}
               name="fullName"
               render={({ field: { onChange, value } }) => (
                 <Input
-                  placeholder="ENTER FULL NAME"
-                  pill
-                  leftIcon={
-                    <Ionicons name="person-outline" size={20} color={theme.colors.accent} />
-                  }
+                  placeholder="Your full name"
+                  boxStyle={authInputBox}
+                  autoComplete="name"
                   value={value}
                   onChangeText={onChange}
                   error={errors.fullName?.message}
@@ -97,17 +82,15 @@ export default function SignUpScreen() {
             />
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(220).duration(360)}>
+          <Animated.View entering={FadeInDown.delay(110).duration(360)} style={styles.field}>
+            <FieldLabel>Email</FieldLabel>
             <Controller
               control={control}
               name="email"
               render={({ field: { onChange, value } }) => (
                 <Input
-                  placeholder="ENTER EMAIL"
-                  pill
-                  leftIcon={
-                    <Ionicons name="mail-outline" size={20} color={theme.colors.accent} />
-                  }
+                  placeholder="you@email.com"
+                  boxStyle={authInputBox}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   autoComplete="email"
@@ -119,22 +102,16 @@ export default function SignUpScreen() {
             />
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(280).duration(360)}>
+          <Animated.View entering={FadeInDown.delay(160).duration(360)} style={styles.field}>
+            <FieldLabel>Password</FieldLabel>
             <Controller
               control={control}
               name="password"
               render={({ field: { onChange, value } }) => (
                 <Input
-                  placeholder="ENTER PASSWORD"
-                  pill
+                  placeholder="••••••••"
+                  boxStyle={authInputBox}
                   secureToggle
-                  leftIcon={
-                    <Ionicons
-                      name="lock-closed-outline"
-                      size={20}
-                      color={theme.colors.accent}
-                    />
-                  }
                   value={value}
                   onChangeText={onChange}
                   error={errors.password?.message}
@@ -143,22 +120,16 @@ export default function SignUpScreen() {
             />
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(340).duration(360)}>
+          <Animated.View entering={FadeInDown.delay(210).duration(360)} style={styles.field}>
+            <FieldLabel>Confirm password</FieldLabel>
             <Controller
               control={control}
               name="confirmPassword"
               render={({ field: { onChange, value } }) => (
                 <Input
-                  placeholder="CONFIRM PASSWORD"
-                  pill
+                  placeholder="••••••••"
+                  boxStyle={authInputBox}
                   secureToggle
-                  leftIcon={
-                    <Ionicons
-                      name="lock-closed-outline"
-                      size={20}
-                      color={theme.colors.accent}
-                    />
-                  }
                   value={value}
                   onChangeText={onChange}
                   error={errors.confirmPassword?.message}
@@ -167,7 +138,7 @@ export default function SignUpScreen() {
             />
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(400).duration(360)}>
+          <Animated.View entering={FadeInDown.delay(260).duration(360)}>
             <Controller
               control={control}
               name="acceptTerms"
@@ -190,7 +161,7 @@ export default function SignUpScreen() {
                   >
                     {value ? <Ionicons name="checkmark" size={16} color="#FFF" /> : null}
                   </View>
-                  <AppText variant="muted" style={{ flex: 1 }}>
+                  <AppText variant="caption" muted style={{ flex: 1 }}>
                     I agree to Choner's Terms, Privacy Policy, and Health Disclaimer.
                   </AppText>
                 </Pressable>
@@ -203,28 +174,19 @@ export default function SignUpScreen() {
             ) : null}
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(460).duration(360)}>
+          <Animated.View entering={FadeInDown.delay(310).duration(360)} style={styles.bottom}>
             <Button
-              label={loading ? 'CREATING…' : 'SIGN UP'}
-              variant="primary"
-              pill
+              label={loading ? 'Creating…' : 'Create account'}
+              variant="gradient"
               size="lg"
               loading={loading}
-              leftIcon={<Ionicons name="person-add-outline" size={20} color="#FFF" />}
+              style={styles.button}
               onPress={onSubmit}
             />
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.delay(520).duration(360)} style={styles.bottom}>
-            <Button
-              label="SIGN IN"
-              variant="outline"
-              pill
-              size="lg"
-              leftIcon={
-                <Ionicons name="log-in-outline" size={18} color={theme.colors.primary} />
-              }
-              onPress={() => router.push('/(auth)/sign-in')}
+            <AuthSwitchLink
+              prompt="Already have one?"
+              action="Log in"
+              onPress={() => router.replace('/(auth)/sign-in')}
             />
           </Animated.View>
         </ScrollView>
@@ -235,15 +197,8 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
-  content: { flexGrow: 1, padding: 20, gap: 16 },
-  header: { alignItems: 'center', gap: 10 },
-  heading: {
-    fontFamily: theme.fonts.display,
-    fontSize: 16,
-    letterSpacing: 1.5,
-    textAlign: 'center',
-    textTransform: 'uppercase'
-  },
+  content: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, gap: 12 },
+  field: { gap: 10 },
   termsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -259,5 +214,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 2
   },
-  bottom: { marginTop: 'auto', paddingTop: 12 }
+  bottom: { marginTop: 'auto', paddingTop: 12 },
+  button: { borderRadius: 18 }
 });
