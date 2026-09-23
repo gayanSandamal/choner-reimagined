@@ -56,3 +56,8 @@ export const proposeReschedule = (planId: string, startsAt: string) =>
 export const acceptReschedule = (proposalId: string) =>
   rpc<PlanResult>('accept_reschedule', { p_proposal_id: proposalId });
 export const sendEncouragement = (planId: string) => rpc<PlanResult>('send_encouragement', { p_plan_id: planId });
+
+export const togglePlanReaction = (planId: string, reaction: string) =>
+  rpc<PlanResult>('toggle_plan_reaction', { p_plan_id: planId, p_reaction: reaction });
+export const recordSessionShare = (planId: string, shared: boolean) =>
+  rpc<PlanResult>('record_session_share', { p_plan_id: planId, p_shared: shared });

@@ -13,7 +13,8 @@ const BADGES: Record<MilestoneKind, { label: string; color: string }> = {
   streak: { label: 'Streak', color: ORANGE_SOFT },
   complete: { label: 'Complete', color: GREEN },
   // Neutral by design: a Find success story is proof, not a trophy.
-  matched: { label: 'Matched', color: theme.colors.muted }
+  matched: { label: 'Matched', color: theme.colors.muted },
+  session_together: { label: 'Together', color: GREEN }
 };
 
 function describe(item: FeedItem) {
@@ -24,6 +25,9 @@ function describe(item: FeedItem) {
       return `completed ${item.habit_title ? `“${item.habit_title}”` : 'their challenge'}`;
     case 'matched':
       return `found a partner for ${item.habit_title ? `“${item.habit_title}”` : 'a new habit'}`;
+    case 'session_together':
+      // Handover §3.18: "Dinesh & Gayan just finished their first run together".
+      return `just finished their ${item.habit_title ?? 'run'} together`;
   }
 }
 
@@ -65,19 +69,22 @@ export function MilestoneRow({
         </View>
       </View>
 
-      <PressableScale
-        onPress={onReact}
-        haptic="selection"
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel={item.i_reacted ? 'Remove your reaction' : 'React to this'}
-        style={[styles.react, item.i_reacted && styles.reactOn]}
-      >
-        <AppText style={styles.reactEmoji}>👏</AppText>
-        {item.reactions > 0 ? (
-          <AppText style={styles.reactCount}>{item.reactions}</AppText>
-        ) : null}
-      </PressableScale>
+      {/* A session post has no milestone row to react to. */}
+      {item.kind === 'session_together' ? null : (
+        <PressableScale
+          onPress={onReact}
+          haptic="selection"
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={item.i_reacted ? 'Remove your reaction' : 'React to this'}
+          style={[styles.react, item.i_reacted && styles.reactOn]}
+        >
+          <AppText style={styles.reactEmoji}>👏</AppText>
+          {item.reactions > 0 ? (
+            <AppText style={styles.reactCount}>{item.reactions}</AppText>
+          ) : null}
+        </PressableScale>
+      )}
     </View>
   );
 }

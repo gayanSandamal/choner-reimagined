@@ -8,6 +8,7 @@ import {
   WhereStep
 } from '@/components/plans/steps/PlanningSteps';
 import { CheckinStep, DayOfStep, FinishStep, QrStep } from '@/components/plans/steps/SessionSteps';
+import { CompletionStep } from '@/components/plans/steps/CompletionStep';
 import type { PlanStep } from '@/features/plans/steps';
 import type { PairPlan } from '@/features/plans/types';
 
@@ -16,6 +17,7 @@ import type { PairPlan } from '@/features/plans/types';
 export function PlanStepBody({
   plan,
   step,
+  me,
   challengeId
 }: {
   plan: PairPlan;
@@ -44,6 +46,8 @@ export function PlanStepBody({
       return <FinishStep plan={plan} />;
     case 'checkin':
       return <CheckinStep plan={plan} challengeId={challengeId} />;
+    case 'completion':
+      return <CompletionStep plan={plan} me={me} />;
     case 'ended':
       return <AppText muted>This match has ended.</AppText>;
     default:
