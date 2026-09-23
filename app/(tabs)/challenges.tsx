@@ -13,6 +13,8 @@ import { Heart } from '@/components/challenges/Heart';
 import { PairRow } from '@/components/challenges/PairRow';
 import { MatchBanner } from '@/components/challenges/MatchBanner';
 import { PairSafetyMenu } from '@/components/safety/PairSafetyMenu';
+import { PlanGateCard } from '@/components/plans/PlanGateCard';
+import { usePairPlan } from '@/features/plans/hooks';
 import { SharePrompt } from '@/components/community/SharePrompt';
 import { challengeHabitTitle, partnerStateOf, nudgeRefusalMessage } from '@/features/challenges/api';
 import {
@@ -67,6 +69,8 @@ export default function ChallengesScreen() {
   const partnered = partnerState === 'partnered';
   const streak = streakQ.data ?? 0;
   const partnerStatus = partnerStatusQ.data;
+  // Only Running/Walking/Cycling pairs ever have one (D4).
+  const planQ = usePairPlan(partnered ? challenge?.id : undefined);
 
   const partnerReflectionsQ = usePartnerReflections(
     partnered ? partnerStatus?.partner_id : undefined
@@ -269,6 +273,16 @@ export default function ChallengesScreen() {
           </Animated.View>
         ) : (
           <>
+            {/* D1: additive — the plan sits above today's habit, never in its place. */}
+            {partnered && planQ.data && challenge?.id ? (
+              <PlanGateCard
+                plan={planQ.data}
+                userChallengeId={challenge.id}
+                myName={(profileQ.data?.full_name ?? '').trim().split(/\s+/)[0] || 'You'}
+                myAvatarUrl={profileQ.data?.avatar_url ?? null}
+              />
+            ) : null}
+
             <Heart
               youCheckedIn={youCheckedIn}
               partnerCheckedIn={partnerCheckedIn}

@@ -17,10 +17,13 @@ import { theme } from '@/constants/theme';
 // sit side by side so neither reads as the lesser version of the other.
 export function PairSafetyMenu({
   userChallengeId,
-  partnerFirstName
+  partnerFirstName,
+  tone = 'onNavy'
 }: {
   userChallengeId: string;
   partnerFirstName: string;
+  // 'onNavy' for the floating top bar; 'ink' on a light header.
+  tone?: 'onNavy' | 'ink';
 }) {
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -71,7 +74,11 @@ export function PairSafetyMenu({
         accessibilityLabel={`Options for your match with ${partnerFirstName}`}
         style={styles.trigger}
       >
-        <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.onNavy} />
+        <Ionicons
+          name="ellipsis-horizontal"
+          size={20}
+          color={tone === 'ink' ? theme.colors.text : theme.colors.onNavy}
+        />
       </PressableScale>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>

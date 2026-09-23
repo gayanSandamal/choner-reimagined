@@ -161,6 +161,8 @@ function SessionWiring() {
           // match exists — this table is published and subscribed, partner_matches
           // is neither — so it has to refresh the match too, not just the bell.
           qc.invalidateQueries({ queryKey: ['my-match', userId] });
+          // Plan notices (confirmed, arrived, reschedule) change the plan too.
+          qc.invalidateQueries({ queryKey: ['pair-plan'] });
         }
       )
       .subscribe();
