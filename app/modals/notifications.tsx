@@ -16,6 +16,7 @@ const ICON_BY_KIND: Record<string, keyof typeof Ionicons.glyphMap> = {
   partner_activity: 'people',
   partner_nudge: 'hand-left',
   partner_matched: 'heart',
+  partner_accepted: 'heart',
   streak_risk: 'flame',
   ai_suggestion: 'sparkles',
   group_post: 'chatbubbles',

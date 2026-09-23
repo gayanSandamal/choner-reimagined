@@ -14,6 +14,7 @@ import {
 } from '@/features/challenges/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
+import { raiseDeclineNotice } from '@/features/challenges/decline-notice';
 import { confirmAction, notify } from '@/lib/alert';
 
 const ORANGE = '#FD8302';
@@ -52,7 +53,8 @@ export function MatchCard({ onDismiss, city, watch = false }: Props) {
     return (
       <Animated.View entering={FadeInDown.duration(320)} exiting={FadeOut} style={styles.waiting}>
         <AppText variant="caption" style={styles.waitingText}>
-          You're in — waiting for {match.partner_first_name} to accept.
+          You're in. Waiting for {match.partner_first_name} to accept. Saying hi unlocks once you
+          both have accepted.
         </AppText>
         <MatchReportLink matchId={match.match_id} partnerFirstName={match.partner_first_name} />
       </Animated.View>
@@ -91,6 +93,7 @@ export function MatchCard({ onDismiss, city, watch = false }: Props) {
     if (!sure) return;
     try {
       const res = await findAnother.mutateAsync(match.match_id);
+      if (res.ok) raiseDeclineNotice();
       if (!res.ok && res.reason === 'daily_limit') {
         notify("That's today's searches", `You get ${res.daily_limit ?? 3} a day.`);
       }
@@ -111,6 +114,7 @@ export function MatchCard({ onDismiss, city, watch = false }: Props) {
     if (!sure) return;
     try {
       await decline.mutateAsync(match.match_id);
+      raiseDeclineNotice();
     } catch (error: any) {
       notify('Could not do that', error.message);
     }
@@ -126,10 +130,10 @@ export function MatchCard({ onDismiss, city, watch = false }: Props) {
         colors={['rgba(253,131,2,0.14)', 'rgba(253,131,2,0.02)', 'transparent']}
         style={styles.card}
       >
-        <View style={styles.tagRow}>
-          <View style={styles.tag}>
-            <AppText style={styles.tagText}>NEW MATCH</AppText>
-          </View>
+        {/* No eyebrow label above the heading (handover §2.4). The row stays
+            only for the Challenges banner's "Later". */}
+        <View style={[styles.tagRow, !onDismiss && styles.tagRowEmpty]}>
+          <View />
           {onDismiss ? (
             <PressableScale onPress={onDismiss} hitSlop={10} haptic="selection">
               <AppText style={styles.dismiss}>Later</AppText>
@@ -180,7 +184,7 @@ export function MatchCard({ onDismiss, city, watch = false }: Props) {
       </LinearGradient>
       <AppText style={styles.note}>
         {match.they_confirmed
-          ? `${match.partner_first_name} has already said yes.`
+          ? `${match.partner_first_name}'s already said yes.`
           : 'You both accept before Day 1 begins.'}
       </AppText>
     </Animated.View>
@@ -198,6 +202,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(253,131,2,0.28)'
   },
+  tagRowEmpty: { display: 'none' },
   tagRow: {
     flexDirection: 'row',
     alignItems: 'center',

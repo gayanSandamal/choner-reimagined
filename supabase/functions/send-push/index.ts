@@ -40,6 +40,7 @@ const KIND_PREF_MAP: Record<string, string> = {
   // accountability alerts off.
   partner_nudge: 'accountability_alerts',
   partner_matched: 'accountability_alerts',
+  partner_accepted: 'accountability_alerts',
   streak_risk: 'streak_alerts',
   ai_suggestion: 'ai_recovery_alerts',
 };

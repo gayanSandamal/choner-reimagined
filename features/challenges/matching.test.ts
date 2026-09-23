@@ -569,3 +569,23 @@ describe('matchPool with several requests per person', () => {
     for (const p of result.pairs) expect(p.challengeTemplateId).toBeTruthy();
   });
 });
+
+describe('"Either works" mode (D3)', () => {
+  const pair = (a: Candidate['mode'], b: Candidate['mode']) =>
+    scorePair(mk('x', { mode: a }), mk('y', { mode: b }), NOW).blocked ?? null;
+
+  it('is compatible with Together and with Separately', () => {
+    expect(pair('either', 'separate')).toBeNull();
+    expect(pair('either', 'either')).toBeNull();
+  });
+
+  it('still refuses Together with Separately', () => {
+    expect(pair('together', 'separate')).toBe('different mode');
+  });
+
+  it('holds Either+Together to the in-person rules, but not Either+Either', () => {
+    // No location corridor at all: blocks only when they will actually meet.
+    expect(pair('either', 'together')).toBe('no shared location corridor');
+    expect(pair('either', 'either')).toBeNull();
+  });
+});

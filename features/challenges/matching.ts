@@ -28,7 +28,20 @@ import { REFLECTION_QUESTIONS, ReflectionAnswer, isAnswered } from './reflection
 // The four onboarding tones, used here as accountability styles.
 export type AccountabilityStyle = ToneValue;
 
-export type Mode = 'together' | 'separate';
+export type Mode = 'together' | 'separate' | 'either';
+
+// 'either' is compatible with both. A pair meets in person when at least one
+// of them wants to and neither has ruled it out; two 'either's stay undecided
+// until they choose together after matching, so they aren't held to the
+// in-person rules (corridor, pace, days) they may never need.
+export function modesConflict(a?: Mode | null, b?: Mode | null): boolean {
+  return (a === 'together' && b === 'separate') || (a === 'separate' && b === 'together');
+}
+
+export function meetsInPerson(a?: Mode | null, b?: Mode | null): boolean {
+  if (a === 'separate' || b === 'separate') return false;
+  return a === 'together' || b === 'together';
+}
 export type AgeBand = '18-24' | '25-34' | '35-44' | '45-54' | '55+';
 export type Gender = 'male' | 'female' | 'prefer_not_to_say';
 export type ExperienceLevel = 'new' | 'some' | 'experienced';
@@ -302,7 +315,7 @@ function hardBlock(a: Candidate, b: Candidate, now: number): string | null {
   }
 
   // Doing it together vs separately is structural, not a preference.
-  if (a.mode && b.mode && a.mode !== b.mode) return 'different mode';
+  if (modesConflict(a.mode, b.mode)) return 'different mode';
 
   if (a.daysPerWeek && b.daysPerWeek && a.daysPerWeek !== b.daysPerWeek) {
     return 'different cadence';
@@ -332,7 +345,7 @@ function hardBlock(a: Candidate, b: Candidate, now: number): string | null {
     return 'no court access';
   }
 
-  const inPerson = a.mode === 'together' && b.mode === 'together';
+  const inPerson = meetsInPerson(a.mode, b.mode);
   if (inPerson) {
     // Two people meeting at different gyms isn't meeting.
     if (a.sameGym === false || b.sameGym === false) return 'different gyms';
@@ -615,7 +628,7 @@ export function scorePair(a: Candidate, b: Candidate, now: number = Date.now()):
   }
 
   const reasons: string[] = [];
-  const inPerson = a.mode === 'together' && b.mode === 'together';
+  const inPerson = meetsInPerson(a.mode, b.mode);
 
   let raw = 0;
   let maxPossible = 0;

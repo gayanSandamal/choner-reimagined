@@ -490,7 +490,7 @@ export async function setPartnerState(userChallengeId: string, state: PartnerSta
 }
 
 export interface FindPreferences {
-  mode?: 'together' | 'separate';
+  mode?: 'together' | 'separate' | 'either';
   preferredLocation?: string | null;
   genderPreference?: 'no_preference' | 'same_gender_only';
   pace?: 'slow' | 'moderate' | 'fast' | null;

@@ -10,6 +10,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
 import { Heart } from '@/components/challenges/Heart';
+import { Avatar } from '@/components/ui/Avatar';
 import { Radar } from '@/components/challenges/Radar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { MatchCard } from '@/components/challenges/MatchCard';
@@ -27,8 +28,8 @@ import {
 import { usePartnerStatus } from '@/features/community/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
-import { MATCHING_PROOF } from '@/constants/proof';
 import { theme } from '@/constants/theme';
+import { consumeDeclineNotice, DECLINE_NOTICE, raiseDeclineNotice } from '@/features/challenges/decline-notice';
 import { confirmAction, notify } from '@/lib/alert';
 
 const ORANGE = '#FD8302';
@@ -118,6 +119,7 @@ export default function FindScreen() {
     if (!ok) return;
     try {
       await declineMatch.mutateAsync(matchId);
+      raiseDeclineNotice();
     } catch (error: any) {
       notify('Could not do that', error.message);
     }
@@ -210,6 +212,7 @@ export default function FindScreen() {
         ) : partnerState === 'partnered' ? (
           <PairedState
             partnerName={firstName(partnerStatusQ.data?.name)}
+            partnerAvatarUrl={partnerStatusQ.data?.avatar_url ?? null}
             habit={habit}
           />
         ) : partnerState === 'finding' ? (
@@ -292,18 +295,9 @@ function LandingState({
 
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
-      {/* A statement of likelihood about the pool, never a claim that a
-          specific person has been found. */}
-      <AppText style={styles.sub}>
-        {suburb && amount ? (
-          <>
-            Someone in <AppText style={styles.subStrong}>{suburb}</AppText> wants to do{' '}
-            <AppText style={styles.subStrong}>{amount}</AppText> {timeOfDayWord()} too.
-          </>
-        ) : (
-          <>Someone else is chasing the same habit {timeOfDayWord()}.</>
-        )}
-      </AppText>
+      {/* Deliberately no area or amount: before a search has run, naming
+          them is a claim about the pool the app can't back up. */}
+      <AppText style={styles.sub}>Someone else is looking for you too.</AppText>
 
       <Radar searching={false} onPress={onStart} />
 
@@ -316,28 +310,6 @@ function LandingState({
         </AppText>
       </View>
     </Animated.View>
-  );
-}
-
-// Same clock logic as the Home greeting rather than a second definition.
-function timeOfDayWord() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'this morning';
-  if (hour < 17) return 'this afternoon';
-  return 'tonight';
-}
-
-function Step({ n, title, detail }: { n: string; title: string; detail: string }) {
-  return (
-    <View style={styles.step}>
-      <View style={styles.stepNum}>
-        <AppText style={styles.stepNumText}>{n}</AppText>
-      </View>
-      <View style={styles.stepBody}>
-        <AppText style={styles.stepTitle}>{title}</AppText>
-        <AppText style={styles.stepDetail}>{detail}</AppText>
-      </View>
-    </View>
   );
 }
 
@@ -368,37 +340,24 @@ function SearchingState({
   searchesLeft: number | null;
   dailyLimit: number | null;
 }) {
-  const amount = commitment ? `${commitment}${unit ? ` ${unit}` : ''}` : null;
+  const [declined] = useState(consumeDeclineNotice);
 
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
-      <AppText style={styles.sub}>
-        {suburb && amount ? (
-          <>
-            We're looking for someone in <AppText style={styles.subStrong}>{suburb}</AppText> doing{' '}
-            <AppText style={styles.subStrong}>{amount}</AppText>.
-          </>
-        ) : (
-          <>We're looking for someone doing {habit ?? 'the same habit'}.</>
-        )}
-      </AppText>
+      {declined ? <AppText style={styles.declined}>{DECLINE_NOTICE}</AppText> : null}
 
       <Radar searching />
 
       <View style={styles.searchStatus}>
-        <AppText style={styles.searchStatusTitle}>Looking for your partner</AppText>
+        <AppText style={styles.searchStatusTitle}>Looking…</AppText>
+        {/* Notify, don't ask people to keep checking. The switch keys off the
+            matcher's own "looked and found nobody" record, not a timer. */}
         <AppText style={styles.searchStatusBody}>
-          We'll let you know the moment we find them.{'\n'}
-          Keep doing your challenge in the meantime.
+          {noMatch
+            ? "No luck yet. You can close the app — we'll notify you the moment we find someone."
+            : "We'll notify you the moment we find a match."}
         </AppText>
       </View>
-
-      {noMatch ? (
-        <AppText style={styles.note}>
-          Nobody suitable is doing this habit right now. We'll keep looking, and you can carry on
-          solo in the meantime.
-        </AppText>
-      ) : null}
 
       {searchesLeft != null && dailyLimit != null ? (
         <AppText style={styles.note}>
@@ -406,6 +365,11 @@ function SearchingState({
         </AppText>
       ) : null}
 
+      {/* The Back the handover asks for. Searching is a tab root rendered from
+          server state, so "back to the form" means editing your answers while
+          staying in the pool — the form prefills them, and re-submitting
+          doesn't spend a search. Leaving the pool is "Stop looking". */}
+      <Button label="Edit answers" variant="ghost" onPress={() => router.push('/find/form')} />
       <Button
         label="Stop looking"
         variant="ghost"
@@ -436,9 +400,9 @@ function WaitingConfirmState({
       <View style={styles.pairedIcon}>
         <Ionicons name="hourglass-outline" size={22} color={theme.colors.primary} />
       </View>
-      <AppText style={styles.pairedTitle}>Waiting for {partnerName} to confirm</AppText>
       <AppText style={styles.pairedBody}>
-        You're in. As soon as they say yes, Day 1 starts for both of you.
+        You're in. Waiting for {partnerName} to accept. Saying hi unlocks once you both have
+        accepted.
       </AppText>
 
       {/* Two distinct intents, stated separately. A single "cancel" conflated
@@ -459,19 +423,22 @@ function WaitingConfirmState({
 
 // State 5 — Paired. Hands off to Challenges rather than repeating what
 // Challenges already owns.
-function PairedState({ partnerName, habit }: { partnerName: string; habit: string | null }) {
+function PairedState({
+  partnerName,
+  partnerAvatarUrl
+}: {
+  partnerName: string;
+  partnerAvatarUrl: string | null;
+  habit: string | null;
+}) {
+  // What Find shows every time it's opened while the pairing lasts — never the
+  // radar again. The old one-liner ("partners on X. Track it from
+  // Challenges.") is gone: the button below already says it.
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
       <View style={styles.paired}>
-        <View style={styles.pairedIcon}>
-          <Ionicons name="checkmark" size={24} color={GREEN} />
-        </View>
-        <AppText style={styles.pairedTitle}>You're all set</AppText>
-        <AppText style={styles.pairedBody}>
-          You and <AppText style={styles.pairedStrong}>{partnerName}</AppText> are partners on{' '}
-          <AppText style={styles.pairedStrong}>{habit ?? 'your challenge'}</AppText>. Track it from
-          Challenges.
-        </AppText>
+        <Avatar uri={partnerAvatarUrl} name={partnerName} size={88} ring />
+        <AppText style={styles.pairedTitle}>You and {partnerName}</AppText>
         <Button label="Go to Challenges" onPress={() => router.push('/(tabs)/challenges')} />
       </View>
 
@@ -637,6 +604,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 240,
     marginBottom: theme.spacing(1.5)
+  },
+  declined: {
+    textAlign: 'center',
+    color: theme.colors.text,
+    fontSize: 12.5,
+    lineHeight: 19,
+    marginBottom: 12
   },
   pairedStrong: { color: theme.colors.text, fontFamily: theme.fonts.bodyBold }
 });
