@@ -10,7 +10,7 @@ export default function PrivacyScreen() {
     <Screen scroll={false}>
       <ScrollView contentContainerStyle={{ gap: theme.spacing(2), paddingBottom: theme.spacing(4) }}>
         <ScreenHeader title="Privacy Policy" onBack={() => router.back()} />
-        <AppText variant="caption" muted>Last updated: 2026-05-24</AppText>
+        <AppText variant="caption" muted>Last updated: 2026-09-23</AppText>
         <AppText>
           Choner ("we", "us") collects only the information needed to provide the service: account
           information you give us (name, email), the goals and challenge data you create in-app, and
@@ -21,6 +21,8 @@ export default function PrivacyScreen() {
           • Account: email, full name.{'\n'}
           • Profile: goals, struggles, accountability mode, stress level.{'\n'}
           • Activity: challenges started, tasks completed, posts and comments.{'\n'}
+          • Safety: reports you send about another user (the category and anything you write),
+          and the people you have blocked.{'\n'}
           • Device: push token, OS platform, app version.{'\n'}
           • Diagnostics: crash reports and anonymized analytics events.
         </AppText>
@@ -28,6 +30,13 @@ export default function PrivacyScreen() {
         <AppText muted>
           We use your data only to operate Choner: deliver your challenges, send notifications you've
           opted in to, surface community posts, and improve the product. We never sell your data.
+        </AppText>
+        <AppText variant="subtitle">Reports and blocks</AppText>
+        <AppText muted>
+          A report is read by a person on our team, and sending one also ends your match. The person
+          you report or block is never told who did it or why — they only see that the match has
+          ended. Reports are kept so we can act on them; blocks are kept so you are never matched
+          with that person again.
         </AppText>
         <AppText variant="subtitle">Your rights</AppText>
         <AppText muted>

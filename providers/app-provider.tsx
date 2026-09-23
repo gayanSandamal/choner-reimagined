@@ -17,6 +17,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MissReasonGate } from '@/components/challenges/MissReasonGate';
 import { StartingPointGate } from '@/components/challenges/StartingPointGate';
 import { CheckinValueGate } from '@/components/challenges/CheckinValueGate';
+import { MatchEndedGate } from '@/components/safety/MatchEndedGate';
 import { clearUser, identifyUser, initObservability } from '@/lib/observability';
 import { ReduceMotionContext } from '@/lib/motion';
 
@@ -269,6 +270,7 @@ export function AppProvider({ children }: PropsWithChildren) {
                     <MissReasonGate />
                     <StartingPointGate />
                     <CheckinValueGate />
+                    <MatchEndedGate />
                     {children}
                   </ConfirmProvider>
                 </ToastProvider>

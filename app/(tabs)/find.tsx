@@ -14,6 +14,7 @@ import { Radar } from '@/components/challenges/Radar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { MatchCard } from '@/components/challenges/MatchCard';
 import { PairSafetyMenu } from '@/components/safety/PairSafetyMenu';
+import { MatchReportLink } from '@/components/safety/MatchReportLink';
 import { challengeHabitTitle, isDailySearchLimit, partnerStateOf } from '@/features/challenges/api';
 import {
   useMyChallenge,
@@ -197,6 +198,7 @@ export default function FindScreen() {
           // jumping straight to Paired.
           searchState?.matched && searchState.i_confirmed && !searchState.they_confirmed ? (
             <WaitingConfirmState
+              matchId={searchState.match_id}
               partnerName={searchState.partner_first_name ?? 'them'}
               onFindSomeoneElse={onFindSomeoneElse}
               onStopLooking={onStopLooking}
@@ -417,11 +419,13 @@ function SearchingState({
 // State 4b — one side has confirmed, the other hasn't. Without this the
 // button appears to do nothing until the partner acts.
 function WaitingConfirmState({
+  matchId,
   partnerName,
   onFindSomeoneElse,
   onStopLooking,
   busy
 }: {
+  matchId: string;
   partnerName: string;
   onFindSomeoneElse: () => void;
   onStopLooking: () => void;
@@ -448,6 +452,7 @@ function WaitingConfirmState({
         onPress={onFindSomeoneElse}
       />
       <Button label="Stop looking" variant="ghost" disabled={busy} onPress={onStopLooking} />
+      <MatchReportLink matchId={matchId} partnerFirstName={partnerName} />
     </Animated.View>
   );
 }

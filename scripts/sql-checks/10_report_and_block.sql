@@ -87,7 +87,7 @@ select '2n notice never names anyone: '::text || (count(*) filter (where title |
 select '2o D (blocker) got nothing: '::text || count(*) from public.notifications where user_id = 'dddddddd-0000-0000-0000-00000000000d';
 select '2p block recorded: '::text || count(*) from public.user_blocks where blocker_id = 'dddddddd-0000-0000-0000-00000000000d' and blocked_id = 'cccccccc-0000-0000-0000-00000000000c';
 begin; set local role authenticated; select pg_temp.as_user('cccccccc-0000-0000-0000-00000000000c');
-select '2q C reporting after it ended: '::text || public.report_partner('c1000000-0000-0000-0000-000000000001', 'safety_concern', null);
+-- 2q moved to section 4: since 202609231200 a late report is recorded, not refused.
 commit;
 
 -- ---------- 3. grants ----------
@@ -100,3 +100,12 @@ begin; set local role authenticated;
 do $$ begin perform public.end_pairings_between('cccccccc-0000-0000-0000-00000000000c','dddddddd-0000-0000-0000-00000000000d'); raise notice 'UNEXPECTED: helper callable'; exception when insufficient_privilege then raise notice '3b internal helper refused to clients: ok'; end $$;
 do $$ begin perform public.notify_match_ended('cccccccc-0000-0000-0000-00000000000c'); raise notice 'UNEXPECTED: notify callable'; exception when insufficient_privilege then raise notice '3c notify helper refused to clients: ok'; end $$;
 rollback;
+
+-- ---------- 4. report racing a block (202609231200) ----------
+-- C was just blocked by D (2i). C's report must still be recorded.
+begin; set local role authenticated; select pg_temp.as_user('cccccccc-0000-0000-0000-00000000000c');
+select '4a report after being blocked seconds ago (want ok true): '::text || public.report_partner('c1000000-0000-0000-0000-000000000001', 'safety_concern', 'was mid-report');
+commit;
+select '4b recorded, met kept (want safety_concern met=true): '::text || category || ' met=' || met from public.user_reports where reporter_user_id = 'cccccccc-0000-0000-0000-00000000000c';
+select '4c block both ways now (want 2): '::text || count(*) from public.user_blocks where blocker_id in ('cccccccc-0000-0000-0000-00000000000c','dddddddd-0000-0000-0000-00000000000d') and blocked_id in ('cccccccc-0000-0000-0000-00000000000c','dddddddd-0000-0000-0000-00000000000d');
+select '4d D not notified of the report (want 0): '::text || count(*) from public.notifications where user_id = 'dddddddd-0000-0000-0000-00000000000d';
