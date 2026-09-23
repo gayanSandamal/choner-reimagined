@@ -140,6 +140,7 @@ function RootLayoutNav() {
         name="modals/match-ended"
         options={{ presentation: 'modal', animation: 'fade', gestureEnabled: false }}
       />
+      <Stack.Screen name="plan/[challengeId]" />
       <Stack.Screen name="settings/index" />
       <Stack.Screen name="settings/notifications" />
       <Stack.Screen name="profile/edit" options={{ presentation: 'modal' }} />
