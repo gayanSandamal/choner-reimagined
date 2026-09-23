@@ -9,6 +9,7 @@ import {
 } from '@/components/plans/steps/PlanningSteps';
 import { CheckinStep, DayOfStep, FinishStep, QrStep } from '@/components/plans/steps/SessionSteps';
 import { CompletionStep } from '@/components/plans/steps/CompletionStep';
+import { MeetupChat } from '@/components/plans/MeetupChat';
 import type { PlanStep } from '@/features/plans/steps';
 import type { PairPlan } from '@/features/plans/types';
 
@@ -39,9 +40,9 @@ export function PlanStepBody({
     case 'confirm':
       return <ConfirmStep plan={plan} />;
     case 'day_of':
-      return <DayOfStep plan={plan} />;
+      return <DayOfStep plan={plan} challengeId={challengeId} />;
     case 'qr':
-      return <QrStep plan={plan} />;
+      return <QrStep plan={plan} chat={<MeetupChat plan={plan} challengeId={challengeId} />} />;
     case 'finish':
       return <FinishStep plan={plan} />;
     case 'checkin':

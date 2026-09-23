@@ -61,3 +61,11 @@ export const togglePlanReaction = (planId: string, reaction: string) =>
   rpc<PlanResult>('toggle_plan_reaction', { p_plan_id: planId, p_reaction: reaction });
 export const recordSessionShare = (planId: string, shared: boolean) =>
   rpc<PlanResult>('record_session_share', { p_plan_id: planId, p_shared: shared });
+
+export type MeetupChat =
+  | { exists: false }
+  | { exists: true; open: boolean; reschedule: boolean; messages: { mine: boolean; body: string; at: string }[] };
+
+export const getMeetupChat = (planId: string) => rpc<MeetupChat | null>('get_meetup_chat', { p_plan_id: planId });
+export const sendMeetupMessage = (planId: string, body: string) =>
+  rpc<PlanResult>('send_meetup_message', { p_plan_id: planId, p_body: body });
