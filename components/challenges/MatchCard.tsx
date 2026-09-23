@@ -1,11 +1,11 @@
 import { StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { MatchReportLink } from '@/components/safety/MatchReportLink';
 import {
   useConfirmMatch,
   useDeclineMatch,
@@ -54,6 +54,7 @@ export function MatchCard({ onDismiss, city, watch = false }: Props) {
         <AppText variant="caption" style={styles.waitingText}>
           You're in — waiting for {match.partner_first_name} to accept.
         </AppText>
+        <MatchReportLink matchId={match.match_id} partnerFirstName={match.partner_first_name} />
       </Animated.View>
     );
   }
@@ -175,23 +176,7 @@ export function MatchCard({ onDismiss, city, watch = false }: Props) {
           </PressableScale>
         )}
 
-        {/* Reachable before either side accepts, so a concerning photo or
-            profile can be flagged the moment it's seen. Block isn't offered
-            here: declining already does that job at this stage. */}
-        <PressableScale
-          onPress={() =>
-            router.push({
-              pathname: '/modals/report',
-              params: { mode: 'match', id: match.match_id, name: match.partner_first_name }
-            })
-          }
-          haptic="selection"
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={`Report ${match.partner_first_name}`}
-        >
-          <AppText style={styles.reportText}>Report</AppText>
-        </PressableScale>
+        <MatchReportLink matchId={match.match_id} partnerFirstName={match.partner_first_name} />
       </LinearGradient>
       <AppText style={styles.note}>
         {match.they_confirmed
@@ -242,7 +227,6 @@ const styles = StyleSheet.create({
     marginBottom: 16
   },
   declineText: { fontSize: 12, color: theme.colors.muted, marginTop: 12 },
-  reportText: { fontSize: 11, color: DIM, marginTop: 10 },
   waiting: {
     borderRadius: 14,
     borderWidth: 1,
