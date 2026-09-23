@@ -7,6 +7,7 @@ import {
   WhenStep,
   WhereStep
 } from '@/components/plans/steps/PlanningSteps';
+import { CheckinStep, DayOfStep, FinishStep, QrStep } from '@/components/plans/steps/SessionSteps';
 import type { PlanStep } from '@/features/plans/steps';
 import type { PairPlan } from '@/features/plans/types';
 
@@ -14,7 +15,8 @@ import type { PairPlan } from '@/features/plans/types';
 // completion; a step that doesn't exist yet says so plainly.
 export function PlanStepBody({
   plan,
-  step
+  step,
+  challengeId
 }: {
   plan: PairPlan;
   step: PlanStep;
@@ -34,6 +36,14 @@ export function PlanStepBody({
       return <DayTimeStep plan={plan} />;
     case 'confirm':
       return <ConfirmStep plan={plan} />;
+    case 'day_of':
+      return <DayOfStep plan={plan} />;
+    case 'qr':
+      return <QrStep plan={plan} />;
+    case 'finish':
+      return <FinishStep plan={plan} />;
+    case 'checkin':
+      return <CheckinStep plan={plan} challengeId={challengeId} />;
     case 'ended':
       return <AppText muted>This match has ended.</AppText>;
     default:

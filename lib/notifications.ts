@@ -56,8 +56,45 @@ export function useLaunchRoute(): { ready: boolean; route: string | null } {
   return { ready: true, route };
 }
 
+// The day-of relay (handover §7.2): when one person taps "I'm here", the
+// other gets a push they can answer from the lock screen with one of three
+// options. The action runs the answer; the tap itself still opens the plan.
+export const RELAY_CATEGORY = 'plan_relay';
+export const RELAY_ACTIONS = {
+  here_too: "I'm here too",
+  on_my_way: 'On my way',
+  cant_make_it: "Won't be able to make it today"
+} as const;
+
+export async function registerNotificationCategories() {
+  try {
+    await Notifications.setNotificationCategoryAsync(
+      RELAY_CATEGORY,
+      (Object.keys(RELAY_ACTIONS) as (keyof typeof RELAY_ACTIONS)[]).map((id) => ({
+        identifier: id,
+        buttonTitle: RELAY_ACTIONS[id],
+        options: { opensAppToForeground: true }
+      }))
+    );
+  } catch {
+    // Web and older clients have no categories; the in-app sheet covers them.
+  }
+}
+
+// Set by the app provider: answers a relay action (needs the RPC client,
+// which this module deliberately doesn't import).
+let relayHandler: ((planId: string, choice: keyof typeof RELAY_ACTIONS) => Promise<void>) | null = null;
+export function registerRelayHandler(fn: typeof relayHandler) {
+  relayHandler = fn;
+}
+
 export function attachNotificationResponseListener() {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    const action = response.actionIdentifier as keyof typeof RELAY_ACTIONS;
+    const planId = (response.notification.request.content.data as { planId?: string } | null)?.planId;
+    if (planId && action in RELAY_ACTIONS && relayHandler) {
+      relayHandler(planId, action).catch(() => {});
+    }
     const route = routeOf(response);
     if (route) {
       try {

@@ -7,7 +7,13 @@ import { SessionProvider, useSession } from '@/providers/session-provider';
 import { ToastProvider, useToast } from '@/providers/toast-provider';
 import { ConfirmProvider } from '@/providers/confirm-provider';
 import { queryClient } from '@/lib/query-client';
-import { attachNotificationResponseListener, registerForPushNotificationsAsync } from '@/lib/notifications';
+import {
+  attachNotificationResponseListener,
+  registerForPushNotificationsAsync,
+  registerNotificationCategories,
+  registerRelayHandler
+} from '@/lib/notifications';
+import { relayResponse } from '@/features/plans/api';
 import { configurePurchases } from '@/lib/billing';
 import { registerPushToken, listNotifications } from '@/features/notifications/api';
 import { getProfile, updateProfile } from '@/features/profile/api';
@@ -214,6 +220,11 @@ function SessionWiring() {
       )
       .subscribe();
 
+    registerNotificationCategories();
+    registerRelayHandler(async (planId, choice) => {
+      await relayResponse(planId, choice);
+      qc.invalidateQueries({ queryKey: ['pair-plan'] });
+    });
     const detachNotifTap = attachNotificationResponseListener();
 
     return () => {

@@ -30,6 +30,9 @@ interface SendPushBody {
   route?: string;
   // If true, also stores an in-app notification row (default: true)
   persist?: boolean;
+  // A notification category registered by the app (setNotificationCategoryAsync)
+  // — gives the push action buttons, e.g. the day-of three-option relay.
+  categoryId?: string;
 }
 
 const KIND_PREF_MAP: Record<string, string> = {
@@ -41,6 +44,15 @@ const KIND_PREF_MAP: Record<string, string> = {
   partner_nudge: 'accountability_alerts',
   partner_matched: 'accountability_alerts',
   partner_accepted: 'accountability_alerts',
+  // Session notices (P5-P8) are partner accountability too, so they honour
+  // the same opt-out.
+  plan_confirmed: 'accountability_alerts',
+  plan_arrived: 'accountability_alerts',
+  plan_relay: 'accountability_alerts',
+  plan_update: 'accountability_alerts',
+  plan_reschedule: 'accountability_alerts',
+  plan_encouragement: 'accountability_alerts',
+  chat_message: 'accountability_alerts',
   streak_risk: 'streak_alerts',
   ai_suggestion: 'ai_recovery_alerts',
 };
@@ -98,6 +110,7 @@ Deno.serve(async (req) => {
     title: payload.title,
     body: payload.body ?? '',
     data: { ...(payload.data ?? {}), route: payload.route ?? null, kind: payload.kind },
+    ...(payload.categoryId ? { categoryId: payload.categoryId } : {})
   }));
 
   // Expo push API accepts arrays in batches of up to 100.
