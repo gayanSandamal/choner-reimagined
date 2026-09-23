@@ -14,7 +14,7 @@ import { PairRow } from '@/components/challenges/PairRow';
 import { MatchBanner } from '@/components/challenges/MatchBanner';
 import { PairSafetyMenu } from '@/components/safety/PairSafetyMenu';
 import { PlanGateCard } from '@/components/plans/PlanGateCard';
-import { usePairPlan } from '@/features/plans/hooks';
+import { usePairPlan, useStartMeetupPlan } from '@/features/plans/hooks';
 import { SharePrompt } from '@/components/community/SharePrompt';
 import { challengeHabitTitle, partnerStateOf, nudgeRefusalMessage } from '@/features/challenges/api';
 import {
@@ -71,6 +71,10 @@ export default function ChallengesScreen() {
   const partnerStatus = partnerStatusQ.data;
   // Only Running/Walking/Cycling pairs ever have one (D4).
   const planQ = usePairPlan(partnered ? challenge?.id : undefined);
+  const startMeetup = useStartMeetupPlan();
+  const sessionActivity = ['running', 'walking', 'cycling'].includes(
+    challenge?.challenge_templates?.activity_key ?? ''
+  );
 
   const partnerReflectionsQ = usePartnerReflections(
     partnered ? partnerStatus?.partner_id : undefined
@@ -280,6 +284,22 @@ export default function ChallengesScreen() {
                 userChallengeId={challenge.id}
                 myName={(profileQ.data?.full_name ?? '').trim().split(/\s+/)[0] || 'You'}
                 myAvatarUrl={profileQ.data?.avatar_url ?? null}
+              />
+            ) : partnered && sessionActivity && planQ.isSuccess && challenge?.id ? (
+              // D2: after the first run the daily loop carries on, and meeting
+              // up again is always one tap away — never a gate.
+              <Button
+                label="Plan a meetup"
+                variant="ghost"
+                loading={startMeetup.isPending}
+                onPress={() =>
+                  startMeetup
+                    .mutateAsync(challenge.id)
+                    .then(() =>
+                      router.push({ pathname: '/plan/[challengeId]', params: { challengeId: challenge.id } })
+                    )
+                    .catch(() => {})
+                }
               />
             ) : null}
 

@@ -25,3 +25,26 @@ export function usePlanMutation<A>(fn: (a: A) => Promise<unknown>) {
 
 export const useSendPairMessage = () =>
   usePlanMutation(({ planId, key }: { planId: string; key: string }) => sendPairMessage(planId, key));
+
+import {
+  acceptPlanProposal,
+  confirmPlan,
+  proposePlanValue,
+  requestPlanHelp,
+  setDistanceAnswer,
+  startMeetupPlan,
+  withdrawPlanProposal
+} from './api';
+
+export const useSetDistanceAnswer = () =>
+  usePlanMutation(({ planId, value }: { planId: string; value: string }) => setDistanceAnswer(planId, value));
+export const useProposePlanValue = () =>
+  usePlanMutation(({ planId, field, value }: { planId: string; field: string; value: unknown }) =>
+    proposePlanValue(planId, field, value)
+  );
+export const useAcceptPlanProposal = () => usePlanMutation((id: string) => acceptPlanProposal(id));
+export const useWithdrawPlanProposal = () => usePlanMutation((id: string) => withdrawPlanProposal(id));
+export const useRequestPlanHelp = () =>
+  usePlanMutation(({ planId, field }: { planId: string; field: string }) => requestPlanHelp(planId, field));
+export const useConfirmPlan = () => usePlanMutation((planId: string) => confirmPlan(planId));
+export const useStartMeetupPlan = () => usePlanMutation((ucId: string) => startMeetupPlan(ucId));

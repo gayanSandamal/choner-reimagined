@@ -8,6 +8,7 @@ export type PlanMember = {
   checkin: 'done' | 'later' | 'cant' | null;
   checkin_at: string | null;
   miss_reason: string | null;
+  planned_at?: string | null;
 };
 
 export type PairPlan = {
