@@ -48,3 +48,33 @@ export const useRequestPlanHelp = () =>
   usePlanMutation(({ planId, field }: { planId: string; field: string }) => requestPlanHelp(planId, field));
 export const useConfirmPlan = () => usePlanMutation((planId: string) => confirmPlan(planId));
 export const useStartMeetupPlan = () => usePlanMutation((ucId: string) => startMeetupPlan(ucId));
+
+import {
+  acceptReschedule,
+  finishSession,
+  issueSessionQr,
+  proposeReschedule,
+  relayResponse,
+  sendEncouragement,
+  setArrival,
+  setSessionCheckin,
+  verifySessionQr
+} from './api';
+
+export const useSetArrival = () =>
+  usePlanMutation(({ planId, state }: { planId: string; state: 'on_my_way' | 'here' }) => setArrival(planId, state));
+export const useRelayResponse = () =>
+  usePlanMutation(({ planId, choice }: { planId: string; choice: 'here_too' | 'on_my_way' | 'cant_make_it' }) =>
+    relayResponse(planId, choice)
+  );
+export const useIssueSessionQr = () => usePlanMutation((planId: string) => issueSessionQr(planId));
+export const useVerifySessionQr = () => usePlanMutation((payload: string) => verifySessionQr(payload));
+export const useFinishSession = () => usePlanMutation((planId: string) => finishSession(planId));
+export const useSetSessionCheckin = () =>
+  usePlanMutation(({ planId, state, reason }: { planId: string; state: 'done' | 'later' | 'cant'; reason?: string | null }) =>
+    setSessionCheckin(planId, state, reason)
+  );
+export const useProposeReschedule = () =>
+  usePlanMutation(({ planId, startsAt }: { planId: string; startsAt: string }) => proposeReschedule(planId, startsAt));
+export const useAcceptReschedule = () => usePlanMutation((id: string) => acceptReschedule(id));
+export const useSendEncouragement = () => usePlanMutation((planId: string) => sendEncouragement(planId));

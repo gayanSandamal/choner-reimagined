@@ -23,7 +23,7 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Choner needs access to your photo library to set your profile picture.",
-        "NSCameraUsageDescription": "Choner uses the camera if you take a profile photo.",
+        "NSCameraUsageDescription": "Choner uses the camera for your check-in photos, scanning your partner's code when you meet, and your profile photo.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "usesAppleSignIn": true,
@@ -69,12 +69,19 @@
         "expo-image-picker",
         {
           "photosPermission": "Choner needs access to your photo library to set your profile picture.",
-          "cameraPermission": "Choner uses the camera if you take a profile photo."
+          "cameraPermission": "Choner uses the camera for your check-in photos, scanning your partner's code when you meet, and your profile photo."
         }
       ],
       "@sentry/react-native",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Choner uses the camera for your check-in photos, scanning your partner's code when you meet, and your profile photo.",
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

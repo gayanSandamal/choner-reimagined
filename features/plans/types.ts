@@ -9,6 +9,7 @@ export type PlanMember = {
   checkin_at: string | null;
   miss_reason: string | null;
   planned_at?: string | null;
+  cant_make_it_at?: string | null;
 };
 
 export type PairPlan = {
@@ -23,6 +24,8 @@ export type PairPlan = {
   meeting_location_status: 'not_set' | 'proposed' | 'agreed' | 'needs_help' | 'founder_assisted';
   founder_help_required: boolean;
   starts_at: string | null;
+  qr_verified_at?: string | null;
+  qr_mine?: boolean;
   i_open: boolean;
   me: PlanMember;
   them: PlanMember & { first_name: string; avatar_url: string | null };
