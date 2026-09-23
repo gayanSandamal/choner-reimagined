@@ -442,6 +442,16 @@ function PairedState({
         <Button label="Go to Challenges" onPress={() => router.push('/(tabs)/challenges')} />
       </View>
 
+      {/* Social proof, never a candidate list (handover §2.6). */}
+      <View style={styles.anotherCard}>
+        <AppText style={styles.anotherTitle}>Who else is here</AppText>
+        <Button
+          label="See Who Else Is Here"
+          variant="ghost"
+          onPress={() => router.push('/find/who-else')}
+        />
+      </View>
+
       {/* Find works per-challenge, not per-user — without this the tab becomes
           a dead end the moment someone matches once. */}
       <View style={styles.anotherCard}>

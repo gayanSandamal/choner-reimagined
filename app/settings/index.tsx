@@ -90,6 +90,13 @@ export default function SettingsScreen() {
           showChevron
           onPress={() => router.push('/profile/edit')}
         />
+        <ListItem
+          title="Who else is here"
+          subtitle="Choose whether you appear in the list of active people."
+          icon="people"
+          showChevron
+          onPress={() => router.push('/find/who-else')}
+        />
 
         {features.pro ? (
           <>
