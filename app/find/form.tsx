@@ -23,7 +23,7 @@ import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
 
-type Mode = 'together' | 'separate';
+type Mode = 'together' | 'separate' | 'either';
 
 const PACE_ACTIVITIES = ['running', 'cycling', 'walking'];
 
@@ -78,7 +78,7 @@ export default function FindFormScreen() {
   useEffect(() => {
     if (prefilled.current || !challenge) return;
     prefilled.current = true;
-    if (!forcedMode && (challenge.mode === 'together' || challenge.mode === 'separate')) {
+    if (!forcedMode && (challenge.mode === 'together' || challenge.mode === 'separate' || challenge.mode === 'either')) {
       setMode(challenge.mode);
     }
     if (challenge.gender_preference) setGenderPreference(challenge.gender_preference);
@@ -90,7 +90,8 @@ export default function FindFormScreen() {
   }, [challenge, forcedMode]);
 
   const effectiveMode = forcedMode ?? mode;
-  const inPerson = effectiveMode === 'together';
+  // Either might end up meeting, so it needs an area just like Together.
+  const inPerson = effectiveMode !== 'separate';
 
   const locations = locationsQ.data ?? [];
   const filteredLocations = useMemo(() => {
@@ -173,7 +174,7 @@ export default function FindFormScreen() {
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <AppText variant="label" muted style={styles.eyebrow}>
-          Find a partner{template?.title ? ` · ${template.title}` : ''}
+          Find a partner{template?.title ? `, ${template.title}` : ''}
         </AppText>
         <AppText variant="title">
           A few last{' '}
@@ -208,6 +209,12 @@ export default function FindFormScreen() {
               detail="Own session, check in after"
               active={mode === 'separate'}
               onPress={() => setMode('separate')}
+            />
+            <Choice
+              title="Either works"
+              detail="Decide together once you're matched"
+              active={mode === 'either'}
+              onPress={() => setMode('either')}
             />
           </>
         )}
