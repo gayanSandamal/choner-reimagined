@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -69,6 +69,25 @@ export default function FindFormScreen() {
   const [skill, setSkill] = useState<'beginner' | 'casual' | 'intermediate' | 'advanced' | null>(null);
   const [courtAccess, setCourtAccess] = useState<string | null>(null);
   const [bikeAccess, setBikeAccess] = useState<string | null>(null);
+
+  // useState only reads its initial value on the first render, which happens
+  // before the challenge has loaded — so every saved answer came back blank
+  // and "Edit answers" meant answering from scratch. Prefill once, when the
+  // row arrives, and never over something the user has already changed.
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current || !challenge) return;
+    prefilled.current = true;
+    if (!forcedMode && (challenge.mode === 'together' || challenge.mode === 'separate')) {
+      setMode(challenge.mode);
+    }
+    if (challenge.gender_preference) setGenderPreference(challenge.gender_preference);
+    if (challenge.preferred_location) setLocation(challenge.preferred_location);
+    if (challenge.pace) setPace(challenge.pace);
+    if (challenge.skill_level) setSkill(challenge.skill_level);
+    if (challenge.court_access) setCourtAccess(challenge.court_access);
+    if (challenge.bike_access) setBikeAccess(challenge.bike_access);
+  }, [challenge, forcedMode]);
 
   const effectiveMode = forcedMode ?? mode;
   const inPerson = effectiveMode === 'together';

@@ -10,10 +10,11 @@
 // Invoked by the sweep_checkin_photo_cleanup() cron job via net.http_post, the
 // same way sweep_daily_reminders() calls send-push.
 //
-// Auth: this function uses the service role and trusts its caller — make sure
-// it's only reachable via the function key or from inside Supabase.
+// Auth: service role only (see ../_shared/internal-auth.ts). It used to trust
+// any caller, which let any signed-in user act on any other user.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isServiceRoleRequest, unauthorized } from '../_shared/internal-auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -29,6 +30,7 @@ interface CleanupBody {
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405 });
+  if (!isServiceRoleRequest(req)) return unauthorized();
 
   let payload: CleanupBody;
   try {

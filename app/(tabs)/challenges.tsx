@@ -30,6 +30,7 @@ import { challengeDayIndex } from '@/features/challenges/why-rotation';
 import { reminderFor } from '@/features/challenges/reflections';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
+import { localDay } from '@/lib/time';
 
 const ORANGE = '#FD8302';
 const ORANGE_SOFT = '#FDA340';
@@ -39,16 +40,6 @@ const BORDER = '#F4F2EF';
 
 function firstName(name?: string | null) {
   return (name ?? '').trim().split(/\s+/)[0] || 'your partner';
-}
-
-// The device's own calendar day. `toISOString()` reports UTC, so at UTC+5:30
-// everything logged before 05:30 reads as yesterday — the tab would show an
-// empty checkbox for a habit that is demonstrably done, and offer a nudge for
-// a partner who already logged. Shifting by the local offset first makes the
-// date part of the ISO string the local one.
-function localDay(value: string | Date) {
-  const d = typeof value === 'string' ? new Date(value) : value;
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
 
 // The Challenges tab, per the v3 spec: one heart, and whichever of the eight

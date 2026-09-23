@@ -21,8 +21,8 @@
 //   SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY
 //
-// Auth: uses the service role and trusts its caller, exactly like send-push —
-// make sure it is only reachable with the function key or from inside Supabase.
+// Auth: service role only (see ../_shared/internal-auth.ts). pg_cron, the SQL
+// triggers and scripts/match-pool.js all call it with the service role key.
 //
 // Body (all optional):
 //   { dryRun?: boolean, userId?: string, minScore?: number, limit?: number }
@@ -36,9 +36,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   matchPool,
+  requestKey,
   scorePair,
   DEFAULT_MIN_SCORE
 } from '../../../features/challenges/matching.ts';
+import { isServiceRoleRequest, unauthorized } from '../_shared/internal-auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -97,6 +99,7 @@ function blurbFor(c: PoolCandidate): string {
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405 });
+  if (!isServiceRoleRequest(req)) return unauthorized();
 
   let body: { dryRun?: boolean; userId?: string; minScore?: number; limit?: number } = {};
   try {
@@ -120,14 +123,17 @@ Deno.serve(async (req) => {
     return Response.json({ ok: true, pool: 0, proposed: 0, written: 0, pairs: [] });
   }
 
-  const byId = new Map(candidates.map((c) => [c.userId, c]));
+  // Keyed by user AND habit — a user can be waiting on several challenges.
+  const byKey = new Map(candidates.map((c) => [requestKey(c.userId, c.challengeTemplateId), c]));
+  const cand = (userId: string, templateId: string) => byKey.get(requestKey(userId, templateId));
   const now = Date.now();
 
   let pairs;
   let unmatched: string[] = [];
 
   if (body.userId) {
-    if (!byId.has(body.userId)) {
+    const mine = candidates.filter((c) => c.userId === body.userId);
+    if (mine.length === 0) {
       return Response.json(
         { ok: false, reason: 'not_in_pool', userId: body.userId },
         { status: 404 }
@@ -136,11 +142,14 @@ Deno.serve(async (req) => {
     // Solve FOR this person rather than filtering a global assignment: someone
     // who just joined has no fairness boost and would watch every viable
     // partner get claimed by an established pair before their turn.
-    const me = byId.get(body.userId)!;
-    pairs = candidates
-      .filter((c) => c.userId !== body.userId)
-      // deno-lint-ignore no-explicit-any
-      .map((c) => scorePair(me as any, c as any, now))
+    // Every one of their waiting requests, each against people on that habit.
+    pairs = mine
+      .flatMap((me) =>
+        candidates
+          .filter((c) => c.userId !== body.userId && c.challengeTemplateId === me.challengeTemplateId)
+          // deno-lint-ignore no-explicit-any
+          .map((c) => scorePair(me as any, c as any, now))
+      )
       .filter((r) => !r.blocked && r.score >= minScore)
       .sort((x, y) => y.score - x.score);
   } else {
@@ -151,8 +160,13 @@ Deno.serve(async (req) => {
   }
 
   if (typeof body.limit === 'number') pairs = pairs.slice(0, body.limit);
-  // One person gets one partner, however many were ranked for review.
-  const toWrite = body.userId ? pairs.slice(0, 1) : pairs;
+  // One partner per request, however many were ranked for review: the best
+  // candidate for each habit this person is waiting on.
+  const toWrite = body.userId
+    ? pairs.filter(
+        (p, i) => pairs.findIndex((q) => q.challengeTemplateId === p.challengeTemplateId) === i
+      )
+    : pairs;
 
   // Telling people is what makes matching feel instant.
   //
@@ -202,12 +216,13 @@ Deno.serve(async (req) => {
   const firstName = (n?: string) => String(n ?? 'Someone').trim().split(/\s+/)[0];
 
   let written = 0;
+  const writtenTemplates = new Set<string>();
   const skipped: string[] = [];
 
   if (!dryRun) {
     for (const pair of toWrite) {
-      const a = byId.get(pair.a)!;
-      const b = byId.get(pair.b)!;
+      const a = cand(pair.a, pair.challengeTemplateId)!;
+      const b = cand(pair.b, pair.challengeTemplateId)!;
       const { data: ok, error: wErr } = await admin.rpc('create_partner_match', {
         p_user_a: pair.a,
         p_user_b: pair.b,
@@ -234,6 +249,7 @@ Deno.serve(async (req) => {
       // an ordinary race between the cron and a manual run, not an error.
       if (ok) {
         written++;
+        writtenTemplates.add(pair.challengeTemplateId);
         const habit = String(a.habit ?? 'the same habit');
         await Promise.all([
           announce(pair.a, firstName(b.fullName), habit, body.userId === pair.a || !body.userId),
@@ -246,12 +262,16 @@ Deno.serve(async (req) => {
   // Tell the pool row what happened. Without this the app cannot distinguish
   // "still looking" from "we looked and there is nobody", and shows an
   // indefinite spinner for a state that may never resolve.
+  // Per request: finding a running partner says nothing about their gym one.
   if (!dryRun && body.userId) {
-    const { error: rErr } = await admin.rpc('record_match_search', {
-      p_user_id: body.userId,
-      p_found: written > 0
-    });
-    if (rErr) console.error('record_match_search failed', rErr);
+    for (const req of candidates.filter((c) => c.userId === body.userId)) {
+      const { error: rErr } = await admin.rpc('record_match_search', {
+        p_user_id: body.userId,
+        p_found: writtenTemplates.has(req.challengeTemplateId),
+        p_template: req.challengeTemplateId
+      });
+      if (rErr) console.error('record_match_search failed', rErr);
+    }
   }
 
   return Response.json({
@@ -265,11 +285,11 @@ Deno.serve(async (req) => {
     pairs: pairs.map((p) => ({
       a: p.a,
       b: p.b,
-      aName: byId.get(p.a)?.fullName,
-      bName: byId.get(p.b)?.fullName,
-      aCity: byId.get(p.a)?.city,
-      bCity: byId.get(p.b)?.city,
-      habit: byId.get(p.a)?.habit,
+      aName: cand(p.a, p.challengeTemplateId)?.fullName,
+      bName: cand(p.b, p.challengeTemplateId)?.fullName,
+      aCity: cand(p.a, p.challengeTemplateId)?.city,
+      bCity: cand(p.b, p.challengeTemplateId)?.city,
+      habit: cand(p.a, p.challengeTemplateId)?.habit,
       score: p.score,
       aSignal: p.aSignal,
       bSignal: p.bSignal,

@@ -8,10 +8,11 @@
 // Invoke from another edge function or a Postgres trigger via
 //   supabase.functions.invoke('send-push', { body: { userId, kind, title, body, data, route } })
 //
-// Auth: this function uses the service role and trusts its caller — make sure
-// it's only reachable via the function key or from inside Supabase.
+// Auth: service role only (see ../_shared/internal-auth.ts). It used to trust
+// any caller, which let any signed-in user act on any other user.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isServiceRoleRequest, unauthorized } from '../_shared/internal-auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -45,6 +46,7 @@ const KIND_PREF_MAP: Record<string, string> = {
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405 });
+  if (!isServiceRoleRequest(req)) return unauthorized();
   let payload: SendPushBody;
   try {
     payload = await req.json();

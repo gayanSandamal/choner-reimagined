@@ -548,3 +548,24 @@ describe('v2 normalization', () => {
     expect(best.score).toBeLessThanOrEqual(100);
   });
 });
+
+describe('matchPool with several requests per person', () => {
+  // Someone running with one partner can separately look for a yoga partner.
+  // Keying by user alone used to drop one of their two requests.
+  const pool: Candidate[] = [
+    mk('dinesh', { reflections: why('rich'), style: 'team' }),
+    mk('dinesh', { challengeTemplateId: 'yoga-15', reflections: why('rich'), style: 'team' }),
+    mk('kavindu', { reflections: why('rich', 1), style: 'encouraging' }),
+    mk('amara', { challengeTemplateId: 'yoga-15', reflections: why('rich', 1), style: 'encouraging' })
+  ];
+  const result = matchPool(pool, DEFAULT_MIN_SCORE, NOW);
+
+  it('pairs each of their requests, one partner per habit', () => {
+    const pairs = result.pairs.map((p) => `${p.challengeTemplateId}:${[p.a, p.b].sort().join('+')}`).sort();
+    expect(pairs).toEqual(['run-1-mile:dinesh+kavindu', 'yoga-15:amara+dinesh']);
+  });
+
+  it('records which habit each pair is for', () => {
+    for (const p of result.pairs) expect(p.challengeTemplateId).toBeTruthy();
+  });
+});

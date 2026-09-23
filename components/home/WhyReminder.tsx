@@ -6,6 +6,7 @@ import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useReflections } from '@/features/challenges/hooks';
 import { challengeDayIndex, dailyReminder, isAtRisk } from '@/features/challenges/why-rotation';
+import { localDay } from '@/lib/time';
 import { theme } from '@/constants/theme';
 
 interface Props {
@@ -17,12 +18,12 @@ interface Props {
 }
 
 function loggedToday(challenge: any): boolean {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDay();
   const tasks = (challenge?.challenge_tasks ?? []) as Array<{
     task_checkins?: Array<{ completed_at: string | null }>;
   }>;
   return tasks.some((t) =>
-    (t.task_checkins ?? []).some((c) => (c.completed_at ?? '').slice(0, 10) === today)
+    (t.task_checkins ?? []).some((c) => c.completed_at != null && localDay(c.completed_at) === today)
   );
 }
 

@@ -99,6 +99,9 @@ export interface MatchScore {
   bSignal: number;
   reasons: string[]; // human-readable, for the concierge review
   blocked?: string; // set if a hard rule rejected the pair
+  // The habit both requests are for. A user can wait on several challenges at
+  // once, so the user id alone doesn't say WHICH request this pair belongs to.
+  challengeTemplateId: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -599,7 +602,16 @@ export function scorePair(a: Candidate, b: Candidate, now: number = Date.now()):
 
   const blocked = hardBlock(a, b, now);
   if (blocked) {
-    return { a: a.userId, b: b.userId, score: 0, aSignal, bSignal, reasons: [], blocked };
+    return {
+      a: a.userId,
+      b: b.userId,
+      challengeTemplateId: a.challengeTemplateId,
+      score: 0,
+      aSignal,
+      bSignal,
+      reasons: [],
+      blocked
+    };
   }
 
   const reasons: string[] = [];
@@ -648,12 +660,24 @@ export function scorePair(a: Candidate, b: Candidate, now: number = Date.now()):
 
   const score = Math.max(0, Math.min(100, Math.round(normalized + fairness)));
 
-  return { a: a.userId, b: b.userId, score, aSignal, bSignal, reasons };
+  return {
+    a: a.userId,
+    b: b.userId,
+    challengeTemplateId: a.challengeTemplateId,
+    score,
+    aSignal,
+    bSignal,
+    reasons
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Matching the whole pool
 // ---------------------------------------------------------------------------
+
+export function requestKey(userId: string, challengeTemplateId: string): string {
+  return `${userId}|${challengeTemplateId}`;
+}
 
 export interface MatchResult {
   pairs: MatchScore[];
@@ -682,7 +706,9 @@ export function matchPool(
   minScore: number = DEFAULT_MIN_SCORE,
   now: number = Date.now()
 ): MatchResult {
-  const byId = new Map(candidates.map((c) => [c.userId, c]));
+  // Keyed by user AND habit: someone waiting on two challenges is two
+  // requests, and keying by user alone silently dropped one of them.
+  const byKey = new Map(candidates.map((c) => [requestKey(c.userId, c.challengeTemplateId), c]));
   const scored: MatchScore[] = [];
 
   // Bucket by habit before pairing. hardBlock rejects two people on different
@@ -707,8 +733,8 @@ export function matchPool(
   }
 
   const waitOf = (pair: MatchScore) => {
-    const a = byId.get(pair.a);
-    const b = byId.get(pair.b);
+    const a = byKey.get(requestKey(pair.a, pair.challengeTemplateId));
+    const b = byKey.get(requestKey(pair.b, pair.challengeTemplateId));
     return a && b ? longestWaitMs(a, b, now) : 0;
   };
 
@@ -723,14 +749,24 @@ export function matchPool(
   const taken = new Set<string>();
   const pairs: MatchScore[] = [];
 
+  // One partner per REQUEST, not per person: pairing someone for running must
+  // not stop their separate gym request being paired in the same run.
   for (const pair of scored) {
-    if (taken.has(pair.a) || taken.has(pair.b)) continue;
+    const ka = requestKey(pair.a, pair.challengeTemplateId);
+    const kb = requestKey(pair.b, pair.challengeTemplateId);
+    if (taken.has(ka) || taken.has(kb)) continue;
     pairs.push(pair);
-    taken.add(pair.a);
-    taken.add(pair.b);
+    taken.add(ka);
+    taken.add(kb);
   }
 
-  const unmatched = candidates.map((c) => c.userId).filter((id) => !taken.has(id));
+  const unmatched = [
+    ...new Set(
+      candidates
+        .filter((c) => !taken.has(requestKey(c.userId, c.challengeTemplateId)))
+        .map((c) => c.userId)
+    )
+  ];
 
   return { pairs, unmatched };
 }

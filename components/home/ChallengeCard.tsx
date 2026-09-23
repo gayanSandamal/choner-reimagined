@@ -18,6 +18,7 @@ import { useSession } from '@/providers/session-provider';
 import { partnerStateOf } from '@/features/challenges/api';
 import type { PartnerStatus } from '@/features/community/api';
 import type { ProofType } from '@/types/database';
+import { localDay } from '@/lib/time';
 import { theme } from '@/constants/theme';
 
 function firstName(name?: string | null) {
@@ -32,10 +33,6 @@ type ChallengeTask = {
   proof_type?: ProofType | null;
   task_checkins?: Array<{ id: string; completed_at: string | null; photo_path?: string | null }>;
 };
-
-function todayString() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function sortedTasks(challenge: any): ChallengeTask[] {
   const list = (challenge?.challenge_tasks ?? []) as ChallengeTask[];
@@ -84,9 +81,9 @@ export function ChallengeCard({
   const mode: 'solo' | 'partner' = partnered ? 'partner' : 'solo';
   const tasks = useMemo(() => sortedTasks(challenge), [challenge]);
 
-  const today = todayString();
+  const today = localDay();
   const todaysCheckinFor = (task: ChallengeTask) =>
-    (task.task_checkins ?? []).find((c) => (c.completed_at ?? '').slice(0, 10) === today);
+    (task.task_checkins ?? []).find((c) => c.completed_at != null && localDay(c.completed_at) === today);
 
   const pendingTasks = tasks.filter((t) => !todaysCheckinFor(t));
   const burnedTasks = tasks.filter((t) => todaysCheckinFor(t));
