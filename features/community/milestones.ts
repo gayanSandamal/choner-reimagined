@@ -4,7 +4,10 @@ import { supabase } from '@/lib/supabase';
 // may choose to share it with their own city. Nothing is ever published
 // automatically.
 
-export type MilestoneKind = 'streak' | 'complete' | 'matched';
+// 'session_together' is a pair post from a completed session (P7). It is only
+// served to clients that ask for it (p_include_sessions), and it has no
+// milestone row, so it takes no reactions.
+export type MilestoneKind = 'streak' | 'complete' | 'matched' | 'session_together';
 
 export interface FeedItem {
   id: string;
@@ -29,7 +32,7 @@ export interface CityFeed {
 // is security definer so it can resolve first names and avatars, which
 // profiles won't hand over across users.
 export async function getCityFeed(limit = 30): Promise<CityFeed> {
-  const { data, error } = await (supabase.rpc as any)('get_city_feed', { p_limit: limit });
+  const { data, error } = await (supabase.rpc as any)('get_city_feed', { p_limit: limit, p_include_sessions: true });
   if (error) throw error;
   return (data as CityFeed) ?? { city: null, items: [] };
 }

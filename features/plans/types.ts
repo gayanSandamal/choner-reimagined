@@ -31,6 +31,8 @@ export type PairPlan = {
   them: PlanMember & { first_name: string; avatar_url: string | null };
   messages: { mine: boolean; key: 'opener' | 'lets_go' | 'cant_wait' | 'sounds_good' }[];
   open_proposals?: Proposal[];
+  reactions?: { mine: boolean; reaction: string }[];
+  my_share?: boolean | null;
 };
 
 export type Proposal = {

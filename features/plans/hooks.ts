@@ -78,3 +78,10 @@ export const useProposeReschedule = () =>
   usePlanMutation(({ planId, startsAt }: { planId: string; startsAt: string }) => proposeReschedule(planId, startsAt));
 export const useAcceptReschedule = () => usePlanMutation((id: string) => acceptReschedule(id));
 export const useSendEncouragement = () => usePlanMutation((planId: string) => sendEncouragement(planId));
+
+import { recordSessionShare, togglePlanReaction } from './api';
+
+export const useTogglePlanReaction = () =>
+  usePlanMutation(({ planId, reaction }: { planId: string; reaction: string }) => togglePlanReaction(planId, reaction));
+export const useRecordSessionShare = () =>
+  usePlanMutation(({ planId, shared }: { planId: string; shared: boolean }) => recordSessionShare(planId, shared));
