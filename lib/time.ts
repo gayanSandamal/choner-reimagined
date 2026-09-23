@@ -12,3 +12,13 @@ export function relativeTime(iso: string) {
   if (days < 7) return `${days}d`;
   return `${Math.round(days / 7)}w`;
 }
+
+// The device's own calendar day, as YYYY-MM-DD. `toISOString()` reports UTC, so
+// at UTC+5:30 everything logged before 05:30 reads as yesterday — a habit that
+// is demonstrably done shows as open. Shifting by the local offset first makes
+// the date part of the ISO string the local one. One definition, used by every
+// screen that asks "was this today?", so they can never disagree.
+export function localDay(value: string | Date = new Date()) {
+  const d = typeof value === 'string' ? new Date(value) : value;
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}
