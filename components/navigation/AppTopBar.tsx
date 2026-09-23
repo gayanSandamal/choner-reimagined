@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { AppText } from '@/components/ui/AppText';
@@ -12,7 +13,11 @@ import { theme } from '@/constants/theme';
 // Profile used to be a fifth item in the bottom bar. Moving it up here is what
 // freed that slot for Find — and Profile is somewhere you visit occasionally,
 // not one of the four things the app is actually for.
-export function AppTopBar() {
+//
+// `accessory` sits just left of your face — the pairing's "···" menu, on the
+// tabs where a pairing is live. Every other tab passes nothing and the bar is
+// unchanged.
+export function AppTopBar({ accessory }: { accessory?: ReactNode } = {}) {
   const { session } = useSession();
   const profileQ = useProfile(session?.user.id);
 
@@ -22,15 +27,18 @@ export function AppTopBar() {
         choner<AppText style={styles.dot}>.</AppText>
       </AppText>
 
-      <PressableScale
-        onPress={() => router.push('/(tabs)/profile')}
-        scaleTo="subtle"
-        haptic="selection"
-        accessibilityRole="button"
-        accessibilityLabel="Your profile"
-      >
-        <Avatar uri={profileQ.data?.avatar_url} name={profileQ.data?.full_name} size={32} />
-      </PressableScale>
+      <View style={styles.right}>
+        {accessory}
+        <PressableScale
+          onPress={() => router.push('/(tabs)/profile')}
+          scaleTo="subtle"
+          haptic="selection"
+          accessibilityRole="button"
+          accessibilityLabel="Your profile"
+        >
+          <Avatar uri={profileQ.data?.avatar_url} name={profileQ.data?.full_name} size={32} />
+        </PressableScale>
+      </View>
     </View>
   );
 }
@@ -53,6 +61,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     ...theme.shadow.lg
   },
+  right: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   logo: { fontFamily: theme.fonts.bodyBold, fontSize: 16, color: theme.colors.onNavy },
   dot: { color: theme.colors.primary }
 });

@@ -13,6 +13,7 @@ import { Heart } from '@/components/challenges/Heart';
 import { Radar } from '@/components/challenges/Radar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { MatchCard } from '@/components/challenges/MatchCard';
+import { PairSafetyMenu } from '@/components/safety/PairSafetyMenu';
 import { challengeHabitTitle, isDailySearchLimit, partnerStateOf } from '@/features/challenges/api';
 import {
   useMyChallenge,
@@ -168,7 +169,16 @@ export default function FindScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <AppTopBar />
+      <AppTopBar
+        accessory={
+          partnerState === 'partnered' && challenge?.id ? (
+            <PairSafetyMenu
+              userChallengeId={challenge.id}
+              partnerFirstName={firstName(partnerStatusQ.data?.name)}
+            />
+          ) : null
+        }
+      />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}

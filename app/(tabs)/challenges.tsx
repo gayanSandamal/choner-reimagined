@@ -12,6 +12,7 @@ import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { Heart } from '@/components/challenges/Heart';
 import { PairRow } from '@/components/challenges/PairRow';
 import { MatchBanner } from '@/components/challenges/MatchBanner';
+import { PairSafetyMenu } from '@/components/safety/PairSafetyMenu';
 import { SharePrompt } from '@/components/community/SharePrompt';
 import { challengeHabitTitle, partnerStateOf, nudgeRefusalMessage } from '@/features/challenges/api';
 import {
@@ -209,7 +210,16 @@ export default function ChallengesScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <AppTopBar />
+      <AppTopBar
+        accessory={
+          partnered && challenge?.id ? (
+            <PairSafetyMenu
+              userChallengeId={challenge.id}
+              partnerFirstName={firstName(partnerStatus?.name)}
+            />
+          ) : null
+        }
+      />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
