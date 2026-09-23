@@ -21,6 +21,8 @@ const ICON_BY_KIND: Record<string, keyof typeof Ionicons.glyphMap> = {
   group_post: 'chatbubbles',
   challenge_milestone: 'trophy',
   invite_accepted: 'mail-open',
+  // Deliberately neutral: the same icon whether it was a block or a report.
+  match_ended: 'information-circle',
 };
 
 function groupByDay(items: { created_at: string }[]) {

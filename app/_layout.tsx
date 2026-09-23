@@ -130,6 +130,16 @@ function RootLayoutNav() {
         name="modals/edit-why"
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
+      <Stack.Screen
+        name="modals/report"
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
+      {/* No swipe-down: this confirms something that already happened, and the
+          screen it would reveal underneath has just changed state. */}
+      <Stack.Screen
+        name="modals/match-ended"
+        options={{ presentation: 'modal', animation: 'fade', gestureEnabled: false }}
+      />
       <Stack.Screen name="settings/index" />
       <Stack.Screen name="settings/notifications" />
       <Stack.Screen name="profile/edit" options={{ presentation: 'modal' }} />
