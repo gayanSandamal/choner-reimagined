@@ -24,6 +24,7 @@ import {
 import { at, nextDays, TIME_SLOTS } from '@/features/plans/negotiation';
 import type { PairPlan } from '@/features/plans/types';
 import { RELAY_ACTIONS } from '@/lib/notifications';
+import { MeetupChat } from '@/components/plans/MeetupChat';
 import { notify } from '@/lib/alert';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
@@ -52,7 +53,7 @@ function ItsOn({ plan }: { plan: PairPlan }) {
 // ============================================================
 // "I'm on my way" → "I'm here", per person. QR never opens on one tap: only
 // once BOTH are here does the screen move on (planStep → 'qr').
-export function DayOfStep({ plan }: { plan: PairPlan }) {
+export function DayOfStep({ plan, challengeId }: { plan: PairPlan; challengeId: string }) {
   const arrive = useSetArrival();
   const relay = useRelayResponse();
   const them = plan.them.first_name;
@@ -61,7 +62,16 @@ export function DayOfStep({ plan }: { plan: PairPlan }) {
   const themHere = Boolean(plan.them.here_at);
   const cantToday = Boolean(plan.me.cant_make_it_at || plan.them.cant_make_it_at);
 
-  if (cantToday) return <ReschedulePanel plan={plan} />;
+  // "Won't be able to make it today": the chat opens with the reschedule
+  // panel pinned at the top (§6.2) — the same picker as Can't today.
+  if (cantToday) {
+    return (
+      <View style={styles.wrap}>
+        <ReschedulePanel plan={plan} />
+        <MeetupChat plan={plan} challengeId={challengeId} />
+      </View>
+    );
+  }
 
   let status: string | null = null;
   if (meHere && !themHere) status = lines.hereWaiting(them);
@@ -73,6 +83,7 @@ export function DayOfStep({ plan }: { plan: PairPlan }) {
       <ItsOn plan={plan} />
       <AppText variant="title">{[plan.place_name, plan.place_text].filter(Boolean).join(' — ')}</AppText>
       {status ? <AppText style={styles.status}>{status}</AppText> : null}
+      <MeetupChat plan={plan} challengeId={challengeId} />
 
       {/* The partner already arrived: the three relay answers, in the app too
           (the push carries them as buttons; this covers everyone else). */}
