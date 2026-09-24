@@ -1,10 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
-import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
+import type * as NotificationsModule from 'expo-notifications';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
 
-Notifications.setNotificationHandler({
+// Expo Go has shipped without push since SDK 53, and expo-notifications says so
+// the moment it is imported: two warnings on every launch, and on Android the
+// token lookup throws. So in Expo Go the module is never loaded and every entry
+// point below is a no-op — the in-app notification centre still works, and a
+// development or store build gets the real thing.
+const Notifications: typeof NotificationsModule | null =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient
+    ? null
+    : (require('expo-notifications') as typeof NotificationsModule);
+
+// Hooks can't be called conditionally, so pick the implementation once. With no
+// module there is no launch response: null reads as "the OS answered: none".
+const useLastNotificationResponse: () => NotificationsModule.NotificationResponse | null | undefined =
+  Notifications?.useLastNotificationResponse ?? (() => null);
+
+Notifications?.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
     shouldSetBadge: false,
@@ -22,7 +37,7 @@ Notifications.setNotificationHandler({
 // seen by both paths below on some platforms, and must not navigate twice.
 const handledTaps = new Set<string>();
 
-function routeOf(response: Notifications.NotificationResponse | null | undefined): string | null {
+function routeOf(response: NotificationsModule.NotificationResponse | null | undefined): string | null {
   if (!response) return null;
   const id = response.notification.request.identifier;
   if (handledTaps.has(id)) return null;
@@ -41,7 +56,7 @@ function routeOf(response: Notifications.NotificationResponse | null | undefined
  * its default destination. `ready` is false until the OS has answered.
  */
 export function useLaunchRoute(): { ready: boolean; route: string | null } {
-  const last = Notifications.useLastNotificationResponse();
+  const last = useLastNotificationResponse();
   // Boot must never hang on this: web has no launch response, and a native
   // lookup that never answers only costs the deep link, never the app.
   const [gaveUp, setGaveUp] = useState(Platform.OS === 'web');
@@ -67,6 +82,7 @@ export const RELAY_ACTIONS = {
 } as const;
 
 export async function registerNotificationCategories() {
+  if (!Notifications) return;
   try {
     await Notifications.setNotificationCategoryAsync(
       RELAY_CATEGORY,
@@ -89,6 +105,7 @@ export function registerRelayHandler(fn: typeof relayHandler) {
 }
 
 export function attachNotificationResponseListener() {
+  if (!Notifications) return () => {};
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
     const action = response.actionIdentifier as keyof typeof RELAY_ACTIONS;
     const planId = (response.notification.request.content.data as { planId?: string } | null)?.planId;
@@ -108,6 +125,7 @@ export function attachNotificationResponseListener() {
 }
 
 export async function registerForPushNotificationsAsync() {
+  if (!Notifications) return null;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
