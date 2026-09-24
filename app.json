@@ -10,13 +10,7 @@
     },
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#001827"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.choner.app",
@@ -34,7 +28,6 @@
     "android": {
       "package": "com.choner.app",
       "versionCode": 1,
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "NOTIFICATIONS"
       ],
@@ -81,7 +74,17 @@
           "cameraPermission": "Choner uses the camera for your check-in photos, scanning your partner's code when you meet, and your profile photo.",
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#001827",
+          "imageWidth": 200
+        }
+      ],
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true
