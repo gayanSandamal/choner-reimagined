@@ -32,6 +32,9 @@ policy is now exposure with nothing using it.
 **Do:** new migration dropping `challenge_reflections_partner_select`. Leave the four own-only
 policies alone.
 
+**Drafted:** `supabase/migrations/202609291000_reflections_own_only.sql` on branch
+`DineshDoluweera/chore/db-migrations-handover`. One line. Not run.
+
 **Done when:** a partner reading another user's `challenge_reflections` rows gets zero rows.
 
 ---
@@ -95,28 +98,53 @@ web where the module does not provide it. Add `Platform.OS === 'web'` to the sam
 
 ---
 
-## 5. Split `accountability_mode` — it is doing two jobs
+## 5. `accountability_mode` — and the task description was wrong
 
-Two separate problems in one column.
+**Corrected 29 September after reading the migrations. Draft SQL is written:
+`supabase/migrations/202609291100_profiles_tone_column_expand.sql` and
+`...1110_..._contract.sql` on branch
+`DineshDoluweera/chore/db-migrations-handover`. Not run — no Docker here.**
 
-**(a) The default is dead.** `202608131600` sets `accountability_mode text default 'solo'` on
-`profiles` **and** on the challenge table. **Solo mode is removed** (master spec §1) — nothing can
-be logged without a partner. Every one of those defaults is now wrong.
+There are **two** columns called `accountability_mode` and they do **not** have
+the same problem. The earlier version of this task conflated them.
 
-**(b) It holds the wrong value.** The **tone** value (`competitive` / `momentum` / `encouraging` /
-`team`) — the onboarding "How do you want Choner to talk to you?" answer — is written into it from
-**two** places, not one:
-- `app/profile/edit.tsx:79`
-- `app/onboarding/energy.tsx:34-51`, the single write that saves the whole onboarding quiz
+**`profiles.accountability_mode` — holds the TONE.** `competitive` /
+`momentum` / `encouraging` / `team`, the onboarding "How do you want Choner to
+talk to you?" answer. It is also already *consumed* as the tone: four matching
+RPCs read it as `coalesce(p.accountability_mode, 'encouraging') as style`
+(`202608211400:38`, `202609182100:35`, `202609231000:440`, `202609231100:29`).
+So nothing about its meaning is ambiguous in practice. Only two things are
+wrong: the **name**, and the **`default 'solo'`** from `202603261510:29`, which
+has been giving every new row a value nobody chose.
 
-That is not an accountability mode, and both writers need updating together.
+Worth knowing: `202603261510:23` renamed `accountability_style` →
+`accountability_mode`. The original name was right. That rename is the bug.
 
-**Do:** decide which meaning keeps the column, give the other its own, migrate existing rows, then
-fix the defaults. Tell Dinesh which name the tone ends up under — he is touching both files.
+**`user_challenges.accountability_mode` — genuinely a mode.** Holds
+`solo` / `partner`, and roughly fifteen migrations plus every partner RPC
+branch on `= 'partner'`. Solo mode is removed from the product, but unpicking
+that touches the whole partner path, so it belongs to the **Challenges
+rebuild**, not here. The draft only drops its dead `default 'solo'`
+(`202603261600:49`) so new challenges stop being born solo.
 
-**Done when:** one column, one meaning, no `'solo'` default anywhere.
+**Why the draft is expand/contract.** A straight rename breaks every writer the
+moment it lands and every reader the moment it does not, and we are working on
+opposite sides of this column. So: add `accountability_style`, backfill, keep
+both names in step with a trigger, and drop the old one in a second migration
+once the app writes the new name. Either of us can land first.
 
----
+**The contract step has a gate.** It refuses to run while any row has the two
+columns disagreeing, because that means something is still writing the old name
+and dropping the column would lose it. It also needs the four matching RPCs
+re-issued against the new name — re-issue all four, not just the live one, or
+a `db reset` replays an old body that no longer compiles.
+
+**Two writers in the app, not one:** `app/profile/edit.tsx:79` and
+`app/onboarding/energy.tsx:34-51`, the single write that saves the whole
+onboarding quiz. Dinesh updates both in his fe10.
+
+**Done when:** one meaning per column, no `'solo'` default anywhere, and the
+contract migration's gate passes.
 
 ## 6. `photo_status` column and a storage bucket  ·  *new*
 
@@ -126,6 +154,20 @@ Neither exists. The live-photo screen has nowhere to write.
 
 **Do:** a `photo_status` column with values meaning *photo confirmed* / *no photo*, plus a storage
 bucket with RLS so a user writes only their own.
+
+**Drafted:** `supabase/migrations/202609291200_photo_status.sql`. Two things in it are judgement
+calls, so overrule them if you disagree:
+
+1. **It reuses the `avatars` bucket** rather than making a new one. `202607311000` already created
+   it with exactly these policies (public read, owner-only write/update/delete, keyed on
+   `<user_id>/<file>`) and `profiles.avatar_url` already holds the URL. A second bucket is a second
+   set of policies to keep correct for no gain.
+2. **A gallery upload drops the badge.** Edit profile still uploads from the gallery
+   (`app/profile/edit.tsx` uses `expo-image-picker`) into the same bucket and the same column, so
+   without a rule a gallery photo would inherit a badge a live capture earned weeks earlier. Any
+   change to `avatar_url` that did not come through `set_live_photo()` resets `photo_status`, and
+   the badge cannot be set by hand at all. The badge is what a stranger reads before agreeing to
+   meet someone in person, so it must not outlive the photo that earned it.
 
 **Copy constraint that is also a product constraint:** the badge says **"Photo confirmed"**, never
 "verified", and nothing in the data model should be named `verified` either. Choner checks the
@@ -154,11 +196,23 @@ partners.
 active challenge** enters a code — end theirs, replace it, or block it? Recommendation was
 ask-then-replace, and block outright if they are already partnered. Do not resolve this silently.
 
+**Drafted:** `supabase/migrations/202609291300_short_invite_code.sql`. The long token stays as the
+deep-link payload; the code sits beside it. The alphabet drops `O 0 I 1 L U`, input is normalised
+so `run-4k7` works, and acceptance is a thin wrapper over `accept_challenge_invite` rather than a
+ninth rewrite of a function that has been redefined eight times. The open question above is
+restated at the bottom of the file, unresolved.
+
 **Done when:** a 6-character code entered in the app joins the same challenge the link would have.
 
 ---
 
-## 8. Edit profile writes three more columns
+## 8. Edit profile writes three more columns  ·  *already done, check before you start*
+
+**This is a frontend change and Dinesh has done it** in `feat/fe5-profile-fields`: all five answers
+now round-trip through Edit profile, and no migration was needed because all three columns already
+exist. Left here so the overlap is visible rather than built twice. What may still be yours is the
+last line of this task, re-running matching preferences when age or gender changes.
+
 
 **Prototype:** `T4a Edit profile`.
 
