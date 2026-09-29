@@ -116,12 +116,12 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.button,
     alignItems: 'center',
     justifyContent: 'center'
   },
   gradientWrap: {
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.button,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
