@@ -1247,3 +1247,40 @@ session eats the streak. How long a session streak takes is not known until the
 cadence is agreed at the first plan, which is accepted.
 
 Twelve circles means twelve circles, always. The calendar length floats.
+
+### STREAK, QUESTION 3 ANSWERED: the streak is personal
+Option A. One counter, and it belongs to the person, not the pair.
+
+On session 7 of 12, Gayan leaves, Chamara joins: session 8 counts toward the
+SAME streak. GAYAN KEEPS HIS 7 TOO and continues with someone else. One broken
+pairing produces two live streaks, deliberately - the streak is a statement
+about your own consistency, not about any one partnership.
+
+CONSEQUENCE, FLAGGED NOT SOLVED: leaving costs nothing. The only trace is the
+end reason, which the other person never sees. If repeated abandonment should
+ever matter, those reasons are the data to act on. Not a launch problem.
+
+THE PAIR COUNT STILL EXISTS. The shared heart keeps counting sessions WITH THIS
+PARTNER - it just stops being the streak. So there are two numbers on Home and
+they measure different things:
+    the heart    sessions with Gayan
+    the circles  your streak, 7 of 12
+
+### Vocabulary, cleaned up while we are here
+The word "commitment" now collides with itself. A commitment is the WEEKLY
+agreement ("Run 2x a week"), so "14 commitments kept" would read as 14 weeks.
+Settled vocabulary:
+
+    commitment   the weekly agreement. Run 2x a week. Unchanged.
+    session      one occurrence of it. What a circle is.
+    streak       your personal count of sessions toward a chosen target.
+                 "a 12 session streak".
+    the heart    sessions with this partner.
+
+Consequences: keptTxt() becomes "N sessions" not "N commitments kept", and the
+master spec line "the streak counts commitments both partners kept, never days"
+is now wrong twice over and must be rewritten.
+
+The Community feed does NOT need a new sentence after all - an earlier note
+said it would. "Nimali and Ruwan: 14 kept together on Yoga" is the PAIR count,
+which survives option A intact. Only the noun changes: "14 sessions together".
