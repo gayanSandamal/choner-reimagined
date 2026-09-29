@@ -61,7 +61,7 @@ export default function AcceptInviteScreen() {
               You're in!
             </AppText>
             <AppText variant="muted" style={styles.textCenter}>
-              Your shared fire is lit — you and your partner are in this together now.
+              Your shared fire is lit. You and your partner are in this together now.
             </AppText>
             {/* Step 4: the partner who joined answers their own "Why" before
                 landing on Home. The screen seeds itself from anything they

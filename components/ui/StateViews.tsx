@@ -108,7 +108,7 @@ export function ErrorState({
   icon = 'cloud-offline-outline',
   iconTint = 'warm',
   title = "We can't reach that right now",
-  message = 'Check your connection and give it another shot — your data is safe.',
+  message = 'Check your connection and give it another shot. Your data is safe.',
   onRetry
 }: ErrorProps) {
   return (

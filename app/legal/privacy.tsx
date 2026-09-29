@@ -34,7 +34,7 @@ export default function PrivacyScreen() {
         <AppText variant="subtitle">Reports and blocks</AppText>
         <AppText muted>
           A report is read by a person on our team, and sending one also ends your match. The person
-          you report or block is never told who did it or why — they only see that the match has
+          you report or block is never told who did it or why. They only see that the match has
           ended. Reports are kept so we can act on them; blocks are kept so you are never matched
           with that person again.
         </AppText>

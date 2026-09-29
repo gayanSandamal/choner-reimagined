@@ -78,9 +78,11 @@ export function suggestedHabitTitle(goal: GoalValue | null): string {
 }
 
 const FIRST_WEEK: Record<EnergyValue, string> = {
-  low: 'A gentle start — one small win a day',
-  medium: 'A steady pace — build the habit daily',
-  high: 'A strong start — momentum from day one'
+  // No daily framing: a commitment is a weekly number the pair agree, so
+  // "a day" and "daily" described a product that no longer exists.
+  low: 'A gentle start: one small win at a time',
+  medium: 'A steady pace: build the habit as you go',
+  high: 'A strong start: momentum from day one'
 };
 
 export function energyToFirstWeek(energy: EnergyValue): string {
@@ -99,7 +101,7 @@ const TONE_SUMMARIES: Record<ToneValue, string> = {
   momentum:
     'Once you get going, you hate to stop. Choner protects your streak so one hard day never undoes your progress.',
   encouraging:
-    'Pressure has never worked on you — support does. Choner keeps things warm, steady, and on your side.',
+    'Pressure has never worked on you. Support does. Choner keeps things warm, steady, and on your side.',
   team:
     'You show up for others more than yourself. Choner pairs you with someone who needs you as much as you need them.'
 };

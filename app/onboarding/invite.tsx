@@ -175,7 +175,7 @@ export default function PartnerPathScreen() {
               <AppText variant="title">Looking for your partner</AppText>
               <AppText muted>
                 We're matching you with someone doing {habit} who wants the same thing. We're
-                looking now, and again every few minutes — we'll notify you the moment you're
+                looking now, and again every few minutes. We'll notify you the moment you're
                 matched.
               </AppText>
             </>
@@ -193,7 +193,7 @@ export default function PartnerPathScreen() {
           ) : (
             <>
               <AppText variant="title">How do you want to do this?</AppText>
-              <AppText muted>Choner works best with two — but the choice is yours.</AppText>
+              <AppText muted>Choner works best with two, but the choice is yours.</AppText>
             </>
           )}
         </Animated.View>
@@ -213,14 +213,14 @@ export default function PartnerPathScreen() {
             <OptionCard
               icon="👋"
               label="Invite someone you know"
-              description="A friend, sibling, or gym buddy — anyone chasing the same goal."
+              description="A friend, sibling, or gym buddy, anyone chasing the same goal."
               selected={false}
               onPress={() => setPhase('emailEntry')}
             />
             {isCustomHabit ? (
               <View style={styles.customNote}>
                 <AppText variant="caption" muted>
-                  Finding a partner works best with our suggested challenges — since you picked your
+                  Finding a partner works best with our suggested challenges. Since you picked your
                   own, try inviting someone you know.
                 </AppText>
               </View>
@@ -248,7 +248,7 @@ export default function PartnerPathScreen() {
               onChangeText={setEmail}
             />
             <AppText variant="caption" muted>
-              Enter the email of a friend, partner, sibling, or gym buddy — anyone who'll actually
+              Enter the email of a friend, partner, sibling, or gym buddy, anyone who'll actually
               show up.
             </AppText>
           </Animated.View>
@@ -335,7 +335,7 @@ export default function PartnerPathScreen() {
         {phase === 'pending' && sentInvite ? (
           <>
             <PulsingWaitButton label={`Waiting for ${sentInvite.email}...`} />
-            <Button label="Done — take me home" variant="ghost" onPress={goHome} />
+            <Button label="Done, take me home" variant="ghost" onPress={goHome} />
           </>
         ) : null}
       </Animated.View>
