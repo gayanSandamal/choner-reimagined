@@ -43,7 +43,7 @@ const title = () => !agreed() ? (S.act === 'work' ? exOf()[0] : A().l) : (S.act 
 const amtTxt = () => {
   if (agreed()) return S.act === 'work' ? `${S.amt} ${exOf()[1]}` : `${S.amt} ${A().u}`;
   if (S.partner === 'paired') return "You'll agree how much and how often at your first plan";
-  if (S.searching || S.partner === 'searching' || S.partner === 'pending') return "Locked while you're looking for a match";
+  if (S.partner !== 'none') return "Locked while you're looking for a match";
   return 'You can change this until you start searching for a match';
 };
 // Sessions are named by the day they fall on, never by number. "Run 2" only
@@ -88,10 +88,10 @@ function activeCard(){
   const s = cur(), t = today();
   let partner;
   // No "Partner: not found yet" row: the state carries the button instead.
-  if (S.partner === 'none') partner = btn('Find a Match','go-find');
-  else if (S.partner === 'searching') partner = `<div class="pline"><span class="sd"><i></i><i></i><i></i></span><span>Partner: searching…</span></div><button class="linkq" data-act="go-find">Go to Find ${ic('chev',2)}</button>`;
-  else if (S.partner === 'invited') partner = `<div class="pline">${ic('clock',1.8)}<span>Partner: invited, waiting to join</span></div><button class="linkq" data-act="go-find">Go to Find ${ic('chev',2)}</button>`;
-  else if (S.partner === 'pending') partner = `<div class="pline">${ic('clock',1.8)}<span>Gayan · Pending. Waiting for Gayan to accept.</span></div>`;
+  if (S.partner === 'none') partner = btn('Find a match','go-find');
+  else if (S.partner === 'searching') partner = `<div class="pline"><span class="sd"><i></i><i></i><i></i></span><span>Partner: searching…</span></div>${btn('See your search','go-find')}`;
+  else if (S.partner === 'invited') partner = `<div class="pline">${ic('clock',1.8)}<span>Partner: invited, waiting to join</span></div>${btn('See your invite','go-find')}`;
+  else if (S.partner === 'pending') partner = `<div class="pline">${ic('clock',1.8)}<span>Gayan · Pending. Waiting for Gayan to accept.</span></div>${btn('See your match','go-find')}`;
   else partner = youG();
   // The weekly counter is gone. The streak is the only standing number, and
   // the weekly commitment speaks only when it is owed or when it is kept.
