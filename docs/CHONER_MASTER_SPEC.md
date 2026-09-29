@@ -278,7 +278,8 @@ Each one is real, found by reading the code, and independent of anything still u
 4. **Notifications crash on web.** `lib/notifications.ts` guards only Expo Go.
 5. **The why is partner-readable.** See section 7.
 6. **`accountability_mode` does two jobs.** It defaults to `'solo'` (a mode that no longer exists)
-   in two tables, and `app/profile/edit.tsx:79` writes the *tone* value into the same column.
+   in two tables, and the *tone* value is written into the same column from **two** places:
+   `app/profile/edit.tsx:79` and `app/onboarding/energy.tsx:34-51`.
 7. **Edit profile cannot reach three required answers** — struggle, age and gender.
 8. **No `photo_status` column and no storage bucket.**
 9. **The invite code is a 36-character UUID**, email-only.
