@@ -1445,3 +1445,43 @@ surfaces in two moments and is otherwise silent:
   behind    "You owe one session this week", with the repair choice
   complete  "You kept this week's commitment. Plan the next one."
 Same rule in both directions.
+
+### No end date, no slot table, no pause tracking
+Asked whether a streak needs start/end date columns at MVP level. It does not,
+and the reason collapses several rules at once.
+
+A CIRCLE CAN ONLY BE MISSED IF THE SESSION WAS PLANNED. The definition already
+in the prototype is "no check-in by midnight of the planned day". Sessions are
+planned ONE AT A TIME, so there is no pre-computed schedule to keep in sync:
+
+  resolved circles    filled or missed, each with a real date, because each
+                      was planned
+  unresolved circles  no date, cannot be missed, simply waiting
+
+The streak ends when all 12 have resolved. The score is how many filled, so
+finishing at 11 of 12 is possible without a deadline existing anywhere.
+
+THIS MAKES THE PAUSE FREE RATHER THAN A RULE. No partner means no sessions get
+planned, which means no slots pass, which means nothing is missed. Pausing is
+not implemented; it is just what happens. A cadence change needs no
+recomputation for the same reason.
+
+Schema, in total:
+  target_sessions   the 12
+  started_at        when the first session was planned
+  the circles       the session rows themselves, each with a date and outcome
+
+The end date is still SHOWN, as an estimate and not a fact: "About 6 weeks at
+2x a week", computed on screen from target / cadence. It is a guess anyway,
+since misses and repairs move it.
+
+### Repair fills the missed circle
+Not an added one. Otherwise the row grows - miss slot 3, repair into week 2,
+and a 12 session streak has 13 slots. The make-up turns the missed circle back
+to solid orange and the row stays at 12. A second miss in the same week has no
+repair left, so that circle stays marked for good.
+
+Circle states, final:
+  solid orange      done
+  marked outline    missed, not repaired
+  plain empty       ahead, unplanned
