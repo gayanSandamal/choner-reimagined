@@ -1025,3 +1025,75 @@ migration side, or it gets built twice.
 
 Branch order matters and they stack: fe1 needs Icon.tsx, fe2 needs fe1, and so
 on down to fe11. Merging out of order shows the wrong diff.
+
+---
+
+## 2026-09-29 (migrations) - Two columns share a name and only one is broken
+
+Drafting the SQL for Gayan's tasks turned up a mistake in the task list itself.
+
+`accountability_mode` exists TWICE and the handover treated it as one column.
+
+  profiles.accountability_mode       holds the TONE, and is already CONSUMED as
+                                     the tone: four matching RPCs read it as
+                                     coalesce(p.accountability_mode,
+                                     'encouraging') as style. Nothing about its
+                                     meaning is ambiguous in practice. Only the
+                                     NAME and the 'solo' DEFAULT are wrong.
+
+  user_challenges.accountability_mode  genuinely means solo / partner, and
+                                     around fifteen migrations plus every
+                                     partner RPC branch on = 'partner'.
+
+So the "split" is much smaller than written, and also much more dangerous than
+written in one specific way: removing solo mode from user_challenges touches
+the whole partner path and belongs to the Challenges rebuild, not to a column
+rename. The drafts only drop its dead default.
+
+A footnote worth keeping: 202603261510:23 renamed accountability_style to
+accountability_mode. The original name was correct. The rename is the bug being
+undone, which is why the new column takes the old name back.
+
+DECIDED: expand/contract rather than a rename. Two people are working on
+opposite sides of this column, and a rename breaks every writer the moment it
+lands and every reader the moment it does not. Add the new column, backfill,
+keep both in step with a trigger, drop the old one behind a gate that refuses
+to run while the two disagree. Either side can land first.
+
+DECIDED: the photo reuses the avatars bucket. 202607311000 already created it
+with the exact policies needed and profiles.avatar_url already holds the URL. A
+second bucket is a second set of RLS policies to keep correct for no gain.
+
+DECIDED, and this is the part that matters: a gallery upload DROPS the photo
+badge. Edit profile still uploads from the gallery into the same bucket and the
+same column, so without a rule a gallery photo would inherit a badge that a
+live capture earned weeks earlier. Any change to avatar_url that did not come
+through set_live_photo() resets photo_status, and photo_status cannot be set to
+confirmed by hand at all. The badge is the thing a stranger reads before
+agreeing to meet someone in person; it must not outlive the photo that earned
+it. This is why "Photo confirmed" is defensible and "Photo verified" would not
+be even with this rule.
+
+DECIDED: the short invite code sits BESIDE the 36-character token rather than
+replacing it. The token is the deep-link payload and is unguessable; the code
+is the human path. Acceptance is a thin wrapper over accept_challenge_invite,
+which has been redefined eight times and whose latest body carries the
+single-challenge rules - resolving the code to a token and delegating keeps all
+of that in one place instead of making it nine.
+
+Alphabet excludes O, 0, I, 1, L and U: the characters people misread aloud or
+mistype, and U also keeps the generator from spelling things.
+
+STILL OPEN, not resolved silently: what happens when someone who already has an
+active challenge enters a code. Restated at the bottom of the migration.
+
+OVERLAP CLOSED: Gayan's task 8 (Edit profile writes three more columns) is a
+frontend change that fe5 has already done. Marked as done on his list rather
+than deleted, so it is visible instead of being built twice.
+
+NOT RUN. There is no Docker and no psql on this machine, so the five files are
+statically checked only: dollar-quoting balanced, every referenced table and
+column verified against the migration history. One real bug was caught that
+way - uc.template_id was renamed to challenge_template_id in 202603261600:27,
+so the first draft of the invite-prefix function would not have compiled. They
+need supabase db reset against a local stack before they go near anything real.
