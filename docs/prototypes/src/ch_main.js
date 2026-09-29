@@ -24,6 +24,11 @@ const REASONS = [['sleep','Too tired'],['clock','No time'],['cloud','Weather'],[
 function sess(n, day, o){ return Object.assign({ n, day, time:'7:00 AM', place:'Diyasaru Park', mode:'together', st:'planned', you:'idle', gy:'idle', moved:null, repair:false }, o||{}); }
 function fresh(){
   return { cur:'tab', hist:[], has:true, canMeet:true, act:'run', ex:'push', amt:3, cadence:2, partner:'paired', matchedOn:'Friday', week:3,
+    // starget: the streak the person chose. circles: what has actually
+    // happened, in order - 'done', 'missed', and everything after is 'todo'.
+    // kept is the PAIR count behind the heart, which is a different number.
+    starget:12, circles:['done','done','done','done','done','done'],
+    owed:0, searching:false,
     sessions:[], kept:6, broken:null, repairUsed:false, proposal:null, missFor:null, matchEnded:false, justDone:false,
     sheet:null, dlg:null, menu:false, sel:0, counterFrom:null, reason:null, reasonText:'', missRecorded:false, pd:null, planKind:'next', nw:null,
     history:[{t:'Walk 3× a week', m:'Ended · August 2026'}] };
@@ -33,9 +38,29 @@ const A = () => ACTS[S.act];
 const exOf = () => EX[S.ex];
 const agreed = () => S.sessions.length > 0 || S.kept > 0;
 const title = () => !agreed() ? (S.act === 'work' ? exOf()[0] : A().l) : (S.act === 'work' ? `${exOf()[0]} ${S.cadence}× a week` : `${A().verb} ${S.cadence}× a week`);
-const amtTxt = () => !agreed() ? "You'll agree how much and how often together" : (S.act === 'work' ? `${S.amt} ${exOf()[1]}` : `${S.amt} ${A().u}`);
-const sName = s => `${S.act==='work' ? exOf()[0] : A().verb} ${s.n}`;
-const keptTxt = n => `${n} commitment${n === 1 ? '' : 's'} kept`;
+// Before a match only the ACTIVITY exists, and it is editable until a search
+// starts. How much and how often are agreed with the partner, at the first plan.
+const amtTxt = () => {
+  if (agreed()) return S.act === 'work' ? `${S.amt} ${exOf()[1]}` : `${S.amt} ${A().u}`;
+  if (S.partner === 'paired') return "You'll agree how much and how often at your first plan";
+  if (S.searching || S.partner === 'searching' || S.partner === 'pending') return "Locked while you're looking for a match";
+  return 'You can change this until you start searching for a match';
+};
+// Sessions are named by the day they fall on, never by number. "Run 2" only
+// made sense inside the weekly card, and that card is gone.
+const sName = s => `${s.day}'s ${S.act==='work' ? exOf()[0].toLowerCase() : A().noun}`;
+const keptTxt = n => `${n} session${n === 1 ? '' : 's'}`;
+// The streak row: always exactly starget circles. A miss does not add one, and
+// a repair turns a missed circle back to done rather than appending.
+const circleRow = () => {
+  const c = S.circles.slice(0, S.starget);
+  while (c.length < S.starget) c.push('todo');
+  return c;
+};
+const circlesDone = () => circleRow().filter(x => x === 'done').length;
+// target / cadence, shown as an estimate and never stored. Misses and repairs
+// move it, which is exactly why it is not a fact.
+const weeksLeft = () => Math.max(1, Math.ceil((S.starget - circlesDone()) / Math.max(1, S.cadence)));
 const daysLeft = d => 7 - DAYS.indexOf(d);
 const target = () => S.week === 1 ? Math.min(S.cadence, Math.max(1, Math.round(S.cadence * daysLeft(S.matchedOn) / 7))) : S.cadence;
 const weekDone = () => S.sessions.filter(s => s.st === 'done' && !s.repair).length;
@@ -62,12 +87,15 @@ const gyStat = s => ({idle:'Not yet',ready:'Ready',onway:'On the way',here:'Here
 function activeCard(){
   const s = cur(), t = today();
   let partner;
-  if (S.partner === 'none') partner = `<div class="pline">${ic('user',1.8)}<span>Partner: not found yet</span></div><button class="linkq" data-act="go-find">Go to Find ${ic('chev',2)}</button>`;
+  // No "Partner: not found yet" row: the state carries the button instead.
+  if (S.partner === 'none') partner = btn('Find a Match','go-find');
   else if (S.partner === 'searching') partner = `<div class="pline"><span class="sd"><i></i><i></i><i></i></span><span>Partner: searching…</span></div><button class="linkq" data-act="go-find">Go to Find ${ic('chev',2)}</button>`;
   else if (S.partner === 'invited') partner = `<div class="pline">${ic('clock',1.8)}<span>Partner: invited, waiting to join</span></div><button class="linkq" data-act="go-find">Go to Find ${ic('chev',2)}</button>`;
   else if (S.partner === 'pending') partner = `<div class="pline">${ic('clock',1.8)}<span>Gayan · Pending. Waiting for Gayan to accept.</span></div>`;
   else partner = youG();
-  const prog = !agreed() ? '' : S.partner === 'paired' ? `<div class="prog"><div class="pring" style="--p:${Math.round(weekDone()/target()*100)}"><span>${weekDone()}/${target()}</span></div><div><b>${weekDone()} / ${target()} this week</b><small>${S.week===1?`Week 1 runs ${S.matchedOn} to Sunday`:'Monday to Sunday'}</small></div></div>` : `<div class="prog"><div class="pring" style="--p:0"><span>0/${S.cadence}</span></div><div><b>0 / ${S.cadence} this week</b><small>Starts when your partner accepts</small></div></div>`;
+  // The weekly counter is gone. The streak is the only standing number, and
+  // the weekly commitment speaks only when it is owed or when it is kept.
+  const prog = '';
   let action = '';
   if (S.partner === 'paired'){
     const p = S.proposal;
@@ -75,11 +103,15 @@ function activeCard(){
     else if (p && p.type === 'plan' && p.by === 'dd') action = `<div class="notice">${ic('clock',1.8)}<span>Waiting for Gayan to accept <b>${p.mode==='together'?'Together':'Separately, together'} · ${p.day} · ${p.time}</b>. Nothing is planned until they do.</span></div>`;
     else if (p && p.by === 'gy') action = `<div class="notice">${ic('calendar',1.8)}<span>Gayan asked to ${p.type==='move'?`move ${esc(sName(s))} to <b>${p.day} · ${p.time}</b>`:`cancel ${esc(sName(s))}`}.</span></div><div class="btn-2">${btn('Accept','prop-accept')}<button class="btn-o" data-act="prop-decline">${p.type==='move'?'Keep the plan':'Keep it'}</button></div>`;
     else if (p && p.by === 'dd') action = `<div class="notice">${ic('clock',1.8)}<span>Waiting for Gayan to accept your ${p.type==='move'?`move to ${p.day} · ${p.time}`:'cancel'}. If Gayan doesn't answer before the day ends, the original plan stands.</span></div>`;
-    else if (S.missFor === 'gy') action = `<div class="notice">${ic('heart',1.8)}<span>Gayan missed this one. Your streak ended at ${S.broken}.</span></div>${!S.repairUsed?btn('Repair with Gayan','repair-plan'):''}${ghost('Plan the next one','plan-next')}`;
-    else if (S.missFor === 'dd') action = `<div class="notice">${ic('heart',1.8)}<span>You missed ${esc(sName(S.sessions.find(x=>x.you==='missed')||{n:''}))}.</span></div>${btn("Tell Gayan what happened",'',{go:'miss'})}`;
+    // Nothing ended. A session needs both people, so if Gayan missed it did
+    // not happen for either of you and you both owe one against the week.
+    else if (S.missFor === 'gy') action = `<div class="notice">${ic('heart',1.8)}<span>Gayan missed ${esc(sName(S.sessions.find(x=>x.gy==='missed')||{day:'this one'}))}. You both owe one this week.</span></div>${!S.repairUsed?`<div class="btn-2">${btn('Repair this week','repair-plan',{v:'this'})}<button class="btn-o" data-act="repair-plan" data-v="next">Add to next week</button></div>`:ghost('Plan the next one','plan-next')}`;
+    else if (S.missFor === 'dd') action = `<div class="notice">${ic('heart',1.8)}<span>You missed ${esc(sName(S.sessions.find(x=>x.you==='missed')||{day:'this one'}))}.</span></div>${btn("Tell Gayan what happened",'',{go:'miss'})}`;
     else if (t) action = t.you === 'done' ? `<div class="notice ok">${ic('check',2)}<span>You showed up. Waiting for Gayan.</span></div>${ghost('View session','open-sel',S.sessions.indexOf(t))}` : btn("Open today's session",'open-today');
     else if (s) action = btn('View session','open-sel',{v:S.sessions.indexOf(s)});
-    else if (!S.sessions.length) action = `<div class="h-sub">Now let's plan your first ${A().noun}.${S.week===1?` Week 1 has ${target()} session${target()>1?'s':''}.`:''}</div>${btn(`Plan your first ${A().noun}`,'plan-first')}`;
+    // Nothing about the week before the first plan: the cadence is not agreed
+    // yet, so the screen cannot know how many sessions a week holds.
+    else if (!S.sessions.length) action = `<div class="h-sub">Now let's plan your first ${A().noun}.</div>${btn(`Plan your first ${A().noun}`,'plan-first')}`;
     else if (weekDone() >= target()) action = `<div class="notice ok">${ic('fire',1.8)}<span>You kept this week's commitment.</span></div>${btn('Plan the next one','plan-next')}`;
     else action = btn('Plan the next one','plan-next');
   }
@@ -89,7 +121,10 @@ function activeCard(){
     <${tappable?`button class="atap" data-act="open-sel" data-v="${S.sessions.indexOf(s)}"`:'div class="atap"'}><span class="bigic">${ic(A().i,1.8)}</span><span><span class="h-title" style="display:block;">${esc(title())}</span><small class="amt">${agreed()?esc(amtTxt())+' each time':esc(amtTxt())}</small></span>${tappable?ic('chev',2).replace('<svg','<svg class="chev2"'):''}</${tappable?'button':'div'}>
     ${prog}${partner}${action}</div>`;
 }
-function weekCard(){
+// THIS WEEK is cut. A circle carries its own day, so the card was showing the
+// same information twice. Kept as a stub so nothing has to be unwired.
+function weekCard(){ return ''; }
+function weekCardOld(){
   if (S.partner !== 'paired') return '';
   const tg = target(), n = weekDone();
   const nodes = [];
@@ -105,15 +140,22 @@ function weekCard(){
   const copy = n >= tg ? "You kept this week's commitment." : tg - n === 1 ? "1 more to keep this week's commitment." : `${tg - n} commitments still ahead.`;
   return `<div class="wcard"><div class="rc-h">This week</div>${nodes.join('')}<div class="wcopy">${copy}</div></div>`;
 }
+// The streak. Nothing here resets, ever: a miss marks one circle and costs a
+// session against the week, and that is the whole consequence.
 function streakCard(){
   if (S.partner !== 'paired' && !S.matchEnded) return '';
-  const k = S.kept, rep = S.sessions.find(s => s.repair && s.st !== 'done');
-  let line;
-  if (rep) line = `<div class="rel-l">Repair in progress. Finish by ${rep.day} and your ${S.broken} carries on.</div>`;
-  else if (S.broken !== null) line = `<div class="rel-l">Your streak ended at ${S.broken}. One miss doesn't erase what you built. Ready for the next one?</div>`;
-  else line = k ? `<div class="rel-l">You both showed up ${k} time${k===1?'':'s'} in a row.</div>` : `<div class="rel-l">Your first shared commitment is next.</div>`;
-  return `<div class="relc"><div class="hwrap st${stageOf(k)}"><div class="glow"></div><div class="rings"><i></i><i></i></div>${heartSvg(true, S.partner==='paired')}</div>
-    <div class="rel-k">${ic('fire',1.8)}${S.broken!==null && !rep ? keptTxt(0) : keptTxt(rep ? S.broken : k)}</div>${line}<div class="stg">${STAGES.map(m => `<i class="${k>=m?'on':''}"></i>`).join('')}</div></div>`;
+  const row = circleRow(), done = circlesDone();
+  const dots = row.map(x => `<i class="cdot ${x}"></i>`).join('');
+  const complete = done >= S.starget;
+  const est = complete ? '' : `<div class="rel-l">About ${weeksLeft()} more week${weeksLeft()===1?'':'s'} at ${S.cadence}\u00d7 a week.</div>`;
+  const owed = S.owed && !complete
+    ? `<div class="rel-l owe">You owe ${S.owed} session${S.owed===1?'':'s'} this week.</div>` : '';
+  return `<div class="relc"><div class="rel-k">${ic('fire',1.8)}${done} of ${S.starget}</div>
+    <div class="crow">${dots}</div>
+    ${complete ? `<div class="rel-l"><b>Streak complete.</b> Ready for the next one?</div>${btn('Extend your streak','streak-extend')}` : est + owed}
+    <div class="hwrap st${stageOf(S.kept)}" style="margin-top:14px;"><div class="glow"></div><div class="rings"><i></i><i></i></div>${heartSvg(true, S.partner==='paired')}</div>
+    <div class="rel-h">${S.kept} together with Gayan</div>
+    <div class="rel-l">${S.kept ? `You've both shown up ${S.kept} time${S.kept===1?'':'s'}.` : 'Your first session together is next.'}</div></div>`;
 }
 function historyCard(){
   return `<div class="hist"><div class="rc-h">History</div>${S.history.length ? S.history.map(h => `<div class="hrow2"><span>${esc(h.t)}</span><small>${esc(h.m)}</small></div>`).join('') : '<div class="tl-e">Nothing finished yet.</div>'}</div>`;
@@ -121,7 +163,9 @@ function historyCard(){
 const SC = {};
 SC.tab = { bar:() => appBar(), nav:() => navBar('tab'), body:() => {
   const head = `<div class="p-h1" style="margin-bottom:2px;">Challenges</div>${S.has && agreed() ? `<div class="p-sub">What you've committed to.</div>` : ''}`;
-  if (!S.has) return `${head}<div class="hero acard"><div class="h-eb">Start something together</div><div class="h-title">Pick what you want to do with your partner.</div>${btn("Let's do this",'new-open')}</div>${historyCard()}`;
+  // Ending a challenge does not end the match, so the empty state still shows
+  // who you are partnered with.
+  if (!S.has) return `${head}<div class="hero acard"><div class="h-eb">Start something together</div><div class="h-title">Pick what you want to do with your partner.</div>${S.partner === 'paired' ? youG() : ''}${btn("Let's do this",'new-open')}</div>${historyCard()}`;
   return `${head}${activeCard()}${weekCard()}${streakCard()}${historyCard()}`; } };
 
 /* ---------- Session details ---------- */
@@ -135,7 +179,7 @@ SC.details = { bar:() => '', nav:() => navBar('tab'), body:() => {
   else if (s.st === 'cancelled') action = `<div class="notice">${ic('x',2)}<span>Cancelled by both. No change to your streak.</span></div>`;
   else action = `<div class="notice">${ic('calendar',1.8)}<span>Upcoming. On the day, this becomes "Open today's session".</span></div>`;
   const partnerActs = isToday ? `${s.gy !== 'done' && s.gy !== 'here' ? `<button class="lrow" data-act="nudge">${ic('bolt',1.8)}<span class="lt">Nudge Gayan<small>${S.nudged?'You nudged Gayan today.':'A gentle push, once a day'}</small></span></button>` : ''}${s.you !== 'done' ? `<button class="lrow" data-act="late-open">${ic('clock',1.8)}<span class="lt">Running late?<small>${S.late?`Gayan sees: "${esc(S.late)}"`:'Tell Gayan'}</small></span></button>` : ''}` : '';
-  return `${hdr(sName(s), true)}${S.menu?`<div class="ov-menu" style="right:22px;top:118px;"><button class="ov-item danger" data-act="end-open">${ic('x',2)}End this challenge</button></div>`:''}
+  return `${hdr(sName(s), true)}${S.menu?`<div class="ov-menu" style="right:22px;top:118px;"><button class="ov-item" data-act="endmatch-open">${ic('user',2)}End this match</button><button class="ov-item danger" data-act="end-open">${ic('x',2)}End this challenge</button></div>`:''}
     <div class="hero">${s.repair?'<div class="h-eb">Repair session</div>':''}<div class="h-title"><span class="bigic sm">${ic(A().i,1.8)}</span><span>${esc(amtTxt())}</span></div>
     <div class="h-when">${s.day} · ${s.time}</div>${s.moved?`<div class="h-sub" style="margin:0;">Rescheduled: ${s.moved} → ${s.day}</div>`:''}
     ${s.mode==='together'?hrow('pin',esc(s.place)):hrow('separate','Separately, together')}${hrow(s.mode==='together'?'together':'separate', s.mode==='together'?'Mode: Together':'Mode: Separately, together')}
@@ -194,7 +238,7 @@ SC.done = { bar:() => '', nav:() => navBar('tab'), onEnter:() => { S.planKind = 
   const weekKept = weekDone() >= target(), d = S.pd;
   return `<div class="center" style="padding-top:6px;"><div class="hwrap st${stageOf(S.kept)} beat" style="height:150px;"><div class="glow"></div><div class="rings"><i></i><i></i></div>${heartSvg(true,true)}</div>
     <div class="p-h1" style="margin-bottom:4px;">You both <b>showed up.</b></div><div class="rel-k" style="justify-content:center;">${ic('fire',1.8)}${keptTxt(S.kept)}</div>
-    ${weekKept?`<div class="notice ok" style="margin-top:10px;">${ic('check',2)}<span>You kept this week's commitment. Next week starts Monday.</span></div>`:`<div class="hint">${weekDone()} / ${target()} this week</div>`}</div>
+    ${weekKept?`<div class="notice ok" style="margin-top:10px;">${ic('check',2)}<span>You kept this week's commitment. Next week starts Monday.</span></div>`:`<div class="hint">${circlesDone()} of ${S.starget} on your streak</div>`}</div>
     <div class="hero" style="margin-top:14px;"><div class="h-eb">Plan the next one</div>
       ${S.canMeet ? `<div class="pill-row">${['together','separate'].map(m => `<button class="pill ${d.mode===m?'on':''}" data-act="pd-mode" data-v="${m}">${m==='together'?'Together':'Separately'}</button>`).join('')}</div>` : `<div class="pline">${ic('separate',1.8)}<span>Separately, together</span></div>`}
       <div class="sel-wrap"><select id="pd-day" aria-label="Day">${DAYS.map(x => `<option ${x===d.day?'selected':''}>${x}</option>`).join('')}</select></div>
@@ -210,7 +254,7 @@ SC.miss = { bar:() => '', nav:() => navBar('tab'), body:() => {
   if (S.missRecorded) return `${hdr('Recorded')}<div class="hero"><div class="h-eb">Thanks for telling us</div><div class="h-sub" style="color:var(--pink);font-size:14px;margin:0;">Your streak ended at ${S.broken}. One miss doesn't erase what you built.</div>${youG()}</div>
     <div class="notice">${ic('chat',1.8)}<span>Gayan sees: "Dinesh missed this one. Your streak ended at ${S.broken}. Ready for the next one?"</span></div>
     ${!S.repairUsed?`${btn('Repair with Gayan','repair-plan')}<div class="hint center" style="margin:-4px 0 6px;">One extra session within 3 days. If you both finish it, your ${S.broken} carries on.</div>`:''}${ghost('Plan the next one','plan-next')}`;
-  return `${hdr('What happened?')}<div class="p-sub">You missed ${s?esc(sName(s))+', '+s.day:'this session'}. It happens to everyone. What matters is that you keep showing up.</div>
+  return `${hdr('What happened?')}<div class="p-sub">You missed ${s?esc(sName(s)):'this session'}. It happens to everyone. What matters is that you keep showing up.</div>
     <div class="pill-row" style="margin-bottom:14px;">${REASONS.map(([i,t]) => `<button class="pill ${S.reason===t?'on':''}" data-act="reason" data-v="${esc(t)}">${t}</button>`).join('')}</div>
     <input class="txt" id="miss-line" placeholder="Add a line (optional)" value="${esc(S.reasonText)}" aria-label="Optional line">
     <div class="foot">${btn('Record','miss-record',{dis:!S.reason})}</div>`; } };
@@ -242,11 +286,28 @@ function qrSvg(){
   const f = (x, y) => `<path fill="#001827" fill-rule="evenodd" d="M${x} ${y}h7v7h-7zM${x+1} ${y+1}v5h5v-5z"/><rect x="${x+2}" y="${y+2}" width="3" height="3" fill="#001827"/>`;
   return `<svg viewBox="0 0 ${N} ${N}" shape-rendering="crispEdges" aria-label="Session QR code"><rect width="${N}" height="${N}" fill="#fff"/><path fill="#001827" d="${d}"/>${f(0,0)}${f(N-7,0)}${f(0,N-7)}</svg>`;
 }
+const END_REASONS = [
+  ['no_time_worked', "We couldn't find a time that worked"],
+  ['stopped_replying', 'They stopped replying'],
+  ['pace_mismatch', "Our pace or level didn't match"],
+  ['changing_what_i_do', "I'm changing what I'm doing"],
+  ['something_felt_off', 'Something felt off'],
+  ['prefer_not_to_say', 'Prefer not to say']
+];
+function endMatchSheet(){
+  const off = S.endReason === 'something_felt_off';
+  return `<div class="sheet2-handle"></div><div class="p-h1" style="font-size:20px;">End your match with <b>Gayan?</b></div>
+    <div class="p-sub">Your challenge and your streak both continue.</div>
+    ${END_REASONS.map(r => `<button class="choice mini ${S.endReason===r[0]?'on':''}" data-act="end-reason" data-v="${r[0]}"><div><div class="t">${r[1]}</div></div></button>`).join('')}
+    <div class="hint">Gayan won't see your reason. He'll just see that the match has ended.</div>
+    <div style="margin-top:14px;">${btn(off?'Continue to report':'End match','endmatch-send',{dis:!S.endReason})}${ghost('Keep going','sheet-close')}</div>`;
+}
 function sheetHTML(){
-  if (S.sheet === 'end') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">End this <b>challenge?</b></div><div class="p-sub">It moves to History as Ended and your streak stops. Gayan sees "This challenge has ended." To change activity or how often, end it and start a new one.</div><button class="btn" data-act="end-confirm" style="background:#C0392B;box-shadow:none;">End challenge</button><button class="btn-g" data-act="sheet-close">Keep going</button></div></div>`;
-  if (S.sheet === 'cancel') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">Cancel this <b>session?</b></div><div class="p-sub">Gayan needs to agree. If you both cancel, it's recorded as cancelled and your streak doesn't change.</div><button class="btn" data-act="cancel-send">Ask Gayan to cancel</button><button class="btn-g" data-act="sheet-close">Keep it</button></div></div>`;
-  if (S.sheet === 'cant') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">Can't make it <b>today?</b></div><div class="p-sub">Move it if Gayan agrees, or skip it. Skipping ends your streak unless you repair it.</div><button class="btn" data-act="move-open">Ask Gayan to move it</button><button class="btn-o" data-act="skip" style="margin-top:8px;">Skip this one</button><button class="btn-g" data-act="sheet-close">Back</button></div></div>`;
+  if (S.sheet === 'end') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">End this <b>challenge?</b></div><div class="p-sub">Your streak ends here, at ${circlesDone()} of ${S.starget}. It'll be saved to your history.<br><b>Gayan stays your partner.</b></div><button class="btn" data-act="end-confirm" style="background:#C0392B;box-shadow:none;">End challenge</button><button class="btn-g" data-act="sheet-close">Keep going</button></div></div>`;
+  if (S.sheet === 'cancel') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">Cancel this <b>session?</b></div><div class="p-sub">Gayan needs to agree. A cancelled session costs you nothing: no circle, and the week's slot is free again.</div><button class="btn" data-act="cancel-send">Ask Gayan to cancel</button><button class="btn-g" data-act="sheet-close">Keep it</button></div></div>`;
+  if (S.sheet === 'cant') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">Can't make it <b>today?</b></div><div class="p-sub">Move it if Gayan agrees, or skip it. Skipping costs you the circle and one session against this week, nothing more.</div><button class="btn" data-act="move-open">Ask Gayan to move it</button><button class="btn-o" data-act="skip" style="margin-top:8px;">Skip this one</button><button class="btn-g" data-act="sheet-close">Back</button></div></div>`;
   if (S.sheet === 'late') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">Tell <b>Gayan</b></div>${["Running late, doing it tonight","Running 10 minutes late","On my way, give me a bit"].map(t => `<button class="choice mini" data-act="late-send" data-v="${esc(t)}"><div class="t">${t}</div></button>`).join('')}<button class="btn-g" data-act="sheet-close">Cancel</button></div></div>`;
+  if (S.sheet === 'endmatch') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop">${endMatchSheet()}</div></div>`;
   if (S.sheet === 'report') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">What's <b>going on?</b></div><div class="p-sub">Same report sheet as Find. It also ends the match; your challenge continues.</div><div class="pill-row" style="margin-bottom:14px;">${["Didn't show up","Made me uncomfortable","Safety concern at a meetup","Fake profile","Something else"].map(c => `<button class="pill ${S.repCat===c?'on':''}" data-act="rep-cat" data-v="${esc(c)}">${c}</button>`).join('')}</div><button class="btn" data-act="rep-send" ${S.repCat?'':'disabled'}>Submit report</button><button class="btn-g" data-act="sheet-close">Cancel</button></div></div>`;
   return '';
 }
@@ -282,7 +343,15 @@ function acceptProposal(){
   const p = S.proposal; S.proposal = null;
   if (p.type === 'plan'){
     S.pd = { mode:p.mode, day:p.day, time:p.time, place:p.place };
-    if (p.kind === 'repair'){ S.repairUsed = true; newSession('repair'); }
+    // A repair fills the circle that was missed rather than adding a
+    // thirteenth, so the row stays at starget.
+    if (p.kind === 'repair'){
+      S.repairUsed = true;
+      const i = S.circles.indexOf('missed');
+      if (i >= 0) S.circles[i] = 'done';
+      S.owed = Math.max(0, S.owed - 1);
+      newSession('repair');
+    }
     else { if (S.cur === 'done' && weekDone() >= target()){ S.week++; S.sessions = []; } newSession('plan'); }
     S.dlg = { t:"You're in", m:`You've got something to show up for together. ${p.mode==='together'?'Together':'Separately, together'} · ${p.day} · ${p.time}.` };
     return;
@@ -308,8 +377,9 @@ const PRESETS = [
   PR('searching','Before a partner','Searching', () => base({ partner:'searching', kept:0 })),
   PR('invited','Before a partner','Invite sent, waiting', () => base({ partner:'invited', kept:0 })),
   PR('pending','Before a partner','Waiting for Gayan to accept', () => base({ partner:'pending', kept:0 })),
-  PR('matched','Week 1','Matched Friday, plan first', () => base({ week:1, matchedOn:'Friday', kept:0 })),
-  PR('matchedmon','Week 1','Matched Monday, plan first', () => base({ week:1, matchedOn:'Monday', kept:0 })),
+  // A brand new pair: nothing agreed, nothing on the streak yet.
+  PR('matched','Week 1','Matched Friday, plan first', () => base({ week:1, matchedOn:'Friday', kept:0, circles:[] })),
+  PR('matchedmon','Week 1','Matched Monday, plan first', () => base({ week:1, matchedOn:'Monday', kept:0, circles:[] })),
   PR('planned','Sessions','Planned, upcoming', () => base({ sessions:[sess(1,'Saturday')] })),
   PR('today-tg','Sessions','Today, together', () => base({ sessions:[sess(1,'Saturday',{st:'today'})] })),
   PR('today-sep','Sessions','Today, separately', () => base({ sessions:[sess(1,'Saturday',{st:'today',mode:'separate',gy:'done'})] })),
@@ -320,11 +390,16 @@ const PRESETS = [
   PR('youcancel','Changes','You asked to cancel', () => base({ sessions:[sess(2,'Saturday')], proposal:{type:'cancel',by:'dd'} })),
   PR('moved','Changes','Moved and agreed', () => base({ sessions:[sess(1,'Tuesday',{st:'done',you:'done',gy:'done'}), sess(2,'Sunday',{moved:'Saturday'})] })),
   PR('cancelled','Changes','Cancelled by both', () => base({ sessions:[sess(1,'Tuesday',{st:'cancelled'})] })),
-  PR('youmiss','Misses','You missed (record it)', () => { base({ sessions:[sess(1,'Saturday',{st:'missed',you:'missed',gy:'done'})], kept:0, broken:6, missFor:'dd' }); S.cur = 'miss'; }),
-  PR('gymiss','Misses','Gayan missed', () => base({ sessions:[sess(1,'Saturday',{st:'missed',you:'done',gy:'missed'})], kept:0, broken:6, missFor:'gy' })),
-  PR('repair','Misses','Repair planned', () => base({ sessions:[sess(1,'Saturday',{st:'missed',you:'done',gy:'missed'}), sess(0,'Tuesday',{repair:true})], kept:0, broken:6 })),
-  PR('ended','Endings','Match ended (report/block)', () => base({ partner:'none', matchEnded:true, kept:0 })),
-  PR('ch-ended','Endings','Challenge ended', () => base({ has:false, partner:'none', kept:0, history:[{t:'Run 2× a week', m:'Ended · September 2026'},{t:'Walk 3× a week', m:'Ended · August 2026'}] }))
+  // A miss marks one circle and leaves a session owed against the week.
+  // Nothing resets: the streak still reads 6 of 12.
+  PR('youmiss','Misses','You missed (record it)', () => { base({ sessions:[sess(1,'Saturday',{st:'missed',you:'missed',gy:'done'})], missFor:'dd', circles:['done','done','done','done','done','done','missed'], owed:1 }); S.cur = 'miss'; }),
+  PR('gymiss','Misses','Gayan missed', () => base({ sessions:[sess(1,'Saturday',{st:'missed',you:'done',gy:'missed'})], missFor:'gy', circles:['done','done','done','done','done','done','missed'], owed:1 })),
+  PR('repair','Misses','Repair planned', () => base({ sessions:[sess(1,'Saturday',{st:'missed',you:'done',gy:'missed'}), sess(0,'Tuesday',{repair:true})], circles:['done','done','done','done','done','done','missed'], owed:1, repairUsed:true })),
+  // The match ended, the challenge and the streak both carry on untouched.
+  PR('ended','Endings','Match ended', () => base({ partner:'none', matchEnded:true })),
+  // The challenge ended, the PARTNER did not. Still You + Gayan.
+  PR('ch-ended','Endings','Challenge ended', () => base({ has:false, circles:[], history:[{t:'Run 2× a week', m:'Ended · 7 of 12 · September 2026'},{t:'Walk 3× a week', m:'Ended · August 2026'}] })),
+  PR('complete','Endings','Streak complete', () => base({ circles:Array(12).fill('done'), kept:12 }))
 ];
 const GROUPS = []; PRESETS.forEach(p => { let g = GROUPS.find(x => x[0] === p.group); if (!g) GROUPS.push(g = [p.group, []]); g[1].push(p); });
 let presetOn = 'planned';
@@ -332,7 +407,7 @@ function applyPreset(id){ const p = PRESETS.find(x => x.id === id); presetOn = i
 
 /* ---------- notes ---------- */
 const NOTES = {
-  tab:['Challenges: the home of commitments','Your commitment, This week, the shared streak, History. Nothing else: no partner search, no Pulse, no Community.',['A planned session appears only after BOTH agree. Until then the card shows either Waiting for Gayan to accept, or the counter with Accept / Suggest another','Pair can meet (above the phone) is set in Find before the match, not here. No hides every meet-up affordance across this tab','Nothing shows a weekly count until the pair has agreed one: before that the card reads just "Running"','Active card is tappable when a session exists (opens Session Details)','Partner status only. The one action without a partner is "Go to Find"','Weekly progress is x / target, Monday to Sunday; week 1 is scaled to the days left','History rows are finished challenges, not tappable','Streak = commitments both partners completed']],
+  tab:['Challenges: the home of commitments','Your commitment, the streak, History. Nothing else: no partner search, no Pulse, no Community.',['REBUILT 29 September. THIS WEEK is gone and so is the weekly counter: a circle carries its own day, so the card was showing the same thing twice','THE STREAK IS THE ONLY STANDING NUMBER. The weekly commitment speaks twice and is otherwise silent: "You owe one session this week" when behind, "You kept this week's commitment" when met','A CIRCLE IS A SESSION. Solid orange = done. Dashed outline = planned, the day passed, not done. Plain = ahead, unplanned','NOTHING RESETS. A miss costs the circle and one session owed against the week. Repair fills the MISSED circle rather than adding a thirteenth, so the row never grows','A circle fills only when BOTH people finish. Showing up alone earns nothing','Personal in ownership, shared in earning: it is your 12, and Gayan keeps his own','Ending a CHALLENGE ends the streak and saves it to History; it does NOT end the match','Ending a MATCH leaves the challenge and the streak untouched','Before a match only the ACTIVITY exists and it is editable until a search starts. How much and how often are agreed at the first plan','Sessions are named by their day, never by number','A planned session appears only after BOTH agree','Active card is tappable when a session exists (opens Session Details)','History rows are finished challenges, not tappable']],
   details:['Session Details','The only details screen. Everything about one session, and the partner actions tied to it.',['Day, time, place, mode, You and Gayan status','DECIDED 27 September: the why is PRIVATE. The card that used to sit here, showing the partner why, has been REMOVED. Nobody reads anyone else answers; they come back only to the person who wrote them, from Profile','Nudge Gayan and Running late? live here only (on the day)','Move and Cancel both need Gayan to agree','Report a problem (meetups only) opens the same sheet as Find','··· menu: End this challenge (either person)']],
   plan:['Plan a session','A PROPOSAL, not a fact. One session at a time: first, next, repair (within 3 days) or move.',['DECIDED 28 September: mode rides in the proposal with day, time and place. Whoever plans first proposes the whole session; the other accepts or suggests another. There is no separate mode-conflict state, because only one person is ever setting the value','Asked on EVERY plan, not agreed once, so a rainy or travel week can be done separately without touching the match','If the responder counters with Separately, that is what happens: you cannot make someone turn up. Together needs both, Separately can always be delivered by one','Use "Gayan: suggests another" above the phone to see the counter come back','DECIDED 28 September: How will you do it is asked FIRST in the Find form, before matching, as a hard filter (In person / Separately / Either). This screen no longer asks it for the first time',
     'Use the Pair can meet control above the phone. No means one of them chose Separately in Find: the mode becomes a plain statement, no place is asked, and the day-of flow drops the QR step, because there is nothing to confirm being together for',
@@ -387,9 +462,36 @@ function act(a, v){
       S.counterFrom = { mode:p.mode, day:p.day, time:p.time, place:p.place }; go('plan'); return; }
     case 'prop-decline': S.proposal = null; S.dlg = { t:'Plan kept', m:'The original plan stands.' }; break;
     case 'cancel-open': S.sheet = 'cancel'; break;
-    case 'cancel-send': S.sheet = null; S.proposal = { type:'cancel', by:'dd' }; S.hist = []; S.cur = 'tab'; break;
+    // Cancelling cannot be taken back, so it says so before it is sent. The
+    // timeout rule goes here too, which is where it actually matters.
+    case 'cancel-send': {
+      const s = cur();
+      S.sheet = null;
+      S.proposal = { type:'cancel', by:'dd' };
+      S.hist = []; S.cur = 'tab';
+      S.dlg = { t:`Cancel ${s ? sName(s) : 'this session'}?`,
+                m:"You can't undo this. Gayan has until the end of today to accept. If he doesn't answer, the plan stands." };
+      break; }
     case 'end-open': S.menu = false; S.sheet = 'end'; break;
-    case 'end-confirm': S.history.unshift({ t:title(), m:'Ended · September 2026' }); Object.assign(S, { has:false, partner:'none', sessions:[], kept:0, broken:null, proposal:null, missFor:null, sheet:null }); S.hist = []; S.cur = 'tab'; break;
+    // Ending a challenge ends the STREAK, which goes to history, but it does
+    // NOT end the match: Gayan is still your partner on the next activity.
+    case 'end-confirm': {
+      const done = circlesDone();
+      S.history.unshift({ t:title(), m:`Ended \u00b7 ${done} of ${S.starget} \u00b7 September 2026` });
+      Object.assign(S, { has:false, sessions:[], circles:[], owed:0, broken:null,
+                         proposal:null, missFor:null, sheet:null, repairUsed:false });
+      S.hist = []; S.cur = 'tab';
+      break; }
+    // A neutral way out, separate from block and report. The reason is private:
+    // Gayan is told only that the match ended.
+    case 'endmatch-open': S.menu = false; S.sheet = 'endmatch'; S.endReason = null; break;
+    case 'end-reason': S.endReason = v; break;
+    case 'endmatch-send': {
+      if (S.endReason === 'something_felt_off'){ S.sheet = 'report'; S.repCat = null; break; }
+      S.sheet = null; S.matchEnded = true; S.partner = 'none'; S.proposal = null;
+      S.dlg = { t:'This match has ended.', m:'Your challenge continues, and your streak is untouched. You can look for a new partner anytime.' };
+      break; }
+    case 'streak-extend': S.starget += 10; S.dlg = { t:'Streak extended', m:`Going for ${S.starget} sessions now.` }; break;
     case 'sheet-close': S.sheet = null; break;
     case 'nudge': S.nudged = true; S.dlg = { t:'Nudged', m:'Gayan gets a gentle push.' }; break;
     case 'late-open': S.sheet = 'late'; break;
