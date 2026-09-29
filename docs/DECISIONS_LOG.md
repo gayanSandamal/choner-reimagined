@@ -1205,3 +1205,28 @@ somewhere else, and it shows the FULL list rather than a preview. The list is
 never empty: it shows everyone registered on the app, with their location.
 Each person gets their own slightly larger card. The current cards touch each
 other; they must be separate.
+
+### Corrected, part 1 continued
+
+EDITABLE COMMITMENT, NARROWED. The earlier answer (activity + how much + how
+often, all editable) was withdrawn once it was pointed out that it contradicts
+"You'll agree how much and how often together", the promise that deleted the
+onboarding target screen in the first place.
+
+DECIDED: ONLY THE ACTIVITY is editable, and only the activity is shown on the
+card. Everything else is agreed after a match. The line on the card reads:
+  "You can change this until you start searching for a match"
+
+ALREADY ON THE MOVE, NO LOCATION. Location is dropped from the directory
+cards: the other details stay (name, avatar, activity, the commitment they
+made). Everyone registered is shown BY DEFAULT, and the reason matters - a new
+user opening Find has to see that the app is alive. That reverses the
+`show_in_directory` opt-in, which defaulted to false, but without location
+attached the exposure is a first name and an activity rather than a way to find
+someone in person.
+
+STREAK, QUESTION 1 ANSWERED. A CIRCLE IS A SESSION, labelled with its day of
+the week. The focus is the session, not the day. So the streak is not a
+calendar after all: it fills when a session happens, which is much closer to
+the original "commitments both partners kept" than to the plain day count the
+first answer described.
