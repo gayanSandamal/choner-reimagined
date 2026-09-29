@@ -1097,3 +1097,97 @@ column verified against the migration history. One real bug was caught that
 way - uc.template_id was renamed to challenge_template_id in 202603261600:27,
 so the first draft of the invite-prefix function would not have compiled. They
 need supabase db reset against a local stack before they go near anything real.
+
+---
+
+## 2026-09-29 (Challenges review, part 1) - Locked
+
+Walking the Challenges prototype, group 1 of 7. Everything below is DECIDED and
+waiting to be built into the prototypes. Nothing is built yet.
+
+### Pending, and a third state on the Find match screen
+The `pending` state (you accepted, they have not) offered no action at all.
+DECIDED: it routes to the Find tab's match screen rather than growing a screen
+of its own. That screen needs a THIRD state it does not have: it currently
+shows "Let's do this" / "Not quite right", a decision already made by the time
+anyone reaches pending. The third state shows the match, a waiting indicator
+and one ghost action to withdraw.
+TO BUILD: after the whole review is walked, not now.
+
+### Expiry, both kinds
+UNANSWERED MATCH EXPIRES IN 24 HOURS. Visible to BOTH partners, as a live
+countdown of the actual time remaining, not a static sentence.
+UNUSED INVITE CODE EXPIRES IN 48 HOURS. Visible to both parties. The person who
+RECEIVES the code sees a short line saying it expires in 48 hours.
+This closes master spec open item 2 ("does an unused invite code expire?").
+
+### Ending a match is now its own thing
+Today the only ways to end a match are `block_partner` and `report_partner`,
+both safety actions. Someone who just wants out has to treat their partner as a
+safety problem.
+DECIDED: ending a challenge does NOT end the match. A separate End match action
+asks for a reason. Six reasons, plain labels, no descriptions, matching the
+style already set for REPORT_CATEGORIES:
+
+  1  We couldn't find a time that worked
+  2  They stopped replying
+  3  Our pace or level didn't match
+  4  I'm changing what I'm doing
+  5  Something felt off
+  6  Prefer not to say
+
+1 and 2 are the two ways an accountability pair actually dies. 3 feeds matching
+directly. 4 is a no-blame exit. 6 must exist, because forcing a reason out of
+someone leaving because they felt unsafe is how you stop them leaving. 5 is the
+safety door and it sits IN the list, not as a link below it: someone scanning
+for "the unsafe one" who cannot find it picks "Prefer not to say" instead, and
+the signal that matters most is the one you lose. Selecting 5 changes the
+button from "End match" to "Continue to report" and hands off to the existing
+report/block flow, so nobody is ambushed.
+
+Kept SEPARATE from REPORT_CATEGORIES. Report answers what was wrong with the
+person; this answers why the pairing did not work. Note "They stopped replying"
+here against "Didn't show up" there: going quiet in the app is not a no-show at
+a physical meetup.
+
+The reason is private. One line under the list:
+  "Gayan won't see your reason. He'll just see that the match has ended."
+This mirrors blockConfirmCopy, and keeps one promise across both flows: the
+other person is never told why.
+
+### Copy
+  radar, top             "Looking..."              -> "Searching"
+  radar, no result yet   "No luck yet. You can close the app, we'll notify you
+                          the moment we find someone."
+                         -> "Stay tuned, we'll notify you the moment we find a
+                            match."
+  after tapping Find     "Looking"                 -> "Searching"
+  Find tab link          "See who else is there"   -> "Already on the move"
+
+### The directory moves onto the Find landing screen
+The list of people already doing something shows ON the Find screen when it
+loads, directly under the Searching circle, with the commitment each one made.
+Data already exists: `get_active_directory()` (202609231500) returns first
+name, avatar, activity and commitment value, gated by the `show_in_directory`
+opt-in on profiles.
+
+### The commitment becomes editable, until a search starts
+A commitment could not be changed after it was created. DECIDED:
+  - editable BEFORE a search starts
+  - the "Let's make it happen" card becomes tappable and shows the commitment
+    details on the card
+  - once a search has started, editing is disabled on BOTH tabs, Find and
+    Challenges
+  - "Go to Find" on that card becomes a standard button reading "Find a Match"
+  - the "Partner: not found yet" text row is REMOVED; that state carries the
+    standard "Find a Match" button instead
+
+### STREAK, redefined
+Flagged as a reversal, see the open questions below. As stated:
+  - the user CHOOSES how many days of streak they start with
+  - the streak is a constant
+  - partners can change during a streak
+  - at the end of a streak there is an "extend streak" option
+  - the streak counts DAYS, not daily commitments
+  - visual: plain circles. Orange for completed days, empty for future days.
+    Nothing fancier.
