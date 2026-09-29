@@ -211,7 +211,7 @@ def('welcome', { ph:'L2', group:'Launch', label:'Welcome', flush:true, bar:() =>
     <button class="btn-o brand" data-go="signup">Create an account</button>
     <button class="btn-g" data-go="invitecode">I have an invite code</button></div></div>`,
   note:N('Brand name, three ways in', 'The wordmark only. The logo image and the tagline moved to the onboarding intro, so Welcome carries just the name and the three ways in.',
-    ['app/(auth)/welcome.tsx','Sign in is the filled orange button, "Create an account" the orange-outlined one, "I have an invite code" a ghost button. Same size, height and corner radius as every other primary button in the app','The button says "Create an account", the same words used everywhere else the account is made','No legal line here: it now sits at the bottom of Sign in and Create account, where the agreement is actually made'], null) });
+    ['app/(auth)/welcome.tsx','Sign in is the filled orange button, "Create an account" the orange-outlined one, "I have an invite code" a ghost button. Same size, height and corner radius as every other primary button in the app','The button says "Create an account", the same words used everywhere else the account is made','No legal line here, and none on Sign in either. Decided 29 September: the tick box on Create an account is the only place the agreement appears, because it is the only thing that records consent'], null) });
 
 /* ===== Account ===== */
 def('signin', { ph:'A1', group:'Account', label:'Sign in', bar:() => authBar('Log in'), nav:() => '',
