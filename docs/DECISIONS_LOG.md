@@ -1405,3 +1405,43 @@ Proposed copy, which also puts the timeout rule where it matters:
   Cancel Saturday's run?
   You can't undo this. Gayan has until the end of today to accept.
   If he doesn't answer, the plan stands.
+
+---
+
+## 2026-09-29 (Challenges review, part 5) - Misses, and the repair model
+
+### The streak: personal in ownership, shared in earning
+"It's a shared streak" read against the part-1 lock that the streak is
+personal. Reconciled, and confirmed:
+  PERSONAL IN OWNERSHIP  it is YOUR 12. It survives Gayan leaving, and he
+                         keeps his own.
+  SHARED IN EARNING      a circle only fills when BOTH of you complete the
+                         session. You cannot advance it alone.
+Both true at once. Showing up alone earns nothing - already the product, since
+there is no solo mode, but it is the sharpest edge in the model.
+
+### Repair comes back, because a miss now costs a slot
+The first pass deleted repair on the grounds that nothing resets, so there was
+nothing to recover. Corrected: the WEEKLY COMMITMENT still bites. Miss a
+session and you owe one against that week.
+
+  repair this week   plan another before Sunday, still finish the week at 2
+  repair next week   next week becomes 3x instead of 2x
+
+Rules agreed:
+  - ONE REPAIR PER WEEK, MAXIMUM. A second miss is simply lost: circle
+    unfilled, no debt carried.
+  - An unpaid "this week" repair ROLLS INTO NEXT WEEK automatically, so the
+    choice is a preference rather than a trap.
+  - If GAYAN misses, you BOTH owe one. A session needs both people, so it did
+    not happen for either of you.
+  - Repair is NOT a separate mechanic. It is choosing when to plan the
+    make-up, after which the ordinary plan flow runs and Gayan accepts like
+    any other session.
+
+### The weekly commitment speaks only when it has something to say
+Keeping the streak as the only permanent number stands. The weekly commitment
+surfaces in two moments and is otherwise silent:
+  behind    "You owe one session this week", with the repair choice
+  complete  "You kept this week's commitment. Plan the next one."
+Same rule in both directions.
