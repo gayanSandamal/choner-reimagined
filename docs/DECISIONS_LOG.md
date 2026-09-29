@@ -1097,3 +1097,445 @@ column verified against the migration history. One real bug was caught that
 way - uc.template_id was renamed to challenge_template_id in 202603261600:27,
 so the first draft of the invite-prefix function would not have compiled. They
 need supabase db reset against a local stack before they go near anything real.
+
+---
+
+## 2026-09-29 (Challenges review, part 1) - Locked
+
+Walking the Challenges prototype, group 1 of 7. Everything below is DECIDED and
+waiting to be built into the prototypes. Nothing is built yet.
+
+### Pending, and a third state on the Find match screen
+The `pending` state (you accepted, they have not) offered no action at all.
+DECIDED: it routes to the Find tab's match screen rather than growing a screen
+of its own. That screen needs a THIRD state it does not have: it currently
+shows "Let's do this" / "Not quite right", a decision already made by the time
+anyone reaches pending. The third state shows the match, a waiting indicator
+and one ghost action to withdraw.
+TO BUILD: after the whole review is walked, not now.
+
+### Expiry, both kinds
+UNANSWERED MATCH EXPIRES IN 24 HOURS. Visible to BOTH partners, as a live
+countdown of the actual time remaining, not a static sentence.
+UNUSED INVITE CODE EXPIRES IN 48 HOURS. Visible to both parties. The person who
+RECEIVES the code sees a short line saying it expires in 48 hours.
+This closes master spec open item 2 ("does an unused invite code expire?").
+
+### Ending a match is now its own thing
+Today the only ways to end a match are `block_partner` and `report_partner`,
+both safety actions. Someone who just wants out has to treat their partner as a
+safety problem.
+DECIDED: ending a challenge does NOT end the match. A separate End match action
+asks for a reason. Six reasons, plain labels, no descriptions, matching the
+style already set for REPORT_CATEGORIES:
+
+  1  We couldn't find a time that worked
+  2  They stopped replying
+  3  Our pace or level didn't match
+  4  I'm changing what I'm doing
+  5  Something felt off
+  6  Prefer not to say
+
+1 and 2 are the two ways an accountability pair actually dies. 3 feeds matching
+directly. 4 is a no-blame exit. 6 must exist, because forcing a reason out of
+someone leaving because they felt unsafe is how you stop them leaving. 5 is the
+safety door and it sits IN the list, not as a link below it: someone scanning
+for "the unsafe one" who cannot find it picks "Prefer not to say" instead, and
+the signal that matters most is the one you lose. Selecting 5 changes the
+button from "End match" to "Continue to report" and hands off to the existing
+report/block flow, so nobody is ambushed.
+
+Kept SEPARATE from REPORT_CATEGORIES. Report answers what was wrong with the
+person; this answers why the pairing did not work. Note "They stopped replying"
+here against "Didn't show up" there: going quiet in the app is not a no-show at
+a physical meetup.
+
+The reason is private. One line under the list:
+  "Gayan won't see your reason. He'll just see that the match has ended."
+This mirrors blockConfirmCopy, and keeps one promise across both flows: the
+other person is never told why.
+
+### Copy
+  radar, top             "Looking..."              -> "Searching"
+  radar, no result yet   "No luck yet. You can close the app, we'll notify you
+                          the moment we find someone."
+                         -> "Stay tuned, we'll notify you the moment we find a
+                            match."
+  after tapping Find     "Looking"                 -> "Searching"
+  Find tab link          "See who else is there"   -> "Already on the move"
+
+### The directory moves onto the Find landing screen
+The list of people already doing something shows ON the Find screen when it
+loads, directly under the Searching circle, with the commitment each one made.
+Data already exists: `get_active_directory()` (202609231500) returns first
+name, avatar, activity and commitment value, gated by the `show_in_directory`
+opt-in on profiles.
+
+### The commitment becomes editable, until a search starts
+A commitment could not be changed after it was created. DECIDED:
+  - editable BEFORE a search starts
+  - the "Let's make it happen" card becomes tappable and shows the commitment
+    details on the card
+  - once a search has started, editing is disabled on BOTH tabs, Find and
+    Challenges
+  - "Go to Find" on that card becomes a standard button reading "Find a Match"
+  - the "Partner: not found yet" text row is REMOVED; that state carries the
+    standard "Find a Match" button instead
+
+### STREAK, redefined
+Flagged as a reversal, see the open questions below. As stated:
+  - the user CHOOSES how many days of streak they start with
+  - the streak is a constant
+  - partners can change during a streak
+  - at the end of a streak there is an "extend streak" option
+  - the streak counts DAYS, not daily commitments
+  - visual: plain circles. Orange for completed days, empty for future days.
+    Nothing fancier.
+
+### Locked, part 1 continued
+
+EDITABLE COMMITMENT, SCOPE. All three fields: Activity, How much each time,
+How often. "How often" offers every possible number, not only 1x, 2x, 3x.
+
+MATCH CLOCK. Confirmed: one clock, started when the MATCH IS CREATED, not when
+the first person accepts. Both people see the same number counting down.
+
+ALREADY ON THE MOVE. It is a TOPIC on the Find landing screen, not a link to
+somewhere else, and it shows the FULL list rather than a preview. The list is
+never empty: it shows everyone registered on the app, with their location.
+Each person gets their own slightly larger card. The current cards touch each
+other; they must be separate.
+
+### Corrected, part 1 continued
+
+EDITABLE COMMITMENT, NARROWED. The earlier answer (activity + how much + how
+often, all editable) was withdrawn once it was pointed out that it contradicts
+"You'll agree how much and how often together", the promise that deleted the
+onboarding target screen in the first place.
+
+DECIDED: ONLY THE ACTIVITY is editable, and only the activity is shown on the
+card. Everything else is agreed after a match. The line on the card reads:
+  "You can change this until you start searching for a match"
+
+ALREADY ON THE MOVE, NO LOCATION. Location is dropped from the directory
+cards: the other details stay (name, avatar, activity, the commitment they
+made). Everyone registered is shown BY DEFAULT, and the reason matters - a new
+user opening Find has to see that the app is alive. That reverses the
+`show_in_directory` opt-in, which defaulted to false, but without location
+attached the exposure is a first name and an activity rather than a way to find
+someone in person.
+
+STREAK, QUESTION 1 ANSWERED. A CIRCLE IS A SESSION, labelled with its day of
+the week. The focus is the session, not the day. So the streak is not a
+calendar after all: it fills when a session happens, which is much closer to
+the original "commitments both partners kept" than to the plain day count the
+first answer described.
+
+### Cadence moves to the first plan
+"How often" leaves the commitment card entirely and is agreed at the FIRST
+PLAN, by both people. The picker offers every number: 1x, 2x, 3x, 4x, 5x, 6x,
+then DAILY - labelled Daily rather than 7x.
+
+### STREAK, QUESTION 2 ANSWERED: sessions, not days
+The number chosen at the start is a count of SESSIONS, not a span of days.
+Named that way too: "a 10 session streak", "a 30 session streak".
+
+Chosen over the days version deliberately. With sessions the finish line is a
+count of times both people showed up, and slipping a week delays it rather than
+failing it - you cannot run out of time, only take longer. With days, a slipped
+session eats the streak. How long a session streak takes is not known until the
+cadence is agreed at the first plan, which is accepted.
+
+Twelve circles means twelve circles, always. The calendar length floats.
+
+### STREAK, QUESTION 3 ANSWERED: the streak is personal
+Option A. One counter, and it belongs to the person, not the pair.
+
+On session 7 of 12, Gayan leaves, Chamara joins: session 8 counts toward the
+SAME streak. GAYAN KEEPS HIS 7 TOO and continues with someone else. One broken
+pairing produces two live streaks, deliberately - the streak is a statement
+about your own consistency, not about any one partnership.
+
+CONSEQUENCE, FLAGGED NOT SOLVED: leaving costs nothing. The only trace is the
+end reason, which the other person never sees. If repeated abandonment should
+ever matter, those reasons are the data to act on. Not a launch problem.
+
+THE PAIR COUNT STILL EXISTS. The shared heart keeps counting sessions WITH THIS
+PARTNER - it just stops being the streak. So there are two numbers on Home and
+they measure different things:
+    the heart    sessions with Gayan
+    the circles  your streak, 7 of 12
+
+### Vocabulary, cleaned up while we are here
+The word "commitment" now collides with itself. A commitment is the WEEKLY
+agreement ("Run 2x a week"), so "14 commitments kept" would read as 14 weeks.
+Settled vocabulary:
+
+    commitment   the weekly agreement. Run 2x a week. Unchanged.
+    session      one occurrence of it. What a circle is.
+    streak       your personal count of sessions toward a chosen target.
+                 "a 12 session streak".
+    the heart    sessions with this partner.
+
+Consequences: keptTxt() becomes "N sessions" not "N commitments kept", and the
+master spec line "the streak counts commitments both partners kept, never days"
+is now wrong twice over and must be rewritten.
+
+The Community feed does NOT need a new sentence after all - an earlier note
+said it would. "Nimali and Ruwan: 14 kept together on Yoga" is the PAIR count,
+which survives option A intact. Only the noun changes: "14 sessions together".
+
+---
+
+## 2026-09-29 (Challenges review, part 2) - Week 1
+
+### Nothing about the week exists before the first plan
+The screen was showing "Week 1 has 2 sessions" and a THIS WEEK list of Run 1 /
+Run 2 while the card above still read "You'll agree how much and how often
+together". It cannot know there are two sessions before anyone agreed the
+cadence. Moving cadence to the first plan turned an inconsistency into a
+contradiction.
+
+DECIDED: delete both. Before the first plan is accepted the state is just
+"You + Gayan. Now let's plan your first run." and the button. A deletion, which
+suits an MVP: one less thing to compute.
+
+### Where the streak length is chosen
+It could not go in the first plan: the plan is a negotiation with the partner,
+and the streak is PERSONAL - Gayan gets no say in your number.
+
+DECIDED: asked RIGHT AFTER the first plan is accepted. One question, with
+presets. It is the first moment a partner and a cadence both exist, so the
+number means something. Proposed presets: 10 / 20 / 30 sessions. No custom
+entry for MVP unless asked for.
+
+### THIS WEEK is cut entirely; the circles are the only progress display
+A circle shows its day of the week, so the circles ALREADY ARE the weekly view.
+Keeping THIS WEEK alongside them put the same information on screen twice.
+
+DECIDED: cut THIS WEEK. Twelve circles with day labels, filled ones behind you,
+the next one live. "This week" is simply the next two circles rather than a
+card of its own.
+
+Removes a card, the weekly-progress calculation and the scaled-week-1
+arithmetic from the UI. The weekly commitment still exists and still drives
+WHEN sessions are planned; it stops having its own widget.
+
+### Vocabulary applied here
+  "0 commitments kept"                   -> "0 sessions"
+  "1 more to keep this week's commitment" -> "1 more this week"
+  "2 commitments still ahead"            -> "2 sessions this week"
+  "Your first shared commitment is next"  -> "Your first session together is next"
+
+---
+
+## 2026-09-29 (Challenges review, part 3) - Sessions
+
+### The streak is the only number on the hero
+The hero carried a weekly counter (0/2, "0 / 2 this week", "Monday to Sunday")
+separate from the THIS WEEK card, so cutting that card did not remove it. That
+left two progress numbers again: this week, and the streak.
+
+DECIDED: keep the STREAK ONLY. The weekly commitment speaks once, when it is
+met, through the line that already exists: "You kept this week's commitment.
+Plan the next one." One number, plus one moment.
+
+Accepted cost: "Run 2x a week" is the promise, and with no weekly counter there
+is no running feedback against it - you see progress toward the session target
+instead. Taken deliberately for MVP simplicity.
+
+### NOTHING RESETS
+Every session state read "You both showed up 6 times in a row." "In a row"
+claims a run that breaks. Under the session-streak model a streak is progress
+toward a target, not a run.
+
+DECIDED: nothing resets. A MISS COSTS YOU THE CIRCLE AND NOTHING MORE. No
+counter is wiped, no progress is lost, the circle simply does not fill.
+
+This has a consequence to settle in the Misses group: if a miss costs only the
+circle, REPAIR NEEDS RE-JUSTIFYING. It existed to recover from a loss that no
+longer happens.
+
+### The heart line
+  "6 commitments kept" / "You both showed up 6 times in a row."
+  ->
+  "6 together with Gayan" / "You've both shown up 6 times."
+The pair count. The streak circles sit separately and measure something else.
+
+### Noted, no action
+today-tg and today-sep render IDENTICALLY on this tab. The together /
+separately difference appears only inside the session, which is right: the tab
+shows that a session exists, not how it is done.
+
+justdone bundles the celebration, the next plan and the Community share prompt
+on one screen. It is the highest-emotion moment in the product, so it is the
+right place to ask.
+
+---
+
+## 2026-09-29 (Challenges review, part 4) - Changes
+
+### Sessions are named by day, not by number
+"Gayan asked to move Run 2 to Sunday" becomes "Saturday's run". The numbering
+only made sense inside the THIS WEEK card, which is being cut, and it was
+already wrong: gymove rendered two rows both labelled "Run 2". Naming by day
+also needs no knowledge of which number a session is.
+
+### Move gets the same timeout cancel already had
+cancel stated it: "If Gayan doesn't answer before the day ends, the original
+plan stands." move stated nothing, so a move request could sit unanswered past
+the session it was trying to move.
+
+DECIDED: same rule for both. No answer by end of day, the original plan stands.
+Deliberately different from the 24 hour match clock - a match has no natural
+deadline, a session does.
+
+### Moves and cancels are neutral to the streak
+  moved              same circle, different day. No effect.
+  cancelled by both  no circle, and the week's slot is freed.
+Neither costs anything.
+
+### Kept as they are, with one addition
+No withdraw once a cancel request is sent, and no limit on how many times a
+session can be moved. Both are churn rather than bugs, and stay as-is for MVP.
+
+ADDED: sending a cancel request now warns first, because it cannot be undone.
+Proposed copy, which also puts the timeout rule where it matters:
+
+  Cancel Saturday's run?
+  You can't undo this. Gayan has until the end of today to accept.
+  If he doesn't answer, the plan stands.
+
+---
+
+## 2026-09-29 (Challenges review, part 5) - Misses, and the repair model
+
+### The streak: personal in ownership, shared in earning
+"It's a shared streak" read against the part-1 lock that the streak is
+personal. Reconciled, and confirmed:
+  PERSONAL IN OWNERSHIP  it is YOUR 12. It survives Gayan leaving, and he
+                         keeps his own.
+  SHARED IN EARNING      a circle only fills when BOTH of you complete the
+                         session. You cannot advance it alone.
+Both true at once. Showing up alone earns nothing - already the product, since
+there is no solo mode, but it is the sharpest edge in the model.
+
+### Repair comes back, because a miss now costs a slot
+The first pass deleted repair on the grounds that nothing resets, so there was
+nothing to recover. Corrected: the WEEKLY COMMITMENT still bites. Miss a
+session and you owe one against that week.
+
+  repair this week   plan another before Sunday, still finish the week at 2
+  repair next week   next week becomes 3x instead of 2x
+
+Rules agreed:
+  - ONE REPAIR PER WEEK, MAXIMUM. A second miss is simply lost: circle
+    unfilled, no debt carried.
+  - An unpaid "this week" repair ROLLS INTO NEXT WEEK automatically, so the
+    choice is a preference rather than a trap.
+  - If GAYAN misses, you BOTH owe one. A session needs both people, so it did
+    not happen for either of you.
+  - Repair is NOT a separate mechanic. It is choosing when to plan the
+    make-up, after which the ordinary plan flow runs and Gayan accepts like
+    any other session.
+
+### The weekly commitment speaks only when it has something to say
+Keeping the streak as the only permanent number stands. The weekly commitment
+surfaces in two moments and is otherwise silent:
+  behind    "You owe one session this week", with the repair choice
+  complete  "You kept this week's commitment. Plan the next one."
+Same rule in both directions.
+
+### No end date, no slot table, no pause tracking
+Asked whether a streak needs start/end date columns at MVP level. It does not,
+and the reason collapses several rules at once.
+
+A CIRCLE CAN ONLY BE MISSED IF THE SESSION WAS PLANNED. The definition already
+in the prototype is "no check-in by midnight of the planned day". Sessions are
+planned ONE AT A TIME, so there is no pre-computed schedule to keep in sync:
+
+  resolved circles    filled or missed, each with a real date, because each
+                      was planned
+  unresolved circles  no date, cannot be missed, simply waiting
+
+The streak ends when all 12 have resolved. The score is how many filled, so
+finishing at 11 of 12 is possible without a deadline existing anywhere.
+
+THIS MAKES THE PAUSE FREE RATHER THAN A RULE. No partner means no sessions get
+planned, which means no slots pass, which means nothing is missed. Pausing is
+not implemented; it is just what happens. A cadence change needs no
+recomputation for the same reason.
+
+Schema, in total:
+  target_sessions   the 12
+  started_at        when the first session was planned
+  the circles       the session rows themselves, each with a date and outcome
+
+The end date is still SHOWN, as an estimate and not a fact: "About 6 weeks at
+2x a week", computed on screen from target / cadence. It is a guess anyway,
+since misses and repairs move it.
+
+### Repair fills the missed circle
+Not an added one. Otherwise the row grows - miss slot 3, repair into week 2,
+and a 12 session streak has 13 slots. The make-up turns the missed circle back
+to solid orange and the row stays at 12. A second miss in the same week has no
+repair left, so that circle stays marked for good.
+
+Circle states, final:
+  solid orange      done
+  marked outline    missed, not repaired
+  plain empty       ahead, unplanned
+
+---
+
+## 2026-09-29 (Challenges review, part 6) - Endings. Review complete.
+
+### The match ending must not wipe the streak
+`ended` showed "0 commitments kept" and "Your first shared commitment is next".
+The old model reset the count on a breakup. Under the new one the streak is
+YOURS, Gayan keeps his, and losing a partner costs no progress.
+DECIDED: `ended` shows the streak INTACT - 6 of 12, circles preserved, waiting
+for the next partner to advance it.
+
+### The challenge ending must not delete the partner
+`ch-ended` showed the empty state with no partner anywhere, because the partner
+lives on the challenge row. Part 1 settled that ending a challenge does not end
+the match.
+DECIDED: `ch-ended` still shows You + Gayan. No challenge, still a partner.
+This is the state that PROVES the partnerships decision - no UI change can fix
+it, it needs the table.
+
+### THE STREAK BELONGS TO THE CHALLENGE, NOT THE USER
+Asked whether a streak survives a challenge change. DECIDED: IT ENDS.
+7 of 12 on Running, end the challenge, start Cycling: the 7 is recorded in
+History beside the finished challenge and Cycling starts a fresh streak.
+
+Flagged before deciding, and accepted: this means ending a challenge destroys
+progress, which is the same wipe just removed from `ended`. Chosen for tidier
+per-activity history.
+
+Consequences:
+  - target_sessions and started_at live on user_challenges. NO separate streak
+    table.
+  - The streak still survives a PARTNER change, because the challenge does.
+  - Each person has their own user_challenges row, so each has their own
+    streak. Both count the same sessions. Gayan leaving at 7 keeps his 7 on his
+    own row. Personal in ownership, shared in earning - consistent throughout.
+
+### Ending a challenge now warns first
+It became a destructive action, so it gets the same treatment as the cancel
+request agreed in part 4:
+  End this challenge?
+  Your streak ends here, at 7 of 12. It'll be saved to your history.
+  Gayan stays your partner.
+
+### The commitment is NOT reset when a match ends
+Keep "Run 2x a week, 3 km" as it stands. The new partner accepts or counters it
+at the first plan, exactly like any other proposal. No special case to build.
+
+### Circles use the brand orange
+Filled circles are the Choner orange (#FD8302 / #FD5B01), not a neutral tone.
+
+---
+
+REVIEW COMPLETE. 22 states, 6 groups, all walked.
