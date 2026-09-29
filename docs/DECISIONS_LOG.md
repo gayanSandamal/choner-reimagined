@@ -1230,3 +1230,20 @@ the week. The focus is the session, not the day. So the streak is not a
 calendar after all: it fills when a session happens, which is much closer to
 the original "commitments both partners kept" than to the plain day count the
 first answer described.
+
+### Cadence moves to the first plan
+"How often" leaves the commitment card entirely and is agreed at the FIRST
+PLAN, by both people. The picker offers every number: 1x, 2x, 3x, 4x, 5x, 6x,
+then DAILY - labelled Daily rather than 7x.
+
+### STREAK, QUESTION 2 ANSWERED: sessions, not days
+The number chosen at the start is a count of SESSIONS, not a span of days.
+Named that way too: "a 10 session streak", "a 30 session streak".
+
+Chosen over the days version deliberately. With sessions the finish line is a
+count of times both people showed up, and slipping a week delays it rather than
+failing it - you cannot run out of time, only take longer. With days, a slipped
+session eats the streak. How long a session streak takes is not known until the
+cadence is agreed at the first plan, which is accepted.
+
+Twelve circles means twelve circles, always. The calendar length floats.
