@@ -1,0 +1,1401 @@
+<title>Choner Find Flow</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap">
+<style>
+  :root{
+    /* page chrome (themed) */
+    --stage:#EFEBE6; --panel:#FFFFFF; --ink:#1C2B33; --muted:#66757F; --line:#DED8D1;
+    --tint:#FFF1E4; --warn-bg:#FFF4D6; --warn-ink:#7A5200; --ok-bg:#E3F4EA; --ok-ink:#1F6B47;
+    --g1:#FD8302; --g2:#FD5B01; --navy:#001827;
+    /* phone (fixed light app, does not theme) */
+    --paper:#FDFCFB; --card:#FFFFFF; --pink:#1C2B33; --pmuted:#7C8C96; --dim:#D8D2CC; --pline:#EFEDEA; --green:#2E9E6B;
+    --shadow-soft:0 2px 10px rgba(28,43,51,.06);
+    --shadow-card:0 8px 24px rgba(28,43,51,.07);
+    --shadow-btn:0 10px 26px rgba(253,91,1,.32);
+    --shadow-float:0 10px 24px rgba(0,24,39,.28);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --stage:#12100E; --panel:#1B1917; --ink:#EDEAE6; --muted:#A39C94; --line:#2E2A26;
+      --tint:#2A1D12; --warn-bg:#33290F; --warn-ink:#F0CE7A; --ok-bg:#12281D; --ok-ink:#7FD1A3;
+    }
+  }
+  :root[data-theme="dark"]{
+    --stage:#12100E; --panel:#1B1917; --ink:#EDEAE6; --muted:#A39C94; --line:#2E2A26;
+    --tint:#2A1D12; --warn-bg:#33290F; --warn-ink:#F0CE7A; --ok-bg:#12281D; --ok-ink:#7FD1A3;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--stage);}
+  body{
+    color:var(--ink); font-family:'Poppins',-apple-system,system-ui,sans-serif;
+    padding-inline:16px; padding-block:28px 40px;
+  }
+  button{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--g2);outline-offset:2px;}
+
+  .wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:22px;}
+
+  /* header */
+  .head{display:flex;flex-direction:column;gap:6px;max-width:760px;}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--g2);}
+  h1{font-size:clamp(24px,3.6vw,34px);font-weight:300;letter-spacing:-.6px;line-height:1.2;text-wrap:balance;}
+  h1 b{font-weight:600;}
+  .lede{font-size:13.5px;color:var(--muted);line-height:1.6;font-weight:300;}
+
+  .recon{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;}
+  .recon div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:12.5px;line-height:1.55;color:var(--muted);}
+  .recon strong{display:block;color:var(--ink);font-weight:600;font-size:12.5px;margin-bottom:4px;}
+
+  /* main grid */
+  .grid{display:grid;grid-template-columns:230px minmax(0,1fr) 320px;gap:26px;align-items:start;}
+  .rail{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;padding-right:4px;}
+  .rail::-webkit-scrollbar{width:0;}
+  .grp-t{font-size:10.5px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .rail-list{display:flex;flex-direction:column;gap:2px;}
+  .rail button{
+    display:flex;align-items:baseline;gap:8px;text-align:left;width:100%;
+    background:none;border:none;border-radius:10px;padding:7px 10px;cursor:pointer;color:var(--ink);font-size:12.5px;font-weight:400;
+  }
+  .rail button .ph{font-size:10px;font-weight:600;letter-spacing:.4px;color:var(--muted);min-width:26px;font-variant-numeric:tabular-nums;}
+  .rail button:hover{background:var(--panel);}
+  .rail button.on{background:var(--tint);font-weight:600;}
+  .rail button.on .ph{color:var(--g2);}
+
+  .stage{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0;}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;}
+  .seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px;}
+  .seg button{border:none;background:none;border-radius:999px;padding:6px 14px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;}
+  .seg button.on{background:var(--navy);color:#fff;}
+  .seg-l{font-size:11px;color:var(--muted);}
+  .step{display:inline-flex;gap:6px;}
+  .step button{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:500;color:var(--ink);cursor:pointer;}
+  .step button:disabled{opacity:.4;cursor:default;}
+
+  .notes{display:flex;flex-direction:column;gap:14px;position:sticky;top:16px;}
+  .note-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:12px;}
+  .note-ph{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--g2);}
+  .note-t{font-size:17px;font-weight:500;letter-spacing:-.2px;line-height:1.3;text-wrap:balance;}
+  .note-what{font-size:13px;line-height:1.6;color:var(--muted);font-weight:300;}
+  .note-h{font-size:10.5px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);}
+  .note-ul{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:12.5px;line-height:1.5;}
+  .note-ul li{padding-left:14px;position:relative;}
+  .note-ul li::before{content:"";position:absolute;left:0;top:.6em;width:5px;height:5px;border-radius:50%;background:var(--g1);}
+  .flag{background:var(--warn-bg);color:var(--warn-ink);border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;}
+  .flag b{font-weight:600;}
+  .dnb{font-size:12px;line-height:1.55;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;}
+  .dnb b{color:var(--ink);font-weight:600;}
+
+  /* ===== phone ===== */
+  .phone{
+    width:min(393px,100%); height:852px; max-height:calc(100vh - 150px); min-height:640px;
+    background:var(--paper); border-radius:52px; border:1px solid rgba(0,0,0,.06);
+    box-shadow:0 40px 80px rgba(0,10,20,.25), 0 0 0 10px #0d1117;
+    overflow:hidden; display:flex; flex-direction:column; position:relative; color:var(--pink);
+  }
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:16px 28px 4px;font-size:13px;font-weight:500;flex:none;}
+  .topbar{
+    background:var(--navy);display:flex;justify-content:space-between;align-items:center;flex:none;
+    padding:14px 16px;margin:6px 16px 0;border-radius:24px;box-shadow:var(--shadow-float);min-height:60px;
+  }
+  .topbar .logo{color:#fff;font-size:16px;font-weight:600;}
+  .topbar .logo span{color:var(--g1);}
+  .back{background:none;border:none;color:#fff;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;}
+  .back:disabled{opacity:.3;cursor:default;}
+  .back svg{width:20px;height:20px;}
+  .topbar .ttl{flex:1;text-align:center;color:#fff;font-size:15px;font-weight:600;}
+  .slot{width:32px;height:32px;}
+  .avatar-chip{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;color:#fff;}
+  .content{flex:1;min-height:0;overflow-y:auto;padding:22px 22px 18px;display:flex;flex-direction:column;gap:0;}
+  .content::-webkit-scrollbar{display:none;}
+  .nav{background:var(--navy);display:flex;justify-content:space-around;align-items:center;padding:14px 6px 12px;margin:0 16px 16px;border-radius:28px;box-shadow:var(--shadow-float);flex:none;}
+  .navitem{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .navitem svg{width:22px;height:22px;}
+  .navitem .lbl{font-size:10px;font-weight:500;line-height:14px;}
+  .navitem.on .lbl{color:var(--g2);} .navitem.off .lbl{color:rgba(255,255,255,.4);}
+
+  .p-eyebrow{font-size:11px;font-weight:500;color:var(--pmuted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+  .p-h1{font-size:24px;font-weight:300;letter-spacing:-.5px;line-height:1.28;margin-bottom:8px;text-wrap:balance;}
+  .p-h1 b{font-weight:600;}
+  .p-sub{font-size:13px;color:var(--pmuted);font-weight:300;line-height:1.55;margin-bottom:20px;}
+  .p-sub b{color:var(--pink);font-weight:500;}
+  .flabel{font-size:12.5px;font-weight:500;margin-bottom:10px;}
+  .sect{font-size:11px;font-weight:600;color:var(--pmuted);letter-spacing:.6px;text-transform:uppercase;margin:16px 0 10px;}
+  .foot{margin-top:auto;padding-top:18px;display:flex;flex-direction:column;gap:2px;}
+  .card{background:var(--card);border-radius:20px;padding:16px 18px;box-shadow:var(--shadow-card);}
+  .soft{background:var(--card);border-radius:16px;padding:13px 15px;box-shadow:var(--shadow-soft);}
+
+  .btn{width:100%;border:none;border-radius:18px;padding:16px 0;font-size:15px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:var(--shadow-btn);cursor:pointer;transition:transform .18s ease;}
+  .btn:active{transform:translateY(1px) scale(.99);}
+  .btn:disabled{opacity:.45;box-shadow:none;cursor:default;}
+  .btn.row{display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn.row svg{width:19px;height:19px;}
+  .btn-o{width:100%;border:1.5px solid var(--pline);border-radius:18px;padding:14px 0;font-size:14px;font-weight:500;color:var(--pink);background:var(--card);cursor:pointer;}
+  .btn-g{width:100%;border:none;background:none;color:var(--pmuted);font-size:13px;font-weight:500;padding:13px 0;cursor:pointer;}
+  .btn-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .btn-2 .btn,.btn-2 .btn-o{font-size:13.5px;padding-inline:8px;}
+  .proto{border:1.5px dashed var(--dim);background:none;color:var(--pmuted);border-radius:14px;padding:11px 0;font-size:12px;font-weight:500;width:100%;cursor:pointer;}
+
+  .pill-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .pill{padding:10px 16px;border-radius:100px;border:1.5px solid var(--pline);font-size:13px;font-weight:500;background:var(--card);cursor:pointer;color:var(--pink);}
+  .pill.on{background:linear-gradient(135deg,var(--g1),var(--g2));border-color:transparent;color:#fff;box-shadow:0 6px 16px rgba(253,91,1,.25);}
+  select{width:100%;appearance:none;-webkit-appearance:none;background:var(--card);border:1.5px solid var(--pline);border-radius:16px;padding:15px 44px 15px 16px;font-family:inherit;font-size:14px;color:var(--pink);box-shadow:var(--shadow-soft);}
+  .sel-wrap{position:relative;}
+  .sel-wrap::after{content:'';position:absolute;right:18px;top:50%;width:7px;height:7px;border-right:1.6px solid var(--pmuted);border-bottom:1.6px solid var(--pmuted);transform:translateY(-70%) rotate(45deg);pointer-events:none;}
+  input.txt{width:100%;background:var(--card);border:1.5px solid var(--pline);border-radius:16px;padding:14px 16px;font-family:inherit;font-size:14px;color:var(--pink);box-shadow:var(--shadow-soft);outline:none;}
+  input.txt:focus{border-color:var(--g2);}
+
+  .choice{display:flex;align-items:center;gap:14px;background:var(--card);border:1.5px solid var(--pline);border-radius:18px;padding:15px 16px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow-soft);text-align:left;width:100%;font-family:inherit;color:inherit;}
+  .choice.on{border-color:var(--g2);background:linear-gradient(160deg,rgba(253,131,2,.07),rgba(253,91,1,.02));}
+  .choice .ic{width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;}
+  .choice .ic svg{width:22px;height:22px;color:var(--pmuted);}
+  .choice.on .ic svg{color:var(--g2);}
+  .choice .t{font-size:14px;font-weight:500;}
+  .choice .d{font-size:11.5px;color:var(--pmuted);margin-top:2px;}
+  .choice.mini{padding:12px 14px;margin-bottom:8px;}
+
+  .who{width:36px;height:36px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:0 6px 16px rgba(253,91,1,.28);}
+  .who.lg{width:64px;height:64px;font-size:20px;}
+  .who.dim{background:#EFEDEA;color:#B7B0A8;box-shadow:none;}
+  .who.p2{background:linear-gradient(135deg,#1E3A4C,#001827);box-shadow:0 6px 16px rgba(0,24,39,.25);}
+
+  /* profile pictures */
+  .pfp-wrap{position:relative;flex:none;}
+  .pfp{display:block;border-radius:50%;overflow:hidden;border:3px solid #fff;box-shadow:0 8px 22px rgba(0,24,39,.2);background:#EFEDEA;}
+  .pfp svg,.pfp img{display:block;width:100%;height:100%;object-fit:cover;}
+  .pfp-badge{position:absolute;right:-2px;bottom:4px;width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;border:3px solid var(--paper);display:flex;align-items:center;justify-content:center;}
+  .pfp-badge svg{width:14px;height:14px;}
+  .duo{display:flex;justify-content:center;gap:22px;margin-top:6px;}
+  .duo-col{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12.5px;font-weight:500;}
+
+  .pair{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:6px;}
+  .pair-col{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;font-weight:500;}
+  .pair-col.waiting .pfp{filter:grayscale(1);opacity:.5;}
+  .pair-col.waiting span{color:var(--pmuted);}
+
+  /* radar */
+  .radar{position:relative;width:230px;height:230px;margin:10px auto 6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;max-width:100%;}
+  .ring{position:absolute;border-radius:50%;border:1.5px solid rgba(253,131,2,.28);width:60px;height:60px;animation:pulse 5.5s cubic-bezier(.2,.6,.4,1) infinite;}
+  .ring:nth-child(2){animation-delay:1.8s;} .ring:nth-child(3){animation-delay:3.6s;}
+  .radar.act .ring{border-color:rgba(253,91,1,.75);animation-duration:4s;}
+  .radar.act .ring:nth-child(2){animation-delay:1.3s;} .radar.act .ring:nth-child(3){animation-delay:2.6s;}
+  @keyframes pulse{0%{width:60px;height:60px;opacity:.8;}100%{width:230px;height:230px;opacity:0;}}
+  .rc{position:relative;z-index:2;width:98px;height:98px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;font-size:12.5px;font-weight:600;line-height:1.25;background:linear-gradient(135deg,#FDA340,#FD7A02);box-shadow:0 10px 26px rgba(253,91,1,.28);}
+  .radar.act .rc{background:linear-gradient(135deg,#FD8302,#FD4E01);}
+  .tap{text-align:center;color:var(--g2);font-size:11.5px;font-weight:600;margin-top:2px;}
+
+  /* heart */
+  .stage-h{position:relative;height:150px;display:flex;align-items:center;justify-content:center;margin:4px 0;}
+  .glow{position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(253,131,2,.14) 0%,rgba(253,91,1,.04) 45%,transparent 72%);}
+  .heart{position:relative;width:118px;height:auto;}
+  .h-empty{fill:none;stroke:var(--dim);stroke-width:2.4;stroke-dasharray:5,5;stroke-linejoin:round;}
+  .streak{text-align:center;}
+  .streak .n{font-size:28px;font-weight:600;line-height:1;letter-spacing:-.7px;}
+  .streak .l{font-size:10px;color:var(--pmuted);letter-spacing:.8px;text-transform:uppercase;margin-top:3px;}
+  .readout{display:flex;align-items:center;justify-content:center;gap:16px;}
+
+  /* lists */
+  .reasons{list-style:none;display:flex;flex-direction:column;gap:12px;margin:6px 0 4px;}
+  .reasons li{display:flex;gap:12px;align-items:flex-start;font-size:13.5px;line-height:1.45;}
+  .reasons .ck{width:24px;height:24px;border-radius:50%;background:rgba(46,158,107,.12);color:var(--green);display:flex;align-items:center;justify-content:center;flex:none;}
+  .reasons .ck svg{width:14px;height:14px;}
+  .summary{display:flex;flex-direction:column;gap:12px;}
+  .summary .r{display:flex;align-items:center;gap:12px;font-size:14px;}
+  .summary .r svg{width:20px;height:20px;color:var(--g2);flex:none;}
+  .summary .r span{color:var(--pmuted);font-size:11.5px;display:block;}
+
+  /* chat */
+  .bubbles{display:flex;flex-direction:column;gap:10px;margin:8px 0 14px;}
+  .bub{max-width:82%;padding:11px 15px;border-radius:18px;font-size:13.5px;line-height:1.4;}
+  .bub.me{align-self:flex-end;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-bottom-right-radius:6px;}
+  .bub.them{align-self:flex-start;background:var(--card);box-shadow:var(--shadow-soft);border-bottom-left-radius:6px;}
+  .bub-l{font-size:10.5px;color:var(--pmuted);margin:0 6px 3px;}
+  .bub-l.me{align-self:flex-end;}
+  .quick{display:flex;flex-direction:column;gap:8px;}
+  .quick button{display:flex;align-items:center;gap:12px;text-align:left;background:var(--card);border:1.5px solid var(--pline);border-radius:16px;padding:13px 15px;font-size:13.5px;font-weight:500;cursor:pointer;box-shadow:var(--shadow-soft);font-family:inherit;color:inherit;}
+  .quick svg{width:20px;height:20px;color:var(--g2);flex:none;}
+
+  /* negotiation */
+  .neg-card{background:var(--card);border-radius:20px;padding:18px;box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:12px;}
+  .neg-by{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--pmuted);}
+  .neg-by .who{width:30px;height:30px;font-size:10.5px;box-shadow:none;}
+  .neg-val{font-size:18px;font-weight:500;line-height:1.3;letter-spacing:-.2px;}
+  .chip{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:5px 11px;font-size:11.5px;font-weight:500;background:#FFF1E4;color:#B04A00;}
+  .chip svg{width:13px;height:13px;}
+  .chip.ok{background:#E3F4EA;color:#1F6B47;}
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .vs div{background:var(--card);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow-soft);}
+  .vs small{display:block;font-size:11px;color:var(--pmuted);margin-bottom:2px;}
+  .vs b{font-size:16px;font-weight:600;}
+  .opts{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
+  .help{background:linear-gradient(160deg,rgba(253,131,2,.08),rgba(253,91,1,.03));border-radius:16px;padding:14px 16px;font-size:12.5px;line-height:1.5;margin-top:12px;}
+  .help button{margin-top:8px;background:none;border:none;color:var(--g2);font-weight:600;font-size:12.5px;padding:0;cursor:pointer;font-family:inherit;}
+
+  /* qr */
+  .cam{position:relative;height:210px;border-radius:22px;background:linear-gradient(160deg,#0B2231,#001827);overflow:hidden;display:flex;align-items:center;justify-content:center;}
+  .cam .br{position:absolute;width:26px;height:26px;border:3px solid var(--g1);}
+  .cam .tl{top:18px;left:18px;border-right:none;border-bottom:none;border-top-left-radius:10px;}
+  .cam .tr{top:18px;right:18px;border-left:none;border-bottom:none;border-top-right-radius:10px;}
+  .cam .bl{bottom:18px;left:18px;border-right:none;border-top:none;border-bottom-left-radius:10px;}
+  .cam .brr{bottom:18px;right:18px;border-left:none;border-top:none;border-bottom-right-radius:10px;}
+  .cam .scan{position:absolute;left:24px;right:24px;height:2px;background:linear-gradient(90deg,transparent,var(--g1),transparent);animation:scan 2.4s ease-in-out infinite;}
+  @keyframes scan{0%,100%{top:26px;}50%{top:180px;}}
+  .cam .cap{color:rgba(255,255,255,.55);font-size:12px;text-align:center;padding:0 40px;}
+  .qrbox{background:#fff;border-radius:20px;padding:16px;box-shadow:var(--shadow-card);display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:14px;}
+  .qrbox svg{width:118px;height:118px;}
+  .qrbox small{font-size:11px;color:var(--pmuted);}
+  .big-ok{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;margin:20px auto 16px;color:#fff;box-shadow:var(--shadow-btn);}
+  .big-ok svg{width:36px;height:36px;}
+  .center{text-align:center;}
+
+  .reacts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px;}
+  .react{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1.5px solid var(--pline);border-radius:99px;padding:9px 14px;font-size:12.5px;font-weight:500;cursor:pointer;box-shadow:var(--shadow-soft);font-family:inherit;color:inherit;}
+  .react svg{width:16px;height:16px;color:var(--pmuted);}
+  .react.on{border-color:var(--g2);background:rgba(253,131,2,.08);}
+  .react.on svg{color:var(--g2);}
+  .photo{height:110px;border-radius:16px;background:linear-gradient(135deg,#FFE3CE,#FFD3B8);display:flex;align-items:center;justify-content:center;color:var(--g2);margin-top:12px;}
+  .photo svg{width:30px;height:30px;}
+
+  .hint{font-size:11.5px;color:var(--pmuted);margin-top:8px;line-height:1.5;}
+  .errmsg{font-size:12px;color:#C0392B;margin-top:8px;}
+  .mot{display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;border-radius:14px;background:linear-gradient(160deg,rgba(253,131,2,.12),rgba(253,91,1,.05));font-size:13px;font-weight:500;line-height:1.4;}
+  .mot svg{width:18px;height:18px;color:var(--g2);flex:none;}
+  .runs{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+  .run{display:flex;align-items:center;gap:12px;font-size:13px;}
+  .run small{display:block;color:var(--pmuted);font-size:12px;margin-top:1px;}
+  .data-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:9px;}
+  .kv{display:flex;justify-content:space-between;gap:12px;font-size:12px;line-height:1.4;align-items:baseline;}
+  .kv code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.5px;color:var(--muted);word-break:break-all;}
+  .kv span{font-weight:500;text-align:right;max-width:50%;}
+
+  /* overflow menu (block/report) */
+  .ov-wrap{position:relative;}
+  .ov-btn{background:rgba(255,255,255,.14);border:none;color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .ov-btn svg{width:18px;height:18px;}
+  .ov-menu{position:absolute;top:40px;right:0;background:var(--card);border-radius:14px;box-shadow:var(--shadow-card);overflow:hidden;min-width:190px;z-index:20;}
+  .ov-item{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;background:none;border:none;font-size:13px;font-weight:500;color:var(--pink);cursor:pointer;text-align:left;font-family:inherit;}
+  .ov-item svg{width:17px;height:17px;color:var(--pmuted);flex:none;}
+  .ov-item.danger{color:#C0392B;}
+  .ov-item.danger svg{color:#C0392B;}
+  .ov-item+.ov-item{border-top:1px solid var(--pline);}
+  .report-link{background:none;border:none;color:var(--pmuted);font-size:11.5px;text-decoration:underline;padding:0;margin-top:10px;cursor:pointer;font-family:inherit;}
+
+  /* sheets (block/report) */
+  .scrim2{position:absolute;inset:0;background:rgba(10,20,28,.45);display:flex;align-items:flex-end;z-index:30;}
+  .sheet2{width:100%;background:var(--paper);border-radius:26px 26px 0 0;padding:20px 22px 22px;max-height:82%;overflow-y:auto;}
+  .sheet2-handle{width:36px;height:4px;background:var(--dim);border-radius:3px;margin:0 auto 16px;}
+
+  /* find/challenges reorg + feed */
+  .feed-row{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--pline);}
+  .feed-row:last-child{border-bottom:none;}
+  .feed-init{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;}
+  .feed-name{font-size:13.5px;font-weight:500;}
+  .feed-meta{font-size:11.5px;color:var(--pmuted);margin-top:1px;}
+
+  /* google places (illustrative) suggestions */
+  .suggest{display:flex;flex-direction:column;margin-top:6px;border-radius:14px;overflow:hidden;box-shadow:var(--shadow-soft);}
+  .suggest:empty{display:none;margin:0;}
+  .suggest button{display:flex;align-items:center;gap:10px;background:var(--card);border:none;border-bottom:1px solid var(--pline);padding:11px 14px;font-size:13px;text-align:left;cursor:pointer;color:var(--pink);font-family:inherit;}
+  .suggest button:last-child{border-bottom:none;}
+  .suggest button svg{width:15px;height:15px;color:var(--pmuted);flex:none;}
+
+  /* community share preview */
+  .preview-card{background:var(--card);border-radius:18px;padding:15px 16px;box-shadow:var(--shadow-card);margin-top:14px;}
+  .preview-top{display:flex;align-items:center;gap:10px;}
+  .preview-avatars{display:flex;}
+  .preview-avatars>*:nth-child(2){margin-left:-12px;}
+  .preview-text{font-size:12.5px;line-height:1.4;flex:1;}
+  .preview-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(253,131,2,.35);color:var(--g2);border-radius:99px;padding:3px 9px;font-size:10px;font-weight:600;margin-top:10px;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .lchip{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-radius:99px;padding:7px 8px 7px 14px;font-size:13px;font-weight:500;box-shadow:0 6px 16px rgba(253,91,1,.25);}
+  .lchip button{width:22px;height:22px;border-radius:50%;border:none;background:rgba(255,255,255,.25);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+  .lchip button svg{width:12px;height:12px;}
+  .nomatch{background:var(--card);padding:11px 14px;font-size:12.5px;color:var(--pmuted);}
+  @media (max-width:1020px){
+    .grid{grid-template-columns:minmax(0,1fr);gap:20px;}
+    .rail{position:static;max-height:none;flex-direction:row;overflow-x:auto;gap:18px;padding-bottom:6px;}
+    .rail>div{flex:none;}
+    .rail-list{flex-direction:row;flex-wrap:nowrap;}
+    .rail button{white-space:nowrap;}
+    .notes{position:static;}
+    .stage{order:-1;}
+    .recon{order:3;}
+    .phone{max-height:none;height:760px;}
+  }
+  @media (prefers-reduced-motion:reduce){.ring,.cam .scan{animation:none;}}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <div class="eyebrow">Running / Jogging &middot; spans two tabs</div>
+    <h1>Find &amp; Challenges, end to end: <b>landing to shared streak</b></h1>
+    <p class="lede">One buildable sequence that reconciles every locked decision, now split across the two tabs that actually own it. Tap through the phone, jump to any phase on the left, and switch who is looking to see both sides of each negotiation.</p>
+  </header>
+
+  <section class="recon" aria-label="Reconciliation notes">
+    <div><strong>1. Mode moved to post-match</strong>Pre-match filters are activity and gender preference only. Mode, distance, time and place are negotiated after two people are matched.</div>
+    <div><strong>2. "Finish" tap</strong>QR scan is the check-in for Run together sessions. A single zero-friction Finish tap (no photo, no question) tells streak logic the session ended. Proposed, not yet confirmed.</div>
+    <div><strong>3. No Solo mode</strong>Every path leads to Run together or Run separately, together.</div>
+    <div><strong>4. Two tabs, one journey</strong>Landing through Match Found stays in Find, which then always shows the matched partner (photo, Report/Block) for as long as the pairing exists, never the radar again. Say Hi onward, planning, the session, check-in, lives in Challenges.</div>
+    <div><strong>Do not build</strong>Any map/GPS or live-location feature. Free-text chat between matched partners (a separate, time-boxed chat is planned as its own app feature, not shown here). Any availability-window overlap calculator.</div>
+  </section>
+
+  <div class="grid">
+    <nav class="rail" id="rail" aria-label="Phases"></nav>
+
+    <main class="stage">
+      <div class="controls">
+        <span class="seg-l">View as</span>
+        <div class="seg" id="viewseg" role="group" aria-label="View as">
+          <button data-view="dd" class="on">Dinesh (you)</button>
+          <button data-view="gy">Gayan (partner)</button>
+        </div>
+        <div class="step"><button id="prev">Back</button><button id="next">Next</button></div>
+      </div>
+      <div class="phone" id="phone"></div>
+    </main>
+
+    <aside class="notes" id="notes" aria-live="polite"></aside>
+  </div>
+</div>
+
+<script>
+/* ---------- icons (custom line set, no emoji) ---------- */
+const IC = {
+  run:'<circle cx="14.5" cy="4.5" r="1.6" fill="currentColor" stroke="none"/><path d="M10 21l1.6-5.4L9 14l1.2-4.4c.3-1 1.1-1.6 2-1.5l3 .4 2.6 2.6M14.5 9.1l-1.6 4 2.4 1.8L14.5 19"/>',
+  together:'<circle cx="8" cy="8" r="2.6"/><circle cx="16" cy="8" r="2.6"/><path d="M4 20c0-3.3 2-5.6 4-5.6M20 20c0-3.3-2-5.6-4-5.6"/><path d="M9.5 12.5l2.5 2 2.5-2"/>',
+  separate:'<rect x="3" y="6" width="7" height="12" rx="1.5"/><rect x="14" y="6" width="7" height="12" rx="1.5"/><path d="M6.5 9v.01M17.5 9v.01"/>',
+  pin:'<path d="M12 21s-6.5-5.9-6.5-11A6.5 6.5 0 1118.5 10c0 5.1-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.2"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  calendar:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  chat:'<path d="M4 5.5A1.5 1.5 0 015.5 4h13A1.5 1.5 0 0120 5.5v9a1.5 1.5 0 01-1.5 1.5H9l-5 4V5.5z"/>',
+  camera:'<path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/>',
+  qr:'<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h3v3h-3zM19 14v1M17 19h3M20 17v1"/>',
+  phone:'<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>',
+  flag:'<path d="M6 21V4M6 5h11l-2 4 2 4H6"/>',
+  ruler:'<path d="M4 12h16M4 8v8M20 8v8M9 10v2M14 10v2"/>',
+  timer:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 3h6"/>',
+  leaf:'<path d="M5 19c0-8 5-13 14-14 0 9-5 14-14 14zM5 19l8-8"/>',
+  wave:'<path d="M3 9c3-4 6-4 9 0s6 4 9 0M3 15c3-4 6-4 9 0s6 4 9 0"/>',
+  bolt:'<path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" stroke-linejoin="round"/>',
+  heart:'<path d="M12 20s-7-4.4-9.5-9C1 7.8 2.5 4.5 6 4.5c2 0 3.3 1.1 4 2.3.7-1.2 2-2.3 4-2.3 3.5 0 5 3.3 3.5 6.5C19 15.6 12 20 12 20z"/>',
+  fire:'<path d="M12 3s4 3.5 4 8a4 4 0 01-8 0c0-1.2.6-2 1.2-2.8C10 9.8 11 11 11 11s.3-3.4 1-5c.3.8 0-2 0-3z"/><path d="M9.5 14.5a2.5 2.5 0 005 0c0-1.2-.8-2-1.3-2.9"/>',
+  spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/>',
+  sleep:'<path d="M20 14.5A8 8 0 119.5 4a6.3 6.3 0 1010.5 10.5z"/>',
+  briefcase:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/>',
+  cloud:'<path d="M7 15a4 4 0 01.6-7.9A5 5 0 0117 9a3 3 0 010 6H7zM9 18l-1 2M13 18l-1 2M17 18l-1 2"/>',
+  cross:'<path d="M9 4h6v5h5v6h-5v5H9v-5H4V9h5z" stroke-linejoin="round"/>',
+  pencil:'<path d="M4 20l4-1 11-11-3-3L5 16zM14 6l3 3"/>',
+  redo:'<path d="M4 9a8 8 0 0114-4.9M20 15a8 8 0 01-14 4.9"/><path d="M18 3v5h-5M6 21v-5h5"/>',
+  back:'<path d="M15 5l-7 7 7 7"/>',
+  home:'<path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 001 1h3v-5h6v5h3a1 1 0 001-1v-9"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
+  find:'<circle cx="12" cy="8" r="3.2"/><path d="M4 20c0-3.6 3.6-6 8-6"/><circle cx="17" cy="17" r="3"/><path d="M19.2 19.2L21 21"/>',
+  community:'<circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="8" r="2.6"/><path d="M2.5 19c0-3.3 2.9-5.6 6.5-5.6s6.5 2.3 6.5 5.6"/><path d="M17 13.4c2.6 0 4.5 1.9 4.5 4.4"/>',
+  more:'<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>'
+};
+const ic = (n, sw) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw||1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* ---------- people ---------- */
+const P = { dd:{n:'Dinesh', i:'DD', cls:''}, gy:{n:'Gayan', i:'G', cls:' p2'} };
+const other = v => v === 'dd' ? 'gy' : 'dd';
+/* Profile pictures. Set either value to a data: URI (the artifact CSP only allows embedded images)
+   to replace the placeholder portrait with a real photo. */
+const PHOTOS = { dd:null, gy:null };
+const PORTRAIT = {
+  gy:`<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="pbw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE3CE"/><stop offset="1" stop-color="#FFC59B"/></linearGradient></defs>
+    <rect width="100" height="100" fill="url(#pbw)"/>
+    <path d="M27 46c0-18 10-28 23-28s23 10 23 28v27c0 7-6 10-10 10H37c-4 0-10-3-10-10z" fill="#1B1210"/>
+    <path d="M12 100c2-17 15-25 38-25s36 8 38 25z" fill="#1E3A4C"/>
+    <rect x="44" y="60" width="12" height="18" rx="5" fill="#A8704A"/>
+    <ellipse cx="50" cy="45" rx="15" ry="18" fill="#B98058"/>
+    <path d="M34 41c3-14 12-20 22-17 6 2 10 8 10 17-4-7-10-11-17-11-6 0-12 3-15 11z" fill="#1B1210"/></svg>`,
+  dd:`<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="pbm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DCE7EE"/><stop offset="1" stop-color="#BFD0DC"/></linearGradient></defs>
+    <rect width="100" height="100" fill="url(#pbm)"/>
+    <path d="M12 100c2-17 15-25 38-25s36 8 38 25z" fill="#FD8302"/>
+    <rect x="43" y="59" width="14" height="19" rx="5" fill="#9E6A46"/>
+    <ellipse cx="50" cy="44" rx="16" ry="19" fill="#AC7650"/>
+    <path d="M33 42c-1-15 7-24 17-24s18 9 17 24c-3-7-7-10-17-10s-14 3-17 10z" fill="#191210"/></svg>`
+};
+function photo(k, size, verified){
+  const inner = PHOTOS[k] ? `<img src="${PHOTOS[k]}" alt="${P[k].n}">` : PORTRAIT[k];
+  return `<div class="pfp-wrap"><div class="pfp" style="width:${size}px;height:${size}px;">${inner}</div>${verified ? `<span class="pfp-badge" title="Photo confirmed">${ic('check',3)}</span>` : ''}</div>`;
+}
+const av = (k, extra) => `<div class="who${P[k].cls}${extra?' '+extra:''}">${P[k].i}</div>`;
+
+/* ---------- state ---------- */
+const NUM_UNUSED = null; // phone-number exchange removed, superseded by the temporary in-app chat (app feature, not shown here)
+const DAYS = ['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'];
+const fmtTime = t => { const [h, m] = t.split(':').map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`; };
+const S = {
+  cur:'landing', view:'dd', hist:[],
+  gender:'none', areas:['Nugegoda'], locQ:'', searchWaited:false,
+  accept:{dd:false, gy:false}, declineNote:null, opener:null, reply:null,
+  measure:'distance', dist:'3 km', dur:'30 min',
+  mode:'together',
+  neg:{}, err:{},
+  draft:{ where:'', when:{day:'Saturday', time:'07:00'}, awhen:{day:'Saturday', same:true, you:'07:00', them:'08:00'}, rs:{day:'Sunday', time:'07:00'} },
+  conf:{t:false, a:false}, day:{dd:'idle', gy:'idle'}, qrDone:false,
+  checkin:null, later:null, photo:null,
+  reason:null, moveIt:null, partnerSaw:false, accepted:false, cheered:false,
+  reacts:{}, share:null,
+  menu:{open:false},
+  block:{open:false},
+  report:{open:false, category:null, text:'', tried:false, submitted:false},
+  endedBy:null, endedVia:null
+};
+const PARTNER = { dist:'5 km', dur:'45 min' };
+let searchTimer = null;
+const freshNeg = () => ({ val:null, by:null, firstBy:null, status:'pending', rounds:0, picking:false, editing:false, help:false, founder:false });
+function initNeg(){ S.neg = { where:freshNeg(), when:freshNeg(), awhen:freshNeg(), dist:freshNeg() }; }
+initNeg();
+
+const meN = () => P[S.view].n;
+const ptK = () => other(S.view);
+const nm = () => P[ptK()].n;
+
+const amount = () => S.measure === 'distance' ? S.dist : S.dur;
+const partnerAmount = () => S.measure === 'distance' ? PARTNER.dist : PARTNER.dur;
+const agreedAmount = () => (S.neg.dist.status === 'agreed' && S.neg.dist.val) ? S.neg.dist.val : amount();
+const cleanMid = v => v.replace(/^Meet in the middle \((.*)\)$/, '$1');
+const finalAmount = () => cleanMid(agreedAmount());
+function midpoint(){
+  const a = parseFloat(amount()), b = parseFloat(partnerAmount());
+  if (S.measure === 'distance') return `Meet in the middle (${+(((a + b) / 2).toFixed(1))} km)`;
+  return `Meet in the middle (${Math.round((a + b) / 2 / 5) * 5} min)`;
+}
+const whenTime = () => (S.neg.when.val || 'Saturday, 7:00 AM').split(', ')[1] || '7:00 AM';
+
+/* what is recorded about the meeting place (spec: tracked + stored fields) */
+function locRecord(){
+  const n = S.neg.where, agreed = n.status === 'agreed' && n.val;
+  return {
+    tracked:{
+      location_suggested_by: n.firstBy ? P[n.firstBy].n : null,
+      location_final: agreed ? n.val : null,
+      number_of_location_proposals: n.rounds,
+      location_agreed_without_founder_help: agreed ? !n.founder : null,
+      founder_help_required: n.help
+    },
+    stored:{
+      meeting_location_name: n.val ? n.val.split(',')[0].trim() : null,
+      meeting_location_text: n.val,
+      meeting_location_status: agreed ? (n.founder ? 'founder_assisted' : 'agreed') : n.help ? 'needs_help' : n.val ? 'proposed' : 'not_set'
+    }
+  };
+}
+
+/* Illustrative only, restricted to a Colombo bounding box in the real build,
+   which would call the Google Places Autocomplete API behind a Supabase edge
+   function (keeps the API key server-side, mirrors partner-match / invite-email). */
+const COLOMBO_PLACES = [
+  'Diyasaru Park, near the main entrance','Viharamahadevi Park, main gate','Independence Square, north end',
+  'Nugegoda flyover, west side','Arcade Independence Square','Rajagiriya junction','Battaramulla wetland park',
+  'Dehiwala zoo, main entrance','Mount Lavinia beach, lifeguard tower','Torrington park, Havelock Town'
+];
+const AREAS = ['Borella','Boralesgamuwa','Dehiwala','Havelock Town','Kohuwala','Kotte','Maharagama','Mount Lavinia','Nawala','Nugegoda','Piliyandala','Rajagiriya','Ratmalana','Thalawathugoda','Wellawatte'];
+function locSuggest(){ const q = (S.locQ || '').trim().toLowerCase(); if (!q) return ''; const m = AREAS.filter(a => a.toLowerCase().includes(q) && !S.areas.includes(a)).slice(0, 5); return m.length ? m.map(a => `<button data-act="loc-add" data-v="${esc(a)}">${ic('pin', 2)}${esc(a)}</button>`).join('') : '<div class="nomatch">No match</div>'; }
+function whereSuggestHTML(q){
+  const query = (q || '').trim().toLowerCase();
+  if (!query) return '';
+  const matches = COLOMBO_PLACES.filter(p => p.toLowerCase().includes(query)).slice(0, 4);
+  if (!matches.length) return '';
+  return matches.map(p => `<button data-act="pick-suggest" data-v="${esc(p)}">${ic('pin', 2)}${esc(p)}</button>`).join('');
+}
+
+/* ---------- who else is doing this (Find, after pairing) ---------- */
+const FEED_COLORS = ['#FD8302','#1E3A4C','#2E9E6B','#8E5FD9','#D9534F','#3B8FD1','#C97B2E','#5F8B4C'];
+const FEED = [
+  { name:'Sanduni P.', act:'Running', amt:'5 km, daily' }, { name:'Kasun R.', act:'Cycling', amt:'12 km, 3x a week' },
+  { name:'Ishara F.', act:'Running', amt:'10 km, daily' }, { name:'Tharindu W.', act:'Gym', amt:'4x a week' },
+  { name:'Nadeesha K.', act:'Yoga', amt:'daily' }, { name:'Ruwan D.', act:'Walking', amt:'8 km, daily' },
+  { name:'Chamodi S.', act:'Home workouts', amt:'daily' }, { name:'Malith G.', act:'Badminton', amt:'2x a week' }
+];
+const initials = n => n.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+function feedRow(f, i){
+  return `<div class="feed-row"><div class="feed-init" style="background:${FEED_COLORS[i % FEED_COLORS.length]};">${esc(initials(f.name))}</div><div><div class="feed-name">${esc(f.name)}</div><div class="feed-meta">${esc(f.act)} &middot; ${esc(f.amt)}</div></div></div>`;
+}
+
+/* ---------- shared bits ---------- */
+function heart(you, partner){
+  const right = partner
+    ? '<path fill="url(#gR)" d="M66 30 C 76 14, 100 10, 112 24 C 126 39, 122 62, 108 78 C 98 90, 80 104, 66 114 Z"/>'
+    : '<path class="h-empty" d="M66 30 C 76 14, 100 10, 112 24 C 126 39, 122 62, 108 78 C 98 90, 80 104, 66 114 Z"/>';
+  return `<div class="stage-h"><div class="glow"></div>
+    <svg class="heart" viewBox="0 0 132 124" aria-hidden="true">
+      <defs>
+        <linearGradient id="gL" x1="0" y1="1" x2="0.5" y2="0"><stop offset="0%" stop-color="#FD5B01"/><stop offset="100%" stop-color="#FD8302"/></linearGradient>
+        <linearGradient id="gR" x1="1" y1="1" x2="0.5" y2="0"><stop offset="0%" stop-color="#FD8302"/><stop offset="100%" stop-color="#FFA83D"/></linearGradient>
+      </defs>
+      <path fill="${you?'url(#gL)':'none'}" stroke="${you?'none':'var(--dim)'}" stroke-width="2.4" d="M66 30 C 56 14, 32 10, 20 24 C 6 39, 10 62, 24 78 C 34 90, 52 104, 66 114 Z"/>
+      ${right}
+    </svg></div>`;
+}
+const streak = (n, sub) => `<div class="streak"><div class="n">${n}</div><div class="l">${sub}</div></div>`;
+const pairRow = (n, partnerDone) => `<div class="pair"><div class="pair-col">${photo(S.view,84)}<span>You</span></div>${streak(n,'day streak')}<div class="pair-col${partnerDone?'':' waiting'}">${photo(ptK(),84)}<span>${partnerDone ? esc(nm()) : 'Waiting'}</span></div></div>`;
+const duoRow = () => `<div class="duo"><div class="duo-col">${photo('dd',96)}Dinesh</div><div class="duo-col">${photo('gy',96)}Gayan</div></div>`;
+
+/* Block/Report overflow menu, Report starts at Match Found (link, not this
+   menu); this "···" menu covers Block + Report from Say Hi onward. */
+function ovMenu(){
+  if (!S.menu.open) return '';
+  return `<div class="ov-menu">
+    <button class="ov-item" data-act="block-open">${ic('x',2)}Block</button>
+    <button class="ov-item danger" data-act="report-open">${ic('flag',2)}Report a problem</button>
+  </div>`;
+}
+function ovTrigger(){
+  return `<div class="ov-wrap"><button class="ov-btn" data-act="menu-toggle" aria-label="More options">${ic('more',2.4)}</button>${ovMenu()}</div>`;
+}
+function appBar(menu){
+  return `<div class="topbar"><div class="logo">choner<span>.</span></div><div style="display:flex;align-items:center;gap:10px;">${menu ? ovTrigger() : ''}<div class="avatar-chip">${P[S.view].i}</div></div></div>`;
+}
+function plainBar(title, back, menu){
+  return `<div class="topbar"><button class="back" data-back="1" aria-label="Back" ${back===false?'disabled':''}>${ic('back',2.2)}</button><div class="ttl">${esc(title)}</div>${menu ? ovTrigger() : '<div class="slot"></div>'}</div>`;
+}
+function navBar(active){
+  const items = [['home','Home'],['find','Find'],['target','Challenges'],['community','Community']];
+  return `<div class="nav">${items.map(([k,l]) => {
+    const on = k === active;
+    return `<div class="navitem ${on?'on':'off'}"><span style="color:${on?'#FD5B01':'#fff'}">${ic(k,2)}</span><div class="lbl">${l}</div></div>`;
+  }).join('')}</div>`;
+}
+const btn = (label, go, extra) => `<button class="btn${extra?' '+extra:''}" data-go="${go}">${label}</button>`;
+const proto = (label, act, v, t) => `<button class="proto" data-act="${act}" ${v!==undefined?`data-v="${esc(v)}"`:''} ${t?`data-t="${t}"`:''}>${esc(label)}</button>`;
+
+function qrSvg(){
+  const N = 21; let seed = 7; const rnd = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
+  let d = ''; const finder = (x, y) => (x < 8 && y < 8) || (x > N - 9 && y < 8) || (x < 8 && y > N - 9);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    if (finder(x, y)) continue;
+    if (rnd() > 0.52) d += `M${x} ${y}h1v1h-1z`;
+  }
+  const f = (x, y) => `<path fill="#001827" fill-rule="evenodd" d="M${x} ${y}h7v7h-7zM${x+1} ${y+1}v5h5v-5z"/><rect x="${x+2}" y="${y+2}" width="3" height="3" fill="#001827"/>`;
+  return `<svg viewBox="0 0 ${N} ${N}" shape-rendering="crispEdges" aria-label="Session QR code"><rect width="${N}" height="${N}" fill="#fff"/><path fill="#001827" d="${d}"/>${f(0,0)}${f(N-7,0)}${f(0,N-7)}</svg>`;
+}
+
+const daySelect = (id, val) => `<div class="sel-wrap"><select id="${id}" aria-label="Day">${DAYS.map(d => `<option ${d===val?'selected':''}>${d}</option>`).join('')}</select></div>`;
+const timeInput = (id, val) => `<input class="txt" type="time" id="${id}" value="${val}" aria-label="Time">`;
+
+/* ---------- the one negotiation component ---------- */
+function compose(topic, cfg, n){
+  const d = S.draft;
+  const title = n.editing ? 'Edit your suggestion' : n.picking ? cfg.another : cfg.composeLabel;
+  let out = `<div class="flabel">${title}</div>`;
+  if (cfg.kind === 'options'){
+    out += `<div class="opts">${cfg.options.filter(o => o !== n.val).map(o =>
+      `<button class="choice mini" data-act="neg-send" data-t="${topic}" data-v="${esc(o)}"><div class="ic">${ic(cfg.icon)}</div><div><div class="t">${esc(o)}</div></div></button>`).join('')}</div>`;
+    return out;
+  }
+  if (cfg.kind === 'text'){
+    out += `<input class="txt" id="d-where" placeholder="${cfg.placeholder}" value="${esc(d.where)}" autocomplete="off" aria-label="Meeting place">
+      <div class="suggest" id="d-where-sugg">${whereSuggestHTML(d.where)}</div>
+      <div class="hint">Type to search. Results are illustrative here, the real build searches Google Places, restricted to Colombo.</div>`;
+  } else if (cfg.kind === 'when'){
+    out += `${daySelect('d-when-day', d.when.day)}<div class="flabel" style="margin-top:14px;">Time</div>${timeInput('d-when-time', d.when.time)}`;
+  } else if (cfg.kind === 'apart'){
+    const a = d.awhen;
+    out += `${daySelect('d-aw-day', a.day)}
+      <div class="pill-row" style="margin:14px 0;">
+        <button class="pill ${a.same?'on':''}" data-act="aw-same" data-v="yes">Same time</button>
+        <button class="pill ${!a.same?'on':''}" data-act="aw-same" data-v="no">Different times</button>
+      </div>
+      ${a.same
+        ? `<div class="flabel">Time for both of you</div>${timeInput('d-aw-you', a.you)}`
+        : `<div class="flabel">Your time</div>${timeInput('d-aw-you', a.you)}<div class="flabel" style="margin-top:14px;">${esc(nm())}'s time</div>${timeInput('d-aw-them', a.them)}`}`;
+  }
+  if (S.err[topic]) out += `<div class="errmsg">${S.err[topic]}</div>`;
+  out += `<div class="foot"><button class="btn" data-act="neg-send" data-t="${topic}">Send suggestion</button></div>`;
+  return out;
+}
+
+function negotiation(topic, cfg){
+  const n = S.neg[topic], v = S.view, o = other(v);
+  let out = `<div class="p-h1">${cfg.q}</div>${cfg.sub ? `<div class="p-sub">${cfg.sub}</div>` : ''}${cfg.intro || ''}`;
+  if (n.val == null || n.picking || n.editing) return out + compose(topic, cfg, n);
+
+  const who = n.by === 'founder' ? 'Choner suggested' : (v === n.by ? 'You suggested' : `${P[n.by].n} suggested`);
+  const agreed = n.status === 'agreed';
+  const chip = agreed ? `<span class="chip ok">${ic('check',2.4)} Agreed</span>`
+    : n.help && !n.founder ? `<span class="chip">${ic('spark',2)} Choner is helping</span>`
+    : `<span class="chip">${ic('clock',2)} ${v === n.by ? 'Waiting for ' + P[o].n : 'Need your answer'}</span>`;
+  out += `<div class="neg-card"><div class="neg-by">${av(n.by)}<span>${who}</span></div><div class="neg-val">${esc(n.val)}</div>${chip}</div>`;
+
+  if (agreed) return out + `<div class="foot">${btn('Continue', cfg.next)}</div>`;
+
+  if (n.help){
+    out += `<div class="help" style="margin-top:14px;">Choner will help you both choose. We'll message you as soon as there's a suggestion.</div><div style="margin-top:12px;">${proto('Prototype: Choner picks one','founder-pick',undefined,topic)}</div>`;
+    return out;
+  }
+  if (v === n.by){
+    out += `<div class="p-sub" style="margin:14px 2px 0;font-size:12px;">Waiting for ${P[o].n}. Switch <b>View as</b> to answer as ${P[o].n}, or tap Back to edit your suggestion.</div>`;
+  } else {
+    out += `<div class="btn-2" style="margin-top:14px;">
+      <button class="btn" data-act="neg-accept" data-t="${topic}">Sounds good</button>
+      <button class="btn-o" data-act="neg-open" data-t="${topic}">${cfg.another}</button>
+    </div>`;
+  }
+  if (n.rounds >= 2 && cfg.helpText){
+    out += `<div class="help">${cfg.helpText}<br><button data-act="get-help" data-t="${topic}">Get help from Choner</button></div>`;
+  }
+  return out;
+}
+
+const CFG = {
+  where:{ kind:'text', q:'Where should <b>you meet?</b>', sub:'One of you suggests a place. The other says yes or suggests another.',
+    icon:'pin', composeLabel:'Type a place you know', placeholder:'e.g. Diyasaru Park', another:'Suggest another place', next:'t-when',
+    helpText:'Need help choosing a place?', founderPick:'Viharamahadevi Park, main gate' },
+  when:{ kind:'when', q:'What works <b>for you both?</b>', sub:'Pick a day and a time.',
+    icon:'calendar', composeLabel:'Pick a day', another:'Suggest another time', next:'t-confirm',
+    helpText:'Need help choosing a time?', founderPick:'Saturday, 6:30 AM' },
+  awhen:{ kind:'apart', q:'When will you <b>each run?</b>', sub:'Pick a day, then the same time or different times.',
+    icon:'clock', composeLabel:'Pick a day', another:'Suggest another time', next:'a-confirm',
+    helpText:'Need help choosing a time?', founderPick:'Saturday, 7:00 AM for both of you' }
+};
+const TOPIC_OF = { 't-where':'where', 't-when':'when', 'a-when':'awhen', 'distconflict':'dist' };
+
+function makeVal(topic){
+  const d = S.draft;
+  if (topic === 'where') return d.where.trim() || null;
+  if (topic === 'when') return `${d.when.day}, ${fmtTime(d.when.time)}`;
+  if (topic === 'awhen'){
+    const a = d.awhen;
+    return a.same ? `${a.day}, ${fmtTime(a.you)} for both of you` : `${a.day}: ${meN()} ${fmtTime(a.you)}, ${nm()} ${fmtTime(a.them)}`;
+  }
+  return null;
+}
+
+/* ---------- screens ---------- */
+const SC = {};
+const def = (id, o) => { SC[id] = o; };
+
+/* ===== Find ===== */
+def('landing', { ph:'P1', group:'Find', label:'Find landing',
+  bar:() => appBar(), nav:() => navBar('find'),
+  body:() => `
+    <div class="p-h1" style="margin-bottom:4px;">Find</div>
+    <div class="p-sub" style="margin-bottom:6px;">Someone else is looking for you too.</div>
+    <button class="radar" data-go="prematch" aria-label="Find a match">
+      <span class="ring"></span><span class="ring"></span><span class="ring"></span>
+      <span class="rc">Find a<br>Match</span>
+    </button>
+    <div class="tap">Tap to start looking</div>
+    <div class="foot"><div class="soft" style="display:flex;align-items:center;gap:12px;">${av(S.view)}<div style="font-size:12.5px;line-height:1.4;"><b style="font-weight:600;">Running, 3 km</b><br><span style="color:var(--pmuted);">Your activity and rough commitment from onboarding</span></div></div></div>`,
+  note:{ t:'Tap the radar to start', what:'Radar visualization with a single tap to search. The tap is a pure intent gesture: what you are matching for already exists from onboarding.',
+    build:['Reuse the radar from choner_find_tab_standalone.html as built','Headline: "Someone else is looking for you too.", no fabricated area or amount pulled from onboarding, since nothing specific is known yet','Radar centre reads "Find a Match"; your activity and rough commitment sit below'],
+    dnb:'The radar is a metaphor. It never shows invented "people nearby" counts.' }
+});
+
+def('prematch', { ph:'P2', group:'Find', label:'Pre-match form',
+  bar:() => plainBar('Find: Running'), nav:() => '',
+  body:() => `
+    <div class="p-eyebrow">Find a partner, Running / Jogging</div>
+    <div class="p-h1">Two quick <b>questions</b></div>
+    <div class="p-sub">Everything else, like distance, time and place, you'll agree with your partner once you're matched.</div>
+    <div class="flabel">Gender preference</div>
+    <div class="pill-row" style="margin-bottom:22px;">
+      <button class="pill ${S.gender==='none'?'on':''}" data-act="gender" data-v="none">No preference</button>
+      <button class="pill ${S.gender==='same'?'on':''}" data-act="gender" data-v="same">Same gender only</button>
+    </div>
+    <div class="flabel">Your locations</div>
+    ${S.areas.length ? `<div class="chips">${S.areas.map(a => `<span class="lchip">${esc(a)}<button data-act="loc-del" data-v="${esc(a)}" aria-label="Remove ${esc(a)}">${ic('x',2.4)}</button></span>`).join('')}</div>` : ''}
+    ${S.areas.length < 2 ? `<input class="txt" id="loc-in" placeholder="${S.areas.length ? 'Add one more' : 'Type an area'}" autocomplete="off" value="${esc(S.locQ)}" aria-label="Search for an area"><div class="suggest" id="loc-sugg">${locSuggest()}</div>` : ''}
+    <div class="foot"><button class="btn" data-go="searching" ${S.areas.length?'':'disabled'}>Find my partner</button></div>`,
+  note:{ t:'Only the filters that must be known before matching', what:'Mode moved post-match, so this form shrinks to what the matcher needs up front.',
+    build:['Gender preference: No preference / Same gender only','Locations: up to 2, from the existing 68-location tag-based proximity system. Suggestions only appear once they start typing; each pick becomes a closable chip and the keyboard closes','No mode, no distance, no time here','Submit goes to the Searching state'],
+    flag:'The spec says "only three fields" but lists two (gender preference and area). Confirm whether a third field was dropped or the count is a typo.' }
+});
+
+def('searching', { ph:'P2', group:'Find', label:'Searching',
+  bar:() => plainBar('Find: Running'), nav:() => navBar('find'),
+  body:() => {
+    const note = S.declineNote; S.declineNote = null;
+    return `
+    ${note ? `<div class="card" style="margin-bottom:14px;text-align:center;font-size:13px;">${esc(note)}</div>` : ''}
+    <div class="p-h1" style="margin-bottom:4px;">Looking<b>&hellip;</b></div>
+    <div class="p-sub" style="margin-bottom:6px;">${S.searchWaited ? "No luck yet. You can close the app, we'll notify you the moment we find someone." : "We'll notify you the moment we find a match."}</div>
+    <div class="radar act" role="img" aria-label="Searching">
+      <span class="ring"></span><span class="ring"></span><span class="ring"></span>
+      <span class="rc">Looking&hellip;</span>
+    </div>
+    <div class="foot">${proto('Prototype: a match is found','go','match')}</div>`;
+  },
+  onEnter:() => {
+    S.searchWaited = false;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { S.searchWaited = true; if (S.cur === 'searching') render(); }, 5000);
+  },
+  note:{ t:'Notify, don\'t ask people to keep checking', what:'Replaces the old "usually a day or two" framing, which reads as "come back and check." After 5 seconds with no match (compressed here for the demo, the real wait is longer), the copy shifts to make explicit that closing the app is fine: a notification will arrive. Declining a match drops a short, polite line at the top of this screen too.',
+    build:['Initial: "We\'ll notify you the moment we find a match."','After a wait with nothing found: "No luck yet. You can close the app, we\'ll notify you the moment we find someone."','Rings rgba(253,91,1,.75) on a 4s cycle (rest is .28 on 5.5s)','Manual or semi-manual matching is fine at this stage','Decline copy: "No problem, we\'ll keep looking for someone else who fits."','Back button returns to the pre-match form'],
+    dnb:'The dashed button is a prototype control, not part of the app.' }
+});
+
+def('match', { ph:'P3', group:'Find', label:'Match found',
+  bar:() => plainBar('Find: Running'), nav:() => '',
+  body:() => {
+    const iAccepted = S.accept[S.view], partnerAccepted = S.accept[other(S.view)];
+    return `
+    <div class="center" style="margin:4px 0 14px;">
+      <div style="display:flex;justify-content:center;margin-bottom:14px;">${photo(ptK(),112,true)}</div>
+      <div class="p-h1" style="margin-bottom:6px;">You found <b>a Match.</b></div>
+      <div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--green);font-weight:500;">${ic('check',2.4).replace('<svg','<svg style="width:14px;height:14px"')} ${esc(nm())}, photo confirmed</div>
+    </div>
+    <ul class="reasons">
+      <li><span class="ck">${ic('check',2.6)}</span>You both want to run.</li>
+      <li><span class="ck">${ic('check',2.6)}</span>You're both in the ${esc(S.areas[0])} area.</li>
+      <li><span class="ck">${ic('check',2.6)}</span>You're both looking for someone to keep you accountable.</li>
+    </ul>
+    <div class="center"><button class="report-link" data-act="report-open">Report</button></div>
+    <div class="foot">
+      ${iAccepted
+        ? `<div class="card center" style="margin-bottom:10px;"><div style="font-weight:500;font-size:14px;">You're in.</div><div style="font-size:12.5px;color:var(--pmuted);margin-top:4px;line-height:1.5;">Waiting for ${esc(nm())} to accept. Saying hi unlocks once you both have accepted.</div></div>
+           <div class="hint" style="text-align:center;">In the real app, ${esc(nm())} gets a push notification the moment you accept, taking them straight to their own accept screen.</div>
+           <button class="btn-g" data-act="decline">Find someone else</button>
+           <button class="btn-g" data-act="stop-looking">Stop looking</button>`
+        : `${partnerAccepted ? `<div class="hint" style="text-align:center;">${esc(nm())}'s already said yes.</div>` : ''}<button class="btn" data-act="accept-match">Let's do this</button><button class="btn-g" data-act="decline">Not quite right</button>`}
+    </div>`;
+  },
+  note:{ t:'Both sides accept independently', what:'Not just name, photo and activity. The reasons are human-language compatibility, so accepting feels like a decision. Each person\'s acceptance is tracked separately, switch View as to Gayan to see his own, independent accept/decline screen.',
+    build:['Profile photo of the match, large and centred, with a check badge when the photo is confirmed',"Reasons come from the scoring engine's existing reasons[] array. No new logic, only surfaced in plain language",'Photo line reads "Photo confirmed" or "No photo yet"',"Actions: Let's do this / Not quite right",'Once you\'ve accepted and are waiting: Find someone else (declines this match, stays in the pool) and Stop looking (leaves the pool), both exist in the real find.tsx already','Accepting sends the other person a push notification that deep-links straight to their own accept/decline screen','Report is reachable here too, restricted to Fake profile / Something else, the other categories aren\'t applicable before anything has actually happened between them'],
+    dnb:`Declining (either "Not quite right" or "Find someone else") shows a short, polite line before returning to search, "No problem, we'll keep looking for someone else who fits." Not modelled as a separate confirmation screen here, just the line itself.` }
+});
+
+/* ===== Challenges: first session ===== */
+def('plan-gate', { ph:'C1', group:'Challenges: first session', label:'Plan your first run',
+  bar:() => appBar(), nav:() => navBar('target'),
+  body:() => `
+    <div class="p-eyebrow">Challenges &middot; Running</div>
+    <div class="p-h1">You're paired. <b>Let's plan it.</b></div>
+    ${duoRow()}
+    <div class="foot">${btn('Plan your first run','sayhi')}</div>`,
+  note:{ t:'The gate this app does not have yet', what:'Right now Challenges shows the "Mark as done" card the instant a pairing exists, there is no step for agreeing on a first session. This screen is new: it holds the TODAY card in a "not started" state until Say Hi through Confirm are done.',
+    build:['New sub-state of "partnered" in Challenges: paired but no first session agreed yet','Reuses the pairing shown at Find\'s hand-off, then routes into the existing Say Hi / negotiation flow','Once confirmed, collapses into the day-of / check-in flow Challenges already has'],
+    flag:'This is a genuinely new piece of the Challenges state machine, not a re-skin. Confirm with Gayan before building, it changes when the TODAY card is allowed to appear.' }
+});
+
+def('sayhi', { ph:'C2', group:'Challenges: first session', label:'Say hi',
+  bar:() => plainBar(nm(), true, true), nav:() => navBar('target'),
+  body:() => {
+    const v = S.view, o = S.opener, r = S.reply;
+    const OPENER = 'Hey, ready to do this?';
+    const REPLIES = [['spark',"Let's go"],['fire',"Can't wait"],['check','Sounds good']];
+    let bubbles = '';
+    if (o) bubbles += `<div class="bub-l ${v==='dd'?'me':''}">${v==='dd'?'You':'Dinesh'}</div><div class="bub ${v==='dd'?'me':'them'}">${esc(o)}</div>`;
+    if (r) bubbles += `<div class="bub-l ${v==='gy'?'me':''}">${v==='gy'?'You':'Gayan'}</div><div class="bub ${v==='gy'?'me':'them'}">${esc(r)}</div>`;
+    let pick = '';
+    if (!o && v === 'dd') pick = `<div class="flabel">Say hi</div><div class="quick"><button data-act="opener" data-v="${esc(OPENER)}">${ic('chat')}${esc(OPENER)}</button></div>`;
+    else if (!o && v === 'gy') pick = `<div class="p-sub" style="margin:0;">Waiting for Dinesh to say hi first. Switch <b>View as</b> to Dinesh to send it.</div>`;
+    else if (o && !r && v === 'gy') pick = `<div class="flabel">Reply</div><div class="quick">${REPLIES.map(([i,t]) => `<button data-act="reply" data-v="${esc(t)}">${ic(i)}${esc(t)}</button>`).join('')}</div>`;
+    else if (o && !r) pick = `<div class="p-sub" style="margin:0;">Sent. Switch <b>View as</b> to Gayan to reply.</div>`;
+    return `
+      <div class="p-h1">You found <b>your Match.</b></div>
+      <div class="p-sub" style="margin-bottom:10px;">Say hi before your first session.</div>
+      <div class="bubbles">${bubbles}</div>
+      ${pick}
+      <div class="hint">For your safety, keep the conversation in the app and hold off on sharing personal details.</div>
+      <div class="foot">${r ? btn('Continue','transition') : proto('Prototype: skip to the next step','go','transition')}</div>`;
+  },
+  note:{ t:'One canned opener, no free-text chat', what:'Unlocks only once both have accepted. One opener, one reply. Use View as to play both sides. This is also where Block and Report both become available (the "···" menu, top right), Report was already reachable one screen earlier, at Match Found.',
+    build:['Opener: Hey, ready to do this?',"Replies: Let's go / Can't wait / Sounds good",'No typing field','Standing safety line: for your safety, keep the conversation in the app and hold off on sharing personal details','Bubble side follows whoever is looking, your own messages sit on the right, the other person\'s on the left, for both viewers'],
+    dnb:'<b>Do not build</b> free-text chat here. This is a structured first interaction to reduce the awkwardness of meeting a stranger.' }
+});
+
+def('transition', { ph:'C3', group:'Challenges: first session', label:'Choner steps in',
+  bar:() => plainBar('Your first run', true, true), nav:() => navBar('target'),
+  body:() => `
+    ${heart(true,true)}
+    <div class="center">
+      <div class="p-h1" style="text-align:center;">You two <b>are in.</b></div>
+      <div class="p-sub" style="text-align:center;">Let's plan your first run together.</div>
+    </div>
+    ${duoRow()}
+    <div class="foot">${btn("Let's do it",'howmuch')}</div>`,
+  note:{ t:'Choner takes over the conversation', what:'A short hand-off. From here the app guides the planning one question at a time instead of dropping people into an empty chat.',
+    build:['Two-person heart, both halves filled','Both profile photos, shown as larger circles with first names underneath',"Single action: Let's do it"] }
+});
+
+def('howmuch', { ph:'C4', group:'Challenges: first session', label:'How much',
+  bar:() => plainBar('Your first run', true, true), nav:() => navBar('target'),
+  body:() => {
+    if (S.view !== 'dd'){
+      return `
+        <div class="p-h1">How far would you <b>like to run?</b></div>
+        <div class="card center" style="margin-top:10px;">
+          <div style="font-size:13.5px;">Already answered: <b style="font-weight:600;">${esc(PARTNER.dist)}</b></div>
+          <div class="p-sub" style="margin:8px 0 0;">This is Gayan's own answer, fixed for this prototype. Switch <b>View as</b> to Dinesh to try different values.</div>
+        </div>
+        <div class="foot">${btn('Continue','__amount')}</div>`;
+    }
+    const opts = ['1 to 2 km','3 km','5 km','5 to 10 km','10 km or more','Not sure yet'];
+    return `
+      <div class="p-h1">How far would you <b>like to run?</b></div>
+      <div class="pill-row">${opts.map(o => `<button class="pill ${S.dist===o?'on':''}" data-act="amount" data-v="${esc(o)}">${o}</button>`).join('')}</div>
+      <div class="foot">${btn('Continue','__amount')}</div>`;
+  },
+  note:{ t:'Running and Jogging combined, distance only', what:"Duration is dropped, Running/Jogging, Walking and Cycling all measure distance only, never duration. Gayan has already answered privately (fixed here at 5 km), so a mismatch leads into the shared negotiation. Only Dinesh's answer is live and editable on this screen; viewing as Gayan shows his answer as already recorded, not re-editable, so the two can never collide.",
+    build:['Distance only: 1 to 2 km, 3 km, 5 km, 5 to 10 km, 10 km or more, Not sure yet, no duration option, for Running/Jogging, Walking or Cycling','If the answers differ, go to the conflict screen (uses the same negotiation component)'],
+    dnb:'In this prototype Gayan\'s answer is fixed at 5 km. Pick anything else as Dinesh to see the conflict.' }
+});
+
+def('distconflict', { ph:'C4', group:'Challenges: first session', label:'How much: conflict',
+  bar:() => plainBar('Your first run', true, true), nav:() => navBar('target'),
+  body:() => negotiation('dist', {
+    kind:'options', q:'You both have different <b>distances in mind.</b>', sub:'What sounds good for your first run?',
+    intro:`<div class="vs"><div><small>Dinesh</small><b>${esc(amount())}</b></div><div><small>Gayan</small><b>${esc(partnerAmount())}</b></div></div>`,
+    icon:S.measure==='distance'?'ruler':'timer', composeLabel:'Pick one to suggest', another:'Suggest another', next:'mode',
+    options:[amount(), partnerAmount(), midpoint()] }),
+  note:{ t:'Same negotiation component, comparison variant', what:'Both positions are shown side by side, then one is suggested and the other person accepts or counters.',
+    build:['Options: mine / theirs / meet in the middle','Identical accept/counter UI to Where and When','Back steps out of a suggestion first, then leaves the screen','Once agreed, the value carries into the confirmation screen'] }
+});
+
+def('mode', { ph:'C5', group:'Challenges: first session', label:'Run together or separately',
+  bar:() => plainBar('Your first run', true, true), nav:() => navBar('target'),
+  body:() => `
+    <div class="p-h1">How do you want to do <b>your first run?</b></div>
+    <div class="p-sub">Both keep you accountable to each other.</div>
+    <button class="choice ${S.mode==='together'?'on':''}" data-act="mode" data-v="together"><div class="ic">${ic('together')}</div><div><div class="t">Run together</div><div class="d">Meet up and run together</div></div></button>
+    <button class="choice ${S.mode==='apart'?'on':''}" data-act="mode" data-v="apart"><div class="ic">${ic('separate')}</div><div><div class="t">Run separately, together</div><div class="d">Go for your run without meeting up, but stay accountable to each other.</div></div></button>
+    <div class="foot">${btn('Continue', S.mode==='together'?'t-where':'a-when')}</div>`,
+  note:{ t:'Mode is decided after the match', what:'The moved decision from the reconciliation notes. Run together sends you through where, when and QR. Run separately, together goes to timing and an async check-in.',
+    build:['Run together: meet up and run together','Run separately, together: go for your run without meeting up, but stay accountable to each other','No Solo option anywhere'] }
+});
+
+/* ===== Challenges: run together ===== */
+def('t-where', { ph:'6A', group:'Challenges: run together', label:'Where',
+  bar:() => plainBar('First run together', true, true), nav:() => navBar('target'),
+  body:() => negotiation('where', CFG.where),
+  note:{ t:'Where should you meet', what:'One person types a place they already know. The other says "Sounds good" or suggests another. If they cannot agree, Choner helps them choose. The text field is an illustrative Google Places-style search, real matches come from the Places API, restricted to Colombo, called through a proxy edge function.',
+    build:['One person suggests a place by typing it. Example: Diyasaru Park','The other responds: Sounds good, or Suggest another place','If they cannot agree: "Need help choosing a place?" and Choner / the founders help manually','Google Places Autocomplete, restricted to a Colombo bounding box, called through a Supabase edge function so the API key never ships in the app'],
+    dnb:'<b>Do not build</b> a map, GPS or live location. Places are typed/picked and described in words.',
+    extra:() => {
+      const r = locRecord();
+      const rows = o => Object.entries(o).map(([k, v]) => `<div class="kv"><code>${k}</code><span>${v === null ? 'null' : esc(String(v))}</span></div>`).join('');
+      return `<div class="data-card"><div class="note-h">Tracked, even though location is manual</div>${rows(r.tracked)}<div class="note-h" style="margin-top:6px;">Stored at minimum</div>${rows(r.stored)}</div>`;
+    } }
+});
+def('t-when', { ph:'6A', group:'Challenges: run together', label:'When',
+  bar:() => plainBar('First run together', true, true), nav:() => navBar('target'),
+  body:() => negotiation('when', CFG.when),
+  note:{ t:'When to meet', what:'Same suggest/accept mechanic, now for a day and a time. Whoever suggests picks a day and types a time.',
+    build:['Day selector and time input','Same negotiation component and same founder fallback after repeated rounds'],
+    dnb:'<b>Do not build</b> an availability-window overlap calculator.' }
+});
+def('t-confirm', { ph:'6A', group:'Challenges: run together', label:'Confirm',
+  bar:() => plainBar('First run together', true, true), nav:() => navBar('target'),
+  body:() => `
+    <div class="p-eyebrow">Your first run together</div>
+    <div class="p-h1" style="margin-bottom:14px;">Dinesh <b>+ Gayan</b></div>
+    <div class="card summary">
+      <div class="r">${ic('ruler')}<div>${esc(finalAmount())}<span>${S.measure==='distance'?'Distance':'Duration'}</span></div></div>
+      <div class="r">${ic('calendar')}<div>${esc(S.neg.when.val || 'Saturday, 7:00 AM')}<span>Day and time</span></div></div>
+      <div class="r">${ic('pin')}<div>${esc(S.neg.where.val || 'Diyasaru Park')}<span>Meeting place</span></div></div>
+    </div>
+    <div class="mot">${ic('chat',2)} A quick chat opens once you're both at the meeting place.</div>
+    <div class="hint" style="text-align:center;">For your safety, keep the conversation in the app and hold off on sharing personal details.</div>
+    <div class="center" style="margin-top:16px;"><div style="font-size:15px;font-weight:600;">You're both committed.</div></div>
+    <div class="foot">${S.conf.t
+      ? `<div class="card center"><div style="font-weight:600;">It's on.</div><div style="font-size:12.5px;color:var(--pmuted);margin-top:4px;">${esc(S.neg.when.val || 'Saturday, 7:00 AM')}. Don't keep each other waiting.</div></div>`
+      : `<button class="btn" data-act="confirm" data-v="t">I'm in</button>`}</div>`,
+  note:{ t:'Both confirm the whole plan, no phone numbers', what:`One summary of everything agreed. Phone-number exchange is gone, replaced by a temporary in-app chat that opens once you're both at the meeting place (built separately, not shown in this artifact). Once both confirm, the app sends "It's on." There is no manual shortcut into the day, the day simply arrives, so use the phase rail or Next to continue the review.`,
+    build:['Summary: distance/duration, day and time, place',"Action: I'm in (both people)","Confirmation message: It's on. {day}, {time}. Don't keep each other waiting.",'Standing safety line repeated here since this is where contact is about to happen','No "jump to the day" action, nothing artificially fast-forwards a real user to the day of'],
+    flag:"The temporary chat itself (opens at 'I'm here', closes at QR scan or a confirmed reschedule) is a real app feature to spec and build separately, deliberately not modelled in this artifact." }
+});
+def('t-day', { ph:'6A', group:'Challenges: run together', label:'Day of',
+  bar:() => plainBar('Today', true, true), nav:() => navBar('target'),
+  body:() => {
+    const my = S.day[S.view], theirs = S.day[other(S.view)];
+    const bothHere = my === 'here' && theirs === 'here';
+    let action;
+    if (bothHere){
+      action = `<div class="mot">${ic('chat',2)} A temporary chat is now open between you and ${esc(nm())}.</div>
+        <div class="hint" style="text-align:center;">For your safety, keep the conversation in the app and hold off on sharing personal details.</div>
+        <div class="foot">${btn('Open QR verification','t-qr')}</div>`;
+    } else if (my === 'here'){
+      action = `<div class="foot"><div class="soft center" style="font-size:12.5px;color:var(--pmuted);">You're here. Waiting for ${esc(nm())}.</div></div>`;
+    } else if (my === 'onway'){
+      action = `<div class="foot">${theirs === 'here' ? `<div class="soft center" style="margin-bottom:10px;font-size:12.5px;color:var(--pmuted);">${esc(nm())} is already here.</div>` : `<div class="soft center" style="margin-bottom:10px;font-size:12.5px;color:var(--pmuted);">${esc(nm())} can see you're on your way.</div>`}<button class="btn" data-act="here">I'm here</button></div>`;
+    } else {
+      action = `<div class="foot">${theirs === 'here' ? `<div class="hint" style="text-align:center;">${esc(nm())} is already here, waiting for you.</div>` : ''}<button class="btn" data-act="onway">I'm on my way</button></div>`;
+    }
+    return `
+    <div class="p-h1">Today's the day.</div>
+    <div class="p-sub">You and ${esc(nm())} are running together at ${esc(whenTime())}.</div>
+    <div class="card summary">
+      <div class="r">${ic('pin')}<div>${esc(S.neg.where.val || 'Diyasaru Park')}<span>Meeting place</span></div></div>
+      <div class="r">${ic('ruler')}<div>${esc(finalAmount())}<span>The run</span></div></div>
+    </div>
+    ${action}`;
+  },
+  note:{ t:'Both have to say they\'re here before anything opens', what:`On my way, then I'm here, tracked separately for each of you, switch View as to see both sides progress independently. Only once you're both here does the temporary chat open, followed by a button to open QR verification. In the real build, tapping "I'm here" notifies ${esc(nm())} and gives them three options: I'm here too, On my way, or Won't be able to make it today; whichever they tap opens the chat.`,
+    build:[`I'm on my way, then I'm here, per person`,'No live location, only these taps','Notifies the partner with three options: I\'m here too / On my way / Won\'t be able to make it today','The temporary chat opens only once both sides have confirmed they\'re here, then a separate action opens QR verification, it never auto-advances'],
+    flag:'For "I\'m here too" and "On my way," the chat disables at the QR scan. For "Won\'t be able to make it today," the chat opens with reschedule at the top, reuses the existing "Can\'t today" reschedule UI, and disables only once BOTH sides confirm the new time, not the instant one taps reschedule, otherwise there is no way to actually negotiate the new time before losing the channel. Not modelled step-by-step in this artifact since it depends on the chat feature.' }
+});
+def('t-qr', { ph:'6A', group:'Challenges: run together', label:'QR verification',
+  bar:() => plainBar('Meet up', true, true), nav:() => navBar('target'),
+  body:() => S.qrDone ? `
+    <div class="big-ok">${ic('check',2.6)}</div>
+    <div class="center"><div class="p-h1" style="text-align:center;">You're together. <b>${esc(finalAmount())} starts now.</b></div><div class="p-sub" style="text-align:center;">This is your check-in. There's no further proof step.</div></div>
+    <div class="foot">${btn('Start the run','t-finish')}</div>` : `
+    <div class="p-h1">${esc(nm())} is <b>here too.</b></div>
+    <div class="p-sub" style="margin-bottom:14px;">Show your QR code to each other to confirm you're together.</div>
+    <div class="cam"><span class="br tl"></span><span class="br tr"></span><span class="br bl"></span><span class="br brr"></span><span class="scan"></span><div class="cap">Point your camera at ${esc(nm())}'s code</div></div>
+    <div class="qrbox">${qrSvg()}<small>Your code, valid for this session only</small></div>
+    <div class="foot">${proto(nm() + "'s code scanned (prototype)",'qr')}</div>`,
+  note:{ t:'QR scan is the check-in, and closes the temporary chat', what:'Live camera scan only. Short-lived code, tied to this specific session. A successful scan is the proof, and it is also the moment the temporary meetup chat disables.',
+    build:['Live camera only, no gallery upload','Short-lived code per session',`Success: "You're together. {distance} starts now."`,'Names follow whoever is looking: switch View as to see each side'] }
+});
+def('t-finish', { ph:'6A', group:'Challenges: run together', label:'Finish',
+  bar:() => plainBar('Run in progress', false, true), nav:() => navBar('target'),
+  body:() => `
+    ${heart(true,true)}
+    <div class="center"><div class="p-h1" style="text-align:center;">Enjoy <b>the run.</b></div><div class="p-sub" style="text-align:center;">${esc(finalAmount())}, with ${esc(nm())}.</div></div>
+    ${duoRow()}
+    <div class="foot">${btn('Finish','done-b')}</div>`,
+  note:{ t:'Either person taps Finish', what:'No photo, no question. It only marks the session complete so streak logic can fire, then opens the completion screen.',
+    build:['Both profile photos with first names, so the pair is visible during the run','One tap, records a timestamp','Triggers the completion screen (C7)'],
+    flag:'Finish is a proposed resolution, not yet separately confirmed. Flag it if you want it changed.' }
+});
+
+/* ===== Challenges: run separately, together ===== */
+def('a-when', { ph:'6B', group:'Challenges: run separately, together', label:'Day and time',
+  bar:() => plainBar('First run, separately', true, true), nav:() => navBar('target'),
+  body:() => negotiation('awhen', CFG.awhen),
+  note:{ t:'Pick a day and a time', what:'Same suggest/accept mechanic. Choose a day, then either the same time for both or a time each.',
+    build:['Day selector','Same time, or different times with a time input per person','The agreed day and times carry into the shared commitment'] }
+});
+def('a-confirm', { ph:'6B', group:'Challenges: run separately, together', label:'Confirm',
+  bar:() => plainBar('First run, separately', true, true), nav:() => navBar('target'),
+  body:() => `
+    <div class="p-eyebrow">Your shared commitment</div>
+    <div class="p-h1" style="margin-bottom:14px;">One run, <b>two places.</b></div>
+    <div class="card summary">
+      <div class="r">${ic('ruler')}<div>${esc(finalAmount())}<span>${S.measure==='distance'?'Distance':'Duration'}</span></div></div>
+      <div class="r">${ic('calendar')}<div>${esc(S.neg.awhen.val || 'Saturday, 7:00 AM for both of you')}<span>Day and time</span></div></div>
+    </div>
+    <div class="foot">${S.conf.a
+      ? `<div class="card center" style="margin-bottom:10px;"><div style="font-weight:600;">You're committed together.</div><div style="font-size:12.5px;color:var(--pmuted);margin-top:4px;">You'll see each other's check-ins.</div></div>${btn('Jump to the day','a-async')}`
+      : `<button class="btn" data-act="confirm" data-v="a">Commit together</button>`}</div>`,
+  note:{ t:'Shared commitment', what:'The summary the pair commits to. The commitment is the point, not the venue.',
+    build:['Action: Commit together','Once both commit, the shared commitment is created'] }
+});
+def('a-async', { ph:'6B', group:'Challenges: run separately, together', label:'Day of: async',
+  bar:() => plainBar('Today', true, true), nav:() => navBar('target'),
+  body:() => `
+    <div class="card" style="display:flex;align-items:center;gap:14px;">${photo(ptK(),52)}<div><div style="font-size:14px;font-weight:600;">${esc(nm())} has completed their ${esc(finalAmount())}.</div><div style="font-size:12px;color:var(--pmuted);margin-top:3px;">8:04 AM</div></div></div>
+    <div class="center" style="margin-top:22px;"><div class="p-h1" style="text-align:center;">Your turn.</div><div class="p-sub" style="text-align:center;">${esc(nm())} is counting on you to show up too.</div></div>
+    <div class="foot">${btn('Log my run','a-checkin')}</div>`,
+  note:{ t:'Partner visibility, not verification', what:'You see that your partner showed up before you log yours. That is the nudge. Names follow whoever is looking.',
+    build:['Partner completion appears at the top, with their photo','"Your turn." is the single call to action'] }
+});
+def('a-checkin', { ph:'6B', group:'Challenges: run separately, together', label:'Check-in',
+  bar:() => plainBar('Check in', true, true), nav:() => navBar('target'),
+  body:() => {
+    const c = S.checkin, nn = nm(), amt = finalAmount();
+    let extra = '';
+    if (c === 'done'){
+      extra = `<div class="p-h1" style="margin-top:18px;">Want to share a moment <b>from today?</b></div><div class="p-sub" style="margin-bottom:2px;">Optional. A light touch, not proof.</div><div class="hint" style="margin-bottom:12px;">Only visible to each other as a view-once photo after you've both shared. Saved to your profile.</div>
+        ${S.photo === 'taken'
+          ? `<div class="photo">${ic('camera')}</div><div class="foot">${btn('Share with ' + esc(nn),'done-b')}</div>`
+          : `<div class="btn-2"><button class="btn row" data-act="photo" data-v="taken">${ic('camera',2)} Take a photo</button><button class="btn-o" data-go="done-b">Skip</button></div>`}`;
+    } else if (c === 'later'){
+      const done = S.later === 'done';
+      extra = `<div class="card" style="margin-top:14px;">
+          <div style="font-weight:600;font-size:14px;">${done ? 'Nice, you did it.' : "Got it. We've told " + esc(nn) + " you'll do it later today."}</div>
+          <div class="p-sub" style="margin:6px 0 0;">${done ? esc(nn) + ' has been notified.' : 'Tap below as soon as you have finished.'}</div>
+        </div>
+        <div class="sect">What ${esc(nn)} sees</div>
+        <div class="soft" style="display:flex;align-items:center;gap:12px;">${photo(S.view,40)}
+          <div style="font-size:13px;line-height:1.45;flex:1;">${done
+            ? `<b style="font-weight:600;">${esc(meN())} completed their ${esc(amt)}.</b>`
+            : `<b style="font-weight:600;">${esc(meN())} hasn't run yet.</b> They will do it later today.`}</div>
+          <span class="chip ${done?'ok':''}" style="flex:none;">${done ? ic('check',2.4) + ' Done' : ic('clock',2) + ' Later today'}</span>
+        </div>
+        <div class="foot">${done ? btn('Continue','done-b') : `<button class="btn" data-act="later-done">I've completed it</button>`}</div>`;
+    }
+    return `
+      <div class="p-h1">Did you <b>run today?</b></div>
+      <div style="margin-top:10px;">
+        <button class="choice mini ${c==='done'?'on':''}" data-act="checkin" data-v="done"><div class="ic">${ic('check',2.2)}</div><div><div class="t">Done</div></div></button>
+        <button class="choice mini ${c==='later'?'on':''}" data-act="checkin" data-v="later"><div class="ic">${ic('clock')}</div><div><div class="t">Doing it later</div></div></button>
+        <button class="choice mini" data-go="a-recovery"><div class="ic">${ic('x',2)}</div><div><div class="t">Can't today</div></div></button>
+      </div>
+      ${extra}`;
+  },
+  note:{ t:'Three honest answers', what:`Done, Doing it later, or Can't today. Doing it later tells your partner you will do it today, then lets you tap when you have finished so they are notified.`,
+    build:['Done: optional photo, framed as a moment not proof. Live camera only. Skip goes straight on. Visible to your partner only as a view-once reveal once you have both shared one, it stays saved to your own profile either way','Doing it later: partner sees "has not run yet, will do it later today". A button marks it complete and notifies the partner',`Can't today: recovery flow`] }
+});
+def('a-recovery', { ph:'6B', group:'Challenges: run separately, together', label:'Recovery flow',
+  bar:() => plainBar("Can't today", true, true), nav:() => navBar('target'),
+  body:() => {
+    const nn = nm();
+    if (S.partnerSaw){
+      const rs = S.draft.rs;
+      return `
+        <div class="p-eyebrow">What ${esc(nn)} sees</div>
+        <div class="card">
+          <div style="display:flex;gap:12px;align-items:center;">${photo(S.view,40)}<div style="font-size:13.5px;line-height:1.5;">${esc(meN())} couldn't make today's run${S.reason ? ', ' + esc(S.reason.toLowerCase()) : ''}. New time: <b style="font-weight:600;">${rs.day}, ${fmtTime(rs.time)}</b>.</div></div>
+          ${S.accepted ? `<div style="margin-top:14px;"><span class="chip ok">${ic('check',2.4)} Change accepted</span></div>` : ''}
+          ${S.cheered ? `<div style="margin-top:10px;"><span class="chip ok">${ic('heart',2.2)} Encouragement sent</span></div>` : ''}
+          ${(!S.accepted || !S.cheered) ? `<div class="btn-2" style="margin-top:14px;">
+            ${!S.accepted ? `<button class="btn" data-act="rs-accept">Accept the change</button>` : ''}
+            ${!S.cheered ? `<button class="btn-o" data-act="rs-cheer">Send encouragement</button>` : ''}
+          </div>` : ''}
+        </div>
+        <div class="foot">${btn('Back to my view','done-a')}</div>`;
+    }
+    const R = [['sleep','Too tired'],['clock','No time'],['cloud','Weather'],['briefcase','Work'],['cross','Not feeling well'],['pencil','Something else']];
+    const yes = S.moveIt === 'yes';
+    const sched = S.moveIt ? `
+      <div class="card" style="margin-top:16px;">
+        <div class="flabel">${yes ? 'Pick the new day and time' : 'When will you catch up?'}</div>
+        ${daySelect('d-rs-day', S.draft.rs.day)}<div style="height:10px;"></div>${timeInput('d-rs-time', S.draft.rs.time)}
+        <div class="mot">${ic('heart',2)} Your partner is counting on you.</div>
+      </div>
+      <div class="foot"><button class="btn" data-act="rs-confirm">${yes ? 'Move the activity' : 'Set catch-up time'}</button></div>` : '';
+    return `
+      <div class="p-h1">What <b>happened?</b></div>
+      <div class="p-sub" style="margin-bottom:12px;">It happens to everyone. What matters is that you keep showing up.</div>
+      <div class="pill-row" style="margin:0 0 14px;">${R.map(([i,t]) => `<button class="pill ${S.reason===t?'on':''}" data-act="reason" data-v="${esc(t)}">${t}</button>`).join('')}</div>
+      <input class="txt" id="cap" placeholder="Add a line (optional)" aria-label="Optional caption">
+      <div class="flabel" style="margin-top:20px;">Try tomorrow instead?</div>
+      <div class="btn-2"><button class="${yes?'btn':'btn-o'}" data-act="move" data-v="yes">Yes, move activity</button><button class="${S.moveIt==='no'?'btn':'btn-o'}" data-act="move" data-v="no">No, I'll catch up</button></div>
+      ${sched}`;
+  },
+  note:{ t:'Recovery keeps the pair intact', what:'Missing a day is allowed. Saying so, with a reason if you want, and picking a new day and time keeps your partner in the loop.',
+    build:['A short motivational line under the question','Reasons: too tired, no time, weather, work, not feeling well, something else','Try tomorrow instead: Yes, move activity / No, I\'ll catch up','Either answer opens a day and time picker with "Your partner is counting on you."','Partner sees the new time and can Accept the change or Send encouragement'],
+    dnb:'This extends the existing Partner Loop recovery spec.' }
+});
+
+/* ===== Challenges: completion ===== */
+function reacts(){
+  const R = [['heart','Nice'],['fire','Keep going'],['spark','Proud of you'],['run',"I'm next"],['chat','Send a lift']];
+  return `<div class="reacts">${R.map(([i,t]) => `<button class="react ${S.reacts[t]?'on':''}" data-act="react" data-v="${esc(t)}">${ic(i,2)}${t}</button>`).join('')}</div>`;
+}
+function shareCard(){
+  return `<div class="preview-card"><div class="preview-top"><div class="preview-avatars">${photo('dd',34)}${photo('gy',34)}</div><div class="preview-text"><b style="font-weight:600;">Dinesh &amp; Gayan</b> just finished their first run together.</div></div><div class="preview-badge">${ic('heart',2.2)} Shared to Community</div></div>`;
+}
+def('done-a', { ph:'C7', group:'Challenges: completion', label:'You are in, partner not yet',
+  bar:() => appBar(true), nav:() => navBar('target'),
+  body:() => `
+    ${heart(true,false)}
+    <div class="center"><div class="p-h1" style="text-align:center;">You showed up.</div>
+      <div style="font-size:14px;font-weight:500;">${esc(finalAmount())}, done</div>
+      <div class="p-sub" style="margin-top:8px;">Waiting for ${esc(nm())}.</div></div>
+    ${pairRow(2,false)}
+    <div class="foot">${proto('Prototype: ' + nm() + ' finishes','go','done-b')}</div>`,
+  note:{ t:'State A: you are in, your partner is not yet', what:'Acknowledge the effort right away and show that someone is waiting.',
+    build:['Both profile photos beside the streak, with your partner dimmed and labelled Waiting until they check in','Photo appears only if attached. No placeholder when absent','No reactions here. Reacting to your own check-in does not apply'] }
+});
+def('done-b', { ph:'C7', group:'Challenges: completion', label:'You both showed up',
+  bar:() => appBar(true), nav:() => navBar('target'),
+  body:() => `
+    ${heart(true,true)}
+    <div class="center"><div class="p-h1" style="text-align:center;">You both <b>showed up.</b></div></div>
+    ${pairRow(3,true)}
+    <div class="runs">
+      <div class="soft run">${photo(S.view,40)}<div><b style="font-weight:600;">Your run</b><small>${esc(finalAmount())}</small></div></div>
+      <div class="soft run">${photo(ptK(),40)}<div><b style="font-weight:600;">${esc(nm())}'s run</b><small>${esc(finalAmount())}</small></div></div>
+    </div>
+    ${reacts()}
+    ${S.share === true ? shareCard()
+      : S.share === false ? `<div class="hint" style="text-align:center;margin-top:14px;">Not shared. You can share after your next run too.</div>`
+      : `<div class="card" style="margin-top:18px;text-align:center;"><div style="font-size:13px;font-weight:500;">Nice work today.</div><div class="p-sub" style="margin:6px 0 14px;">Share this with Community to inspire someone else.</div><div class="btn-2"><button class="btn-o" data-act="share" data-v="no">Not now</button><button class="btn" data-act="share" data-v="yes">Share to inspire</button></div></div>`}`,
+  note:{ t:'State B: the payoff moment', what:'Both completed. The pair streak lands, both runs are shown, and each person can respond with a single tap. A share prompt offers to post the moment to Community.',
+    build:['Both profile photos flank the pair streak','Two run cards: yours and your partner\'s, each with photo and result','Reactions only appear in this state: Nice, Keep going, Proud of you, I\'m next, Send a lift','Extends the existing SharePrompt (Home/Challenges) with a new trigger: every time both partners complete a session together, not just a 7-day streak or full challenge completion','The Community preview reuses MilestoneRow\'s exact pattern: overlapping avatars, plain-language line, a badge, no comments'] }
+});
+
+/* ===== Find, after pairing ===== */
+def('find-paired', { ph:'P4', group:'Find', label:'Matched',
+  bar:() => appBar(true), nav:() => navBar('find'),
+  body:() => `
+    <div class="p-h1" style="margin-bottom:4px;">Find</div>
+    <div class="card center" style="margin-top:10px;">
+      <div style="display:flex;justify-content:center;">${photo(ptK(),84,true)}</div>
+      <div style="font-size:16px;font-weight:500;margin-top:12px;">You and ${esc(nm())}</div>
+      <div class="foot" style="padding-top:14px;">${btn('Go to Challenges','plan-gate')}</div>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <div style="font-size:13px;font-weight:500;">Who else is here</div>
+      <button class="btn-o" data-go="feed" style="margin-top:10px;">See Who Else Is Here</button>
+    </div>`,
+  note:{ t:"What Find shows for as long as this pairing exists, not a one-time screen", what:'This is what opening Find shows every time, from the moment you both accept through the rest of the challenge, the same way the real find.tsx already renders this whenever partnerState is "partnered." No radar reappears once matched. The partner\'s photo and the Report/Block menu (top right) are new; the hand-off card and this link already existed. The one-liner under the name is dropped since the button below already says what it does.',
+    build:['Partner photo and name, shown every time Find is opened while paired, not just once','Report/Block menu, same as Say Hi onward, Report starts restricted to Fake profile / Something else and expands to the full six once the pair has actually met (QR scan, or a first check-in for Run separately)','See Who Else Is Here sits directly below the partner card'] }
+});
+def('feed', { ph:'P5', group:'Find', label:'Also doing this',
+  bar:() => plainBar('Who else is here'), nav:() => navBar('find'),
+  body:() => `
+    <div class="p-h1" style="margin-bottom:4px;">Who else is <b>here.</b></div>
+    <div class="p-sub">Everyone active on Choner right now, across every activity.</div>
+    <div class="card" style="padding:4px 16px;">${FEED.map((f,i) => feedRow(f,i)).join('')}</div>`,
+  note:{ t:"Everyone on the app, not just this activity", what:'Broadened from "same activity as you" to everyone active on Choner right now, whatever they\'re doing, not just people in the matching pool, and not scoped by location. Restricting to the pool would make this look like matching in disguise; restricting to one activity made the list needlessly small.',
+    build:['Population: any user with an active challenge, any activity, app-wide, no location filter','Each row: profile picture, first name, their activity, and what they have committed to','No tap-through to a profile, no message option, no "match with them" option, this list is read-only by design','Entry point button: "See Who Else Is Here"'],
+    flag:'At real user counts this can still be sparse. Needs a considered empty/quiet state before shipping, rather than showing a near-empty list.' }
+});
+
+/* ===== Trust & safety ===== */
+def('ended', { ph:'T&S', group:'Trust & safety', label:'Match ended',
+  bar:() => appBar(), nav:() => navBar('find'),
+  body:() => {
+    const iActed = S.view === S.endedBy;
+    let body;
+    if (iActed && S.endedVia === 'report') body = "Thanks for letting us know. We've ended this match and someone from our team will review it.";
+    else if (iActed) body = "You won't be matched with this person again. Your challenge continues, and you can look for a new partner anytime.";
+    else body = 'Your challenge continues. You can look for a new partner anytime.';
+    return `
+      <div class="center" style="margin-top:40px;">
+        <div style="width:64px;height:64px;border-radius:32px;background:rgba(28,43,51,.06);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">${ic('x',2).replace('<svg','<svg style="width:28px;height:28px;color:var(--pmuted)"')}</div>
+        <div class="p-h1" style="text-align:center;">This match has ended.</div>
+        <div class="p-sub" style="text-align:center;">${body}</div>
+      </div>
+      <div class="foot">${btn('Back to Find','landing')}</div>`;
+  },
+  note:{ t:'The same neutral copy, whoever asks, that is the whole point', what:'Switch View as on this screen: the heading never changes, and even the sub-line never tells the other person they were blocked or reported, by name or implication. Demo only, a real block/report would replace this pairing\'s screens persistently, not appear as a one-off page.',
+    build:[
+      'Block: clears any pending negotiation, cancels a confirmed-but-not-happened session, adds the other person to previously_unmatched_with on both records, returns both to a normal Find state, and if mid-challenge sets that challenge\'s status to a new distinct value: ended (never missed or completed)',
+      'Report: category required (flat list, no visual distinction, Didn\'t show up / Made me uncomfortable / Inappropriate behavior or messages / Safety concern at a meetup / Fake profile / Something else), optional free text, always triggers a full Block, writes one row to a plain reports table founders review directly',
+      'Report reachable from Match Found onward (before either side accepts). Block reachable from Say Hi onward, for as long as the pairing exists',
+      'Copy rule applied consistently: never "Gayan blocked you" or "Gayan is no longer interested", always "This match has ended," regardless of who acted or why'
+    ] }
+});
+
+/* ---------- rail / order ---------- */
+const ORDER = [
+  'landing','prematch','searching','match','find-paired','feed',
+  'plan-gate','sayhi','transition','howmuch','distconflict','mode',
+  't-where','t-when','t-confirm','t-day','t-qr','t-finish',
+  'a-when','a-confirm','a-async','a-checkin','a-recovery',
+  'done-a','done-b',
+  'ended'
+];
+const GROUPS = [];
+ORDER.forEach(id => { const g = SC[id].group; let x = GROUPS.find(a => a[0] === g); if (!x) GROUPS.push(x = [g, []]); x[1].push(id); });
+
+function renderRail(){
+  document.getElementById('rail').innerHTML = GROUPS.map(([g, ids]) =>
+    `<div><div class="grp-t">${g}</div><div class="rail-list">${ids.map(id => `<button data-jump="${id}" class="${id === S.cur ? 'on' : ''}" ${id === S.cur ? 'aria-current="step"' : ''}><span class="ph">${SC[id].ph}</span>${SC[id].label}</button>`).join('')}</div></div>`).join('');
+}
+function renderNotes(){
+  const n = SC[S.cur].note;
+  document.getElementById('notes').innerHTML = `<div class="note-card">
+    <div class="note-ph">Phase ${SC[S.cur].ph}, ${SC[S.cur].label}</div>
+    <div class="note-t">${n.t}</div>
+    <div class="note-what">${n.what}</div>
+    ${n.build ? `<div><div class="note-h" style="margin-bottom:8px;">Build</div><ul class="note-ul">${n.build.map(b => `<li>${b}</li>`).join('')}</ul></div>` : ''}
+    ${n.flag ? `<div class="flag"><b>Open question.</b> ${n.flag}</div>` : ''}
+    ${n.dnb ? `<div class="dnb">${n.dnb}</div>` : ''}
+  </div>
+  ${n.extra ? n.extra() : ''}
+  <div class="dnb" style="border:none;padding:0 4px;">Copy in the phone uses plain punctuation and line icons, following the design system (no emoji, no em dashes). The source spec uses both, so they were swapped.</div>`;
+}
+function render(){
+  const s = SC[S.cur];
+  const phone = document.getElementById('phone');
+  const keepScroll = phone.querySelector('.content') ? phone.querySelector('.content').scrollTop : 0;
+  phone.innerHTML = `<div class="statusbar"><span>9:41</span><span>5G</span></div>${s.bar()}<div class="content" id="content">${s.body()}</div>${s.nav()}${blockSheet()}${reportSheet()}`;
+  if (phone.dataset.cur === S.cur) phone.querySelector('.content').scrollTop = keepScroll;
+  phone.dataset.cur = S.cur;
+  renderRail(); renderNotes();
+  const i = ORDER.indexOf(S.cur);
+  document.getElementById('prev').disabled = i === 0;
+  document.getElementById('next').disabled = i === ORDER.length - 1;
+  document.querySelectorAll('#viewseg button').forEach(b => b.classList.toggle('on', b.dataset.view === S.view));
+  const back = phone.querySelector('[data-back]'); if (back && i === 0 && !S.hist.length) back.disabled = true;
+}
+
+/* ---------- block / report sheets ---------- */
+function blockSheet(){
+  if (!S.block.open) return '';
+  return `<div class="scrim2" data-act="block-cancel"><div class="sheet2" data-act="noop">
+    <div class="sheet2-handle"></div>
+    <div class="p-h1">Block ${esc(nm())}?</div>
+    <div class="p-sub">This ends your match right away. ${esc(nm())} won't be told you blocked them. They'll just see the match has ended.</div>
+    <button class="btn" data-act="block-confirm" style="background:#C0392B;box-shadow:none;">Block</button>
+    <button class="btn-g" data-act="block-cancel">Cancel</button>
+  </div></div>`;
+}
+const metUp = () => S.qrDone || !!S.checkin;
+function reportSheet(){
+  if (!S.report.open) return '';
+  const CATS = metUp()
+    ? ["Didn't show up","Made me uncomfortable","Inappropriate behavior or messages","Safety concern at a meetup","Fake profile","Something else"]
+    : ["Fake profile","Something else"];
+  return `<div class="scrim2" data-act="report-cancel"><div class="sheet2" data-act="noop">
+    <div class="sheet2-handle"></div>
+    <div class="p-h1">What's <b>going on?</b></div>
+    <div class="p-sub">Pick the closest reason. This also ends the match.</div>
+    <div class="pill-row" style="margin-bottom:14px;">${CATS.map(c => `<button class="pill ${S.report.category===c?'on':''}" data-act="report-cat" data-v="${esc(c)}">${c}</button>`).join('')}</div>
+    <input class="txt" id="d-report-text" placeholder="Add more detail (optional)" value="${esc(S.report.text)}" aria-label="Additional context">
+    ${!S.report.category && S.report.tried ? '<div class="errmsg">Pick a category to continue.</div>' : ''}
+    <div class="foot" style="padding-top:14px;">
+      <button class="btn" data-act="report-submit">Submit report</button>
+      <button class="btn-g" data-act="report-cancel">Cancel</button>
+    </div>
+  </div></div>`;
+}
+
+/* ---------- navigation ---------- */
+function leaveCleanup(){
+  const t = TOPIC_OF[S.cur];
+  if (t){ S.neg[t].picking = false; S.neg[t].editing = false; S.err[t] = null; }
+  S.menu.open = false;
+  if (S.cur !== 'searching') clearTimeout(searchTimer);
+}
+function go(id, opts){
+  if (id === '__amount'){
+    const mine = amount(), theirs = partnerAmount();
+    if (mine === theirs || mine === 'Not sure yet'){ id = 'mode'; }
+    else { S.neg.dist = freshNeg(); id = 'distconflict'; }
+  }
+  leaveCleanup();
+  if (opts && opts.jump) S.hist = [];
+  else if (id !== S.cur) S.hist.push(S.cur);
+  S.cur = id;
+  if (SC[id].onEnter) SC[id].onEnter();
+  render();
+  const c = document.getElementById('content'); if (c) c.scrollTop = 0;
+}
+/* Back steps out of the current sub-state first (a suggestion being typed,
+   an answer sent, a photo prompt) and only then returns to the previous screen. */
+function subBack(){
+  const t = TOPIC_OF[S.cur];
+  if (t){
+    const n = S.neg[t];
+    if (n.picking){ n.picking = false; return true; }
+    if (n.editing) return false;
+    if (n.status === 'agreed'){ n.status = 'pending'; return true; }
+    if (n.val != null && n.by === S.view && !n.help){
+      n.editing = true;
+      if (t === 'where') S.draft.where = n.val;
+      return true;
+    }
+    return false;
+  }
+  switch (S.cur){
+    case 'match': if (S.accept[S.view]){ S.accept[S.view] = false; return true; } break;
+    case 'sayhi': if (S.reply){ S.reply = null; return true; } if (S.opener){ S.opener = null; return true; } break;
+    case 't-confirm': if (S.conf.t){ S.conf.t = false; return true; } break;
+    case 't-day': if (S.day[S.view] !== 'idle'){ S.day[S.view] = S.day[S.view] === 'here' ? 'onway' : 'idle'; return true; } break;
+    case 't-qr': if (S.qrDone){ S.qrDone = false; return true; } break;
+    case 'a-confirm': if (S.conf.a){ S.conf.a = false; return true; } break;
+    case 'a-checkin':
+      if (S.photo){ S.photo = null; return true; }
+      if (S.checkin){ S.checkin = null; S.later = null; return true; }
+      break;
+    case 'a-recovery':
+      if (S.partnerSaw){ S.partnerSaw = false; S.accepted = false; S.cheered = false; return true; }
+      if (S.moveIt){ S.moveIt = null; return true; }
+      break;
+  }
+  return false;
+}
+function goBack(){
+  if (subBack()){ render(); return; }
+  leaveCleanup();
+  if (S.hist.length){ S.cur = S.hist.pop(); }
+  else { const i = ORDER.indexOf(S.cur); if (i > 0) S.cur = ORDER[i - 1]; }
+  if (SC[S.cur].onEnter) SC[S.cur].onEnter();
+  render();
+  const c = document.getElementById('content'); if (c) c.scrollTop = 0;
+}
+
+/* ---------- events ---------- */
+const phoneEl = document.getElementById('phone');
+function draftInput(e){
+  const id = e.target.id, v = e.target.value, d = S.draft;
+  if (id === 'loc-in'){ S.locQ = v; const sg = document.getElementById('loc-sugg'); if (sg) sg.innerHTML = locSuggest(); return; }
+  if (id === 'd-where') d.where = v;
+  else if (id === 'd-when-day') d.when.day = v;
+  else if (id === 'd-when-time') d.when.time = v;
+  else if (id === 'd-aw-day') d.awhen.day = v;
+  else if (id === 'd-aw-you') d.awhen.you = v;
+  else if (id === 'd-aw-them') d.awhen.them = v;
+  else if (id === 'd-rs-day') d.rs.day = v;
+  else if (id === 'd-rs-time') d.rs.time = v;
+  else if (id === 'd-report-text') S.report.text = v;
+  if (id === 'd-where'){ const sg = document.getElementById('d-where-sugg'); if (sg) sg.innerHTML = whereSuggestHTML(v); }
+}
+phoneEl.addEventListener('input', draftInput);
+phoneEl.addEventListener('change', draftInput);
+phoneEl.addEventListener('click', e => {
+  const back = e.target.closest('[data-back]');
+  if (back && !back.disabled){ goBack(); return; }
+  const t = e.target.closest('[data-go],[data-act]'); if (!t) return;
+  if (t.dataset.act){ act(t.dataset.act, t.dataset.v, t.dataset.t); return; }
+  go(t.dataset.go);
+});
+function act(a, v, topic){
+  switch (a){
+    case 'gender': S.gender = v; break;
+    case 'loc-add': if (S.areas.length < 2 && !S.areas.includes(v)) S.areas.push(v); S.locQ = ''; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); break;
+    case 'loc-del': S.areas = S.areas.filter(a => a !== v); break;
+    case 'accept-match': S.accept[S.view] = true; if (S.accept.dd && S.accept.gy){ go('find-paired'); return; } break;
+    case 'decline': S.declineNote = "No problem, we'll keep looking for someone else who fits."; S.accept = {dd:false,gy:false}; go('searching'); return;
+    case 'stop-looking': S.accept = {dd:false,gy:false}; go('landing'); return;
+    case 'opener': S.opener = v; break;
+    case 'reply': S.reply = v; break;
+    case 'amount': S.dist = v; break;
+    case 'mode': S.mode = v; break;
+    case 'neg-accept': S.neg[topic].status = 'agreed'; break;
+    case 'neg-open': S.neg[topic].picking = true; if (topic === 'where') S.draft.where = ''; break;
+    case 'neg-send': {
+      const n = S.neg[topic];
+      const val = v != null ? v : makeVal(topic);
+      if (!val){ S.err[topic] = 'Type a place first.'; break; }
+      S.err[topic] = null;
+      if (!n.firstBy) n.firstBy = S.view;
+      if (!n.editing || n.rounds === 0) n.rounds++;
+      n.val = val; n.by = S.view; n.status = 'pending'; n.picking = false; n.editing = false;
+      break;
+    }
+    case 'aw-same': S.draft.awhen.same = v === 'yes'; break;
+    case 'get-help': S.neg[topic].help = true; break;
+    case 'founder-pick': { const n = S.neg[topic]; n.val = CFG[topic].founderPick; n.by = 'founder'; n.founder = true; n.status = 'agreed'; break; }
+    case 'confirm': S.conf[v] = true; break;
+    case 'onway': S.day[S.view] = 'onway'; break;
+    case 'here': S.day[S.view] = 'here'; break;
+    case 'qr': S.qrDone = true; break;
+    case 'checkin': S.checkin = v; if (v === 'later') S.later = 'pending'; else S.later = null; break;
+    case 'later-done': S.later = 'done'; break;
+    case 'photo': S.photo = v; break;
+    case 'reason': S.reason = v; break;
+    case 'move': S.moveIt = v; break;
+    case 'rs-confirm': S.partnerSaw = true; S.accepted = false; S.cheered = false; break;
+    case 'rs-accept': S.accepted = true; break;
+    case 'rs-cheer': S.cheered = true; break;
+    case 'react': S.reacts[v] = !S.reacts[v]; break;
+    case 'share': S.share = v === 'yes'; break;
+    case 'menu-toggle': S.menu.open = !S.menu.open; break;
+    case 'block-open': S.menu.open = false; S.block.open = true; break;
+    case 'block-cancel': S.block.open = false; break;
+    case 'block-confirm': S.block.open = false; S.endedBy = S.view; S.endedVia = 'block'; go('ended'); return;
+    case 'report-open': S.menu.open = false; S.report = { open:true, category:null, text:'', tried:false, submitted:false }; break;
+    case 'report-cat': S.report.category = v; break;
+    case 'report-submit':
+      if (!S.report.category){ S.report.tried = true; break; }
+      S.report.open = false; S.report.submitted = true; S.endedBy = S.view; S.endedVia = 'report'; go('ended'); return;
+    case 'report-cancel': S.report.open = false; break;
+    case 'pick-suggest': {
+      S.draft.where = v;
+      const el = document.getElementById('d-where'); if (el) el.value = v;
+      const sg = document.getElementById('d-where-sugg'); if (sg) sg.innerHTML = '';
+      return;
+    }
+    case 'noop': return;
+    case 'go': go(v); return;
+  }
+  render();
+}
+document.getElementById('rail').addEventListener('click', e => { const b = e.target.closest('[data-jump]'); if (b) go(b.dataset.jump, {jump:true}); });
+document.getElementById('viewseg').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b){ S.view = b.dataset.view; render(); } });
+document.getElementById('prev').onclick = () => { const i = ORDER.indexOf(S.cur); if (i > 0) go(ORDER[i - 1], {jump:true}); };
+document.getElementById('next').onclick = () => { const i = ORDER.indexOf(S.cur); if (i < ORDER.length - 1) go(ORDER[i + 1], {jump:true}); };
+document.addEventListener('keydown', e => {
+  if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  if (e.key === 'ArrowRight') document.getElementById('next').click();
+  if (e.key === 'ArrowLeft') document.getElementById('prev').click();
+});
+render();
+</script>

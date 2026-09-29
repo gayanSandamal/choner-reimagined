@@ -1,0 +1,7 @@
+  .codebox{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(160deg,rgba(253,131,2,.1),rgba(253,91,1,.04));border:1.5px dashed rgba(253,91,1,.45);border-radius:16px;padding:12px 14px;margin:4px 0 12px;}
+  .codebox small{display:block;font-size:11px;color:var(--pmuted);}
+  .codebox b{font-size:26px;font-weight:600;letter-spacing:4px;font-variant-numeric:tabular-nums;}
+  .codebox .pill{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;}
+  .codebox .pill svg{width:14px;height:14px;}
+  .orl{display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--pmuted);font-size:12px;}
+  .orl::before,.orl::after{content:"";flex:1;height:1px;background:var(--pline);}

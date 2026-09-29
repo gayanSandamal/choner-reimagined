@@ -1,0 +1,25 @@
+  /* title case Pulse heading */
+  .pulse2 .pl-h,.jtop{text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:#FFB070;}
+  /* Just Happened: square, dark, live, not tappable */
+  .jsq{width:100%;flex:none;aspect-ratio:1/1;background:linear-gradient(165deg,#0B2231,#001827);border-radius:24px;padding:18px;display:flex;flex-direction:column;color:#fff;box-shadow:var(--shadow-float);pointer-events:none;user-select:none;margin-bottom:14px;}
+  .jtop{display:flex;align-items:center;gap:8px;}
+  .jcont{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;}
+  .jvis{display:flex;align-items:center;justify-content:center;}
+  .jsq .mv{min-width:0;justify-content:center;}
+  .jsq .mv.col{flex-direction:column;align-items:center;gap:12px;}
+  .jsq .mn{font-size:76px;color:#fff;letter-spacing:-3px;}
+  .jsq .mt{font-size:16px;line-height:1.4;color:rgba(255,255,255,.92);max-width:250px;}
+  .jsq .anon{border-color:#0B2231;}
+  .jsq .okc{width:60px;height:60px;background:rgba(46,158,107,.22);color:#5FD3A0;}
+  .jsq .okc svg{width:30px;height:30px;}
+  .jsq .pairg .hm{width:40px;height:37px;margin:0 -10px;}
+  .jsq .pairg.s .hm{width:18px;height:17px;margin:0 -6px;}
+  .jsq .pairs{flex-direction:column;align-items:center;gap:8px;}
+  .jsq .mdots i{background:rgba(255,255,255,.25);} .jsq .mdots i.on{background:var(--g1);}
+  /* floating top bar and bottom nav: content scrolls beneath, no white layer */
+  .phone{position:relative;}
+  .phone .topbar{position:absolute;top:44px;left:16px;right:16px;margin:0;z-index:10;}
+  .phone .nav{position:absolute;bottom:16px;left:16px;right:16px;margin:0;z-index:10;}
+  .content.tb{padding-top:82px;}
+  .content.bn{padding-bottom:108px;}
+  .nbadge{position:absolute;top:-3px;right:-5px;width:11px;height:11px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2));border:2px solid var(--navy);}

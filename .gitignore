@@ -21,5 +21,10 @@ _bmad/config.user.toml
 # graphify: generated knowledge-graph outputs
 graphify-out/
 
-# local-only running log of decisions reached in working sessions
-docs/DECISIONS_LOG.md
+# Generated prototype builds. Rebuild with:
+#   cd docs/prototypes/src && python build_app.py && python hs_build.py && python ch_build.py
+# Named individually on purpose: choner-find-flow.html is NOT generated, it is a
+# source with no build script, so a blanket *.html rule would silently drop it.
+docs/prototypes/**/choner-app-flow.html
+docs/prototypes/**/choner-home-states.html
+docs/prototypes/**/choner-challenges-tab.html
