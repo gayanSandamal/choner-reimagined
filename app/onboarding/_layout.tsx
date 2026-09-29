@@ -23,12 +23,11 @@ export default function OnboardingLayout() {
         {/* Optional, and deliberately after the reveal: the photo is asked for
             once the person has seen what Choner made of their answers. */}
         <Stack.Screen name="photo" />
-        {/* Challenge setup: pick the habit, then say why. Swiping back into
-            the picker after the habit is applied would let someone change it
-            behind a partner who already joined it. */}
+        {/* Pick the habit. Swiping back into the picker after it is applied
+            would let someone change it behind a partner who already joined.
+            How much and how often are NOT asked here: they are agreed by both
+            people at the first plan, so there is nothing to inherit. */}
         <Stack.Screen name="challenge" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="target" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="why" options={{ gestureEnabled: false }} />
         <Stack.Screen name="invite" options={{ gestureEnabled: false }} />
       </Stack>
     </OnboardingProvider>

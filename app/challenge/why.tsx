@@ -27,9 +27,11 @@ import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
 
-// Step 2 of the challenge setup flow. Every user answers this individually,
-// including the partner who was invited in — the answers are personal notes,
-// stored per person and never shown to the other side.
+// A CHALLENGES screen, not an onboarding one. It moved out of the onboarding
+// stack on 2026-09-29: the question is asked once, at the first session, which
+// is when it means something. Everyone answers it individually, and the
+// answers are private: they are a commitment device for the person who wrote
+// them, never something shown to the partner.
 export default function WhyScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
@@ -98,8 +100,8 @@ export default function WhyScreen() {
           </AppText>
           <AppText variant="title">Before you start, let's get clear on why.</AppText>
           <AppText muted>
-            We'll bring one of these back to you each day — so the reason is there on the days it's
-            hard.
+            We'll bring one of these back to you each day, so the reason is there on the days
+            it's hard.
           </AppText>
         </Animated.View>
 
@@ -108,9 +110,7 @@ export default function WhyScreen() {
             <Card style={styles.habitCard}>
               <AppText variant="subtitle">{habit}</AppText>
               <AppText variant="caption" muted>
-                {isInvitee
-                  ? "Your partner's challenge — you're doing it together"
-                  : '7-day challenge'}
+                {isInvitee ? "Your partner's challenge, you're doing it together" : null}
               </AppText>
             </Card>
           </Animated.View>

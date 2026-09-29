@@ -36,7 +36,7 @@ export default function ChallengeScreen() {
   // The habit is locked and shared, so an invitee never picks one — they go
   // straight to their own reflection.
   useEffect(() => {
-    if (isInvitee) router.replace('/onboarding/why');
+    if (isInvitee) router.replace('/challenge/why');
   }, [isInvitee]);
 
   const recommendedSlug = goalToTemplateSlug(goal);
@@ -67,7 +67,7 @@ export default function ChallengeScreen() {
         title: template.title,
         customTitle: null
       });
-      router.push('/onboarding/target');
+      router.push('/onboarding/invite');
     } catch (error: any) {
       notify('Could not set your challenge', error.message);
     }

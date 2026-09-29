@@ -68,7 +68,7 @@ export default function PartnerPathScreen() {
   // Someone who arrived through an invite already has a partner; they must
   // never be asked to find or invite one.
   useEffect(() => {
-    if (isInvitee) router.replace('/onboarding/why');
+    if (isInvitee) router.replace('/challenge/why');
   }, [isInvitee]);
 
   const onSendInvite = async () => {
