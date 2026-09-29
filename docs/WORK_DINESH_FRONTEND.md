@@ -1,0 +1,265 @@
+# Dinesh — frontend work
+
+**Read `docs/CHONER_MASTER_SPEC.md` first.** This file is the task list; the spec explains why.
+
+**Scope.** The 22 frozen screens: Launch, Account, Onboarding, plus Edit profile. Nothing left to
+decide in the Find or Challenges reviews can reach back and change them. The "Do not build yet"
+list at the end is the work that would get thrown away.
+
+**Prototype:** https://claude.ai/artifact/4Sk5AwVK4f4BouSWks8gon
+Every task names the screen. Open it in the left rail, tap through it, and read the notes panel.
+
+**Blocked on Gayan:** tasks 5, 6 and 7 need his deep-link fix (his task 2) before they can be
+tested end to end. Build the screens anyway; they are testable with the prototype's simulate
+buttons in the meantime.
+
+---
+
+## A. Launch
+
+### 1. Welcome — `app/(auth)/welcome.tsx`  ·  *biggest rewrite in the slice*
+**Prototype: `L2 Welcome`**
+
+| Now | Change to |
+|---|---|
+| `choner-logo.png`, 150x102 | the **wordmark only** — reuse `BrandMark`, as `SplashView` does |
+| Headline `Turn "I should" into "I did"` | **delete** — it lives on the onboarding intro |
+| Tagline `Somewhere, someone is counting on you to show up.` | **delete** |
+| `label="SIGN IN"` uppercase, `pill`, `log-in-outline` icon | `Sign in`, sentence case, **no icon**, 18px radius, gradient |
+| `label="SIGN UP"` uppercase, `pill`, `person-add-outline` icon | **`Create an account`**, sentence case, no icon, orange outline |
+| `I have an invite code` ghost | keep |
+| `<TermsFooter />` | **delete from this screen** — it moves to Sign in and Sign up |
+
+Three buttons, same height, width and radius as every other primary button in the app.
+
+**Splash needs no change.** `components/SplashView.tsx` already matches.
+
+---
+
+## B. Account
+
+### 2. Sign in — `app/(auth)/sign-in.tsx`
+**Prototype: `A1 Sign in`** · already very close.
+Add the legal line at the **bottom**, under the "New here? Create an account" switch:
+`By continuing you agree to our` / `Terms of use, privacy and policy & cookie policy`.
+Wording differs from Sign up on purpose — signing in does not create an account.
+
+### 3. Sign up — `app/(auth)/sign-up.tsx`
+**Prototype: `A2 Sign up`**
+- Delete the sub `Takes about a minute.`
+- Add the legal line at the bottom: `By creating an account you agree to our` / same links.
+- **Open item, flag before shipping:** the screen then states the agreement twice, as the tick box
+  and as the line. One should go, and the tick box is the one that records consent.
+
+### 4. Verify email — `app/(auth)/verify-email.tsx`
+**Prototype: `A3 Verify email`** · still on the old design system.
+- `CHECK YOUR EMAIL` uppercase display → `Check your email`, 24px light, sentence case
+- `RESEND EMAIL` uppercase + `pill` + mail icon → `Resend email`, standard filled
+- `BACK TO SIGN IN` uppercase + `pill` + icon → `Back to sign in`, orange outline
+
+### 5. Email verified — **new screen**  ·  *blocked on Gayan's task 2*
+**Prototype: `A3a Email verified`**
+Big tick, `You're verified.`, `Your email is confirmed and you're signed in.`, one **Continue**.
+Continue always goes to the onboarding intro — verifying only ever happens right after sign-up, so
+the profile is never complete yet. If they entered an invite code before signing up, Continue goes
+to the invite result instead.
+
+### 6. Link expired — **new screen**  ·  *blocked on Gayan's task 2*
+**Prototype: `A3b Link expired`**
+Covers a verification or reset link that expired or was already used. Asks for the email, because
+the link does not carry it. Button is `Send a new link` or `Send a new reset link` depending on
+where it came from, plus `Back to sign in` — a verified account can simply log in.
+
+### 7. Forgot password — `app/(auth)/forgot-password.tsx`
+**Prototype: `A4 Forgot password`**
+- `FORGOT PASSWORD` uppercase → `Forgot password`
+- placeholder `ENTER EMAIL` → `you@email.com`, with an `Email` label above
+- `pill` input with a mail `leftIcon` → standard field
+- `SEND RESET LINK` uppercase + pill + icon → `Send reset link`, standard filled
+
+`AuthBackButton` is already correct.
+
+### 8. Reset password — `app/(auth)/reset-password.tsx`
+**Prototype: `A5 Reset password`**
+- `SET NEW PASSWORD` → `Set new password`
+- `Pick something memorable — at least 8 characters.` → `Choose a new password for your account.`
+- placeholders `ENTER NEW PASSWORD` / `CONFIRM NEW PASSWORD` → bullets, with `New password` and
+  `Confirm new password` labels above
+- `SAVE PASSWORD` uppercase + pill + icon → `Save password`, standard filled
+- **`router.replace('/(tabs)/home')` → `router.replace('/')`** so the index gate decides onboarding
+  vs Home
+
+### 9. Enter invite code — `app/invite/code.tsx`
+**Prototype: `A6 Enter invite code`** · *code format is Gayan's task 7*
+- Placeholder `e.g. 8f3a1c…` → `e.g. RUN4K7`, `maxLength={6}`
+- Copy → `Enter the 6-character code from your friend's message or invite email and we'll pull you
+  into the challenge.`
+- Button stays disabled until something is typed
+
+### 10. Invite result — `app/invite/[token].tsx`  ·  *routing is Gayan's task 3*
+**Prototype: `A7 Invite result`**
+The `needs-auth` state (line 78) has one `Continue` that sends people back to Welcome — a dead
+stop, since Welcome also offers "I have an invite code", which they just used. Replace with **two
+buttons styled exactly as on Welcome**: `Sign in` (filled) and `Create an account` (outline). The
+pending token already survives via `setPendingInviteToken`, so both routes work.
+
+---
+
+## C. Onboarding
+
+The app has **12 route files** for a **10-screen flow**, and one required screen is missing.
+
+| Prototype | File | Action |
+|---|---|---|
+| O1 Intro | `index.tsx` | edit |
+| O2 Goal | `goal.tsx` | remove skip |
+| O3 Struggle | `struggle.tsx` | remove skip, copy |
+| O4 Style | `style.tsx` | copy |
+| O5 About you | `age.tsx` | remove skip |
+| O6 Energy | `energy.tsx` | copy |
+| O7 Reveal | `reveal.tsx` | back button, copy |
+| O8 Add your photo | **missing** | **build** |
+| O9 Pick a challenge | `challenge.tsx` | remove custom habit |
+| O10 Partner choice | `invite.tsx` | rewrite |
+| — | `target.tsx` | **delete** |
+| — | `why.tsx` | **move out** |
+
+### 11. Intro — `app/onboarding/index.tsx`
+**Prototype: `O1 Intro`**
+- Emoji `🤝 🎯 📈` → line icons `together`, `target`, `trend`
+- Delete `Takes about a minute.`
+- **Delete the `I'll explore on my own` button and the whole `onExplore` handler.** Everyone builds
+  a profile — matching needs age and gender and there is no route back into those questions from
+  Home. This also removes the only path that sets `onboarding_complete` with no answers.
+- Line 21: `a stranger's app — one person` → full stop, no em dash
+
+### 12. Remove the skips — `goal.tsx:26`, `struggle.tsx:25`, `age.tsx:30`
+**Prototype: `O2`, `O3`, `O5`** · *pairs with Gayan's task 8*
+Delete `label="Skip for now"` from all three. Ship this **after** Edit profile can write struggle,
+age and gender — otherwise a wrong answer is permanent.
+
+### 13. Copy pass — `struggle.tsx`, `style.tsx`, `energy.tsx`
+- **Struggle:** subtitle → `Be honest. This is how Choner knows where to support you most.`
+  **Delete** the reassurance line `This is more common than you think.`
+- **Style:** subtitle → `This shapes how Choner supports you and how your partner challenge
+  feels.` Button `This is me — let's go` → `This is me, let's go`. Keep the settings reassurance.
+- **Energy:** `...based on this — no pressure either way.` → remove the em dash. First-week
+  strings are `A gentle start: one small win at a time` / `A steady pace: build the habit as you
+  go` / `A strong start: momentum from day one` — none may imply *daily*, because cadence is 1x,
+  2x or 3x a week.
+
+### 14. Reveal — `app/onboarding/reveal.tsx`
+**Prototype: `O7 Reveal`**
+- **Add a back button.** It is the only onboarding step with no way back, so an energy answer
+  cannot be changed once you see what it produced.
+- Row label `Your challenge` → **`Your struggle`**. "Challenge" means the commitment everywhere
+  else.
+- `SKIPPED_COPY` line 22: em dash → full stop
+- 5 emoji → line icons
+
+### 15. Add your photo — **new screen**  ·  *needs Gayan's task 6*
+**Prototype: `O8 Add your photo`**, placed **after the Reveal**.
+Live camera only, no gallery. Copy states it earns the badge and can be retaken later in Profile.
+`Set up later` is allowed. The badge says **"Photo confirmed"** — never "verified" and never
+anything implying identity verification.
+
+### 16. Pick a challenge — `app/onboarding/challenge.tsx`
+**Prototype: `O9 Pick a challenge`**
+- **Delete the "Create your own" custom-habit path.** Line 84 already throws `Custom habits aren't
+  available yet` — remove the UI rather than erroring.
+- Six activities: Running, Jogging, Walking, Cycling, Yoga, Workouts
+- Heading `Pick what you'll start with`
+- 5 emoji → line icons
+- **Same picker as `app/challenge/browse.tsx`. Build it once as a shared component.**
+
+### 17. Partner choice — `app/onboarding/invite.tsx`  ·  *full rewrite*
+**Prototype: `O10 Partner choice`**
+
+The current screen contradicts several locked decisions:
+- `Continue solo, for now` (line 299) — **solo mode is removed**
+- A branch where Find is not offered at all (line 65) — Find is always offered
+- Email invite, share link, resend, waiting states, `Looking for your partner…`,
+  `Done — take me home` — **all of this belongs to the Find tab now**
+- `Choner works best with two — but the choice is yours.` — solo language
+
+Replace with: two cards, **Find the right partner** and **Invite someone you know**,
+**select-then-Continue** (a single tap must not launch a search by accident). Continue hands over
+to the **Find tab**, where the person taps the radar themselves — that is what stops them missing
+the Find experience. The invite card opens the Find tab's invite screen.
+
+### 18. Delete `app/onboarding/target.tsx`
+Cut from onboarding. Its two questions (how much, how often) moved to the first plan, where both
+partners agree them. Remove the route from `_layout.tsx` too.
+
+### 19. Move `app/onboarding/why.tsx` out
+**Prototype: `T1e Challenges: your why`**
+Asked once, the moment the partner **accepts** the first session — not in onboarding.
+- Delete the line `Gayan sees one of these, so they know what they are showing up for` — the why
+  is **private** now
+- Keep the whole set skippable where it lands
+
+---
+
+## D. Profile
+
+### 20. Edit profile — `app/profile/edit.tsx`  ·  *pairs with Gayan's task 8*
+**Prototype: `T4a Edit profile`**
+Add **struggle, age and gender** fields. Energy is deliberately left out — it asks how you feel
+*this week*, so it is re-asked, not edited.
+**Check with Gayan first:** he is splitting `accountability_mode`, which this screen currently
+writes the tone value into. Use whatever column name he lands on.
+
+### 21. Edit your why — `app/modals/edit-why.tsx`
+**Prototype: `T4b Profile: edit your why`**
+Subtitle is the private framing: `One of these comes back to you each day, so the reason is there
+on the hard days.` One em dash to clear.
+
+---
+
+## E. Cross-cutting
+
+### 22. Emoji → line icons
+`features/onboarding/constants.ts` holds 22 emoji. **Values and labels already match the prototype
+exactly** — only the `icon` field changes:
+
+| value | now | icon key |
+|---|---|---|
+| move_more | 🏃 | `run` |
+| sleep_better | 🌙 | `sleep` |
+| reduce_stress | 🌱 | `leaf` |
+| improve_energy | ⚡ | `bolt` |
+| start_but_stop | 🔄 | `redo` |
+| lack_accountability | 👥 | `community` |
+| too_busy | ⏰ | `clock` |
+| overwhelmed | 😔 | `cloud` |
+| competitive | 🏆 | `trophy` |
+| momentum | 🔥 | `fire` |
+| encouraging | 💬 | `chat` |
+| team | 🤝 | `together` |
+| low | 😴 | `sleep` |
+| medium | ⚡ | `bolt` |
+| high | 🔥 | `fire` |
+| age bands | 🌱🌿🌳🍃🍂 | **none** — plain pills |
+
+Plus emoji in `challenge.tsx` (5), `index.tsx` (3), `invite.tsx` (2), `reveal.tsx` (5),
+`components/community/MilestoneRow.tsx` (1).
+
+### 23. Em dashes
+No long dashes in copy. In this slice the **user-facing** ones are: `reset-password.tsx:57`,
+`onboarding/index.tsx:21`, `struggle.tsx:19`, `style.tsx:21`, `energy.tsx:78`, `reveal.tsx:22`,
+`challenge.tsx:84`, `invite.tsx` (6), `why.tsx` (3). The rest across the repo are inside `//`
+comments — leave them.
+
+---
+
+## Do not build yet
+
+Decisions still landing in the Find and Challenges reviews.
+
+- **Home hero states** — `app/(tabs)/home.tsx`
+- **The Find form** — `app/(tabs)/find.tsx`, `app/find/form.tsx` (mode question, conditional
+  locations, 68-item dropdown)
+- **Every Challenges screen** — `app/(tabs)/challenges.tsx`, `app/challenge/browse.tsx`
+- **The invite screen** — `app/group/invite.tsx`
+- **Plan a session, Session details, QR** — these are now proposal-based and the schema does not
+  exist yet
