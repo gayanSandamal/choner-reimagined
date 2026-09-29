@@ -961,3 +961,67 @@ Still to reconcile, not urgent: "Let's do this" is now both the empty-Challenges
 accept-this-person button on the Find match screen. They are never on screen together, but it is
 the same phrase for "pick an activity" and "accept this human". The document assigns it to the
 first, so the match screen is the one that should change if either does.
+
+---
+
+## 2026-09-29 (build) - What the frontend stages actually decided
+
+Ten branches landed (fe0 to fe9, fe11; fe10 waits on Gayan). Most of it was
+already decided above and only executed here. These are the things the code
+forced a decision on.
+
+BUTTONS WERE THE WRONG SHAPE, EVERYWHERE. The plan said `theme.radius.lg` was
+already the prototypes' 18. It is 28. Every button in the app has been rendering
+at 28. `lg` is also the corner of cards and sheets, which are deliberately
+rounder, so buttons got their own token (`radius.button: 18`) rather than
+changing `lg` underneath everything. This changes every button in the app,
+including on frozen screens: it is a design-system correction, not a screen
+rewrite.
+
+RESET PASSWORD SENT PEOPLE TO HOME. `router.replace('/(tabs)/home')` skipped
+onboarding for anyone who reset their password before finishing it. Now
+replaces to `/`, and the index gate decides.
+
+THE ICON PROP IS WIDENED, NOT NARROWED. `OptionCard.icon` and
+`PromiseCard.icon` are typed `string` and rendered as TEXT in eleven callers
+outside this slice, all on frozen screens. Narrowing to an icon-key union would
+have broken every one of them. Instead a registered key draws the line icon and
+anything else still renders as text, so the frozen screens keep their emoji and
+keep compiling until their turn comes. `Chip` already took `React.ReactNode`,
+so this matches a pattern the codebase had.
+
+TARGET.TSX IS DELETED, NOT MOVED. It asked how much and how often on a DAILY
+scale (Daily, 5x, 4x, 3x a week). Both numbers are agreed by both people at the
+first plan now, so asking one person during onboarding produced a value the
+first plan immediately overwrote. Nothing replaces it.
+
+WHY.TSX MOVED TO app/challenge/. It is a Challenges screen: asked once, the
+moment the first session is agreed. Five callers repointed. Its handoff was
+also wrong after the move - it sent non-invitees back into onboarding to find a
+partner, which only made sense while it lived in the onboarding stack. It goes
+to Home for everyone now, because by the time it is seen both people have a
+partner.
+
+INVITE.TSX STAYS, DOING TWO JOBS, ON PURPOSE. Its onboarding role moved to the
+new partner.tsx. But `app/(tabs)/find.tsx:280` and
+`app/(tabs)/challenges.tsx:394` both push to it, and both are frozen. Deleting
+or rewriting it would break two screens nobody is allowed to touch. It carries a
+comment saying so and retires when Find is rebuilt.
+
+"ONE SMALL WIN A DAY" WAS A DAILY-TASK PRODUCT. `energyToFirstWeek` read "one
+small win a day" and "build the habit daily". A commitment is a weekly number
+two people agree, so those strings described something that no longer exists.
+Changed to match the prototype: "one small win at a time", "build the habit as
+you go".
+
+THE SKIPS COULD ONLY GO AFTER EDIT PROFILE COULD WRITE. fe9 waited on fe5 for
+exactly this reason: without a way to correct goal, struggle, age and gender
+afterwards, removing the skips would have made a wrong answer permanent.
+
+OVERLAP FOUND, NOT RESOLVED: Gayan's task 8 ("Edit profile writes three more
+columns") is the same work as fe5. It is a frontend change sitting on the
+backend list. fe5 has done it; his task 8 should be struck or reduced to the
+migration side, or it gets built twice.
+
+Branch order matters and they stack: fe1 needs Icon.tsx, fe2 needs fe1, and so
+on down to fe11. Merging out of order shows the wrong diff.
