@@ -99,7 +99,7 @@ export default function RevealScreen() {
       <Animated.View entering={FadeInDown.delay(320).duration(360)} style={styles.footer}>
         <Button
           label="Let's set up your first challenge"
-          onPress={() => router.push('/onboarding/challenge')}
+          onPress={() => router.push('/onboarding/photo')}
         />
       </Animated.View>
     </SafeAreaView>
