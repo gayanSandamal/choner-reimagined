@@ -83,7 +83,8 @@ prototype, the left rail now groups every screen by its owner, and the HOME grou
 one screen: Home itself.
 
 ### What this means in practice
-Home's partner-less states carry **exactly one button**, and it only changes tab:
+Home's partner-less states carry **exactly one button**, and it only changes tab. Every label
+names **what the user gets**, never where the button goes — see section 8.
 
 | Home state | Button | Goes to |
 |---|---|---|
@@ -93,7 +94,7 @@ Home's partner-less states carry **exactly one button**, and it only changes tab
 | Searching | *no button* — a tappable "Searching" row | Find |
 | Invited | See your invite | Find |
 | Match found | See your match | Find |
-| No challenge | Go to Challenges | Challenges, which owns the picker |
+| No challenge | Let's do this | Challenges, which owns the picker |
 
 ---
 
@@ -261,8 +262,42 @@ dropped.
 - Sentence case for headings and buttons. No uppercase display headings, no pill buttons, no icons
   inside primary buttons.
 - The button that creates an account says **"Create an account"** everywhere.
-- The legal line sits at the bottom of Sign in and Sign up, never on Welcome.
+- **No legal line on any screen.** It is off Welcome, off Sign up (the tick box carries it) and
+  off Sign in (signing in is not consent, it is proof of consent already given). The documents are
+  reachable from Settings. `components/auth/TermsFooter.tsx` therefore has no callers left and is
+  deleted.
+- **Sign up's tick box names all four documents as separate links:** Terms of use, Privacy policy,
+  Cookie policy, Health disclaimer. There is no cookie policy screen yet, so that link points at
+  `/legal/privacy` for now.
+- **A button names what the user gets, never where it goes.** "Find a partner", "See your match",
+  "Let's do this" — never "Go to Challenges". Every Home button switches tab, so saying so adds
+  nothing.
 - Empty states say what to do. Never "no check-ins yet".
+
+### The word "commitment" is earned
+
+**Never use it before two people have agreed a plan.** A commitment is the *result* of choosing
+something, finding someone and agreeing to show up — not a form handed to someone on arrival.
+Five moments, each with its own voice:
+
+| Moment | Heading | Supporting line | Button |
+|---|---|---|---|
+| Nothing picked | Start something together | Pick what you want to do with your partner. | Let's do this |
+| Activity picked, no partner | Let's make it happen | Find someone who wants to do it too. | Find a partner |
+| Partner accepted | You found your match | Now let's plan your first one. | Plan your first run |
+| Both agreed a plan | You're in | You've got something to show up for together. | — |
+| From then on | Your commitment | | |
+
+Home and Challenges use the **same words** for the first moment, so the handoff reads as one step
+rather than two. "What you've committed to." renders as the Challenges subtitle **only once a plan
+is agreed**. Source: `Choner_Emotional_Start_to_Commitment_Language_Flow.md`.
+
+Two collisions this created, both resolved and worth knowing:
+- "You're in" belonged to the **invite-result** screen. That is an earlier moment, so it became
+  "You're connected." and "You're in" moved to the agreement.
+- Home had "You found a match" (awaiting an answer) and "You found your person" (accepted). The
+  second became "You found your match", so the first became **"A match is waiting"** to keep them
+  apart.
 
 ---
 
@@ -292,10 +327,11 @@ Each one is real, found by reading the code, and independent of anything still u
    block it? Recommendation was ask-then-replace, and block outright if already partnered.
 2. **Does an unused invite code expire?**
 3. **What the matching wait promises** — "usually a day or two" versus notify-on-match.
-4. **Button label convention.** Find's empty state names the goal ("Find a partner"); Challenges'
-   names the destination ("Go to Challenges"). Two conventions side by side.
-5. **Sign up states the agreement twice** — the tick box and the legal line. One should go, and
-   the tick box is the one that records consent.
+4. ~~Button label convention.~~ **Closed 29 September.** One convention: a button names what the
+   user gets. "Go to Challenges" is gone — Home says "Let's do this", the same words Challenges
+   uses. See section 8.
+5. ~~Sign up states the agreement twice.~~ **Closed 29 September.** The tick box stays and carries
+   all four document links; the legal line is gone from every screen. See section 8.
 6. **"Either works" in the Find form.** Kept, but it exists for pool size rather than for the
    person choosing it, and it still asks for locations so it saves them nothing. Revisit if match
    rates are poor at launch.

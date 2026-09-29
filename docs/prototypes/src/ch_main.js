@@ -85,7 +85,7 @@ function activeCard(){
   }
   const mEnded = S.matchEnded ? `<div class="notice">${ic('x',2)}<span>This match has ended. Your challenge continues.</span></div>` : '';
   const tappable = S.partner === 'paired' && s;
-  return `<div class="hero acard"><div class="h-eb">Active commitment</div>${mEnded}
+  return `<div class="hero acard"><div class="h-eb">${agreed()?'Your commitment':"Let's make it happen"}</div>${mEnded}
     <${tappable?`button class="atap" data-act="open-sel" data-v="${S.sessions.indexOf(s)}"`:'div class="atap"'}><span class="bigic">${ic(A().i,1.8)}</span><span><span class="h-title" style="display:block;">${esc(title())}</span><small class="amt">${agreed()?esc(amtTxt())+' each time':esc(amtTxt())}</small></span>${tappable?ic('chev',2).replace('<svg','<svg class="chev2"'):''}</${tappable?'button':'div'}>
     ${prog}${partner}${action}</div>`;
 }
@@ -120,8 +120,8 @@ function historyCard(){
 }
 const SC = {};
 SC.tab = { bar:() => appBar(), nav:() => navBar('tab'), body:() => {
-  const head = `<div class="p-h1" style="margin-bottom:2px;">Challenges</div><div class="p-sub">What you've committed to.</div>`;
-  if (!S.has) return `${head}<div class="hero acard"><div class="h-eb">No active commitment</div><div class="h-title">Your first commitment starts here.</div>${btn('Create my first commitment','new-open')}</div>${historyCard()}`;
+  const head = `<div class="p-h1" style="margin-bottom:2px;">Challenges</div>${S.has && agreed() ? `<div class="p-sub">What you've committed to.</div>` : ''}`;
+  if (!S.has) return `${head}<div class="hero acard"><div class="h-eb">Start something together</div><div class="h-title">Pick what you want to do with your partner.</div>${btn("Let's do this",'new-open')}</div>${historyCard()}`;
   return `${head}${activeCard()}${weekCard()}${streakCard()}${historyCard()}`; } };
 
 /* ---------- Session details ---------- */
@@ -284,7 +284,7 @@ function acceptProposal(){
     S.pd = { mode:p.mode, day:p.day, time:p.time, place:p.place };
     if (p.kind === 'repair'){ S.repairUsed = true; newSession('repair'); }
     else { if (S.cur === 'done' && weekDone() >= target()){ S.week++; S.sessions = []; } newSession('plan'); }
-    S.dlg = { t:'Agreed', m:`${p.mode==='together'?'Together':'Separately, together'} · ${p.day} · ${p.time}. You both said yes, so it is planned.` };
+    S.dlg = { t:"You're in", m:`You've got something to show up for together. ${p.mode==='together'?'Together':'Separately, together'} · ${p.day} · ${p.time}.` };
     return;
   }
   const s = cur(); if (!s) return;
@@ -303,7 +303,7 @@ function dayEnds(){
 const PR = (id, group, label, fn) => ({ id, group, label, fn });
 const base = o => { S = Object.assign(fresh(), o || {}); };
 const PRESETS = [
-  PR('none','Before a partner','No active commitment', () => base({ has:false, partner:'none', kept:0 })),
+  PR('none','Before a partner','Nothing picked yet', () => base({ has:false, partner:'none', kept:0 })),
   PR('nopartner','Before a partner','Partner not found yet', () => base({ partner:'none', kept:0 })),
   PR('searching','Before a partner','Searching', () => base({ partner:'searching', kept:0 })),
   PR('invited','Before a partner','Invite sent, waiting', () => base({ partner:'invited', kept:0 })),
@@ -332,7 +332,7 @@ function applyPreset(id){ const p = PRESETS.find(x => x.id === id); presetOn = i
 
 /* ---------- notes ---------- */
 const NOTES = {
-  tab:['Challenges: the home of commitments','Active commitment, This week, the shared streak, History. Nothing else: no partner search, no Pulse, no Community.',['A planned session appears only after BOTH agree. Until then the card shows either Waiting for Gayan to accept, or the counter with Accept / Suggest another','Pair can meet (above the phone) is set in Find before the match, not here. No hides every meet-up affordance across this tab','Nothing shows a weekly count until the pair has agreed one: before that the card reads just "Running"','Active card is tappable when a session exists (opens Session Details)','Partner status only. The one action without a partner is "Go to Find"','Weekly progress is x / target, Monday to Sunday; week 1 is scaled to the days left','History rows are finished challenges, not tappable','Streak = commitments both partners completed']],
+  tab:['Challenges: the home of commitments','Your commitment, This week, the shared streak, History. Nothing else: no partner search, no Pulse, no Community.',['A planned session appears only after BOTH agree. Until then the card shows either Waiting for Gayan to accept, or the counter with Accept / Suggest another','Pair can meet (above the phone) is set in Find before the match, not here. No hides every meet-up affordance across this tab','Nothing shows a weekly count until the pair has agreed one: before that the card reads just "Running"','Active card is tappable when a session exists (opens Session Details)','Partner status only. The one action without a partner is "Go to Find"','Weekly progress is x / target, Monday to Sunday; week 1 is scaled to the days left','History rows are finished challenges, not tappable','Streak = commitments both partners completed']],
   details:['Session Details','The only details screen. Everything about one session, and the partner actions tied to it.',['Day, time, place, mode, You and Gayan status','DECIDED 27 September: the why is PRIVATE. The card that used to sit here, showing the partner why, has been REMOVED. Nobody reads anyone else answers; they come back only to the person who wrote them, from Profile','Nudge Gayan and Running late? live here only (on the day)','Move and Cancel both need Gayan to agree','Report a problem (meetups only) opens the same sheet as Find','··· menu: End this challenge (either person)']],
   plan:['Plan a session','A PROPOSAL, not a fact. One session at a time: first, next, repair (within 3 days) or move.',['DECIDED 28 September: mode rides in the proposal with day, time and place. Whoever plans first proposes the whole session; the other accepts or suggests another. There is no separate mode-conflict state, because only one person is ever setting the value','Asked on EVERY plan, not agreed once, so a rainy or travel week can be done separately without touching the match','If the responder counters with Separately, that is what happens: you cannot make someone turn up. Together needs both, Separately can always be delivered by one','Use "Gayan: suggests another" above the phone to see the counter come back','DECIDED 28 September: How will you do it is asked FIRST in the Find form, before matching, as a hard filter (In person / Separately / Either). This screen no longer asks it for the first time',
     'Use the Pair can meet control above the phone. No means one of them chose Separately in Find: the mode becomes a plain statement, no place is asked, and the day-of flow drops the QR step, because there is nothing to confirm being together for',

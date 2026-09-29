@@ -28,7 +28,7 @@ buttons in the meantime.
 | `label="SIGN IN"` uppercase, `pill`, `log-in-outline` icon | `Sign in`, sentence case, **no icon**, 18px radius, gradient |
 | `label="SIGN UP"` uppercase, `pill`, `person-add-outline` icon | **`Create an account`**, sentence case, no icon, orange outline |
 | `I have an invite code` ghost | keep |
-| `<TermsFooter />` | **delete from this screen** — it moves to Sign in and Sign up |
+| `<TermsFooter />` | **delete the call, then delete `components/auth/TermsFooter.tsx`** — Welcome is its only caller and the legal line is gone from every screen |
 
 Three buttons, same height, width and radius as every other primary button in the app.
 
@@ -40,16 +40,27 @@ Three buttons, same height, width and radius as every other primary button in th
 
 ### 2. Sign in — `app/(auth)/sign-in.tsx`
 **Prototype: `A1 Sign in`** · already very close.
-Add the legal line at the **bottom**, under the "New here? Create an account" switch:
-`By continuing you agree to our` / `Terms of use, privacy and policy & cookie policy`.
-Wording differs from Sign up on purpose — signing in does not create an account.
+**No change needed for the legal line — there isn't one.** Decided 29 September: signing in is not
+consent, it is proof of consent already given. The documents are reachable from Settings
+(`app/settings/index.tsx:119-131`, which already lists all three).
 
 ### 3. Sign up — `app/(auth)/sign-up.tsx`
 **Prototype: `A2 Sign up`**
 - Delete the sub `Takes about a minute.`
-- Add the legal line at the bottom: `By creating an account you agree to our` / same links.
-- **Open item, flag before shipping:** the screen then states the agreement twice, as the tick box
-  and as the line. One should go, and the tick box is the one that records consent.
+- **No bottom legal line.** The tick box is what records consent, so it is the only place the
+  agreement appears.
+- **The tick box copy changes.** Now: `I agree to Choner's Terms, Privacy Policy, and Health
+  Disclaimer.` — one flat string, nothing tappable.
+  Becomes: `I agree to Choner's Terms of use, Privacy policy, Cookie policy and Health disclaimer.`
+  with **each document its own link**. In React Native, nested `<Text onPress>` inside the label
+  handles this; make sure tapping a link does not also toggle the tick box.
+  - `Terms of use` → `/legal/terms`
+  - `Privacy policy` → `/legal/privacy`
+  - `Cookie policy` → `/legal/privacy` **for now** — there is no cookie policy screen. Flag it as
+    content work; do not invent the page.
+  - `Health disclaimer` → `/legal/health-disclaimer`
+  The health disclaimer is in this list deliberately. Choner puts two strangers together to
+  exercise, so it is the one document carrying real liability, and it only ever appeared here.
 
 ### 4. Verify email — `app/(auth)/verify-email.tsx`
 **Prototype: `A3 Verify email`** · still on the old design system.
@@ -249,6 +260,30 @@ No long dashes in copy. In this slice the **user-facing** ones are: `reset-passw
 `onboarding/index.tsx:21`, `struggle.tsx:19`, `style.tsx:21`, `energy.tsx:78`, `reveal.tsx:22`,
 `challenge.tsx:84`, `invite.tsx` (6), `why.tsx` (3). The rest across the repo are inside `//`
 comments — leave them.
+
+### 24. The language flow — a rule, not a task
+
+`Choner_Emotional_Start_to_Commitment_Language_Flow.md`, applied to all three prototypes on
+29 September and written up in master spec section 8.
+
+**The rule: the word "commitment" does not appear before two people have agreed a plan.**
+
+Almost all of it lands on **Home and Challenges**, which are in "Do not build yet" below — so
+there is nothing to do in this slice except know the rule before writing any new copy. The strings
+themselves are in the master spec table and in the prototypes.
+
+**One open question for this slice.** Onboarding's picker (`app/onboarding/challenge.tsx`, `O9 Pick
+a challenge`) is the same six-activity choice as the empty-Challenges state, which now reads "Start
+something together / Pick what you want to do with your partner. / [Let's do this]". Onboarding was
+deliberately left alone, because at that point the person has no partner and no tab to hand off to,
+and "Pick a challenge" is a step in a sequence rather than an empty state. Decide before fe6
+whether the two should read the same.
+
+**One thing left unreconciled, and it is not in this slice.** "Let's do this" is now both the
+empty-Challenges button and the accept-this-person button on the Find match screen. They are never
+on screen together, but it is the same phrase for "pick an activity" and "accept this human". The
+language doc assigns it to the first, so the Find match screen is the one that should change if
+either does. Raise it in the Find review.
 
 ---
 

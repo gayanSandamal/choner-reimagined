@@ -219,21 +219,21 @@ def('signin', { ph:'A1', group:'Account', label:'Sign in', bar:() => authBar('Lo
     ${fld('si-email','Email',{ph:'you@email.com'})}${fld('si-pw','Password',{ph:'••••••••',pwd:true})}
     <div style="text-align:right;margin:-4px 0 6px;"><button class="link" data-go="forgot" style="font-size:12.5px;font-weight:500;">Forgot password?</button></div>
     ${S.formErr?`<div class="formerr">${esc(S.formErr)}</div>`:''}
-    <div class="foot">${btn('Log in','signin',{primary:true})}<div class="sw">New here? <button data-act="replace" data-v="signup">Create an account</button></div>${legalLine('By continuing you agree to')}${proto('Fill the demo account (already onboarded)','demo-fill')}</div>`,
+    <div class="foot">${btn('Log in','signin',{primary:true})}<div class="sw">New here? <button data-act="replace" data-v="signup">Create an account</button></div>${proto('Fill the demo account (already onboarded)','demo-fill')}</div>`,
   note:N('Log in', 'Email and password with inline validation. A failed attempt shows the reason on the form itself as well as in an alert, including the possibility that they never made an account.',
-    ['app/(auth)/sign-in.tsx, zod signInSchema: valid email, password of 8+','Errors map through authErrorMessage(): wrong credentials, unconfirmed email, rate limit, no network','Success replaces to "/" and the index gate decides onboarding or Home','Switching to Create an account replaces the screen, it does not stack','The legal line sits at the bottom, moved off Welcome. Here it reads "By continuing you agree to", because signing in does not create anything'],
+    ['app/(auth)/sign-in.tsx, zod signInSchema: valid email, password of 8+','Errors map through authErrorMessage(): wrong credentials, unconfirmed email, rate limit, no network','Success replaces to "/" and the index gate decides onboarding or Home','Switching to Create an account replaces the screen, it does not stack','NO legal line here. Decided 29 September: signing in is not consent, it is proof of consent already given. The documents live in Settings'],
     'Try a wrong password, an unknown email, or the demo account. Accounts you create in Sign up also work here for this session.') });
 
 def('signup', { ph:'A2', group:'Account', label:'Sign up', bar:() => authBar('Create account'), nav:() => '',
   body:() => `${heading("Let's get ",'started','')}
     ${fld('su-name','Your name',{ph:'Your full name'})}${fld('su-email','Email',{ph:'you@email.com'})}
     ${fld('su-pw','Password',{ph:'••••••••',pwd:true})}${fld('su-pw2','Confirm password',{ph:'••••••••',pwd:true})}
-    <button class="chk ${S.terms?'on':''}" data-act="terms" type="button"><i>${S.terms?ic('check',3):''}</i><span>I agree to Choner's Terms, Privacy Policy, and Health Disclaimer.</span></button>
+    <button class="chk ${S.terms?'on':''}" data-act="terms" type="button"><i>${S.terms?ic('check',3):''}</i><span>I agree to Choner's <u>Terms of use</u>, <u>Privacy policy</u>, <u>Cookie policy</u> and <u>Health disclaimer</u>.</span></button>
     ${S.err.terms?`<div class="ferr">${esc(S.err.terms)}</div>`:''}
-    <div class="foot">${btn('Create account','signup',{primary:true})}<div class="sw">Already have one? <button data-act="replace" data-v="signin">Log in</button></div>${legalLine('By creating an account you agree to')}</div>`,
+    <div class="foot">${btn('Create account','signup',{primary:true})}<div class="sw">Already have one? <button data-act="replace" data-v="signin">Log in</button></div></div>`,
   note:N('Create account', 'Name, email, password, a confirm-password field and the terms checkbox. The app keeps the confirm field even though the older design artifact dropped it.',
-    ['app/(auth)/sign-up.tsx, zod signUpSchema: name 2+ chars, valid email, password 8+, passwords match, terms accepted','If the project requires email verification it goes to Verify email, otherwise straight into onboarding','An email that already exists shows the "already has an account" alert','The legal line sits at the bottom, moved off Welcome'],
-    'Open question: this screen now carries the agreement twice, once as the checkbox and once as the line at the bottom. One of the two should go, and the checkbox is the one that records consent.') });
+    ['app/(auth)/sign-up.tsx, zod signUpSchema: name 2+ chars, valid email, password 8+, passwords match, terms accepted','If the project requires email verification it goes to Verify email, otherwise straight into onboarding','An email that already exists shows the "already has an account" alert','The tick box is the only place the agreement appears and it names all four documents as separate links. The bottom legal line is gone: the tick box is what records consent'],
+    'Settled 29 September: the tick box stays and carries the links, the bottom line is gone. There is no cookie policy screen yet, so that link points at Privacy for now.') });
 
 def('verify', { ph:'A3', group:'Account', label:'Verify email', bar:() => '', nav:() => '',
   body:() => `<div style="padding-top:34px;"><div class="head-c"><img src="__LOGO__" alt=""><div class="capn">Check your email</div><div class="hp">We sent a verification link to ${esc(S.verifyEmail || 'your inbox')}. Tap it to finish creating your account.</div></div>
@@ -277,7 +277,7 @@ def('inviteaccept', { ph:'A7', group:'Account', label:'Invite result', bar:() =>
     if (p === 'needs-auth') return `<div class="center"><div class="icobig">${ic('community',1.8)}</div><div class="p-h1">One step first</div><div class="p-sub">Sign in or create your account and we'll pull you straight into the challenge.</div>
       <div class="acts" style="margin-top:22px;">${btn('Sign in','',{go:'signin'})}<button class="btn-o brand" data-go="signup">Create an account</button></div></div>`;
     if (p === 'error') return `<div class="center"><div class="icobig bad">${ic('flag',1.8)}</div><div class="p-h1">That didn't work</div><div class="p-sub">This invite code isn't valid or has already been used.</div>${btn(S.user?'Go home':'Back to sign in','',{go:S.user?'home':'signin'})}</div>`;
-    return `<div class="center"><div class="icobig">${ic('fire',1.8)}</div><div class="p-h1">You're in!</div><div class="p-sub">Your shared fire is lit. You and your partner are in this together now.</div>${btn('Continue','invite-continue')}</div>`; },
+    return `<div class="center"><div class="icobig">${ic('fire',1.8)}</div><div class="p-h1">You're connected.</div><div class="p-sub">Your shared fire is lit. You and your partner are in this together now.</div>${btn('Continue','invite-continue')}</div>`; },
   note:N('Joined, or not', 'Three outcomes: joined, needs an account first, or the invite failed. A brand-new invitee goes to the onboarding intro and builds a profile; someone who already has one goes straight to the why.', ['app/invite/[token].tsx','New account: Continue goes to the onboarding intro. They answer goal, struggle, style, about you and energy, see the reveal and the photo step, then skip the challenge picker and the starting point (they inherit their partner\'s challenge) and finish on the why','Existing account: Continue goes straight to the why, prefilled and skippable, then Home','BUG in the app today: app/invite/[token].tsx replaces to /onboarding/why for everyone, so a brand-new invitee reaches Home with no profile at all (no goal, struggle, style, age, gender or energy), which the matching and the tone of the app both depend on'], 'Check: the invitee path never sets onboarding_complete. Confirm whether the index gate sends them back into onboarding on the next launch.') });
 
 def('legal', { ph:'A8', group:'Account', label:'Terms and privacy', bar:() => '', nav:() => '',
@@ -453,7 +453,7 @@ function heartSvg(you, partner){
 }
 function relCard(){
   const partnered = S.pstate === 'partnered', k = partnered ? S.kept : 0;
-  const sub = partnered ? (S.cs === 'matched' || !k ? '<div class="rel-l">Your first shared commitment is next.</div>' : `<div class="rel-k">${ic('fire',1.8)}${keptTxt(k)}</div><div class="rel-l">You both showed up ${k} time${k===1?'':'s'} in a row.</div>`)
+  const sub = partnered ? (S.cs === 'matched' || !k ? '<div class="rel-l">Your first one together is next.</div>' : `<div class="rel-k">${ic('fire',1.8)}${keptTxt(k)}</div><div class="rel-l">You both showed up ${k} time${k===1?'':'s'} in a row.</div>`)
     : S.pstate === 'finding' ? '<div class="rel-l">Looking for your partner.</div>' : S.pstate === 'waiting' ? '<div class="rel-l">Waiting for your partner to join.</div>' : '';
   return `<div class="relc"><div class="hwrap st${stageOf(k)}${partnered && S.cs==='today'?' beat':''}"><div class="glow"></div><div class="rings"><i></i><i></i></div>${heartSvg(true, partnered)}${partnered?'':'<div class="qmark">?</div>'}</div>
     <div class="rel-h">${partnered?'You + Gayan':'You + ?'}</div>${sub}${partnered?`<div class="stg">${STAGES.map(m => `<i class="${k>=m?'on':''}"></i>`).join('')}</div>`:''}</div>`;
@@ -470,18 +470,18 @@ function hero(){
     const wait = S.pstate === 'waiting', seeking = S.pstate === 'finding', resume = S.pstate === 'solo' && S.find.intent && !findDone();
     const line = wait ? (S.sentEmail ? `Your challenge starts the moment ${esc(S.sentEmail)} joins.` : 'Waiting for your partner to join.')
       : seeking ? "We're looking for your partner. We'll notify you the moment you're matched."
-      : resume ? 'Finish setting up your search.' : "Someone to show up with is all that's missing.";
+      : resume ? 'Finish setting up your search.' : 'Find someone who wants to do it too.';
     const cta = wait ? btn('See your invite','',{go:'find'})
       : seeking ? ''
       : btn('Find a partner','',{go:'find'});
-    return `<div class="hero"><div class="h-eb">Your first commitment</div><div class="h-title">${ic(icon,1.8)}<span>${weekTitle()}</span></div>
+    return `<div class="hero"><div class="h-eb">Let's make it happen</div><div class="h-title">${ic(icon,1.8)}<span>${weekTitle()}</span></div>
       <div class="h-prog">${S.agreed?`0 / ${S.cadence} this week \u00b7 `:''}${esc(amtLine())}</div>
       ${seeking ? `<button class="sdots" data-go="find" aria-label="Searching. Open Find."><i></i><i></i><i></i><span>Searching</span>${ic('chev',2)}</button>` : ''}
       <div class="h-sub">${line}</div>${cta}</div>`;
   }
   const mode = curMode(), P2 = S.plan;
   if (S.planProp) return planPropCard();
-  if (S.cs === 'matched') return `<div class="hero"><div class="h-eb">You found your person</div>${youG()}<div class="h-title">${ic(icon,1.8)}<span>${weekTitle()}</span></div><div class="h-sub">Now let's plan your first ${noun}.</div>${btn(`Plan your first ${noun}`,'',{go:'plan'})}</div>`;
+  if (S.cs === 'matched') return `<div class="hero"><div class="h-eb">You found your match</div>${youG()}<div class="h-title">${ic(icon,1.8)}<span>${weekTitle()}</span></div><div class="h-sub">Now let's plan your first ${noun}.</div>${btn(`Plan your first ${noun}`,'',{go:'plan'})}</div>`;
   if (S.cs === 'planned') return `<div class="hero"><div class="h-eb">Your next commitment</div><div class="h-title">${ic(icon,1.8)}<span>${sessTitle()}</span></div><div class="h-when">${P2.day} \u00b7 ${P2.time}</div>${mode==='together'?hrow('pin',esc(P2.place)):hrow('separate','Separately, together')}${youG()}
     ${stline('Gayan',S.gPartner!=='idle',S.gPartner!=='idle'?'Ready':'Not checked in')}${stline('You',false,'Not checked in')}${btn('View session','',{go:'commit'})}</div>`;
   if (S.cs === 'today'){
@@ -523,7 +523,7 @@ def('home', { ph:'H1', group:'Home', label:'Home', bar:() => appBar(), nav:() =>
   body:() => {
     const hr = new Date().getHours(); const g = hr < 5 ? 'Up late' : hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : hr < 21 ? 'Good evening' : 'Good night';
     const head = `<div class="greet1">${g}, <b>${esc(firstName(myName()))}</b></div>`;
-    if (S.explore) return `${head}<div class="hero empty"><div class="h-eb">Ready when you are</div><div class="h-sub" style="font-size:14px;color:var(--pink);">Pick your first commitment in Challenges, then find someone to do it with.</div>${btn('Go to Challenges','',{go:'challenges'})}</div>${pulseCard()}${justHappened()}`;
+    if (S.explore) return `${head}<div class="hero empty"><div class="h-eb">Start something together</div><div class="h-sub" style="font-size:14px;color:var(--pink);">Pick what you want to do with your partner.</div>${btn("Let's do this",'',{go:'challenges'})}</div>${pulseCard()}${justHappened()}`;
     const sim = S.pstate === 'finding' ? proto("Simulate: you're matched",'sim-match') : S.pstate === 'waiting' ? proto('Simulate: your friend joins with the code','sim-join') : '';
     return `${head}${relCard()}${hero()}${sim}${pulseCard()}${justHappened()}`; },
   note:N('Home: a living view of your commitment', 'Heart on top, then your commitment, then Choner Pulse and Just Happened. Updated to the 26 September decisions.', [
@@ -532,7 +532,7 @@ def('home', { ph:'H1', group:'Home', label:'Home', bar:() => appBar(), nav:() =>
     'After both show up: the kept count and "Plan the next one" straight away (one session planned at a time)',
     'The HOME group in the rail now holds ONE screen, Home itself. Everything it opens belongs to another tab and is filed there: Plan a session, Session details, Confirm with QR and Your why are Challenges screens (they always drew the Challenges tab as active); the challenge picker is Challenges; the invite screen is Find. Filing them under Home is what let the overlaps creep in',
     'HOME NEVER DOES ANOTHER TAB\'S WORK. Home may open a sheet ABOUT the commitment it is already showing (Plan a session, View session). It may never open one that STARTS or ENDS another tab\'s lifecycle: no partner search, no invite, no challenge picker. Those are a tab switch, and it lands on that tab\'s own top screen, never mid-flow',
-    'No challenge: one button, "Go to Challenges". The picker lives in Challenges, which owns creating, ending and the history',
+    'No challenge: one button, "Let\'s do this", the same words the Challenges tab uses, so the handoff reads as one step. The picker lives in Challenges, which owns creating, ending and the history',
     'No partner: exactly one button, "Find a partner", which switches to the Find tab. Find\'s own screen carries all three doors (the radar, "Invite someone you know", "Have an invite code?"), so the choice is made where it belongs and cannot be started from two places',
     'Searching: no button at all, just the pulsing "Searching" row that opens Find. Stopping the search and switching to an invite both live in Find',
     'Choner Pulse is one card with tappable activity tiles (they open Find). Just Happened is a square dark card that changes by itself and is not tappable',
@@ -585,11 +585,11 @@ def('qr', { ph:'T1d', group:'Tabs', label:'Challenges: confirm with QR', bar:() 
 def('browse', { ph:'T1a', group:'Tabs', label:'Challenges: create a commitment', bar:() => '', nav:() => navBar('challenges'),
   onEnter:() => { S.nw = { act:'run', ex:'push', amt:3, cad:2 }; },
   body:() => { const n = S.nw, unit = n.act === 'work' ? EX[n.ex][1] : TPL[n.act].unit;
-    return `${hdr('Your first commitment')}<div class="flabel">Activity</div><div class="agrid">${Object.keys(TPL).map(k => `<button class="gcard ${n.act===k?'on':''}" data-act="nw-act" data-v="${k}">${ic(TPL[k].icon,1.8)}<div class="t">${TPL[k].t}</div></button>`).join('')}</div>
+    return `${hdr('Start something together')}<div class="flabel">Activity</div><div class="agrid">${Object.keys(TPL).map(k => `<button class="gcard ${n.act===k?'on':''}" data-act="nw-act" data-v="${k}">${ic(TPL[k].icon,1.8)}<div class="t">${TPL[k].t}</div></button>`).join('')}</div>
     ${n.act==='work'?`<div class="flabel" style="margin-top:14px;">Exercise</div><div class="pill-row">${Object.keys(EX).map(k => `<button class="pill ${n.ex===k?'on':''}" data-act="nw-ex" data-v="${k}">${EX[k][0]}</button>`).join('')}</div>`:''}
     <div class="sect">How much each time?</div><div class="stepper"><button data-act="nw-amt" data-v="-1" aria-label="Less">\u2212</button><div class="v">${n.amt}<small>${unit}</small></div><button data-act="nw-amt" data-v="1" aria-label="More">+</button></div>
     <div class="sect">How often?</div><div class="segt">${[1,2,3].map(c => `<button class="${n.cad===c?'on':''}" data-act="nw-cad" data-v="${c}">${c}\u00d7 a week</button>`).join('')}</div>
-    <div class="foot">${btn('Create commitment','nw-create')}</div>`; },
+    <div class="foot">${btn("Let's make it happen",'nw-create')}</div>`; },
   note:N('Create a commitment', 'A Challenges screen. Replaces Browse challenges. One active challenge per user, so it only appears when there is none, which now means after ending or finishing one.', [
     'Opened from the Challenges tab only. Home and Find hand over to Challenges first: neither may start or end a challenge',
     'The six MVP activities; Workouts pick an exercise','1, 2 or 3 times a week',
@@ -607,12 +607,12 @@ def('editwhy', { ph:'T4b', group:'Tabs', label:'Profile: edit your why', bar:() 
 /* ===== Tabs ===== */
 def('challenges', { ph:'T1', group:'Tabs', label:'Challenges tab', bar:() => appBar(), nav:() => navBar('challenges'),
   body:() => { const partnered = S.pstate === 'partnered';
-    if (S.explore) return `<div class="p-h1" style="margin-bottom:2px;">Challenges</div><div class="p-sub">What you've committed to.</div><div class="hero"><div class="h-eb">No active commitment</div><div class="h-title">Your first commitment starts here.</div>${btn('Create my first commitment','',{go:'browse'})}</div>`;
+    if (S.explore) return `<div class="p-h1" style="margin-bottom:2px;">Challenges</div>${S.agreed && S.pstate === 'partnered' ? `<div class="p-sub">What you've committed to.</div>` : ''}<div class="hero"><div class="h-eb">Start something together</div><div class="h-title">Pick what you want to do with your partner.</div>${btn("Let's do this",'',{go:'browse'})}</div>`;
     const partner = partnered ? youG() : S.pstate === 'finding' ? `<div class="hrow">${ic('find',1.8)}<span>Partner: searching\u2026</span></div><button class="linkq" data-go="find">Go to Find ${ic('chev',2)}</button>` : S.pstate === 'waiting' ? `<div class="hrow">${ic('clock',1.8)}<span>Partner: invited, waiting to join</span></div><button class="linkq" data-go="find">Go to Find ${ic('chev',2)}</button>` : `<div class="hrow">${ic('user',1.8)}<span>Partner: not found yet</span></div><button class="linkq" data-go="find">Go to Find ${ic('chev',2)}</button>`;
     const action = !partnered ? '' : S.planProp ? (S.planProp.by === 'gy' ? `<div class="btn-2">${btn('Accept','plan-accept')}<button class="btn-o" data-act="plan-counter">Suggest another</button></div>` : `<div class="hrow">${ic('clock',1.8)}<span>Waiting for Gayan to accept your plan</span></div>`) : S.cs === 'matched' ? btn(`Plan your first ${TXc().noun}`,'',{go:'plan'}) : S.cs === 'done' ? btn('Plan the next one','',{go:'plan'}) : btn(S.cs==='today'?"Open today's session":'View session','',{go:'commit'});
     const wk = partnered && S.agreed && S.cs !== 'matched' ? `<div class="wcard"><div class="rc-h">This week</div>${Array.from({length:S.cadence},(_, i) => { const done = i < S.weekDone, nxt = i === S.weekDone && S.cs !== 'done'; return `<div class="wnode"><span class="wdot ${done?'ok':nxt&&S.cs==='today'?'now':''}">${done?ic('check',3):''}</span><div><b>${esc(TXc().act)} ${i+1}</b><small>${done?'Done':nxt?`${S.plan.day} \u00b7 ${S.plan.time}`:'Not planned yet'}</small></div></div>`; }).join('')}<div class="wcopy">${S.weekDone>=S.cadence?"You kept this week's commitment.":S.cadence-S.weekDone===1?"1 more to keep this week's commitment.":`${S.cadence-S.weekDone} commitments still ahead.`}</div></div>` : '';
-    return `<div class="p-h1" style="margin-bottom:2px;">Challenges</div><div class="p-sub">What you've committed to.</div>
-    <div class="hero"><div class="h-eb">Active commitment</div><div class="h-title">${ic(tpl().icon,1.8)}<span>${esc(weekTitle())}</span></div><div class="h-prog">${S.agreed?`${partnered?S.weekDone:0} / ${S.cadence} this week \u00b7 `:''}${esc(amtLine())}</div>${partner}${action}</div>
+    return `<div class="p-h1" style="margin-bottom:2px;">Challenges</div>${S.agreed && S.pstate === 'partnered' ? `<div class="p-sub">What you've committed to.</div>` : ''}
+    <div class="hero"><div class="h-eb">${partnered && S.agreed ? 'Your commitment' : "Let's make it happen"}</div><div class="h-title">${ic(tpl().icon,1.8)}<span>${esc(weekTitle())}</span></div><div class="h-prog">${S.agreed?`${partnered?S.weekDone:0} / ${S.cadence} this week \u00b7 `:''}${esc(amtLine())}</div>${partner}${action}</div>
     ${wk}${partnered?`<div class="rel"><div class="rel-k">${ic('fire',1.8)}${keptTxt(S.cs==='matched'?0:S.kept)}</div><div class="rel-l">Commitments you and Gayan both kept.</div></div>`:''}
     <div class="sect">History</div><div class="hrow2"><span>Walk 3\u00d7 a week</span><small>Ended \u00b7 August 2026</small></div>
     <div class="banner" style="margin-top:14px;">Every Challenges state (misses, repair, move, cancel, end) is in the <a href="${CH_URL}" target="_blank" rel="noopener">Challenges tab prototype</a>.</div>`; },
@@ -845,7 +845,7 @@ function act(a, v){
       S.cs = 'planned'; resetDay();
       if (p.first){ go('why', {replace:true}); S.hist = []; return; }
       go('home', {replace:true}); S.hist = [];
-      dlg('Agreed', `${p.mode==='together'?'Together':'Separately, together'} · ${p.day} · ${p.time}. You both said yes, so it is planned.`); return; }
+      dlg("You're in", `You've got something to show up for together. ${p.mode==='together'?'Together':'Separately, together'} · ${p.day} · ${p.time}.`); return; }
     case 'plan-counter': { const p = S.planProp; S.counterFrom = p; S.planProp = null; go('plan'); return; }
     case 'nw-act': S.nw.act = v; S.nw.amt = v === 'work' ? EX[S.nw.ex][2] : TPL[v].def; break;
     case 'nw-ex': S.nw.ex = v; S.nw.amt = EX[v][2]; break;

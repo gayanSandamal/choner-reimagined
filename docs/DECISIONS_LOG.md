@@ -827,3 +827,137 @@ behaviour. With the rail matching ownership the drift is visible at a glance.
 
 Verified: rail groups read correctly, 152 screen/state combos clean, and Back/Next still walks all
 37 screens end to end with no errors.
+
+---
+
+## 2026-09-29 (later) - Consent recorded once, in the tick box
+
+Master spec open item 5 is now closed. Sign up stated the agreement twice: the tick box in the
+form and `<TermsFooter />` at the bottom. Only one of them records anything, so only one should
+be there.
+
+DECIDED: keep the tick box, put the links inside its own label, delete the bottom line from Sign
+up. The tick box is the thing that writes consent; the footer was decoration next to it.
+
+Sign in keeps its bottom line. It has no tick box, nothing to duplicate, and the line reads
+"By continuing you agree to" rather than "By creating an account", so `TermsFooter` still needs
+the `lead` prop planned in fe2. The line is gone from Welcome (decided 26 September) and now from
+Sign up, so it appears on exactly one screen.
+
+Found while checking this, and it changes the task: the two pieces of copy name DIFFERENT things.
+
+  tick box      "I agree to Choner's Terms, Privacy Policy, and Health Disclaimer."
+  TermsFooter   "Terms of use, privacy and policy & cookie policy"
+
+Four documents between them, and each list is missing one the other has. The footer omits the
+health disclaimer; the tick box omits the cookie policy. Deleting the footer therefore drops the
+cookie policy from the flow unless it is carried across.
+
+DECIDED: the tick box names all four - Terms of use, Privacy policy, Cookie policy, Health
+disclaimer - each its own tappable link. The health disclaimer stays because Choner puts two
+strangers together to exercise; it is the one document that carries real liability, and it was
+only ever in the tick box, never in the footer.
+
+Routing: `app/legal/` has terms.tsx, privacy.tsx and health-disclaimer.tsx. There is no cookie
+policy screen. Until one exists the cookie link points at `/legal/privacy`, where cookie handling
+belongs anyway. Flagged as content work, not a build blocker.
+
+Also fixed by this: `TermsFooter` currently wraps all three names in ONE Pressable going to
+`/legal/terms`, so tapping "privacy" opened the terms page. The tick box version links each
+document separately.
+
+---
+
+## 2026-09-29 (later still) - No legal line on Sign in either
+
+Amends the entry above, same day. The bottom line was going to stay on Sign in with the lead
+"By continuing you agree to".
+
+DECIDED: remove it from Sign in too. Signing in is not consent, it is proof of consent already
+given; the person agreed when they made the account. The documents are reachable from Settings,
+which already lists Privacy, Terms and Health disclaimer
+(`app/settings/index.tsx:119-131`).
+
+The legal line therefore appears on NO screen. It is gone from Welcome (26 September), from Sign
+up (earlier today, the tick box carries it) and now from Sign in.
+
+Consequence for the build, and it makes fe2 smaller: `components/auth/TermsFooter.tsx` has exactly
+one caller, `app/(auth)/welcome.tsx:64`. fe2 already deletes that call. So the component becomes
+dead code and is deleted with it. The `lead` prop the plan called for is not needed, and neither
+is the work of adding the line to Sign in and Sign up.
+
+---
+
+## 2026-09-29 (final) - The language flow: no "commitment" before there is one
+
+From `Choner_Emotional_Start_to_Commitment_Language_Flow.md`. This also settles the fe8 button
+label question, which was open.
+
+The principle: **do not use the word "commitment" before two people have agreed a plan.** A
+commitment should read as the RESULT of choosing something, finding someone and agreeing to show
+up, not as a form the app hands you on arrival.
+
+Five moments, each with its own voice:
+
+  1  nothing picked        Start something together / Pick what you want to do with your partner.
+                           / [Let's do this]
+  2  activity picked       Let's make it happen / Find someone who wants to do it too.
+  3  partner accepted      You found your match / Now let's plan your first one.
+  4  both agreed a plan    You're in / You've got something to show up for together.
+  5  from then on          Your commitment
+
+Applied across all three prototypes. Every user-facing use of "commitment" BEFORE moment 4 is
+gone; every use after it stays.
+
+  Home, no challenge      "Ready when you are" + "Pick your first commitment in Challenges..."
+                          + [Go to Challenges]        -> moment 1
+  Home, no partner        eyebrow "Your first commitment"
+                          + "Someone to show up with is all that's missing."  -> moment 2
+  Home, accepted          "You found your person"     -> "You found your match"
+  Heart card, accepted    "Your first shared commitment is next."
+                          -> "Your first one together is next."
+  Challenges, empty       "No active commitment" + "Your first commitment starts here."
+                          + [Create my first commitment]                      -> moment 1
+  Challenges, hero        "Active commitment" -> moment 2 before agreement, "Your commitment" after
+  Challenges, subtitle    "What you've committed to." now renders ONLY once agreed
+  The picker              header "Your first commitment" -> "Start something together";
+                          submit [Create commitment] -> [Let's make it happen]
+  Both accept a plan      dialog "Agreed" -> "You're in"
+  Challenge complete      [Create my next commitment] / [Start your next challenge]
+                          -> [Let's do this]
+
+THIS SETTLES fe8. Home no longer names a destination anywhere: "Go to Challenges" is gone and
+Home says exactly what the Challenges tab says, "Start something together" and "Let's do this".
+Every Home handoff now names what the user gets, not where the button goes. The convention is one
+convention.
+
+Rejected, and why: "Go to Challenges" was defended on the grounds that it warns a tab switch is
+coming. But EVERY Home button switches tab, that is the ownership rule, so the warning is not
+doing any work. If it were, all six would have to read "Go to ...", and "Go to Find" is unusable.
+
+THREE CALLS MADE WHILE APPLYING IT. Each one is a change the document did not ask for, made
+because applying it literally would have produced a collision:
+
+1. NO EMOJI. The document puts a waving hand after "You found your match" and a flame after
+   "You're in". Line icons only, no emoji, is a locked rule (master spec section 4), and the
+   prototypes already have a `fire` line icon doing exactly that job. Both headlines ship
+   without emoji; "You're in" keeps the fire icon it already had.
+
+2. "You're in" was ALREADY TAKEN. The invite-result screen (A7, someone joins with a code) said
+   "You're in!" with the fire icon. The document assigns that headline to both people agreeing a
+   plan, which is a different, later moment. The invite result now reads "You're connected." and
+   keeps the fire and the "Your shared fire is lit" line. Happy to swap these back if the invite
+   moment is the one that deserves "You're in".
+
+3. "A match is waiting", a string the document does not contain. Home had "You found a match"
+   for a match AWAITING an answer and "You found your person" for one ACCEPTED. Renaming the
+   second to "You found your match" put two near-identical headlines one tap apart, so the
+   pending one became "A match is waiting", which is what that preset was already called.
+
+Verified: all three prototypes build (placeholder count 0), all three parse under `node --check`,
+and all 21 Home presets plus all 22 Challenges presets render with no console errors.
+
+Still to reconcile, not urgent: "Let's do this" is now both the empty-Challenges button AND the
+accept-this-person button on the Find match screen. They are never on screen together, but it is
+the same phrase for "pick an activity" and "accept this human". The document assigns it to the
+first, so the match screen is the one that should change if either does.
