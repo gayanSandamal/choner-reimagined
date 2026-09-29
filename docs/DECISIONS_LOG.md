@@ -1485,3 +1485,57 @@ Circle states, final:
   solid orange      done
   marked outline    missed, not repaired
   plain empty       ahead, unplanned
+
+---
+
+## 2026-09-29 (Challenges review, part 6) - Endings. Review complete.
+
+### The match ending must not wipe the streak
+`ended` showed "0 commitments kept" and "Your first shared commitment is next".
+The old model reset the count on a breakup. Under the new one the streak is
+YOURS, Gayan keeps his, and losing a partner costs no progress.
+DECIDED: `ended` shows the streak INTACT - 6 of 12, circles preserved, waiting
+for the next partner to advance it.
+
+### The challenge ending must not delete the partner
+`ch-ended` showed the empty state with no partner anywhere, because the partner
+lives on the challenge row. Part 1 settled that ending a challenge does not end
+the match.
+DECIDED: `ch-ended` still shows You + Gayan. No challenge, still a partner.
+This is the state that PROVES the partnerships decision - no UI change can fix
+it, it needs the table.
+
+### THE STREAK BELONGS TO THE CHALLENGE, NOT THE USER
+Asked whether a streak survives a challenge change. DECIDED: IT ENDS.
+7 of 12 on Running, end the challenge, start Cycling: the 7 is recorded in
+History beside the finished challenge and Cycling starts a fresh streak.
+
+Flagged before deciding, and accepted: this means ending a challenge destroys
+progress, which is the same wipe just removed from `ended`. Chosen for tidier
+per-activity history.
+
+Consequences:
+  - target_sessions and started_at live on user_challenges. NO separate streak
+    table.
+  - The streak still survives a PARTNER change, because the challenge does.
+  - Each person has their own user_challenges row, so each has their own
+    streak. Both count the same sessions. Gayan leaving at 7 keeps his 7 on his
+    own row. Personal in ownership, shared in earning - consistent throughout.
+
+### Ending a challenge now warns first
+It became a destructive action, so it gets the same treatment as the cancel
+request agreed in part 4:
+  End this challenge?
+  Your streak ends here, at 7 of 12. It'll be saved to your history.
+  Gayan stays your partner.
+
+### The commitment is NOT reset when a match ends
+Keep "Run 2x a week, 3 km" as it stands. The new partner accepts or counters it
+at the first plan, exactly like any other proposal. No special case to build.
+
+### Circles use the brand orange
+Filled circles are the Choner orange (#FD8302 / #FD5B01), not a neutral tone.
+
+---
+
+REVIEW COMPLETE. 22 states, 6 groups, all walked.
