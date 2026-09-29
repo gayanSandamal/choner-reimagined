@@ -1326,3 +1326,47 @@ WHEN sessions are planned; it stops having its own widget.
   "1 more to keep this week's commitment" -> "1 more this week"
   "2 commitments still ahead"            -> "2 sessions this week"
   "Your first shared commitment is next"  -> "Your first session together is next"
+
+---
+
+## 2026-09-29 (Challenges review, part 3) - Sessions
+
+### The streak is the only number on the hero
+The hero carried a weekly counter (0/2, "0 / 2 this week", "Monday to Sunday")
+separate from the THIS WEEK card, so cutting that card did not remove it. That
+left two progress numbers again: this week, and the streak.
+
+DECIDED: keep the STREAK ONLY. The weekly commitment speaks once, when it is
+met, through the line that already exists: "You kept this week's commitment.
+Plan the next one." One number, plus one moment.
+
+Accepted cost: "Run 2x a week" is the promise, and with no weekly counter there
+is no running feedback against it - you see progress toward the session target
+instead. Taken deliberately for MVP simplicity.
+
+### NOTHING RESETS
+Every session state read "You both showed up 6 times in a row." "In a row"
+claims a run that breaks. Under the session-streak model a streak is progress
+toward a target, not a run.
+
+DECIDED: nothing resets. A MISS COSTS YOU THE CIRCLE AND NOTHING MORE. No
+counter is wiped, no progress is lost, the circle simply does not fill.
+
+This has a consequence to settle in the Misses group: if a miss costs only the
+circle, REPAIR NEEDS RE-JUSTIFYING. It existed to recover from a loss that no
+longer happens.
+
+### The heart line
+  "6 commitments kept" / "You both showed up 6 times in a row."
+  ->
+  "6 together with Gayan" / "You've both shown up 6 times."
+The pair count. The streak circles sit separately and measure something else.
+
+### Noted, no action
+today-tg and today-sep render IDENTICALLY on this tab. The together /
+separately difference appears only inside the session, which is right: the tab
+shows that a session exists, not how it is done.
+
+justdone bundles the celebration, the next plan and the Community share prompt
+on one screen. It is the highest-emotion moment in the product, so it is the
+right place to ask.
