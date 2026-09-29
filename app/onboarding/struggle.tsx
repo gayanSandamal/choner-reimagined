@@ -16,8 +16,7 @@ export default function StruggleScreen() {
       step={2}
       title="What's stopped you "
       titleEmphasis="before?"
-      subtitle="Be honest — this is how Choner knows where to support you most."
-      reassurance="This is more common than you think."
+      subtitle="Be honest. This is how Choner knows where to support you most."
       footer={
         <>
           <Button label="Continue" disabled={!struggle} onPress={next} />

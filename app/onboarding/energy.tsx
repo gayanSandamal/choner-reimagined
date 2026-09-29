@@ -75,7 +75,7 @@ export default function EnergyScreen() {
       step={5}
       title="How are you feeling "
       titleEmphasis="this week?"
-      subtitle="Choner adjusts your first week based on this — no pressure either way."
+      subtitle="Choner adjusts your first week based on this. No pressure either way."
       reassurance="This isn't a test. There's no wrong answer."
       footer={
         <Button

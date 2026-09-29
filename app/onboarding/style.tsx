@@ -14,11 +14,11 @@ export default function StyleScreen() {
       step={3}
       title="How do you want Choner to "
       titleEmphasis="talk to you?"
-      subtitle="This shapes your nudges and how your partner challenge feels day to day."
+      subtitle="This shapes how Choner supports you and how your partner challenge feels."
       reassurance="You can change this any time in your settings."
       footer={
         <Button
-          label="This is me — let's go"
+          label="This is me, let's go"
           disabled={!tone}
           onPress={() => router.push('/onboarding/age')}
         />
