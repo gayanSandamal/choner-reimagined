@@ -1,3 +1,5 @@
+import { IconName } from '@/components/ui/Icon';
+
 // Single source of truth for the onboarding quiz vocabulary
 // (docs/Choner_Onboarding_Screens_1-7_FINAL.md). Stored values are
 // snake_case; display copy lives alongside so onboarding, profile edit,
@@ -7,7 +9,10 @@ export interface QuizOption<V extends string = string> {
   value: V;
   label: string;
   description: string;
-  icon: string;
+  // A key into the line-icon set, never an emoji. Optional because the age and
+  // gender pills carry no icon at all: they are short factual choices and the
+  // prototype draws them as plain pills.
+  icon?: IconName;
 }
 
 export type GoalValue = 'move_more' | 'sleep_better' | 'reduce_stress' | 'improve_energy';
@@ -18,30 +23,30 @@ export type AgeRangeValue = '18-24' | '25-34' | '35-44' | '45-54' | '55+';
 export type GenderValue = 'male' | 'female' | 'prefer_not_to_say';
 
 export const GOALS: QuizOption<GoalValue>[] = [
-  { value: 'move_more', label: 'Move more', description: 'Build an active routine', icon: '🏃' },
-  { value: 'sleep_better', label: 'Sleep better', description: 'Rest and recover well', icon: '🌙' },
-  { value: 'reduce_stress', label: 'Reduce stress', description: 'Feel calmer day to day', icon: '🌱' },
-  { value: 'improve_energy', label: 'Improve energy', description: 'Stay sharp and focused', icon: '⚡' }
+  { value: 'move_more', label: 'Move more', description: 'Build an active routine', icon: 'run' },
+  { value: 'sleep_better', label: 'Sleep better', description: 'Rest and recover well', icon: 'sleep' },
+  { value: 'reduce_stress', label: 'Reduce stress', description: 'Feel calmer day to day', icon: 'leaf' },
+  { value: 'improve_energy', label: 'Improve energy', description: 'Stay sharp and focused', icon: 'bolt' }
 ];
 
 export const STRUGGLES: QuizOption<StruggleValue>[] = [
-  { value: 'start_but_stop', label: 'I start but stop', description: 'Good intentions, hard to stay consistent', icon: '🔄' },
-  { value: 'lack_accountability', label: 'I lack accountability', description: 'No one keeping me on track', icon: '👥' },
-  { value: 'too_busy', label: "I'm too busy", description: 'Life gets in the way every time', icon: '⏰' },
-  { value: 'overwhelmed', label: 'I feel overwhelmed', description: "Don't even know where to begin", icon: '😔' }
+  { value: 'start_but_stop', label: 'I start but stop', description: 'Good intentions, hard to stay consistent', icon: 'redo' },
+  { value: 'lack_accountability', label: 'I lack accountability', description: 'No one keeping me on track', icon: 'community' },
+  { value: 'too_busy', label: "I'm too busy", description: 'Life gets in the way every time', icon: 'clock' },
+  { value: 'overwhelmed', label: 'I feel overwhelmed', description: "Don't even know where to begin", icon: 'cloud' }
 ];
 
 export const TONES: QuizOption<ToneValue>[] = [
-  { value: 'competitive', label: 'Competitive', description: 'I like a friendly rivalry', icon: '🏆' },
-  { value: 'momentum', label: 'Momentum-driven', description: 'I hate breaking a streak', icon: '🔥' },
-  { value: 'encouraging', label: 'Encouraging', description: 'I need warmth, not pressure', icon: '💬' },
-  { value: 'team', label: 'Team-minded', description: 'I show up for others', icon: '🤝' }
+  { value: 'competitive', label: 'Competitive', description: 'I like a friendly rivalry', icon: 'trophy' },
+  { value: 'momentum', label: 'Momentum-driven', description: 'I hate breaking a streak', icon: 'fire' },
+  { value: 'encouraging', label: 'Encouraging', description: 'I need warmth, not pressure', icon: 'chat' },
+  { value: 'team', label: 'Team-minded', description: 'I show up for others', icon: 'together' }
 ];
 
 export const ENERGY_LEVELS: QuizOption<EnergyValue>[] = [
-  { value: 'low', label: 'Low', description: 'Running on empty', icon: '😴' },
-  { value: 'medium', label: 'Medium', description: 'Getting by', icon: '⚡' },
-  { value: 'high', label: 'High', description: 'Firing on all cylinders', icon: '🔥' }
+  { value: 'low', label: 'Low', description: 'Running on empty', icon: 'sleep' },
+  { value: 'medium', label: 'Medium', description: 'Getting by', icon: 'bolt' },
+  { value: 'high', label: 'High', description: 'Firing on all cylinders', icon: 'fire' }
 ];
 
 // Reduces friction and keeps the data clean vs. free text. Used behind the
@@ -49,17 +54,17 @@ export const ENERGY_LEVELS: QuizOption<EnergyValue>[] = [
 // bands still score well there, so the boundaries here don't need to be
 // exact.
 export const AGE_BANDS: QuizOption<AgeRangeValue>[] = [
-  { value: '18-24', label: '18–24', description: '', icon: '🌱' },
-  { value: '25-34', label: '25–34', description: '', icon: '🌿' },
-  { value: '35-44', label: '35–44', description: '', icon: '🌳' },
-  { value: '45-54', label: '45–54', description: '', icon: '🍃' },
-  { value: '55+', label: '55+', description: '', icon: '🍂' }
+  { value: '18-24', label: '18–24', description: '' },
+  { value: '25-34', label: '25–34', description: '' },
+  { value: '35-44', label: '35–44', description: '' },
+  { value: '45-54', label: '45–54', description: '' },
+  { value: '55+', label: '55+', description: '' }
 ];
 
 // Separate from the Find form's "gender preference" filter — this is the
 // user's own gender, captured once here.
 export const GENDERS: QuizOption<GenderValue>[] = [
-  { value: 'male', label: 'Male', description: '', icon: '♂️' },
-  { value: 'female', label: 'Female', description: '', icon: '♀️' },
-  { value: 'prefer_not_to_say', label: 'Prefer not to say', description: '', icon: '🤍' }
+  { value: 'male', label: 'Male', description: '' },
+  { value: 'female', label: 'Female', description: '' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say', description: '' }
 ];
