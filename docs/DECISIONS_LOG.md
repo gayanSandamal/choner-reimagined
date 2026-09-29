@@ -1284,3 +1284,45 @@ is now wrong twice over and must be rewritten.
 The Community feed does NOT need a new sentence after all - an earlier note
 said it would. "Nimali and Ruwan: 14 kept together on Yoga" is the PAIR count,
 which survives option A intact. Only the noun changes: "14 sessions together".
+
+---
+
+## 2026-09-29 (Challenges review, part 2) - Week 1
+
+### Nothing about the week exists before the first plan
+The screen was showing "Week 1 has 2 sessions" and a THIS WEEK list of Run 1 /
+Run 2 while the card above still read "You'll agree how much and how often
+together". It cannot know there are two sessions before anyone agreed the
+cadence. Moving cadence to the first plan turned an inconsistency into a
+contradiction.
+
+DECIDED: delete both. Before the first plan is accepted the state is just
+"You + Gayan. Now let's plan your first run." and the button. A deletion, which
+suits an MVP: one less thing to compute.
+
+### Where the streak length is chosen
+It could not go in the first plan: the plan is a negotiation with the partner,
+and the streak is PERSONAL - Gayan gets no say in your number.
+
+DECIDED: asked RIGHT AFTER the first plan is accepted. One question, with
+presets. It is the first moment a partner and a cadence both exist, so the
+number means something. Proposed presets: 10 / 20 / 30 sessions. No custom
+entry for MVP unless asked for.
+
+### THIS WEEK is cut entirely; the circles are the only progress display
+A circle shows its day of the week, so the circles ALREADY ARE the weekly view.
+Keeping THIS WEEK alongside them put the same information on screen twice.
+
+DECIDED: cut THIS WEEK. Twelve circles with day labels, filled ones behind you,
+the next one live. "This week" is simply the next two circles rather than a
+card of its own.
+
+Removes a card, the weekly-progress calculation and the scaled-week-1
+arithmetic from the UI. The weekly commitment still exists and still drives
+WHEN sessions are planned; it stops having its own widget.
+
+### Vocabulary applied here
+  "0 commitments kept"                   -> "0 sessions"
+  "1 more to keep this week's commitment" -> "1 more this week"
+  "2 commitments still ahead"            -> "2 sessions this week"
+  "Your first shared commitment is next"  -> "Your first session together is next"
