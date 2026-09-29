@@ -1370,3 +1370,38 @@ shows that a session exists, not how it is done.
 justdone bundles the celebration, the next plan and the Community share prompt
 on one screen. It is the highest-emotion moment in the product, so it is the
 right place to ask.
+
+---
+
+## 2026-09-29 (Challenges review, part 4) - Changes
+
+### Sessions are named by day, not by number
+"Gayan asked to move Run 2 to Sunday" becomes "Saturday's run". The numbering
+only made sense inside the THIS WEEK card, which is being cut, and it was
+already wrong: gymove rendered two rows both labelled "Run 2". Naming by day
+also needs no knowledge of which number a session is.
+
+### Move gets the same timeout cancel already had
+cancel stated it: "If Gayan doesn't answer before the day ends, the original
+plan stands." move stated nothing, so a move request could sit unanswered past
+the session it was trying to move.
+
+DECIDED: same rule for both. No answer by end of day, the original plan stands.
+Deliberately different from the 24 hour match clock - a match has no natural
+deadline, a session does.
+
+### Moves and cancels are neutral to the streak
+  moved              same circle, different day. No effect.
+  cancelled by both  no circle, and the week's slot is freed.
+Neither costs anything.
+
+### Kept as they are, with one addition
+No withdraw once a cancel request is sent, and no limit on how many times a
+session can be moved. Both are churn rather than bugs, and stay as-is for MVP.
+
+ADDED: sending a cancel request now warns first, because it cannot be undone.
+Proposed copy, which also puts the timeout rule where it matters:
+
+  Cancel Saturday's run?
+  You can't undo this. Gayan has until the end of today to accept.
+  If he doesn't answer, the plan stands.
