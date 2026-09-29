@@ -1191,3 +1191,17 @@ Flagged as a reversal, see the open questions below. As stated:
   - the streak counts DAYS, not daily commitments
   - visual: plain circles. Orange for completed days, empty for future days.
     Nothing fancier.
+
+### Locked, part 1 continued
+
+EDITABLE COMMITMENT, SCOPE. All three fields: Activity, How much each time,
+How often. "How often" offers every possible number, not only 1x, 2x, 3x.
+
+MATCH CLOCK. Confirmed: one clock, started when the MATCH IS CREATED, not when
+the first person accepts. Both people see the same number counting down.
+
+ALREADY ON THE MOVE. It is a TOPIC on the Find landing screen, not a link to
+somewhere else, and it shows the FULL list rather than a preview. The list is
+never empty: it shows everyone registered on the app, with their location.
+Each person gets their own slightly larger card. The current cards touch each
+other; they must be separate.
