@@ -16,7 +16,7 @@ shell='''
   <header class="head">
     <div class="eyebrow">Choner app &middot; splash to Home</div>
     <h1>The whole app, <b>from splash to Home</b></h1>
-    <p class="lede">Every screen a new user meets before their first day, built from the current code. Tap through the phone, or jump to any screen on the left. Sign up, sign in, forgot password, invite codes, all five onboarding steps, the partner choice and Home all respond. Updated to the 26 September decisions: six activities, weekly commitments, streak in commitments kept, no solo mode. Use the Partner, Commitment and Mode controls to see every Home state.</p>
+    <p class="lede">Every screen a new user meets before their first day, built from the current code. Tap through the phone, or jump to any screen on the left. Sign up, sign in, forgot password, invite codes, all five onboarding steps, the partner choice and Home all respond. Updated to the 26 September decisions: six activities, weekly commitments, a streak counted in SESSIONS and drawn as circles, no solo mode. Use the Partner, Commitment and Mode controls to see every Home state.</p>
   </header>
   <div class="grid">
     <nav class="rail" id="rail" aria-label="Screens"></nav>
