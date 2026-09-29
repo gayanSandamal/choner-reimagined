@@ -287,6 +287,31 @@ either does. Raise it in the Find review.
 
 ---
 
+## Deferred
+
+### No component test harness  ·  *after the Challenges review*
+
+CI runs lint, typecheck and test. Only one of the three does anything.
+
+- `eslint.config.js` is a placeholder with only an `ignores` array. No rules, no
+  parser. **Lint is a no-op** - it passes because it checks nothing.
+- Jest is `testEnvironment: 'node'` with `testMatch: **/*.test.ts` - **`.ts`,
+  not `.tsx`** - and there is no `jest-expo` and no
+  `@testing-library/react-native`. No component can be mounted, and a test file
+  for one would not even be collected.
+- `tsc --noEmit` is the only real gate.
+
+**So the eleven PRs from 29 September were verified by eye in a browser and by
+nothing else.** Every screen in this slice can regress silently.
+
+**Why it waits.** Adding the harness is its own chore branch, and it would land
+on top of a slice that is about to be rewritten: Home, Find and every
+Challenges screen are still frozen. Component tests written now get written
+against screens that change. The moment to do it is once the Challenges review
+settles the model, so they are written once against the shape that stays.
+
+---
+
 ## Do not build yet
 
 Decisions still landing in the Find and Challenges reviews.

@@ -1097,3 +1097,40 @@ column verified against the migration history. One real bug was caught that
 way - uc.template_id was renamed to challenge_template_id in 202603261600:27,
 so the first draft of the invite-prefix function would not have compiled. They
 need supabase db reset against a local stack before they go near anything real.
+
+---
+
+## 2026-09-29 (deferred) - Nothing under app/ or components/ is testable
+
+Recorded so it is not rediscovered later as a surprise. DEFERRED on purpose,
+until after the Challenges review.
+
+WHAT IS ACTUALLY THERE. CI runs `npm run lint`, `npm run typecheck`, `npm test`
+(.github/workflows/ci.yml). Two of those three do less than they look like they
+do:
+
+  eslint.config.js   a placeholder holding only an `ignores` array. No rules,
+                     no parser. LINT IS A NO-OP. It passes because it checks
+                     nothing.
+
+  jest               testEnvironment: 'node', testMatch **/*.test.ts - note
+                     .ts, NOT .tsx. No jest-expo, no @testing-library/
+                     react-native. So no component can be mounted, and a test
+                     file for one would not even be collected.
+
+  tsc --noEmit       the only gate that means anything.
+
+CONSEQUENCE, stated plainly: eleven PRs of UI shipped on 29 September were
+verified by eye in a browser and by nothing else. Every screen in the auth and
+onboarding slice can regress silently. The icon system, the widened OptionCard
+prop, the removed skips, the moved why - none of it has a test that would fail.
+
+WHY IT IS DEFERRED AND NOT IGNORED. Adding jest-expo plus testing-library is a
+chore branch of its own, and it would land on top of a slice that is about to
+be rewritten anyway: Home, Find and every Challenges screen are all still
+frozen. Writing component tests now means writing them against screens that
+change. The right moment is after the Challenges review settles the model, so
+the tests are written once against the shape that stays.
+
+DECIDED: do it after Challenges, not before. Tracked in
+docs/WORK_DINESH_FRONTEND.md under "Deferred".
