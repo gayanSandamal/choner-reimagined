@@ -23,20 +23,12 @@ export default function AgeScreen() {
       title="How old are "
       titleEmphasis="you?"
       subtitle="Helps us pair you with someone at a similar stage."
-      footer={
-        <>
-          <Button label="Continue" disabled={!ageRange || !gender} onPress={next} />
-          <Button
-            label="Skip for now"
-            variant="ghost"
-            onPress={() => {
-              setAgeRange(null);
-              setGender(null);
-              next();
-            }}
-          />
-        </>
-      }
+      // No skip, and both are required. Matching cannot work without them:
+      // gender drives the "same gender only" filter and the age band feeds
+      // the scoring. Gender already offers "Prefer not to say", which is the
+      // proper opt-out; skipping left no answer at all. Editable later in
+      // Edit profile.
+      footer={<Button label="Continue" disabled={!ageRange || !gender} onPress={next} />}
     >
       <View style={styles.row}>
         {AGE_BANDS.slice(0, 3).map((option) => (

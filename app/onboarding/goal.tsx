@@ -19,19 +19,10 @@ export default function GoalScreen() {
       title="What matters most to you "
       titleEmphasis="right now?"
       subtitle="Choner shapes your first challenge around this."
-      footer={
-        <>
-          <Button label="Continue" disabled={!goal} onPress={next} />
-          <Button
-            label="Skip for now"
-            variant="ghost"
-            onPress={() => {
-              setGoal(null);
-              next();
-            }}
-          />
-        </>
-      }
+      // No skip: this answer directly orders the challenges on the next
+      // screen and decides which one is recommended, so skipping it leaves
+      // that screen with nothing to go on. Editable later in Edit profile.
+      footer={<Button label="Continue" disabled={!goal} onPress={next} />}
     >
       {[GOALS.slice(0, 2), GOALS.slice(2)].map((pair) => (
         <View key={pair[0].value} style={styles.row}>
