@@ -1,5 +1,6 @@
 
 Object.assign(IC, {
+  arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
   trophy:'<path d="M8 4h8v5a4 4 0 01-8 0zM8 6H4v1a3 3 0 003 3M16 6h4v1a3 3 0 01-3 3M12 13v4M8.5 20h7M10 17h4"/>',
   user:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>',
   mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/>',
@@ -36,22 +37,54 @@ const matchLeft = () => `${S.matchH}h ${String(S.matchM).padStart(2,'0')}m left`
 // that the app is alive. No location: without it this is a first name and an
 // activity rather than a way to find someone in person.
 const DIR_NAMES = ['Nimali P','Ruwan S','Asanka K','Tharushi M','Dinuka W','Ishara B','Kasun J','Amaya R','Sachini L','Pasan G','Hiruni D','Chamath S','Nadeesha K','Tharindu A','Malsha P','Roshan F','Dilini W','Kavinda N','Sanduni H','Tharaka B','Piyumi S','Lahiru M','Yasas D','Nethmi C','Gayan S','Upeksha R','Janith K','Shenali T','Vishwa P','Anjali M'];
-const DIR_ACTS = [['Running','3 km','3\u00d7 a week'],['Walking','30 min','daily'],['Yoga','20 min','2\u00d7 a week'],['Running','5 km','2\u00d7 a week'],['Workout','45 min','3\u00d7 a week'],['Cycling','10 km','2\u00d7 a week'],['Jogging','2 km','4\u00d7 a week'],['Walking','5 km','3\u00d7 a week']];
+// Workout rows carry their exercises, because the directory is the only place
+// exercises appear at all now: colour for a human reading a card, never an
+// input to matching.
+const DIR_ACTS = [
+  ['Running','3 km','3\u00d7 a week',null],
+  ['Walking','30 min','daily',null],
+  ['Yoga','20 min','2\u00d7 a week',null],
+  ['Running','5 km','2\u00d7 a week',null],
+  ['Workout','45 min','3\u00d7 a week','Push-ups, Squats, Plank'],
+  ['Cycling','10 km','2\u00d7 a week',null],
+  ['Jogging','2 km','4\u00d7 a week',null],
+  ['Workout','30 min','2\u00d7 a week','Burpees, Jumping jacks'],
+  ['Walking','5 km','3\u00d7 a week',null],
+  ['Workout','20 min','daily','Stretching, Plank, Sit-ups, Lunges']
+];
 const DIR_COLS = ['#FD8302','#1E3A4C','#2E9E6B','#B04A00','#5C371F','#7C8C96'];
 function dirCards(){
   const rows = DIR_NAMES.map((n, i) => {
     const a = DIR_ACTS[i % DIR_ACTS.length];
     const ini = n.split(' ').map(w => w[0]).join('');
-    return `<div class="dcard"><span class="dav" style="background:${DIR_COLS[i % DIR_COLS.length]};">${esc(ini)}</span><div class="dtx"><b>${esc(n)}</b><small>${esc(a[0])}  ·  ${esc(a[1])}  ·  ${a[2]}</small></div></div>`;
+    return `<div class="dcard big"><span class="dav" style="background:${DIR_COLS[i % DIR_COLS.length]};">${esc(ini)}</span><div class="dtx"><b>${esc(n)}</b><small>${esc(a[0])}  ·  ${esc(a[1])}  ·  ${a[2]}</small>${a[3]?`<em class="dex">${esc(a[3])}</em>`:''}</div></div>`;
   }).join('');
-  return `<div class="dsect">Already on the move</div><div class="dnote">People on Choner and what they've committed to.</div><div class="dgrid">${rows}</div>`;
+  // The list never ends, visually. Thirty rows is everyone we have, but a
+  // spinner at the bottom is what an alive app looks like. Flagged as a small
+  // lie and kept on purpose.
+  const more = `<div class="dmore"><span class="dspin"></span><span>Finding more people\u2026</span></div>`;
+  return `<div class="dgrid">${rows}</div>${more}`;
 }
+
 
 // The six reasons a match ends, separate from the report categories: report
 // answers what was wrong with the person, this answers why the pairing did not
 // work. "Something felt off" is a door, not an outcome - it hands off to the
 // report flow rather than ending quietly, and it sits IN the list because
 // someone scanning for it who cannot find it picks "Prefer not to say".
+// DECIDED 22 September, refined 26 September: Find owns the full Report/Block
+// menu on the partner card; Session Details keeps a small "Report a problem"
+// link to the same sheet so safety is reachable at a meetup.
+//
+// The category list is SCOPED. Until the pair has actually met - a QR scan
+// together, or a first check-in separately - only the two that can be judged
+// from a profile are offered. Reporting someone for not showing up before you
+// have ever arranged to meet is not a thing that can have happened.
+const REPORT_CATS_PRE = ['Fake profile', 'Something else'];
+const REPORT_CATS_MET = ['Didn\'t show up', 'Made me uncomfortable', 'Safety concern at a meetup', 'Fake profile', 'Something else'];
+const metUp = () => S.cs === 'today' || S.cs === 'done' || S.kept > 0 || S.together;
+const reportCats = () => metUp() ? REPORT_CATS_MET : REPORT_CATS_PRE;
+
 const END_REASONS = [
   ['no_time', "We couldn't find a time that worked"],
   ['no_reply', 'They stopped replying'],
@@ -88,13 +121,20 @@ const TPL = {
   walk:{t:'Walking',verb:'Walk',noun:'walk',unit:'km',def:4,step:0.5,icon:'walk'},
   cycle:{t:'Cycling',verb:'Cycle',noun:'ride',unit:'km',def:10,step:1,icon:'bike'},
   yoga:{t:'Yoga',verb:'Yoga',noun:'session',unit:'min',def:30,step:5,icon:'leaf'},
-  work:{t:'Workouts',verb:'Workout',noun:'workout',unit:'',def:20,step:5,icon:'dumb'}
+  // DECIDED 1 October: Workouts are measured in MINUTES like everything else.
+  // Per-exercise units (reps / sec / min) could not survive four exercises on
+  // one commitment, and one shared unit is what lets two people match on
+  // "Workouts, 30 min" without both having picked push-ups.
+  work:{t:'Workouts',verb:'Workout',noun:'workout',unit:'min',def:30,step:5,icon:'dumb'}
 };
 const INVITE_PHRASE = { run:'go for a run', jog:'go for a jog', walk:'go for a walk', cycle:'go for a ride', yoga:'do yoga' };
-const invitePhrase = () => S.chosen === 'work' ? `do ${EX[S.ex][0].toLowerCase()}` : INVITE_PHRASE[S.chosen];
+const invitePhrase = () => S.chosen === 'work' ? 'work out' : INVITE_PHRASE[S.chosen];
 /* goal -> recommended activities, first one carries the Recommended badge */
 const GOAL_OPTS = { move_more:['run','jog','cycle','walk'], sleep_better:['walk','yoga','work'], reduce_stress:['yoga','walk'], improve_energy:['work','run'] };
-const GOAL_EX = { sleep_better:'stretch', improve_energy:'push' };
+const GOAL_EX = { sleep_better:['stretch'], improve_energy:['push','burpee'] };
+const MAX_EX = 4;
+// What the card and the directory say. Never what the matcher reads.
+const exList = () => S.exs.map(k => EX[k][0]).join(', ');
 const optsFor = g => g ? GOAL_OPTS[g].concat(Object.keys(TPL).filter(k => !GOAL_OPTS[g].includes(k))) : Object.keys(TPL);
 const recFor = g => g ? GOAL_OPTS[g][0] : 'walk';
 /* the four "why" questions (features/challenges/reflections.ts) */
@@ -113,12 +153,18 @@ const DEMO = { email:'demo@choner.app', pw:'password123', name:'Dinesh Doluweera
 function fresh(){
   return { cur:'splash', hist:[], accts:[Object.assign({}, DEMO)], user:null, f:{}, err:{}, formErr:null, showPw:{}, terms:false,
     goal:null, struggle:null, tone:null, age:null, gender:null, energy:null,
-    partnerPick:null, chosen:'run', ex:'push', customTitle:null, amount:3, cadence:2, agreed:false, why:{}, invitee:false,
+    // exs: up to four exercises, and ONLY for Workouts. They are descriptive:
+    // they show on the card and in the directory and they never reach matching.
+    // partnerAmount: their number, which does not have to be yours.
+    partnerPick:null, chosen:'run', exs:['push','squat'], customTitle:null, amount:3, partnerAmount:3, cadence:2, agreed:false, why:{}, invitee:false,
     planProp:null, counterFrom:null, invPhase:'choose', sentEmail:null, sentVia:null, invMsg:null, sheet:null, searches:0, find:{ intent:false, mode:null, gender:null, areas:[] }, pstate:'solo', explore:false, photo:null, photoFrom:null,
     cs:'matched', mode:'together', tg:'idle', gPartner:'idle', youDone:false, gDone:false, together:false, kept:6, weekDone:0, pulseH:0, shared:null,
     plan:{ day:'Saturday', time:'7:00 AM', timeRaw:'07:00', place:'Diyasaru Park', next:'Thursday \u00b7 7:00 AM', nextDay:'Thursday', amt:null }, pd:null,
     // the match clock, and which side has answered
     matchH:23, matchM:12, iAccepted:false, matchExpired:false, endReason:null,
+    // the partner-card overflow menu, the report category, and how long you
+    // have been paired - shown on the matched card
+    menu:false, repCat:null, matchedAgo:'6 days ago',
     cam:null, dlg:null, legalTab:'terms', codePhase:'success', pendingCode:null, forgotEmail:null, verifyEmail:null,
     ginvSent:null, notif:{ reminders:true, partner:true, nudges:false }, deadline:'9:00 PM' };
 }
@@ -126,9 +172,17 @@ let S = fresh();
 let splashTimer = null;
 const me = () => S.user || DEMO;
 const myName = () => me().name;
-const tpl = () => { const t = TPL[S.chosen]; if (S.chosen !== 'work') return t; const e = EX[S.ex]; return Object.assign({}, t, { unit:e[1], def:e[2], step:e[3] }); };
-const habitTitle = () => S.agreed ? `${S.chosen==='work' ? EX[S.ex][0] : TPL[S.chosen].verb} ${S.cadence}\u00d7 a week` : TPL[S.chosen].t;
-const amtLine = () => S.agreed ? `${S.amount} ${tpl().unit} each time` : "You'll agree how much and how often together";
+// Workouts no longer inherit the exercise's unit. Minutes, like Yoga, because
+// four exercises on one commitment have no single rep count between them.
+const tpl = () => TPL[S.chosen];
+const habitTitle = () => S.agreed ? `${TPL[S.chosen].verb} ${S.cadence}\u00d7 a week` : TPL[S.chosen].t;
+// DECIDED 1 October: the AMOUNT is per person, the cadence is shared. Two
+// people who cannot agree on 5 km versus 3 km should not lose the match over
+// it - what matters is that they show up for each other. The circle still
+// fills only when BOTH finish THEIR number.
+const amtLine = () => !S.agreed ? "You'll agree how much and how often together"
+  : S.partnerAmount === S.amount ? `${S.amount} ${tpl().unit} each time`
+  : `You ${S.amount} ${tpl().unit} · ${partnerName()} ${S.partnerAmount} ${tpl().unit}`;
 const partnerName = () => 'Gayan';
 const AREA_GROUPS = [["Colombo city", ["Fort (Colombo 1)", "Slave Island (Colombo 2)", "Union Place (Colombo 2)", "Kollupitiya (Colombo 3)", "Bambalapitiya (Colombo 4)", "Havelock Town (Colombo 5)", "Narahenpita (Colombo 5)", "Kirulapone North (Colombo 5)", "Wellawatte (Colombo 6)", "Pamankada (Colombo 6)", "Kirulapone South (Colombo 6)", "Cinnamon Gardens (Colombo 7)", "Borella (Colombo 8)", "Dematagoda (Colombo 9)", "Maradana (Colombo 10)", "Maligawatta (Colombo 10)", "Panchikawatte (Colombo 10)", "Pettah (Colombo 11)", "Hulftsdorp (Colombo 12)", "Kotahena (Colombo 13)", "Kochchikade (Colombo 13)", "Bloemendhal (Colombo 13)", "Grandpass (Colombo 14)", "Mattakkuliya (Colombo 15)", "Modara (Colombo 15)", "Mutwal (Colombo 15)", "Madampitiya (Colombo 15)"]], ["Greater Colombo", ["Ambatale", "Athurugiriya", "Batuwatta", "Boralesgamuwa", "Dalugama", "Dehiwala", "Hokandara", "Homagama", "Ja-Ela", "Kadawatha", "Kaduwela", "Kalubowila", "Kandana", "Katunayake", "Kelaniya", "Kesbewa", "Kohuwala", "Kolonnawa", "Koswatte", "Kotikawatta", "Kottawa", "Maharagama", "Malabe", "Moratuwa", "Mount Lavinia", "Mulleriyawa", "Nawala", "Nugegoda", "Oruwala", "Pannipitiya", "Pelawatte", "Peliyagoda", "Piliyandala", "Ragama", "Rajagiriya", "Ratmalana", "Sri Jayawardenepura Kotte", "Thalawathugoda", "Wattala", "Welikada", "Wickramasinghapura"]]];
 const AREAS = AREA_GROUPS.reduce((a, g) => a.concat(g[1]), []);
@@ -150,7 +204,7 @@ ${invLink()}
 Code: ${invCode()}`;
 const invLink = () => `https://choner.app/i/${invCode()}`;
 const invCode = () => S.invCodeVal || 'RUN4K7';
-const newCode = () => { const L = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c = (S.chosen === 'work' ? EX[S.ex][0] : TPL[S.chosen].verb).replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase(); while (c.length < 6) c += L[Math.floor(Math.random()*L.length)]; S.invCodeVal = c; };
+const newCode = () => { const L = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c = TPL[S.chosen].verb.replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase(); while (c.length < 6) c += L[Math.floor(Math.random()*L.length)]; S.invCodeVal = c; };
 const codeBox = () => `<div class="codebox"><div><small>Invite code</small><b>${invCode()}</b></div><button class="pill" data-act="copy-code">${ic('share',1.8)} Copy</button></div>`;
 /* one at a time: an invite and a search never run together */
 function confirmSwitch(to, then){
@@ -160,6 +214,8 @@ function confirmSwitch(to, then){
 }
 function radarSearching(){ return `<div class="radar act" role="img" aria-label="Searching for your partner"><span class="ring"></span><span class="ring"></span><span class="ring"></span><span class="rc">Searching<br>\u2026</span></div>`; }
 function sheetHTML(){
+  if (S.sheet === 'report') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">What's <b>going on?</b></div><div class="p-sub">This ends the match. Your challenge and your streak both continue.</div><div class="pill-row" style="margin-bottom:14px;">${reportCats().map(c => `<button class="pill ${S.repCat===c?'on':''}" data-act="rep-cat" data-v="${esc(c)}">${c}</button>`).join('')}</div>${!metUp()?`<div class="hint" style="margin:-6px 0 12px;">More reasons appear once you have actually met.</div>`:''}<button class="btn" data-act="rep-send" ${S.repCat?'':'disabled'}>Submit report</button><button class="btn-g" data-act="sheet-close">Cancel</button></div></div>`;
+  if (S.sheet === 'block') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">Block <b>${esc(partnerName())}?</b></div><div class="p-sub">The match ends and you will not be shown to each other again. They are told the match ended, nothing more.</div><button class="btn" data-act="block-send" style="background:#C0392B;box-shadow:none;">Block</button><button class="btn-g" data-act="sheet-close">Cancel</button></div></div>`;
   if (S.sheet === 'finish-sep') return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">Log your <b>${TXc().noun}</b></div><div class="p-sub">Tap done when you have finished. Gayan is told you showed up.</div><button class="btn" data-act="sep-done">Done</button><button class="btn-g" data-act="sheet-close">Cancel</button></div></div>`;
   if (S.sheet !== 'share') return '';
   return `<div class="scrim2" data-act="sheet-close"><div class="sheet2" data-act="noop"><div class="sheet2-handle"></div><div class="p-h1">Share your <b>invite</b></div><div class="p-sub">Your message, the link and code ${invCode()} always travel together, whichever you pick.</div>
@@ -325,10 +381,10 @@ def('legal', { ph:'A8', group:'Account', label:'Terms and privacy', bar:() => ''
 /* ===== Onboarding ===== */
 def('ob-intro', { ph:'O1', group:'Onboarding', label:'Intro', bar:() => '', nav:() => '',
   body:() => `<div class="pdots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="head-c" style="margin-top:18px;"><img src="__LOGO__" alt="" style="width:120px;"><div class="p-h1" style="margin:0;">Turn &ldquo;I should&rdquo; into &ldquo;I did&rdquo;</div></div>
+    <div class="head-c" style="margin-top:18px;"><img src="__LOGO__" alt="" style="width:120px;"><div class="p-h1" style="margin:0;">Turn &ldquo;I should&rdquo;<br>into <span class="grad">&ldquo;I did&rdquo;</span></div><div class="hp">Choner helps you stay <b>consistent with the healthy habits</b> you want to build.</div></div>
     <div style="display:flex;flex-direction:column;gap:10px;">
     ${[['together','One partner, real accountability',"Not a crowd, not a stranger's app. One person counting on you"],['target','Personalised from day one','Your goals and struggles shape your first challenge'],['trend','Built to grow with you','More ways to stay consistent are coming']].map(p => `<div class="promise"><div class="pi">${ic(p[0],1.8)}</div><div><b>${p[1]}</b><span>${p[2]}</span></div></div>`).join('')}</div>
-    <div class="foot">${btn('Build my profile','',{go:'goal'})}</div>`,
+    <div class="foot">${btn('Build my profile','',{go:'goal',icon:'arrow',cls:'row rev'})}</div>`,
   note:N('Start of onboarding', 'Three promises, then one way forward: build the profile. Everyone answers the questions, because matching needs them.', ['app/onboarding/index.tsx','"I\'ll explore on my own" was REMOVED 2026-09-26. Every user builds a profile: matching needs age and gender, and there is no way back into those questions from Home. The only route to an empty Home is ending a challenge','Progress dots run 1 to 6 across the intro and the five steps'], 'The app shows emoji on the promise cards and in every option below. This prototype shows the design system line icons instead.') });
 
 const grid = (arr, key) => `<div class="grid2">${arr.map(o => `<button class="gcard ${S[key]===o[0]?'on':''}" data-act="pick" data-v="${key}:${o[0]}">${ic(o[3],1.8)}<div class="t">${o[1]}</div><div class="d">${o[2]}</div></button>`).join('')}</div>`;
@@ -380,12 +436,11 @@ def('photo', { ph:'O8', group:'Onboarding', label:'Add your photo', bar:() => ''
     <div class="foot">${p==='confirmed' ? `${btn('Continue','photo-next')}${ghost('Retake','photo-retake')}` : `${btn('Take photo','photo-take',{icon:'camera'})}${ghost('Set up later','photo-later')}`}</div>`; },
   note:N('Live photo (after the reveal)', 'One optional screen after the reveal: a live camera photo, or "Set up later". Camera only, no gallery import anywhere in this flow.', ['Source: Choner_31_Changes_Full_Detail.md #1 and #2, Choner_Branch_Plan_31_Changes.md Branch 3','Stored as photo_url and photo_status = photo_confirmed or no_photo','Shown to a match as "Photo confirmed" or "No photo yet" (Match Found), never as identity verification','Set up later leaves photo_status = no_photo; Profile offers "Add your photo", and once there is one, "Retake your photo" (the same screen)','The screen shows the badge it earns, so the payoff is visible before they decide','Live capture prevents reusing an old photo. It does not stop an irrelevant photo, and copy must not claim it does'], ['Copy on this screen is new (the docs only specify the behaviour)','The badge says "Photo confirmed", NOT "Photo verified". Locked 2026-09-21 (Choner_31_Changes_Full_Detail.md #2): never label or imply identity verification. Choner only checks the photo was taken live, not who is in it, and claiming otherwise is a safety claim we cannot stand behind when two strangers meet in person']) });
 
-def('challenge', { ph:'O9', group:'Onboarding', label:'Pick a challenge', bar:() => '', nav:() => '',
+def('challenge', { ph:'O9', group:'Onboarding', label:'Pick a challenge', bar:() => stepBar(5), nav:() => '',
   onEnter:() => { if (S.invitee) go('why', {replace:true}); },
   body:() => { const ids = optsFor(S.goal), rec = recFor(S.goal);
     return `<div class="steplbl" style="margin-top:8px;">Your first challenge</div><div class="p-h1">Pick what you'll start with</div>
     ${ids.map(id => { const t = TPL[id]; return `<button class="choice ${S.pickedChallenge===id?'on':''}" data-act="pick-tpl" data-v="${id}"><div class="ic">${ic(t.icon,1.8)}</div><div><div class="t">${t.t}</div><div class="d">Together or separately</div></div>${id===rec?'<span class="badge">Recommended</span>':''}</button>`; }).join('')}
-    ${S.pickedChallenge==='work' ? `<div class="flabel" style="margin-top:6px;">Which exercise?</div><div class="pill-row">${Object.keys(EX).map(k => `<button class="pill ${S.ex===k?'on':''}" data-act="pick-ex" data-v="${k}">${EX[k][0]}</button>`).join('')}</div>` : ''}
     <div class="foot">${btn('Continue','next-challenge',{dis:!S.pickedChallenge})}</div>`; },
   note:N('Your first challenge', 'The six MVP activities, ordered by the goal they picked, with one marked Recommended. Workouts ask which exercise.', ['Running, Jogging, Walking, Cycling, Yoga, Workouts. Every one plans weekly sessions, together or separately','Goal mapping: Move more: Running, Jogging, Cycling, Walking. Sleep better: Walking, Yoga, Stretching routine. Reduce stress: Yoga, Walking. Improve energy: Workouts, Running','Workouts: Push-ups, Squats, Lunges, Sit-ups, Pull-ups, Plank, Burpees, Jumping jacks, Stretching routine','Removed: every habit challenge (water, breathing, journaling, no caffeine, wind-down walk, bedtime stretch) and all "7-day challenge" copy','Invitees skip this screen and the next entirely']) });
 
@@ -414,7 +469,7 @@ def('invite', { ph:'O10', group:'Onboarding', label:'Partner choice', bar:() => 
 def('fd2', { ph:'T2b', group:'Tabs', label:'Find: two questions', bar:() => '', nav:() => '',
   body:() => { const f = S.find;
     const M = [['person','together','In person',"Meet up and do it side by side."],['separate','separate','Separately, together',"Same commitment, your own place, your own time."],['either','community','Either works',"Show me both. You'll decide together."]];
-    return `${hdr('Find a partner')}<div class="p-h1">A few quick <b>questions</b></div><div class="p-sub">Everything else, like distance, time and place, you'll agree with your partner once you're matched.</div>
+    return `${hdr('Find a partner')}<div class="p-h1">A few quick <b>questions</b></div>
     <div class="flabel">How do you want to do this?</div>
     ${M.map(([k,icon,t,d]) => `<button class="choice ${f.mode===k?'on':''}" data-act="fmode" data-v="${k}"><div class="ic">${ic(icon,1.8)}</div><div><div class="t">${t}</div><div class="d">${d}</div></div></button>`).join('')}
     <div class="flabel" style="margin-top:18px;">Gender preference</div><div class="pill-row" style="margin-bottom:${needsArea()?'22px':'0'};"><button class="pill ${f.gender==='none'?'on':''}" data-act="fgender" data-v="none">No preference</button><button class="pill ${f.gender==='same'?'on':''}" data-act="fgender" data-v="same">Same gender only</button></div>
@@ -458,7 +513,7 @@ function qrSvg(){
 
 
 /* ===== Home (state-driven, per Choner_Home_Tab_Product_Structure_MVP) ===== */
-const TXc = () => { const t = TPL[S.chosen]; return { act:S.chosen==='work'?EX[S.ex][0]:t.verb, noun:t.noun, tg:true, go:`Start my ${t.noun}`, sess:n=>`${n} ${tpl().unit} ${S.chosen==='work'?EX[S.ex][0].toLowerCase():t.noun}` }; };
+const TXc = () => { const t = TPL[S.chosen]; return { act:t.verb, noun:t.noun, tg:true, go:`Start my ${t.noun}`, sess:n=>`${n} ${t.unit} ${t.noun}` }; };
 const curMode = () => S.mode;
 const weekTitle = () => habitTitle();
 const sessTitle = () => TXc().sess(S.amount);
@@ -480,7 +535,7 @@ function gayanStep(){
     else { S.gDone = true; sepCheck(); }
   }
 }
-/* ----- shared heart, on top, grows with commitments kept (1, 5, 10, 25, 50). No journey button for MVP. ----- */
+/* ----- shared heart, on top, grows with SESSIONS WITH THIS PARTNER (1, 5, 10, 25, 50). That is the pair count, not the streak: the streak is personal and lives in the circles. No journey button for MVP. ----- */
 const STAGES = [1,5,10,25,50];
 const stageOf = k => STAGES.filter(m => k >= m).length;
 function heartSvg(you, partner){
@@ -524,7 +579,7 @@ function hero(){
   if (S.cs === 'today'){
     if (mode === 'together'){
       const g = S.gPartner === 'here' ? 'Here' : S.gPartner === 'ready' ? 'Ready' : 'Not checked in';
-      if (S.together) return `<div class="hero"><div class="h-eb">You're together.</div><div class="h-title">${ic('fire',1.8)}<span>${sessTitle()} starts now.</span></div>${youG()}${btn('Finish','finish-tg')}</div>`;
+      if (S.together) return `<div class="hero"><div class="h-eb">You're together.</div><div class="h-title">${ic('fire',1.8)}<span>${sessTitle()} starts now.</span></div>${youG()}${btn('Complete session','finish-tg')}</div>`;
       if (S.tg === 'here') return `<div class="hero"><div class="h-eb">You're here.</div><div class="h-sub" style="margin:0;">${S.gPartner==='here'?'Gayan is here too.':'Waiting for Gayan.'}</div>${youG()}${S.gPartner==='here'?btn('Confirm with QR','open-qr',{icon:'qr'}):'<button class="waitbtn" disabled>Waiting for Gayan...</button>'}</div>`;
       if (S.tg === 'onway') return `<div class="hero"><div class="h-eb">You're on your way.</div><div class="h-title">${ic(icon,1.8)}<span>${sessTitle()}</span></div><div class="h-when">${P2.time}</div>${hrow('pin',esc(P2.place))}${stline('Gayan',S.gPartner!=='idle',g)}${btn("I'm here",'tg-here')}</div>`;
       return `<div class="hero"><div class="h-eb">Today's the day.</div>${youG()}<div class="h-title">${ic(icon,1.8)}<span>${sessTitle()}</span></div><div class="h-when">${P2.time}</div>${hrow('pin',esc(P2.place))}${stline('Gayan',S.gPartner!=='idle',g)}${btn("I'm on my way",'tg-onway')}</div>`;
@@ -587,12 +642,12 @@ def('plan', { ph:'T1b', group:'Tabs', label:'Challenges: plan a session', bar:()
     if (c) S.mode = pairCanMeet() ? c.mode : 'separate'; },
   body:() => { const t = TXc(); const mode = curMode(); const first = S.cs === 'matched'; const cf = S.counterFrom;
     return `${hdr(first ? `Plan your first ${t.noun}` : `Plan the next ${t.noun}`)}${cf?`<div class="notice">${ic('chat',1.8)}<span>Gayan suggested <b>${cf.mode==='together'?'Together':'Separately, together'} · ${cf.day} · ${cf.time}</b>. Change what you need and send it back.</span></div>`:''}<div class="habit"><b>${weekTitle()}</b><small>${esc(amtLine())} \u00b7 with Gayan</small></div>
-${first ? `<div class="sect">How much each time?</div><div class="stepper"><button data-act="pd-amt" data-v="-1" aria-label="Less">\u2212</button><div class="v">${S.pd.amt}${tpl().unit?`<small>${tpl().unit}</small>`:''}</div><button data-act="pd-amt" data-v="1" aria-label="More">+</button></div>
-    <div class="sect">How often?</div><div class="segt">${[1,2,3].map(c => `<button class="${S.pd.cad===c?'on':''}" data-act="pd-cad" data-v="${c}">${c}\u00d7 a week</button>`).join('')}</div>
+${first ? `<div class="sect">How much for you each time?</div><div class="stepper"><button data-act="pd-amt" data-v="-1" aria-label="Less">\u2212</button><div class="v">${S.pd.amt}${tpl().unit?`<small>${tpl().unit}</small>`:''}</div><button data-act="pd-amt" data-v="1" aria-label="More">+</button></div><div class="hint">Yours only. ${partnerName()} sets their own when they accept - you do not have to match each other to show up for each other.</div>
+    <div class="sect">How often?</div><div class="segt wrap">${[1,2,3,4,5,6,7].map(c => `<button class="${S.pd.cad===c?'on':''}" data-act="pd-cad" data-v="${c}">${c===7?'Daily':c+'\u00d7'}</button>`).join('')}</div>
     <div class="sect">How will you do it?</div>` : `<div class="flabel">How will you do it?</div>`}${pairCanMeet()
       ? `<button class="choice ${mode==='together'?'on':''}" data-act="set-mode" data-v="together"><div class="ic">${ic('together',1.8)}</div><div><div class="t">Together</div><div class="d">Meet up, confirm with a QR code.</div></div></button><button class="choice ${mode==='separate'?'on':''}" data-act="set-mode" data-v="separate"><div class="ic">${ic('separate',1.8)}</div><div><div class="t">Separately, together</div><div class="d">Same commitment, your own place.</div></div></button>`
       : `<div class="choice on" style="cursor:default;"><div class="ic">${ic('separate',1.8)}</div><div><div class="t">Separately, together</div><div class="d">Same commitment, your own place. You both chose to do this on your own, so there is no meeting place to agree.</div></div></div>`}
-    ${(first ? S.pd.cad : S.cadence) > 1 ? `<div class="sect">Commitment ${Math.min((first?0:S.weekDone)+1,(first?S.pd.cad:S.cadence))} of ${first?S.pd.cad:S.cadence} this week</div>` : ''}
+    ${(first ? S.pd.cad : S.cadence) > 1 ? `<div class="sect">Session ${Math.min((first?0:S.weekDone)+1,(first?S.pd.cad:S.cadence))} of ${first?S.pd.cad:S.cadence} this week</div>` : ''}
     <div class="flabel" style="margin-top:8px;">Day</div><div class="sel-wrap" style="margin-bottom:14px;"><select id="pl-day" aria-label="Day">${DAYS.map(d => `<option ${d===S.pd.day?'selected':''}>${d}</option>`).join('')}</select></div>
     <div class="flabel">Time</div><input class="txt" type="time" id="pl-time" value="${S.pd.time}" aria-label="Time" style="margin-bottom:14px;">
     ${mode==='together' && pairCanMeet() ? `<div class="flabel">Place</div><input class="txt" id="pl-place" value="${esc(S.pd.place)}" placeholder="Where will you meet?" aria-label="Place">` : ''}
@@ -604,8 +659,9 @@ ${first ? `<div class="sect">How much each time?</div><div class="stepper"><butt
      'The why is now asked after Gayan ACCEPTS the first session, which is the moment the pair actually agree',
      'DECIDED 28 September: "How will you do it?" is no longer first asked here. The pair already answered it in Find, so this screen only offers a real choice when BOTH of them said they could meet. When either side chose Separately, the mode is shown as a plain statement and no place is asked, because there is nothing to agree',
      'Per-session flexibility is kept for pairs who CAN meet: a rainy week can be done separately without changing the match',
-     'One session is planned at a time, never the whole week. When the cadence is 2 or 3, the screen says "Commitment 1 of 2 this week" so it is clear why only one day is asked for, and the next slot opens the moment this one is done. The Challenges tab shows the unplanned slots as "Not planned yet"',
-     'FIRST plan also sets how much each time and how many times a week. Both people agree it, because the commitment is shared: nobody inherits a number they never chose','Later plans only need mode, day, time and place','Every activity can be together or separately; place only for together','Week 1 runs from the match day to Sunday with a scaled target (see the Challenges tab prototype)','In the app this goes through the shared suggest and accept negotiation','After the first plan is confirmed, the why is asked once'], 'Decided 2026-09-26: the onboarding Starting point screen was removed and its two questions moved here.') });
+     'One session is planned at a time, never the whole week. When the cadence is 2 or 3, the screen says "Session 1 of 2 this week" so it is clear why only one day is asked for, and the next slot opens the moment this one is done. The Challenges tab shows the unplanned slots as "Not planned yet"',
+     'FIRST plan sets how much and how often. THE CADENCE IS SHARED - it defines the week, the repair debt and how long a streak takes. THE AMOUNT IS NOT (1 October): you set yours, they set theirs on accept, and the card reads "You 5 km · Gayan 3 km"',
+    'WHY: losing a match because one wants 5 km and the other 3 km is a waste. What the product is actually about is showing up for each other, and a circle still fills only when BOTH finish THEIR number','Later plans only need mode, day, time and place','Every activity can be together or separately; place only for together','Week 1 runs from the match day to Sunday with a scaled target (see the Challenges tab prototype)','In the app this goes through the shared suggest and accept negotiation','After the first plan is confirmed, the why is asked once'], 'Decided 2026-09-26: the onboarding Starting point screen was removed and its two questions moved here.') });
 
 def('commit', { ph:'T1c', group:'Tabs', label:'Challenges: session details', bar:() => '', nav:() => navBar('challenges'),
   body:() => { const P2 = S.plan, mode = curMode();
@@ -619,17 +675,33 @@ def('qr', { ph:'T1d', group:'Tabs', label:'Challenges: confirm with QR', bar:() 
     <div class="qrbox">${qrSvg()}<small>Your code, valid for this session only</small></div>${proto("Simulate: the scan succeeds",'qr-scanned')}`,
   note:N('QR check-in', 'A CHALLENGES screen. Home opens it when both are here.', ['A successful scan returns to Home: "You\'re together. Start now."']) });
 
+// Reached by tapping the commitment card before a search starts. The card said
+// "You can change this until you start searching for a match" and had a
+// chevron, and nothing happened when you tapped it.
+def('editact', { ph:'T1b', group:'Tabs', label:'Challenges: change the activity', bar:() => '', nav:() => navBar('challenges'),
+  onEnter:() => { S.nw = { act:S.chosen, exs:S.exs.slice() }; },
+  body:() => { const n = S.nw;
+    return `${hdr('Change your activity')}<div class="p-sub">Only until you start searching. After that it is what your partner signed up for.</div><div class="flabel">Activity</div><div class="agrid">${Object.keys(TPL).map(k => `<button class="gcard ${n.act===k?'on':''}" data-act="nw-act" data-v="${k}">${ic(TPL[k].icon,1.8)}<div class="t">${TPL[k].t}</div></button>`).join('')}</div>
+    ${n.act==='work'?`<div class="flabel" style="margin-top:16px;">Which exercises? <span class="fnote">up to ${MAX_EX}</span></div><div class="pill-row">${Object.keys(EX).map(k => { const on = n.exs.includes(k); const full = n.exs.length >= MAX_EX && !on; return `<button class="pill ${on?'on':''}" data-act="nw-ex" data-v="${k}" ${full?'disabled':''}>${EX[k][0]}</button>`; }).join('')}</div><div class="hint">These show on your card and in Already on the move. They do not affect who you are matched with - that is the activity and how long.</div>`:''}
+    <div class="foot">${btn('Save','act-save',{dis:n.act==='work' && !n.exs.length})}${ghost('Cancel','',null,'find')}</div>`; },
+  note:N('Change your activity', 'The one editable field before a search, and the screen the commitment card has been promising.', [
+    'DECIDED 29 September: ONLY THE ACTIVITY is editable, and only the activity is on the card. How much and how often are agreed after a match, at the first plan',
+    'FIXED 30 September: the card carried the line and the chevron and was not a button. It is now',
+    'Locked the moment a search starts, on BOTH tabs. The line becomes "Locked while you\'re looking for a match"',
+    'No partner exists yet, so there is nothing to renegotiate']) });
+
 def('browse', { ph:'T1a', group:'Tabs', label:'Challenges: create a commitment', bar:() => '', nav:() => navBar('challenges'),
-  onEnter:() => { S.nw = { act:'run', ex:'push', amt:3, cad:2 }; },
-  body:() => { const n = S.nw, unit = n.act === 'work' ? EX[n.ex][1] : TPL[n.act].unit;
-    return `${hdr('Start something together')}<div class="flabel">Activity</div><div class="agrid">${Object.keys(TPL).map(k => `<button class="gcard ${n.act===k?'on':''}" data-act="nw-act" data-v="${k}">${ic(TPL[k].icon,1.8)}<div class="t">${TPL[k].t}</div></button>`).join('')}</div>
-    ${n.act==='work'?`<div class="flabel" style="margin-top:14px;">Exercise</div><div class="pill-row">${Object.keys(EX).map(k => `<button class="pill ${n.ex===k?'on':''}" data-act="nw-ex" data-v="${k}">${EX[k][0]}</button>`).join('')}</div>`:''}
-    <div class="sect">How much each time?</div><div class="stepper"><button data-act="nw-amt" data-v="-1" aria-label="Less">\u2212</button><div class="v">${n.amt}<small>${unit}</small></div><button data-act="nw-amt" data-v="1" aria-label="More">+</button></div>
-    <div class="sect">How often?</div><div class="segt">${[1,2,3].map(c => `<button class="${n.cad===c?'on':''}" data-act="nw-cad" data-v="${c}">${c}\u00d7 a week</button>`).join('')}</div>
-    <div class="foot">${btn("Let's make it happen",'nw-create')}</div>`; },
+  onEnter:() => { S.nw = { act:'run', exs:['push','squat'] }; },
+  body:() => { const n = S.nw;
+    return `${hdr('Start something together')}<div class="p-sub">Pick what you want to do. How much and how often you'll agree with your partner.</div><div class="flabel">Activity</div><div class="agrid">${Object.keys(TPL).map(k => `<button class="gcard ${n.act===k?'on':''}" data-act="nw-act" data-v="${k}">${ic(TPL[k].icon,1.8)}<div class="t">${TPL[k].t}</div></button>`).join('')}</div>
+    ${n.act==='work'?`<div class="flabel" style="margin-top:16px;">Which exercises? <span class="fnote">up to ${MAX_EX}</span></div><div class="pill-row">${Object.keys(EX).map(k => { const on = n.exs.includes(k); const full = n.exs.length >= MAX_EX && !on; return `<button class="pill ${on?'on':''}" data-act="nw-ex" data-v="${k}" ${full?'disabled':''}>${EX[k][0]}</button>`; }).join('')}</div><div class="hint">These show on your card and in Already on the move. They do not affect who you are matched with - that is the activity and how long.</div>`:''}
+    <div class="foot">${btn("Let's make it happen",'nw-create',{dis:n.act==='work' && !n.exs.length})}<div class="hint center">You can change this until you start searching for a match.</div></div>`; },
   note:N('Create a commitment', 'A Challenges screen. Replaces Browse challenges. One active challenge per user, so it only appears when there is none, which now means after ending or finishing one.', [
     'Opened from the Challenges tab only. Home and Find hand over to Challenges first: neither may start or end a challenge',
-    'The six MVP activities; Workouts pick an exercise','1, 2 or 3 times a week',
+    'The six MVP activities. Workouts pick UP TO FOUR exercises (1 October), and they are DESCRIPTIVE: they show on the card and in Already on the move, and they never reach matching',
+    'WHY: nine exercises fragment a small pool nine ways. Two people who both want to work out on Tuesday mornings should not fail to match because one picked squats. Matching reads the activity and the duration',
+    'Workouts are measured in MINUTES now, like Yoga. Four exercises on one commitment have no single rep count between them',
+    'ACTIVITY ONLY (30 September). How much and how often are NOT asked here - they are agreed with the partner at the first plan. Asking here asked the same question twice, and it broke the promise that deleted the onboarding target screen',
     'On create it lands on Home, which then asks for a partner. Creating a commitment is a setup action and setup actions finish on Home, the same way onboarding does']) });
 
 def('ginvite', { ph:'T2d', group:'Tabs', label:'Find: invite someone', bar:() => '', nav:() => navBar('find'),
@@ -657,11 +729,11 @@ def('challenges', { ph:'T1', group:'Tabs', label:'Challenges tab', bar:() => app
     const action = !partnered ? '' : S.planProp ? (S.planProp.by === 'gy' ? `<div class="btn-2">${btn('Accept','plan-accept')}<button class="btn-o" data-act="plan-counter">Suggest another</button></div>` : `<div class="hrow">${ic('clock',1.8)}<span>Waiting for Gayan to accept your plan</span></div>`) : S.cs === 'matched' ? btn(`Plan your first ${TXc().noun}`,'',{go:'plan'}) : S.cs === 'done' ? btn('Plan the next one','',{go:'plan'}) : btn(S.cs==='today'?"Open today's session":'View session','',{go:'commit'});
     const wk = partnered && S.agreed && S.cs !== 'matched' ? `<div class="wcard"><div class="rc-h">This week</div>${Array.from({length:S.cadence},(_, i) => { const done = i < S.weekDone, nxt = i === S.weekDone && S.cs !== 'done'; return `<div class="wnode"><span class="wdot ${done?'ok':nxt&&S.cs==='today'?'now':''}">${done?ic('check',3):''}</span><div><b>${esc(TXc().act)} ${i+1}</b><small>${done?'Done':nxt?`${S.plan.day} \u00b7 ${S.plan.time}`:'Not planned yet'}</small></div></div>`; }).join('')}<div class="wcopy">${S.weekDone>=S.cadence?"You kept this week's commitment.":S.cadence-S.weekDone===1?"1 more to keep this week's commitment.":`${S.cadence-S.weekDone} commitments still ahead.`}</div></div>` : '';
     return `<div class="p-h1" style="margin-bottom:2px;">Challenges</div>${S.agreed && S.pstate === 'partnered' ? `<div class="p-sub">What you've committed to.</div>` : ''}
-    <div class="hero"><div class="h-eb">${partnered && S.agreed ? 'Your commitment' : "Let's make it happen"}</div><div class="h-title">${ic(tpl().icon,1.8)}<span>${esc(weekTitle())}</span></div><div class="h-prog">${S.agreed?`${partnered?S.weekDone:0} / ${S.cadence} this week \u00b7 `:''}${esc(amtLine())}</div>${partner}${action}</div>
+    <div class="hero"><div class="h-eb">${partnered && S.agreed ? 'Your commitment' : "Let's make it happen"}</div><div class="h-title">${ic(tpl().icon,1.8)}<span>${esc(weekTitle())}</span></div><div class="h-prog">${S.agreed && partnered?`${S.weekDone} / ${S.cadence} this week \u00b7 `:''}${esc(amtLine())}</div>${partner}${action}</div>
     ${wk}${partnered?`<div class="rel"><div class="rel-k">${ic('fire',1.8)}${keptTxt(S.cs==='matched'?0:S.kept)}</div><div class="rel-l">Commitments you and Gayan both kept.</div></div>`:''}
     <div class="sect">History</div><div class="hrow2"><span>Walk 3\u00d7 a week</span><small>Ended \u00b7 August 2026</small></div>
     <div class="banner" style="margin-top:14px;">Every Challenges state (misses, repair, move, cancel, end) is in the <a href="${CH_URL}" target="_blank" rel="noopener">Challenges tab prototype</a>.</div>`; },
-  note:N('Challenges tab', 'Summary of the new Challenges tab: active commitment, this week, commitments kept, history. No partner search or invites here.', [
+  note:N('Challenges tab', 'Summary of the new Challenges tab: the commitment, the session streak, history. No partner search or invites here.', [
     'CHALLENGES OWNS THE CHALLENGE LIFECYCLE: creating, ending, cancelling and the history. The picker is reached from here and nowhere else',
     'app/(tabs)/challenges.tsx (to be rebuilt)','One active challenge per user; history rows are not tappable','Full states: Challenges tab prototype'], null) });
 
@@ -681,7 +753,19 @@ def('find', { ph:'T2', group:'Tabs', label:'Find tab', bar:() => appBar(), nav:(
         <ul class="reasons"><li><span class="ck">${ic('check',2.6)}</span>You both want to ${esc(TXc().noun)}.</li><li><span class="ck">${ic('check',2.6)}</span>You're both in the Nugegoda area.</li><li><span class="ck">${ic('check',2.6)}</span>You're both looking for someone to keep you accountable.</li></ul>
         ${clock}<div style="margin:8px 0 6px;">${btn("Let's do this",'accept-match')}${ghost('Not quite right','decline-match')}</div>`;
     }
-    else if (partnered) { sub = 'Your match is here.'; mid = `<div class="procard center"><div class="seats" style="margin-bottom:10px;">${seat(initials(myName()),true)}${seat('GS',true)}</div><b>You and Gayan</b><div class="hint">Paired on ${esc(habitTitle())}</div>${ghost('End this match','endmatch-open')}</div>`; }
+    // MATCHED. This is the state someone opens Find to see for weeks, so it
+    // carries weight rather than being a thin row: both faces, the tick that
+    // says it is settled, what you are paired ON, and the two ways out.
+    else if (partnered) {
+      sub = 'Your match is here.';
+      const menu = S.menu ? `<div class="ov-menu" style="top:8px;right:8px;"><button class="ov-item" data-act="report-open">${ic('flag',1.8)}Report ${esc(partnerName())}</button><button class="ov-item danger" data-act="block-open">${ic('x',2)}Block ${esc(partnerName())}</button></div>` : '';
+      mid = `<div class="mcard">${menu}<button class="ov-btn mtop" data-act="menu" aria-label="More">${ic('more',1.8)}</button>
+        <div class="mfaces">${anon(0,72)}<span class="mtick">${ic('check',3)}</span>${anon(1,72)}</div>
+        <div class="mnames">You and ${esc(partnerName())}</div>
+        <div class="mpair">${ic(tpl().icon,1.8)}<span>${esc(habitTitle())}</span></div>
+        <div class="mmeta">Matched ${esc(S.matchedAgo)}</div>
+        ${ghost('End this match','endmatch-open')}</div>`;
+    }
     else if (waiting) { sub = 'Your invite is out.'; mid = `<div class="hero"><div class="h-eb">Waiting for your friend to join</div><div class="h-sub" style="margin:0;">${S.sentEmail?`Emailed to ${esc(S.sentEmail)}`:`Shared via ${esc(S.sentVia||'link')}`}. Your challenge starts the moment they join.</div>${codeBox()}${btn('Share again','open-share',{icon:'share',cls:'row'})}${ghost('Invite someone else','inv-share-back',undefined,'ginvite')}</div>
       <div class="center" style="display:flex;flex-direction:column;gap:2px;">${ghost('Find a match instead','begin-find')}${ghost('Cancel invite','cancel-invite')}</div>${proto('Simulate: your friend joins with the code','sim-join')}`; }
     else if (finding) mid = `${radarSearching()}<div class="center"><b>Looking for your partner</b><div class="hint">We'll notify you the moment you're matched.</div></div>${ghost('Stop looking','stop-find')}${ghost('Invite someone you know instead','inv-start')}${proto("Simulate: you're matched",'sim-match')}`;
@@ -692,8 +776,12 @@ def('find', { ph:'T2', group:'Tabs', label:'Find tab', bar:() => appBar(), nav:(
     // The commitment sits on Find too, activity only, and is locked the moment
     // a search starts - the same card and the same rule as on Challenges.
     const lock = S.pstate !== 'solo';
-    const comm = S.challenge && !partnered && S.pstate !== 'match' ? `<div class="ccard2"><span class="bigic">${ic(tpl().icon,1.8)}</span><div class="dtx"><b>${esc(tpl().t)}</b><small>${lock ? "Locked while you're looking for a match" : 'You can change this until you start searching for a match'}</small></div>${lock?'':ic('chev',2).replace('<svg','<svg class="chev2"')}</div>` : '';
-    return `<div class="p-h1" style="margin-bottom:4px;">Find</div><div class="p-sub">${sub}</div>${comm}${mid}${dirCards()}`; },
+    const comm = S.challenge && !partnered && S.pstate !== 'match' ? `<${lock?'div class="ccard2"':'button class="ccard2" data-act="edit-act"'}><span class="bigic">${ic(tpl().icon,1.8)}</span><div class="dtx"><b>${esc(tpl().t)}</b><small>${lock ? "Locked while you're looking for a match" : 'You can change this until you start searching for a match'}</small></div>${lock?'':ic('chev',2).replace('<svg','<svg class="chev2"')}</${lock?'div':'button'}>` : '';
+    // The directory is its own screen again. What stays on landing is one
+    // button - and no count, because we do not have a real number and a
+    // fabricated one is the kind of thing nobody remembers is fabricated.
+    const dirLink = `<button class="dlink" data-go="whoelse">${ic('community',1.8)}<span>Already on the move</span>${ic('chev',2).replace('<svg','<svg class="chev2"')}</button>`;
+    return `<div class="p-h1" style="margin-bottom:4px;">Find</div><div class="p-sub">${sub}</div>${comm}${mid}${dirLink}`; },
   note:N('Find tab', 'Two ways to get a partner, one at a time, plus the match itself. Every state lives on this one screen.', [
     'FIND OWNS EVERY PARTNER PATH. Starting a search, sending an invite, entering a code, stopping, switching, cancelling AND ENDING A MATCH all happen here and nowhere else. Home and onboarding only hand over to this screen',
     'A MATCH IS WAITING (new 30 September): this state did not exist. Home said "See your match" and handed over to a Find tab with nothing on it. Three states, because one side can answer before the other: offered, you-accepted-waiting, and expired',
@@ -708,14 +796,42 @@ def('find', { ph:'T2', group:'Tabs', label:'Find tab', bar:() => appBar(), nav:(
     'The code is 6 characters (e.g. RUN4K7) and EXPIRES IN 48 HOURS. The person receiving it is told so'],
     ['Open: if the friend already has an active challenge, what happens when they enter the code (end theirs, replace it, or block)?','Needs backend: the 24 hour match window and the 48 hour code expiry, the short code column, and a neutral end_match with reasons - today the only ways to end a match are block and report']) });
 
-def('whoelse', { ph:'T2a', group:'Tabs', label:'Who else is here', bar:() => '', nav:() => '',
+def('endmatch', { ph:'T2e', group:'Tabs', label:'Find: end this match', bar:() => '', nav:() => navBar('find'),
+  body:() => { const off = S.endReason === 'off';
+    return `${hdr('End this match')}<div class="p-sub">Your challenge and your streak both continue.</div>
+    ${END_REASONS.map(r => `<button class="choice ${S.endReason===r[0]?'on':''}" data-act="end-reason" data-v="${r[0]}"><div><div class="t">${r[1]}</div></div></button>`).join('')}
+    <div class="hint">Gayan won't see your reason. He'll just see that the match has ended.</div>
+    <div class="foot">${btn(off?'Continue to report':'End match','endmatch-send',{dis:!S.endReason})}${ghost('Keep going','',null,'find')}</div>`; },
+  note:N('Ending a match, the neutral way', 'A way out that does not require treating your partner as a safety problem. In the app today the only two ways to end a match are block and report, both safety actions.', [
+    'FIND OWNS THIS. Ending a match is a partner path, and Find owns every partner path. It is not on Challenges',
+    'Six reasons, kept separate from the report categories: report answers what was wrong with the person, this answers why the pairing did not work',
+    '"Something felt off" is a door, not an outcome: it hands off to the report flow, and it sits IN the list because someone scanning for it who cannot find it picks "Prefer not to say" instead',
+    '"Prefer not to say" must exist. Forcing a reason out of someone leaving because they felt unsafe is how you stop them leaving',
+    'THE REASON IS PRIVATE. The other person is told only that the match ended',
+    'The challenge and the streak are both untouched'],
+    'Needs backend: there is no neutral end_match today, only block_partner and report_partner. Reasons land on the new partnerships table.') });
+
+def('whoelse', { ph:'T2a', group:'Tabs', label:'Already on the move', bar:() => '', nav:() => navBar('find'),
+  body:() => `${hdr('Already on the move')}<div class="p-sub">People on Choner and what they've committed to.</div>${dirCards()}`,
+  note:N('Already on the move', 'The directory, back on its own screen. Find landing carries one button to it rather than the list itself.', [
+    'MOVED BACK 1 October. It sat inline under the radar from 29 September. Landing is the radar again, with a single "Already on the move" button under it',
+    'NO COUNT on that button. We do not have a real number, and a fabricated one is the kind of thing nobody remembers is fabricated',
+    'Everyone registered is shown BY DEFAULT: a new user has to see the app is alive',
+    'NO LOCATION. A first name and an activity, not a way to find someone in person',
+    'Six cards per screen, standing apart rather than joined into a list',
+    'Workout rows show their exercises. The directory is the ONLY place exercises appear - they are colour for a human, never an input to matching',
+    'The spinner at the bottom never resolves. Thirty rows is everyone we have; it is there so a short list feels alive',
+    'No way to message or match from this list'],
+    'Needs backend: get_active_directory() is gated behind the show_in_directory opt-in, which defaults to false, and a minimum count of 5. Both go.') });
+
+def('whoelse_old', { ph:'T2f', group:'Tabs', label:'Who else is here (superseded)', bar:() => '', nav:() => '',
   body:() => `${hdr('Who else is here')}<div class="p-sub">People on Choner right now and what they've committed to.</div>${[['Nimali P','Running \u00b7 3 km \u00b7 3x a week','#FD8302'],['Ruwan S','Walking \u00b7 30 min \u00b7 daily','#1E3A4C'],['Asanka K','Yoga \u00b7 20 min \u00b7 2x a week','#2E9E6B'],['Tharushi M','Running \u00b7 5 km \u00b7 2x a week','#8E5FD9'],['Dinuka W','Workout \u00b7 45 min \u00b7 3x a week','#D9534F'],['Ishara B','Walking \u00b7 5 km \u00b7 3x a week','#3B8FD1']].map(p => `<div class="feed-row"><div class="feed-init" style="background:${p[2]};">${initials(p[0])}</div><div><div class="feed-name">${p[0]}</div><div class="feed-meta">${p[1]}</div></div></div>`).join('')}`,
   note:N('Who else is here', 'SUPERSEDED 30 September. This list now sits INLINE on the Find tab as "Already on the move", under the circle, so it is the first thing a new user sees. This screen is kept only so the change is visible against what it replaced.', ['Everyone registered is shown BY DEFAULT: a new user has to see the app is alive','NO LOCATION. A first name and an activity, not a way to find someone in person','One card per person, standing apart rather than joined into a list','Profile picture, name and what they have committed to','No way to message or match from this list'], 'Needs backend: get_active_directory() is gated behind the show_in_directory opt-in, which defaults to false, and a minimum count of 5. Both go.') });
 
 def('community', { ph:'T3', group:'Tabs', label:'Community tab', bar:() => appBar(), nav:() => navBar('community'),
   body:() => `<div class="p-h1" style="margin-bottom:4px;">Community</div><div class="p-sub">Colombo, showing up together.</div>
     ${S.shared === 'yes' ? `<div class="post"><div class="who">${esc(initials(myName()))}</div><div><b>${esc(firstName(myName()))} and Gayan</b><p>${keptTxt(Math.max(S.kept,7))} together on ${esc(TXc().act)}.</p><small>just now</small></div></div>` : ''}
-    <div class="post"><div class="who p2">NP</div><div><b>Nimali and Ruwan</b><p>14 commitments kept together on Yoga.</p><small>2 hours ago</small></div></div>
+    <div class="post"><div class="who p2">NP</div><div><b>Nimali and Ruwan</b><p>14 sessions together on Yoga.</p><small>2 hours ago</small></div></div>
     <div class="post"><div class="who" style="background:linear-gradient(135deg,#2E9E6B,#1F6B47);">AK</div><div><b>Asanka</b><p>Kept this week's commitment: Walk 3\u00d7 a week.</p><small>Yesterday</small></div></div>`,
   note:N('Community tab', 'Only things people chose to share reach here: the Yes on the share prompt on Home adds you to it.', ['app/(tabs)/community.tsx, components/community/SharePrompt.tsx'], null) });
 
@@ -745,7 +861,7 @@ def('editprofile', { ph:'T4a', group:'Tabs', label:'Edit profile', bar:() => '',
     'Changing age or gender should re-run matching preferences on the next search'],
     'Saving here writes to the same profile columns onboarding writes: primary_goal, main_struggle, accountability_mode, age_range, gender.') });
 
-const ORDER = ['splash','welcome','signin','signup','verify','verified','linkexpired','forgot','reset','invitecode','inviteaccept','legal','ob-intro','goal','struggle','style','age','energy','reveal','photo','challenge','invite','home','challenges','browse','plan','commit','qr','why','find','fd2','fd3','ginvite','whoelse','community','profile','editprofile','editwhy'];
+const ORDER = ['splash','welcome','signin','signup','verify','verified','linkexpired','forgot','reset','invitecode','inviteaccept','legal','ob-intro','goal','struggle','style','age','energy','reveal','photo','challenge','invite','home','challenges','browse','editact','plan','commit','qr','why','find','fd2','fd3','endmatch','ginvite','whoelse','whoelse_old','community','profile','editprofile','editwhy'];
 const GROUPS = []; ORDER.forEach(id => { const g = SC[id].group; let x = GROUPS.find(a => a[0] === g); if (!x) GROUPS.push(x = [g, []]); x[1].push(id); });
 
 /* ---------- render ---------- */
@@ -775,7 +891,7 @@ function render(){
 }
 function leave(){ clearTimeout(splashTimer); S.err = {}; S.formErr = null; S.dlg = null; S.sheet = null; }
 function go(id, o){
-  o = o || {}; leave();
+  o = o || {}; leave(); S.menu = false;
   if (o.jump) S.hist = []; else if (o.replace) {} else if (id !== S.cur) S.hist.push(S.cur);
   S.cur = id; if (SC[id].onEnter) SC[id].onEnter();
   if (S.cur === id){ render(); const c = document.getElementById('content'); if (c) c.scrollTop = 0; }
@@ -858,8 +974,9 @@ function act(a, v){
     case 'ep-save': dlg('Saved', 'Your profile is updated.', [['OK', () => goBack()]]); return;
     case 'add-photo': S.photoFrom = 'profile'; if (S.photo === 'later') S.photo = null; go('photo'); return;
     case 'next-energy': finishOnboarding(); go('reveal'); return;
-    case 'pick-tpl': S.pickedChallenge = v; if (v === 'work') S.ex = GOAL_EX[S.goal] || S.ex; break;
-    case 'pick-ex': S.ex = v; break;
+    // No exercise question here any more: it moved to challenge creation, where
+    // up to four are picked. The goal still seeds a sensible default.
+    case 'pick-tpl': S.pickedChallenge = v; if (v === 'work') S.exs = GOAL_EX[S.goal] || S.exs; break;
     case 'next-challenge': if (S.pickedChallenge){ S.chosen = S.pickedChallenge; S.customTitle = null; S.amount = tpl().def; go('invite'); return; } break;
     case 'amt': { const t = tpl(); S.amount = Math.max(t.step, +(S.amount + (+v) * t.step).toFixed(2)); break; }
     case 'cad': S.cadence = +v; break;
@@ -905,31 +1022,62 @@ function act(a, v){
       S.counterFrom = null; go('home', {replace:true}); S.hist = []; return; }
     case 'plan-accept': { const p = S.planProp; S.planProp = null; S.counterFrom = null;
       S.mode = p.mode; S.plan.day = p.day; S.plan.timeRaw = p.timeRaw; S.plan.time = p.time; S.plan.place = p.place;
-      if (p.first){ S.amount = p.amt; S.cadence = p.cad; S.agreed = true; }
+      if (p.first){
+        S.amount = p.amt; S.cadence = p.cad; S.agreed = true;
+        // Prototype: Gayan answers with a different number so the split is
+        // visible. In the app this is whatever they actually choose.
+        S.partnerAmount = Math.max(tpl().step, +(p.amt - tpl().step * 2).toFixed(2));
+      }
       if (S.cs === 'done' && S.weekDone >= S.cadence) S.weekDone = 0;
       S.cs = 'planned'; resetDay();
       if (p.first){ go('why', {replace:true}); S.hist = []; return; }
       go('home', {replace:true}); S.hist = [];
       dlg("You're in", `You've got something to show up for together. ${p.mode==='together'?'Together':'Separately, together'} · ${p.day} · ${p.time}.`); return; }
     case 'plan-counter': { const p = S.planProp; S.counterFrom = p; S.planProp = null; go('plan'); return; }
-    case 'nw-act': S.nw.act = v; S.nw.amt = v === 'work' ? EX[S.nw.ex][2] : TPL[v].def; break;
-    case 'nw-ex': S.nw.ex = v; S.nw.amt = EX[v][2]; break;
-    case 'nw-amt': { const st = S.nw.act === 'work' ? EX[S.nw.ex][3] : TPL[S.nw.act].step; S.nw.amt = Math.max(st, +(S.nw.amt + (+v) * st).toFixed(1)); break; }
-    case 'nw-cad': S.nw.cad = +v; break;
-    case 'nw-create': S.chosen = S.nw.act; S.ex = S.nw.ex; S.amount = S.nw.amt; S.cadence = S.nw.cad; S.explore = false; S.pstate = 'solo'; S.weekDone = 0; go('home', {replace:true}); S.hist = []; return;
+    case 'nw-act': S.nw.act = v; S.nw.amt = TPL[v].def; break;
+    case 'nw-ex': { const i = S.nw.exs.indexOf(v);
+      if (i >= 0) S.nw.exs.splice(i, 1);
+      else if (S.nw.exs.length < MAX_EX) S.nw.exs.push(v);
+      break; }
+    case 'nw-create': S.chosen = S.nw.act; S.exs = S.nw.exs.slice(); S.explore = false; S.pstate = 'solo'; S.weekDone = 0; go('home', {replace:true}); S.hist = []; return;
+    case 'edit-act': go('editact'); return;
+    case 'act-save': { const changed = S.nw.act !== S.chosen || S.nw.exs.join() !== S.exs.join(); S.chosen = S.nw.act; S.exs = S.nw.exs.slice();
+      go('find', {jump:true});
+      if (changed) dlg('Changed', `Your commitment is ${TPL[S.chosen].t} now. Change it again any time before you search.`);
+      return; }
     case 'sim-match': S.pstate = 'partnered'; S.cs = 'matched'; S.kept = 0; S.weekDone = 0; S.find.intent = false; if (!pairCanMeet()) S.mode = 'separate'; go('home', {replace:true}); S.hist = []; return;
     case 'accept-match': S.iAccepted = true; return;
     case 'decline-match': S.iAccepted = false; S.pstate = 'solo'; S.find.intent = false;
       go('find', {jump:true}); dlg('Back in the pool', "We'll keep looking. Nobody is told you passed."); return;
     // Ending a match lives HERE, not on Challenges: Find owns every partner
     // path, and this is one. The reason is private either way.
-    case 'endmatch-open': S.sheet = 'endmatch'; S.endReason = null; break;
+    case 'menu': S.menu = !S.menu; break;
+    case 'endmatch-open': S.menu = false; S.endReason = null; go('endmatch'); return;
+    case 'report-open': S.menu = false; S.sheet = 'report'; S.repCat = null; break;
+    case 'rep-cat': S.repCat = v; break;
+    case 'rep-send': S.sheet = null; S.pstate = 'solo'; S.cs = 'matched'; S.find.intent = false; S.partnerAmount = S.amount;
+      go('find', {jump:true});
+      dlg('Report sent', 'The match has ended. Your challenge continues and your streak is untouched. We look at every report.');
+      return;
+    case 'block-open': S.menu = false; S.sheet = 'block'; break;
+    case 'block-send': S.sheet = null; S.pstate = 'solo'; S.cs = 'matched'; S.find.intent = false; S.partnerAmount = S.amount;
+      go('find', {jump:true});
+      dlg('Blocked', 'The match has ended and you will not be shown to each other again.');
+      return;
     case 'end-reason': S.endReason = v; break;
     case 'endmatch-send': {
-      if (S.endReason === 'off'){ S.sheet = 'report'; return; }
+      // "Something felt off" is a door into the report flow. Those screens are
+      // not in this prototype, so the match ends and the handoff is stated
+      // rather than left as a dead end.
+      const off = S.endReason === 'off';
       S.sheet = null; S.pstate = 'solo'; S.cs = 'matched'; S.find.intent = false;
+      // Gayan's number goes with Gayan. Yours and the cadence are the
+      // commitment, and the commitment continues.
+      S.partnerAmount = S.amount;
       go('find', {jump:true});
-      dlg('This match has ended.', 'Your challenge continues and your streak is untouched. You can look for a new partner anytime.');
+      dlg('This match has ended.', off
+        ? 'Your challenge continues and your streak is untouched. We will ask what happened next - the report flow is a separate set of screens.'
+        : 'Your challenge continues and your streak is untouched. You can look for a new partner anytime.');
       return; }
     case 'stop-find': S.pstate = 'solo'; S.find.intent = false; break;
     case 'tog': S.notif[v] = !S.notif[v]; break;

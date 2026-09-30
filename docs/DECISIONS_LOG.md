@@ -1734,3 +1734,231 @@ two things that are now wrong:
 Also dropped two line numbers from the task (`edit.tsx:79`,
 `energy.tsx:34-51`). fe10 has moved both, and a line number in a handover doc
 is a hostage to the next edit. The filenames are enough.
+
+---
+
+## NOTE — two streams join here
+
+Everything above came through `main` while the prototype work happened on a
+branch. Everything below is that branch, merged 1 October. The dates overlap
+rather than running straight, which is why the next entry is dated the 30th.
+Each entry is dated; the order within each stream is intact.
+
+---
+
+## 2026-09-30 — The card that promised it was editable
+
+Three gaps, all of them the same gap: the review decided the model and the
+prototypes kept the old questions.
+
+1. THE CARD LIED. "You can change this until you start searching for a match"
+   sat under a chevron on a plain div. Nothing happened when you tapped it, on
+   either prototype. It is a button now, and it opens a one-question screen:
+   the ACTIVITY, and nothing else. Locked the moment anything other than "no
+   partner" is true — searching, invited, pending or paired.
+
+2. CREATING A COMMITMENT ASKED HOW MUCH AND HOW OFTEN. It must not. Restated,
+   because it keeps getting rebuilt: the first commitment asks THE ACTIVITY
+   ONLY. Both other numbers are agreed with the partner at the first plan.
+   That is the promise that deleted app/onboarding/target.tsx; asking at
+   creation asks the same question twice, and the second answer would overrule
+   the first, which makes the first a waste of the person's time.
+
+3. SO NOTHING ASKED THEM AT ALL. The Challenges prototype's first plan never
+   collected them either. It does now: How much each time, and How often as
+   1x to 6x then Daily, both marked as agreed once and then fixed.
+
+Also built, having been decided on the 29th and never drawn: the STREAK TARGET
+screen. Asked once, right after the first plan is ACCEPTED, presets 10 / 20 /
+30, with the weeks estimate computed live from target / cadence.
+
+FOUND WHILE DOING IT, and fixed: "End this match" on the app-flow Find tab set
+a sheet that nothing rendered — the button was a dead end. It is a screen
+now, in the rail, with the six reasons. "Something felt off" states the report
+handoff instead of vanishing, because those screens are not in this prototype.
+
+Vocabulary swept again in the app flow: "Commitment 1 of 2 this week" —
+"Session 1 of 2", the Community feed's "14 commitments kept together" — "14
+sessions together", and the heart comment now says it counts sessions with
+this partner, which is the pair count and not the streak.
+
+### The invite code migration was the one draft the review changed
+Checked all five drafts against the review. Four stand untouched: reflections
+RLS, the tone column expand/contract pair, and photo status. None of them
+touch anything Challenges decided.
+
+`202609291300_short_invite_code.sql` did need it: the 48 hour expiry was
+decided after the file was written. Added there rather than in a follow-up, as
+SCHEMA_CHALLENGES.md offered. The check is a BEFORE UPDATE trigger, not a line
+in accept_invite_by_code, because the deep link calls accept_challenge_invite
+directly and a trigger is the one place both paths pass through.
+
+NOT ADDED to the app-flow prototype: the streak target screen. Its Home is
+still on the old model and draws no circles, so a picker for a number nothing
+displays would be noise. It goes in with the Home rebuild.
+
+---
+
+## 2026-10-01 (prototypes) — Nine changes from the testing pass
+
+### Locked and built
+1. The line "Everything else, like distance, time and place..." is gone from
+   A few quick questions. It explained something the screen never claimed.
+2. ALREADY ON THE MOVE IS ITS OWN SCREEN AGAIN, reversing 29 September. Find
+   landing is the radar again. What stays on landing is ONE button, with NO
+   count - we do not have a real number, and a fabricated one is the kind of
+   thing nobody remembers is fabricated.
+3. Directory cards are bigger: six per screen, not eight, and the list ends in
+   a spinner that never resolves. Flagged as a small lie and kept on purpose.
+4. The matched card carries weight now: both faces, a green tick between them,
+   what you are paired ON, how long, and the two ways out.
+5. REPORT AND BLOCK were decided on 22 September and never built in the app
+   flow - only in the original Find prototype. Added: the full menu on the
+   partner card, categories SCOPED (Fake profile / Something else until the
+   pair has actually met, all five after), both ending in the same neutral
+   line.
+6. "Finish" is "Complete session". The flow was already right after the QR
+   scan; the word was wrong.
+8. Pick a challenge had NO top bar at all, so it had neither a back button nor
+   the progress dots every other onboarding screen shows. Given stepBar().
+
+### 7. THE AMOUNT IS PER PERSON. THE CADENCE IS SHARED.
+Losing a match because one wants 5 km and the other 3 km is a waste of a
+match. What the product is about is showing up for each other, not matching
+capacities.
+
+    cadence   SHARED. It defines the week, the repair debt, and how long a
+              streak takes. Two cadences means two different weeks.
+    amount    PER PERSON. You set yours at the first plan; they set theirs
+              when they accept. The card reads "You 5 km · Gayan 3 km".
+
+A circle still fills only when BOTH finish THEIR number.
+
+The unit never differs, because it is set by the activity - which is what made
+the workouts change necessary rather than optional.
+
+### 9. WORKOUTS: UP TO FOUR EXERCISES, AND THEY DO NOT MATCH
+Asked for an opinion, gave one, and it is now decided.
+
+  - "Which exercise?" is GONE from onboarding
+  - challenge creation asks for UP TO FOUR, with the activity, and they stay
+    editable until a search starts, exactly like the activity
+  - matching reads the ACTIVITY and the DURATION. The exercises never reach it
+  - Workouts are measured in MINUTES, like Yoga
+  - the directory shows them, on workout rows only
+
+WHY, and it is not mainly the variable count: "Push-ups" is not a pool. Nine
+exercises fragment an already small user base nine ways, and two people who
+both want to work out on Tuesday mornings should not fail to match because one
+picked squats.
+
+The exercises become COLOUR, not criteria: a signal to a human reading a
+directory card, never an input to the algorithm. Worth saying out loud so
+nobody assumes later that they filter.
+
+It also dissolves the reps-versus-minutes problem rather than solving it. With
+four exercises on one commitment there is no single rep count to agree on, so
+duration is the only honest unit - and one shared unit is exactly what
+question 7 needed.
+
+ASKED AND ANSWERED: "creation asks the activity only" was a locked rule. The
+exercises are part of WHAT the activity is rather than a negotiation, so they
+belong on that screen and stay editable until search. The rule holds.
+
+---
+
+## 2026-10-01 (intro) — The intro screen goes dark
+
+Built from a reference HTML, with two instructions on top of it: no glow
+behind the logo, and the button keeps saying "Build my profile".
+
+WHAT CHANGED: navy radial ground, a warm orange bleed rising from the bottom
+and a softer one top right, glass promise cards instead of white ones, the
+gradient carried onto "I did", white progress dots with a gradient active one,
+and an arrow after the button label.
+
+WHAT DID NOT: our logo, at its existing size and with NO halo behind it. The
+reference draws its own mark inside a radial glow. Ours is orange line art and
+a halo behind orange line art reads as a rendering bug rather than a glow.
+
+The subline is the sentence asked for, not the reference's longer version.
+The reference ends it with "- with a real person counting on you", which says
+the same thing as the first promise card directly underneath it.
+
+The promise copy is untouched. The reference shortens all three ("Not a
+tracker, not a coach"); that is a copy decision and not what was asked for.
+
+SCOPED TO ONE SCREEN. The CSS hangs off `#phone[data-cur="ob-intro"]`, so
+nothing else inherits it, and the next screen is verified still light.
+
+FLAGGED, NOT DECIDED: onboarding step 1 is now dark and steps 2-6 are white,
+so there is a hard flash on Build my profile. Either the rest of onboarding
+follows, or the intro keeps a deliberate one-screen lift. Worth a look on a
+real phone before choosing - it reads differently there than in a preview.
+
+---
+
+## 2026-10-01 (late) — The intro stays a title card, and a real bug in the split
+
+### Intro: one-screen lift, locked
+The dark intro does NOT carry through onboarding. It is a title card; the app
+proper is light. A dark mode for the whole app is a later piece of work, not
+this one. No hard flash to design around, because the flash is the point of a
+title card.
+
+### BUG: a departed partner's number stayed on the card
+Found in testing. The Challenges card read:
+
+    LET'S MAKE IT HAPPEN
+    Run 3x a week
+    0 / 3 this week · You 3 km · Gayan 2 km
+    [Find a match]
+
+Three things contradicting each other in four lines, and it is REACHABLE, not
+a preset artifact: end a match after the first plan and this is what you get.
+
+CAUSE: all three ending paths (end match, report, block) set `pstate = 'solo'`
+and left `agreed` and `partnerAmount` exactly as they were. So the header
+flipped to the unpartnered version while the amount line kept quoting a person
+who is gone.
+
+DECIDED AND FIXED: THEIR NUMBER LEAVES WITH THEM. Yours and the cadence are
+the commitment, and the commitment continues - that is the whole meaning of
+"your challenge continues". The next partner sets their own at the next first
+plan. All three paths now reset `partnerAmount` to yours.
+
+Also fixed alongside it: "0 / 3 this week" was showing with no partner. It is
+a number that cannot move, because a session needs both of you. The weekly
+counter now appears only while partnered.
+
+The card now reads: `Run 3x a week · 3 km each time · Find a match`.
+
+---
+
+## 2026-10-01 (plan) — The frontend work plan, rewritten
+
+WORK_DINESH_FRONTEND.md covered the 22 frozen screens. That slice is merged, and
+everything under its "Do not build yet" list is now unfrozen, so the file is
+rewritten rather than appended to.
+
+Nine sections, ordered so nothing is built twice: intro, create/edit the
+commitment, Find, the first plan and the streak target, the Challenges rebuild,
+the day of, Home, the sweeps. Sections A-C depend on nothing Gayan owns, which
+is why they are first - his timeline cannot stall the start of the work. Home is
+last because it only reflects state the other screens produce.
+
+TWO CLAIMS I HAD TO CORRECT WHILE WRITING IT, both from writing before checking:
+
+  - "no test harness, four test files". Wrong. jest and ts-jest ARE installed,
+    `npm test` exists, and there are TEN test files. What is actually missing is
+    jest-expo and testing-library: every one of the ten tests a pure function
+    and not one renders a component. The corrected entry says that precisely,
+    because "no harness" would have been read as "nothing is tested" and the
+    copy rules, matching weights and negotiation logic are all covered.
+  - "32 files contain a long dash". It is 89 LINES, and not all are user-facing.
+    Changed to say check each hit rather than replace blind.
+
+ALSO RECORDED AT THE TOP OF THE PLAN: three branches are still unmerged, and the
+one that matters is proto/editable-commitment. The artifacts are current; the
+prototype SOURCES on main are several versions behind them. Anyone reading
+docs/prototypes/src/ today is reading 30 September.

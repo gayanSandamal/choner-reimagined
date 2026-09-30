@@ -87,6 +87,10 @@
   .segt{display:flex;background:#F1EEEA;border-radius:16px;padding:4px;gap:4px;}
   .segt button{flex:1;border:none;background:none;border-radius:12px;padding:11px 0;font:inherit;font-size:12.5px;font-weight:500;color:var(--pmuted);cursor:pointer;}
   .segt button.on{background:var(--card);color:var(--pink);box-shadow:var(--shadow-soft);}
+  /* Seven options do not fit one row: How often runs 1x-6x then Daily. A grid
+     rather than wrapped flex, so "Daily" cannot push its row out of line. */
+  .segt.wrap{display:grid;grid-template-columns:repeat(4,1fr);width:100%;box-sizing:border-box;}
+  .segt.wrap button{min-width:0;padding:9px 0;font-size:12px;}
   .qprompt{font-size:14px;font-weight:600;margin:16px 0 10px;line-height:1.35;}
   .qprompt:first-child{margin-top:4px;}
   .habit{background:var(--card);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow-card);margin-bottom:18px;}
@@ -279,3 +283,79 @@
   .ccard2{display:flex;align-items:center;gap:13px;background:var(--card);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow-soft);margin-bottom:16px;}
   .ccard2 .bigic{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;flex:none;}
   .ccard2 .bigic svg{width:22px;height:22px;color:#fff;}
+
+  /* Already on the move: six cards per screen, so each one gets room. The
+     exercise line only appears on workout rows. */
+  .dcard.big{padding:16px 16px;gap:14px;border-radius:20px;}
+  .dcard.big .dav{width:50px;height:50px;font-size:15px;}
+  .dcard.big .dtx b{font-size:15px;}
+  .dcard.big .dtx small{font-size:12.5px;margin-top:3px;}
+  .dex{display:block;font-size:11.5px;color:var(--g2);font-style:normal;margin-top:5px;font-weight:500;}
+  /* the spinner that never resolves */
+  .dmore{display:flex;align-items:center;justify-content:center;gap:9px;padding:20px 0 6px;font-size:12px;color:var(--pmuted);}
+  .dspin{width:15px;height:15px;border-radius:50%;border:2px solid var(--pline);border-top-color:var(--g2);animation:dspin .8s linear infinite;flex:none;}
+  @keyframes dspin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion:reduce){.dspin{animation:none;}}
+  /* the one line on Find landing that replaces the inline list */
+  .dlink{display:flex;align-items:center;gap:11px;width:100%;background:var(--card);border:1px solid var(--pline);border-radius:16px;padding:14px 16px;margin-top:16px;font:inherit;font-size:13.5px;font-weight:500;color:var(--pink);cursor:pointer;box-shadow:var(--shadow-soft);}
+  .dlink svg{width:18px;height:18px;color:var(--g2);flex:none;}
+  .dlink span{flex:1;text-align:left;}
+  /* "up to 4" next to a field label */
+  .fnote{font-weight:400;color:var(--pmuted);font-size:11.5px;}
+
+  /* ===== Intro screen, on the dark =====
+     One screen in an otherwise light app. Scoped to [data-cur="ob-intro"] so
+     nothing else inherits it. No glow behind the logo: the mark carries its
+     own weight and a halo behind it reads as a bug on an orange line mark. */
+  #phone[data-cur="ob-intro"]{
+    background:radial-gradient(140% 90% at 15% 0%, #0a3550 0%, var(--navy) 40%, var(--navy) 55%, #2a1206 92%, #1a0c05 100%);
+  }
+  /* the warm bleed up from the bottom, and the softer one top-right */
+  #phone[data-cur="ob-intro"]::before,
+  #phone[data-cur="ob-intro"]::after{content:'';position:absolute;pointer-events:none;z-index:0;}
+  #phone[data-cur="ob-intro"]::before{
+    left:0;right:0;bottom:-10%;height:60%;
+    background:radial-gradient(120% 100% at 50% 100%, rgba(253,91,1,.55) 0%, rgba(253,131,2,.28) 35%, transparent 70%);
+  }
+  #phone[data-cur="ob-intro"]::after{
+    right:-20%;top:8%;width:70%;height:40%;
+    background:radial-gradient(circle, rgba(253,131,2,.16) 0%, transparent 70%);
+  }
+  #phone[data-cur="ob-intro"] .statusbar,
+  #phone[data-cur="ob-intro"] .content{position:relative;z-index:1;}
+  #phone[data-cur="ob-intro"] .statusbar{color:#fff;}
+  #phone[data-cur="ob-intro"] .pdots i{background:rgba(255,255,255,.28);}
+  #phone[data-cur="ob-intro"] .pdots i.on{background:linear-gradient(135deg,var(--g1),var(--g2));}
+  #phone[data-cur="ob-intro"] .p-h1{color:#fff;font-weight:700;letter-spacing:-.6px;}
+  #phone[data-cur="ob-intro"] .p-h1 .grad{
+    background:linear-gradient(135deg,var(--g1),var(--g2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  #phone[data-cur="ob-intro"] .hp{color:rgba(255,255,255,.72);}
+  #phone[data-cur="ob-intro"] .hp b{color:#fff;font-weight:500;}
+  /* glass cards rather than white ones, so the glow reads through them */
+  #phone[data-cur="ob-intro"] .promise{
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);
+    backdrop-filter:blur(6px);box-shadow:none;
+  }
+  #phone[data-cur="ob-intro"] .promise .pi{background:linear-gradient(150deg, rgba(253,131,2,.35), rgba(253,91,1,.2));}
+  #phone[data-cur="ob-intro"] .promise .pi svg{color:#FFB870;}
+  #phone[data-cur="ob-intro"] .promise b{color:#fff;}
+  #phone[data-cur="ob-intro"] .promise span{color:rgba(255,255,255,.55);}
+  #phone[data-cur="ob-intro"] .btn{box-shadow:0 14px 30px rgba(253,91,1,.4);}
+  /* the arrow sits after the words, as in the reference */
+  .btn.row.rev{flex-direction:row-reverse;}
+  .pill:disabled{opacity:.4;cursor:default;}
+
+  /* the matched card: both faces, the tick, what you are paired on */
+  .mcard{position:relative;background:var(--card);border-radius:22px;padding:22px 18px 10px;box-shadow:var(--shadow-card);text-align:center;margin-bottom:14px;}
+  .mcard .ov-btn.mtop{position:absolute;top:10px;right:10px;background:none;color:var(--pmuted);}
+  .mfaces{display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+  .mfaces .anon{border:3px solid var(--card);}
+  .mfaces .anon:last-child{margin-left:-14px;}
+  .mtick{width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;z-index:3;margin:0 -10px;border:3px solid var(--card);flex:none;}
+  .mtick svg{width:15px;height:15px;}
+  .mnames{font-size:18px;font-weight:600;letter-spacing:-.2px;}
+  .mpair{display:inline-flex;align-items:center;gap:7px;background:#FFF1E4;color:#B04A00;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:500;margin-top:10px;}
+  .mpair svg{width:15px;height:15px;}
+  .mmeta{font-size:11.5px;color:var(--pmuted);margin-top:8px;}

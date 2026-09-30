@@ -48,3 +48,7 @@
 .cdot.missed{background:none;border:2px dashed rgba(253,91,1,.55);}
 .cdot.todo{background:none;border:1.5px solid var(--dim);}
 .rel-l.owe{color:#B04A00;font-weight:500;}
+
+/* "up to 4" next to a field label, and the capped-out exercise pills */
+.fnote{font-weight:400;color:var(--pmuted);font-size:11.5px;}
+.pill:disabled{opacity:.4;cursor:default;}
