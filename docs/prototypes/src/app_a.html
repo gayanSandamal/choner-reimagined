@@ -302,6 +302,49 @@
   .dlink span{flex:1;text-align:left;}
   /* "up to 4" next to a field label */
   .fnote{font-weight:400;color:var(--pmuted);font-size:11.5px;}
+
+  /* ===== Intro screen, on the dark =====
+     One screen in an otherwise light app. Scoped to [data-cur="ob-intro"] so
+     nothing else inherits it. No glow behind the logo: the mark carries its
+     own weight and a halo behind it reads as a bug on an orange line mark. */
+  #phone[data-cur="ob-intro"]{
+    background:radial-gradient(140% 90% at 15% 0%, #0a3550 0%, var(--navy) 40%, var(--navy) 55%, #2a1206 92%, #1a0c05 100%);
+  }
+  /* the warm bleed up from the bottom, and the softer one top-right */
+  #phone[data-cur="ob-intro"]::before,
+  #phone[data-cur="ob-intro"]::after{content:'';position:absolute;pointer-events:none;z-index:0;}
+  #phone[data-cur="ob-intro"]::before{
+    left:0;right:0;bottom:-10%;height:60%;
+    background:radial-gradient(120% 100% at 50% 100%, rgba(253,91,1,.55) 0%, rgba(253,131,2,.28) 35%, transparent 70%);
+  }
+  #phone[data-cur="ob-intro"]::after{
+    right:-20%;top:8%;width:70%;height:40%;
+    background:radial-gradient(circle, rgba(253,131,2,.16) 0%, transparent 70%);
+  }
+  #phone[data-cur="ob-intro"] .statusbar,
+  #phone[data-cur="ob-intro"] .content{position:relative;z-index:1;}
+  #phone[data-cur="ob-intro"] .statusbar{color:#fff;}
+  #phone[data-cur="ob-intro"] .pdots i{background:rgba(255,255,255,.28);}
+  #phone[data-cur="ob-intro"] .pdots i.on{background:linear-gradient(135deg,var(--g1),var(--g2));}
+  #phone[data-cur="ob-intro"] .p-h1{color:#fff;font-weight:700;letter-spacing:-.6px;}
+  #phone[data-cur="ob-intro"] .p-h1 .grad{
+    background:linear-gradient(135deg,var(--g1),var(--g2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  #phone[data-cur="ob-intro"] .hp{color:rgba(255,255,255,.72);}
+  #phone[data-cur="ob-intro"] .hp b{color:#fff;font-weight:500;}
+  /* glass cards rather than white ones, so the glow reads through them */
+  #phone[data-cur="ob-intro"] .promise{
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);
+    backdrop-filter:blur(6px);box-shadow:none;
+  }
+  #phone[data-cur="ob-intro"] .promise .pi{background:linear-gradient(150deg, rgba(253,131,2,.35), rgba(253,91,1,.2));}
+  #phone[data-cur="ob-intro"] .promise .pi svg{color:#FFB870;}
+  #phone[data-cur="ob-intro"] .promise b{color:#fff;}
+  #phone[data-cur="ob-intro"] .promise span{color:rgba(255,255,255,.55);}
+  #phone[data-cur="ob-intro"] .btn{box-shadow:0 14px 30px rgba(253,91,1,.4);}
+  /* the arrow sits after the words, as in the reference */
+  .btn.row.rev{flex-direction:row-reverse;}
   .pill:disabled{opacity:.4;cursor:default;}
 
   /* the matched card: both faces, the tick, what you are paired on */

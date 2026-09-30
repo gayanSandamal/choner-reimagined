@@ -1701,3 +1701,34 @@ question 7 needed.
 ASKED AND ANSWERED: "creation asks the activity only" was a locked rule. The
 exercises are part of WHAT the activity is rather than a negotiation, so they
 belong on that screen and stay editable until search. The rule holds.
+
+---
+
+## 2026-10-01 (intro) — The intro screen goes dark
+
+Built from a reference HTML, with two instructions on top of it: no glow
+behind the logo, and the button keeps saying "Build my profile".
+
+WHAT CHANGED: navy radial ground, a warm orange bleed rising from the bottom
+and a softer one top right, glass promise cards instead of white ones, the
+gradient carried onto "I did", white progress dots with a gradient active one,
+and an arrow after the button label.
+
+WHAT DID NOT: our logo, at its existing size and with NO halo behind it. The
+reference draws its own mark inside a radial glow. Ours is orange line art and
+a halo behind orange line art reads as a rendering bug rather than a glow.
+
+The subline is the sentence asked for, not the reference's longer version.
+The reference ends it with "- with a real person counting on you", which says
+the same thing as the first promise card directly underneath it.
+
+The promise copy is untouched. The reference shortens all three ("Not a
+tracker, not a coach"); that is a copy decision and not what was asked for.
+
+SCOPED TO ONE SCREEN. The CSS hangs off `#phone[data-cur="ob-intro"]`, so
+nothing else inherits it, and the next screen is verified still light.
+
+FLAGGED, NOT DECIDED: onboarding step 1 is now dark and steps 2-6 are white,
+so there is a hard flash on Build my profile. Either the rest of onboarding
+follows, or the intro keeps a deliberate one-screen lift. Worth a look on a
+real phone before choosing - it reads differently there than in a preview.

@@ -1,5 +1,6 @@
 
 Object.assign(IC, {
+  arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
   trophy:'<path d="M8 4h8v5a4 4 0 01-8 0zM8 6H4v1a3 3 0 003 3M16 6h4v1a3 3 0 01-3 3M12 13v4M8.5 20h7M10 17h4"/>',
   user:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>',
   mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/>',
@@ -380,10 +381,10 @@ def('legal', { ph:'A8', group:'Account', label:'Terms and privacy', bar:() => ''
 /* ===== Onboarding ===== */
 def('ob-intro', { ph:'O1', group:'Onboarding', label:'Intro', bar:() => '', nav:() => '',
   body:() => `<div class="pdots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="head-c" style="margin-top:18px;"><img src="__LOGO__" alt="" style="width:120px;"><div class="p-h1" style="margin:0;">Turn &ldquo;I should&rdquo; into &ldquo;I did&rdquo;</div></div>
+    <div class="head-c" style="margin-top:18px;"><img src="__LOGO__" alt="" style="width:120px;"><div class="p-h1" style="margin:0;">Turn &ldquo;I should&rdquo;<br>into <span class="grad">&ldquo;I did&rdquo;</span></div><div class="hp">Choner helps you stay <b>consistent with the healthy habits</b> you want to build.</div></div>
     <div style="display:flex;flex-direction:column;gap:10px;">
     ${[['together','One partner, real accountability',"Not a crowd, not a stranger's app. One person counting on you"],['target','Personalised from day one','Your goals and struggles shape your first challenge'],['trend','Built to grow with you','More ways to stay consistent are coming']].map(p => `<div class="promise"><div class="pi">${ic(p[0],1.8)}</div><div><b>${p[1]}</b><span>${p[2]}</span></div></div>`).join('')}</div>
-    <div class="foot">${btn('Build my profile','',{go:'goal'})}</div>`,
+    <div class="foot">${btn('Build my profile','',{go:'goal',icon:'arrow',cls:'row rev'})}</div>`,
   note:N('Start of onboarding', 'Three promises, then one way forward: build the profile. Everyone answers the questions, because matching needs them.', ['app/onboarding/index.tsx','"I\'ll explore on my own" was REMOVED 2026-09-26. Every user builds a profile: matching needs age and gender, and there is no way back into those questions from Home. The only route to an empty Home is ending a challenge','Progress dots run 1 to 6 across the intro and the five steps'], 'The app shows emoji on the promise cards and in every option below. This prototype shows the design system line icons instead.') });
 
 const grid = (arr, key) => `<div class="grid2">${arr.map(o => `<button class="gcard ${S[key]===o[0]?'on':''}" data-act="pick" data-v="${key}:${o[0]}">${ic(o[3],1.8)}<div class="t">${o[1]}</div><div class="d">${o[2]}</div></button>`).join('')}</div>`;
