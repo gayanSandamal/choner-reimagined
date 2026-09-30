@@ -51,8 +51,17 @@ begin
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public'
-    and p.prosrc like '%accountability_mode%'
-    and p.proname <> 'sync_accountability_style';
+    and p.proname <> 'sync_accountability_style'
+    -- profiles.accountability_mode ONLY. user_challenges.accountability_mode is
+    -- a different column ('solo' | 'partner') that stays, and a bare text match
+    -- on the name refuses forever because of ensure_user_challenge() and
+    -- start_user_challenge(), which legitimately use it. So: a qualified read
+    -- (profiles./p./pr./prof.), or a write to profiles that names it.
+    and (
+      p.prosrc ~ '\m(profiles|p|pr|prof)\.accountability_mode\M'
+      or p.prosrc ~* 'update\s+(public\.)?profiles\s+set[^;]*accountability_mode'
+      or p.prosrc ~* 'insert\s+into\s+(public\.)?profiles\s*\([^)]*accountability_mode'
+    );
 
   if v_fns is not null then
     raise exception
