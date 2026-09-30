@@ -18,7 +18,7 @@ export default function HealthDisclaimerScreen() {
         <AppText variant="subtitle">Talk to a professional</AppText>
         <AppText muted>
           Before starting a new exercise, sleep, or nutrition routine, consult a qualified healthcare
-          provider — especially if you have any pre-existing condition, are pregnant, or are taking
+          provider, especially if you have any pre-existing condition, are pregnant, or are taking
           medication.
         </AppText>
         <AppText variant="subtitle">AI coach</AppText>

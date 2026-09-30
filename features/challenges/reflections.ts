@@ -63,7 +63,7 @@ export const REFLECTION_QUESTIONS: ReflectionQuestion[] = [
       {
         key: 'upcoming_event',
         label: 'A specific goal or event coming up',
-        reminder: "You've got something coming up — this is you getting ready for it."
+        reminder: "You've got something coming up, and this is you getting ready for it."
       },
       {
         key: 'tried_before',

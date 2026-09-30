@@ -12,10 +12,10 @@ export function authErrorMessage(error: unknown): string {
   const m = raw.toLowerCase();
 
   if (m.includes('invalid login credentials')) {
-    return "That email and password don't match an account. Check them again — or sign up if you haven't made an account yet.";
+    return "That email and password don't match an account. Check them again, or create an account if you haven't made one yet.";
   }
   if (m.includes('email not confirmed')) {
-    return 'Confirm your email first — we sent you a link when you signed up.';
+    return 'Confirm your email first. We sent you a link when you created your account.';
   }
   if (m.includes('already registered') || m.includes('already been registered')) {
     return 'That email already has an account. Try signing in instead.';

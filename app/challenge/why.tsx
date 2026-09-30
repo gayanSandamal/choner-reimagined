@@ -58,12 +58,11 @@ export default function WhyScreen() {
 
   const filledIn = answeredCount(value);
 
-  // Where this screen hands off: the inviter still has a partner to bring in,
-  // the invitee already has one.
-  const goNext = () => {
-    if (isInvitee) router.replace('/(tabs)/home');
-    else router.replace('/onboarding/invite');
-  };
+  // Always Home. This is asked once the first session is agreed, so by the
+  // time anyone sees it both people already have a partner. The old branch
+  // sent non-invitees back into onboarding to go and find one, which made
+  // sense while this screen lived in the onboarding stack and does not now.
+  const goNext = () => router.replace('/(tabs)/home');
 
   const onContinue = async () => {
     if (!userId) return;
