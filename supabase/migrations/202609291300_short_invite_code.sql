@@ -13,6 +13,10 @@
 -- typing it: no O/0, no I/1, no L, no U (which also keeps the generator from
 -- spelling things). Input is normalised, so lowercase and stray spaces or
 -- dashes still work.
+--
+-- ALSO IN HERE, added 30 September: an unused invite expires after 48 hours.
+-- That was decided in the Challenges review after the rest of this file was
+-- written, and SCHEMA_CHALLENGES.md 6 says it lands here or in a follow-up.
 
 -- ============================================================
 -- 1. The column
@@ -143,7 +147,47 @@ create trigger challenge_invites_set_code
   for each row execute function public.set_invite_code();
 
 -- ============================================================
--- 5. Accepting by either one
+-- 5. An unused code expires after 48 hours
+-- ============================================================
+-- Decided in the Challenges review, after the rest of this file was written.
+-- The check cannot live only in accept_invite_by_code: the deep link calls
+-- accept_challenge_invite directly, so a trigger is the one place both paths
+-- pass through.
+alter table public.challenge_invites
+  add column if not exists expires_at timestamptz;
+
+comment on column public.challenge_invites.expires_at is
+  'An unused invite expires 48 hours after it is created. Set on insert, not '
+  'refreshed. Accepting past it is refused.';
+
+update public.challenge_invites
+set expires_at = created_at + interval '48 hours'
+where expires_at is null;
+
+alter table public.challenge_invites
+  alter column expires_at set default (now() + interval '48 hours');
+
+-- Refuse acceptance past it, whichever path got here.
+create or replace function public.check_invite_not_expired()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.status = 'accepted' and old.status <> 'accepted'
+     and new.expires_at is not null and now() > new.expires_at then
+    raise exception 'this invite code has expired';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists challenge_invites_expiry_gate on public.challenge_invites;
+create trigger challenge_invites_expiry_gate
+  before update on public.challenge_invites
+  for each row execute function public.check_invite_not_expired();
+
+-- ============================================================
+-- 6. Accepting by either one
 -- ============================================================
 -- A thin wrapper rather than a rewrite: accept_challenge_invite has been
 -- redefined eight times and its latest body (202608131600:527) carries the
@@ -198,5 +242,5 @@ grant execute on function public.accept_invite_by_code(text) to authenticated;
 -- the long link would have.
 --
 -- Verify:
---   select code, token, status from public.challenge_invites order by created_at desc limit 5;
+--   select code, token, status, expires_at from public.challenge_invites order by created_at desc limit 5;
 --   select public.normalize_invite_code(' run-4k7 ');  -- RUN4K7
