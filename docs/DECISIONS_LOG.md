@@ -1734,3 +1734,64 @@ two things that are now wrong:
 Also dropped two line numbers from the task (`edit.tsx:79`,
 `energy.tsx:34-51`). fe10 has moved both, and a line number in a handover doc
 is a hostage to the next edit. The filenames are enough.
+
+---
+
+## 2026-10-01 — Gayan's four questions, answered
+
+All four settled together. Each answer is written into
+SCHEMA_CHALLENGES.md where he will look for it, not in an appendix.
+
+### 1. ONE ACTIVE PARTNERSHIP PER PERSON
+Not a new rule — it falls out of two already locked: one active challenge
+per user, and a circle fills only when BOTH complete. With two partners the
+model cannot say which both, and the shared heart count stops meaning anything.
+
+CONSEQUENCE FOUND WHILE ANSWERING: the index in the draft schema does NOT
+enforce it. `unique (user_a, user_b) where state = 'active'` only stops the
+same PAIR having two rows; one person can still hold four partnerships. It
+needs three indexes: the pair one, plus a partial unique on `user_a` and on
+`user_b` separately. The ordered pair (least, greatest) is what makes the
+one-sided indexes sufficient — without ordering, A+B and B+A are different
+rows and both pass.
+
+### 2. THE MISSED CLOCK IS THE LATER OF THE TWO MIDNIGHTS
+The old definition — "midnight of the planned day, local time" — never said
+whose. Survivable in the daily model, where each person had their own row
+(`202607311800:46` reads `p.timezone` per challenge). Not survivable here,
+because a circle needs BOTH: Colombo and London are 4.5 hours apart, so for
+4.5 hours the same session would be missed for one and live for the other.
+
+DECIDED: store `due_at timestamptz` on `pair_plans`, computed once when the
+second person accepts, as the max of the two local midnights. The pair gets
+ONE deadline, so the shared circle resolves at one moment, and nobody is
+marked missed while it is still that day where they are.
+
+It also takes the timezone lookup out of the sweep: compare `now() > due_at`
+and stop joining profiles for tz. A later timezone change then cannot
+retroactively move a deadline that was already agreed.
+
+### 3. end_match DOES NOT REFUSE something_felt_off
+It accepts all six reasons and ends the match; the client offers the report
+flow afterwards. Confirms the 29 September framing: it is a door, not an
+outcome.
+
+Refusing would mean someone who felt unsafe cannot leave until they have filed
+a report, which is the opposite of what the reason is for. And it sits IN the
+list deliberately: someone scanning for it and not finding it picks "Prefer not
+to say", and then we learn nothing.
+
+### 4. A STREAK COMPLETES WHEN ALL N CIRCLES RESOLVE
+Resolved means filled OR missed-and-unrepaired. The score is how many filled,
+so finishing at 11 of 12 is a real outcome and the extend prompt still appears.
+Confirms 29 September.
+
+The alternative — complete only at N filled — was rejected twice over: an
+unrepaired miss would silently extend the streak's length ("it shouldn't
+grow"), and with the week's repair already used the streak could never finish
+at all.
+
+PROTOTYPE BUG FOUND BY ANSWERING IT: `complete = done >= starget` counted only
+filled circles, so exactly that dead end was live in the Challenges prototype.
+Fixed on proto/editable-commitment, with the weeks-left estimate, which had the
+same bug from the other side.

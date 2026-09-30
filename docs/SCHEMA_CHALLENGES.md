@@ -90,14 +90,35 @@ to live.
 partnerships
   id            uuid pk
   user_a        uuid not null   -- ordered pair: least(a,b), greatest(a,b)
-  user_b        uuid not null   -- with a unique index on (user_a, user_b)
-                                --   where state = 'active'
+  user_b        uuid not null   -- ordered pair, see the indexes below
   state         text            -- 'active' | 'ended'
   started_at    timestamptz
   ended_at      timestamptz
   ended_by      uuid            -- who ended it
   end_reason    text            -- see §5
 ```
+
+**ONE ACTIVE PARTNERSHIP PER PERSON.** Answered 1 October. It is not a new rule
+— it falls out of two that are already locked: one active challenge per user,
+and a circle fills only when BOTH complete. With two partners the model cannot
+say which both, and the shared heart count stops meaning anything.
+
+This needs THREE indexes, not one. A unique index on `(user_a, user_b)` only
+stops the same PAIR having two active rows; it happily allows one person four
+partners:
+
+    -- no duplicate row for the same pair
+    create unique index partnerships_pair_active
+      on partnerships (user_a, user_b) where state = 'active';
+    -- and neither side may appear in two active partnerships
+    create unique index partnerships_user_a_active
+      on partnerships (user_a) where state = 'active';
+    create unique index partnerships_user_b_active
+      on partnerships (user_b) where state = 'active';
+
+The ordered pair (`least`, `greatest`) is what makes the last two sufficient:
+without ordering, A+B and B+A are different rows and both one-sided indexes
+pass.
 
 **`partner_state` stays where it is.** Four of its five values — `solo`,
 `finding`, `invited`, `matched` — are *search* states, and searching is
@@ -166,9 +187,33 @@ This is the session row, so it is what a circle is.
 | **add `is_repair boolean default false`** | a make-up session. See §6. |
 | **add `repairs_plan_id uuid`** | which missed session this one repairs — because repair **fills the missed circle**, it does not add a thirteenth. |
 
-**Missed is defined as:** no check-in by midnight of the planned day, local
-time. That definition already exists in the prototype notes; it just has nowhere
-to be written down.
+**add `due_at timestamptz`** — see below. Set once, when both accept.
+
+**Missed is defined as:** no check-in by `due_at`.
+
+**WHOSE MIDNIGHT. Answered 1 October: the LATER of the two.** The old
+definition said "midnight of the planned day, local time" and never said whose.
+That was survivable in the daily model, where each person had their own row
+— `202607311800:46` reads `p.timezone` per challenge. It is not survivable
+here, because a circle needs BOTH people: Colombo and London are 4.5 hours
+apart, so for 4.5 hours the same session would be missed for one of them and
+still live for the other.
+
+    due_at = max(
+      (planned_day + 1 day) at midnight in A's timezone,
+      (planned_day + 1 day) at midnight in B's timezone
+    )
+
+Computed once, when the second person accepts, and stored on the row. Two
+properties worth the column:
+
+  - the pair has ONE deadline, so the shared circle resolves at one moment
+  - nobody is ever marked missed while it is still that day where they are
+
+It also takes the timezone lookup out of the sweep entirely: the sweep compares
+`now() > due_at` and stops joining `profiles` for `tz`. A later timezone change
+does not retroactively move a deadline that was already agreed, which is the
+behaviour you want.
 
 ### `partner_matches`
 
@@ -209,6 +254,15 @@ as a safety problem, and that is what this fixes.
 
 New RPC, neutral, writing `state`, `ended_at`, `ended_by` and `end_reason` to
 `partnerships`. Six reasons, stored as an enum-ish text:
+
+**IT DOES NOT REFUSE `something_felt_off`. Answered 1 October.** The RPC accepts
+all six and ends the match; the client then offers the report flow. It is a
+door, not an outcome.
+
+Refusing it would mean someone who felt unsafe cannot leave until they have
+filed a report, which is the opposite of what the reason exists for. It also
+sits IN the list for a reason: someone scanning for it and not finding it picks
+"Prefer not to say" instead, and then we learn nothing at all.
 
 | value | label |
 |---|---|
@@ -279,6 +333,19 @@ This was chosen knowing it means ending a challenge destroys progress — it buy
 a tidier per-activity history, and the UI warns before it happens.
 
 The streak still survives a **partner** change, because the challenge does.
+
+**A STREAK COMPLETES WHEN ALL N CIRCLES HAVE RESOLVED, NOT WHEN N ARE FILLED.**
+Answered 1 October, confirming the 29 September decision. Resolved means filled
+OR missed-and-unrepaired. The score is how many filled, so **finishing at 11 of
+12 is a real outcome** and the extend prompt still appears.
+
+    complete   when no circle is still unresolved
+    score      count of filled circles, which may be less than N
+
+The alternative — complete only at N filled — was rejected because an
+unrepaired miss would silently extend the streak's length, and "it shouldn't
+grow" was already decided. It also has no end: one miss with the repair used up
+means the streak can never finish.
 
 ---
 
