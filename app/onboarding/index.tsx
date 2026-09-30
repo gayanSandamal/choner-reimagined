@@ -1,62 +1,37 @@
-import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
+import { IconName } from '@/components/ui/Icon';
 import { AnimatedBrandLogo } from '@/components/auth/AnimatedBrandLogo';
 import { PromiseCard } from '@/components/onboarding/PromiseCard';
 import { ProgressDots } from '@/components/onboarding/ProgressDots';
-import { useSession } from '@/providers/session-provider';
-import { useUpdateProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
-import { notify } from '@/lib/alert';
 
-const PROMISES = [
+const PROMISES: { icon: IconName; title: string; description: string }[] = [
   {
-    icon: '🤝',
+    icon: 'together',
     title: 'One partner, real accountability',
-    description: "Not a crowd, not a stranger's app — one person counting on you"
+    description: "Not a crowd, not a stranger's app. One person counting on you"
   },
   {
-    icon: '🎯',
+    icon: 'target',
     title: 'Personalised from day one',
     description: 'Your goals and struggles shape your first challenge'
   },
   {
-    icon: '📈',
+    icon: 'trend',
     title: 'Built to grow with you',
     description: 'More ways to stay consistent are coming'
   }
 ];
 
+// One way forward. "I'll explore on my own" was removed because matching
+// needs age and gender, and nothing on Home asks for them afterwards: anyone
+// who took that door reached a Home that could never find them a partner.
 export default function WelcomeScreen() {
-  const { session } = useSession();
-  const qc = useQueryClient();
-  const updateProfile = useUpdateProfile();
-  const [skipping, setSkipping] = useState(false);
-
-  const onExplore = async () => {
-    const userId = session?.user.id;
-    if (!userId) return;
-    try {
-      setSkipping(true);
-      const row = await updateProfile.mutateAsync({
-        userId,
-        payload: { onboarding_complete: true }
-      });
-      // Prime the cache before navigating so the routing gate in
-      // app/_layout.tsx doesn't bounce us back into onboarding.
-      qc.setQueryData(['profile', userId], row);
-      router.replace('/(tabs)/home');
-    } catch (error: any) {
-      setSkipping(false);
-      notify('Something went wrong', error.message);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.root}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -65,9 +40,6 @@ export default function WelcomeScreen() {
           <AnimatedBrandLogo size={120} />
           <AppText variant="title" style={styles.headline}>
             Turn “I should” into “I did”
-          </AppText>
-          <AppText variant="caption" muted>
-            Takes about a minute.
           </AppText>
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(140).duration(360)} style={styles.cards}>
@@ -78,12 +50,6 @@ export default function WelcomeScreen() {
       </ScrollView>
       <Animated.View entering={FadeInDown.delay(260).duration(360)} style={styles.footer}>
         <Button label="Build my profile" onPress={() => router.push('/onboarding/goal')} />
-        <Button
-          label="I'll explore on my own"
-          variant="ghost"
-          loading={skipping}
-          onPress={onExplore}
-        />
       </Animated.View>
     </SafeAreaView>
   );
