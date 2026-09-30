@@ -729,7 +729,7 @@ def('challenges', { ph:'T1', group:'Tabs', label:'Challenges tab', bar:() => app
     const action = !partnered ? '' : S.planProp ? (S.planProp.by === 'gy' ? `<div class="btn-2">${btn('Accept','plan-accept')}<button class="btn-o" data-act="plan-counter">Suggest another</button></div>` : `<div class="hrow">${ic('clock',1.8)}<span>Waiting for Gayan to accept your plan</span></div>`) : S.cs === 'matched' ? btn(`Plan your first ${TXc().noun}`,'',{go:'plan'}) : S.cs === 'done' ? btn('Plan the next one','',{go:'plan'}) : btn(S.cs==='today'?"Open today's session":'View session','',{go:'commit'});
     const wk = partnered && S.agreed && S.cs !== 'matched' ? `<div class="wcard"><div class="rc-h">This week</div>${Array.from({length:S.cadence},(_, i) => { const done = i < S.weekDone, nxt = i === S.weekDone && S.cs !== 'done'; return `<div class="wnode"><span class="wdot ${done?'ok':nxt&&S.cs==='today'?'now':''}">${done?ic('check',3):''}</span><div><b>${esc(TXc().act)} ${i+1}</b><small>${done?'Done':nxt?`${S.plan.day} \u00b7 ${S.plan.time}`:'Not planned yet'}</small></div></div>`; }).join('')}<div class="wcopy">${S.weekDone>=S.cadence?"You kept this week's commitment.":S.cadence-S.weekDone===1?"1 more to keep this week's commitment.":`${S.cadence-S.weekDone} commitments still ahead.`}</div></div>` : '';
     return `<div class="p-h1" style="margin-bottom:2px;">Challenges</div>${S.agreed && S.pstate === 'partnered' ? `<div class="p-sub">What you've committed to.</div>` : ''}
-    <div class="hero"><div class="h-eb">${partnered && S.agreed ? 'Your commitment' : "Let's make it happen"}</div><div class="h-title">${ic(tpl().icon,1.8)}<span>${esc(weekTitle())}</span></div><div class="h-prog">${S.agreed?`${partnered?S.weekDone:0} / ${S.cadence} this week \u00b7 `:''}${esc(amtLine())}</div>${partner}${action}</div>
+    <div class="hero"><div class="h-eb">${partnered && S.agreed ? 'Your commitment' : "Let's make it happen"}</div><div class="h-title">${ic(tpl().icon,1.8)}<span>${esc(weekTitle())}</span></div><div class="h-prog">${S.agreed && partnered?`${S.weekDone} / ${S.cadence} this week \u00b7 `:''}${esc(amtLine())}</div>${partner}${action}</div>
     ${wk}${partnered?`<div class="rel"><div class="rel-k">${ic('fire',1.8)}${keptTxt(S.cs==='matched'?0:S.kept)}</div><div class="rel-l">Commitments you and Gayan both kept.</div></div>`:''}
     <div class="sect">History</div><div class="hrow2"><span>Walk 3\u00d7 a week</span><small>Ended \u00b7 August 2026</small></div>
     <div class="banner" style="margin-top:14px;">Every Challenges state (misses, repair, move, cancel, end) is in the <a href="${CH_URL}" target="_blank" rel="noopener">Challenges tab prototype</a>.</div>`; },
@@ -1055,12 +1055,12 @@ function act(a, v){
     case 'endmatch-open': S.menu = false; S.endReason = null; go('endmatch'); return;
     case 'report-open': S.menu = false; S.sheet = 'report'; S.repCat = null; break;
     case 'rep-cat': S.repCat = v; break;
-    case 'rep-send': S.sheet = null; S.pstate = 'solo'; S.cs = 'matched'; S.find.intent = false;
+    case 'rep-send': S.sheet = null; S.pstate = 'solo'; S.cs = 'matched'; S.find.intent = false; S.partnerAmount = S.amount;
       go('find', {jump:true});
       dlg('Report sent', 'The match has ended. Your challenge continues and your streak is untouched. We look at every report.');
       return;
     case 'block-open': S.menu = false; S.sheet = 'block'; break;
-    case 'block-send': S.sheet = null; S.pstate = 'solo'; S.cs = 'matched'; S.find.intent = false;
+    case 'block-send': S.sheet = null; S.pstate = 'solo'; S.cs = 'matched'; S.find.intent = false; S.partnerAmount = S.amount;
       go('find', {jump:true});
       dlg('Blocked', 'The match has ended and you will not be shown to each other again.');
       return;
@@ -1071,6 +1071,9 @@ function act(a, v){
       // rather than left as a dead end.
       const off = S.endReason === 'off';
       S.sheet = null; S.pstate = 'solo'; S.cs = 'matched'; S.find.intent = false;
+      // Gayan's number goes with Gayan. Yours and the cadence are the
+      // commitment, and the commitment continues.
+      S.partnerAmount = S.amount;
       go('find', {jump:true});
       dlg('This match has ended.', off
         ? 'Your challenge continues and your streak is untouched. We will ask what happened next - the report flow is a separate set of screens.'

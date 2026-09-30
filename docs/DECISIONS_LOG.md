@@ -1732,3 +1732,40 @@ FLAGGED, NOT DECIDED: onboarding step 1 is now dark and steps 2-6 are white,
 so there is a hard flash on Build my profile. Either the rest of onboarding
 follows, or the intro keeps a deliberate one-screen lift. Worth a look on a
 real phone before choosing - it reads differently there than in a preview.
+
+---
+
+## 2026-10-01 (late) — The intro stays a title card, and a real bug in the split
+
+### Intro: one-screen lift, locked
+The dark intro does NOT carry through onboarding. It is a title card; the app
+proper is light. A dark mode for the whole app is a later piece of work, not
+this one. No hard flash to design around, because the flash is the point of a
+title card.
+
+### BUG: a departed partner's number stayed on the card
+Found in testing. The Challenges card read:
+
+    LET'S MAKE IT HAPPEN
+    Run 3x a week
+    0 / 3 this week · You 3 km · Gayan 2 km
+    [Find a match]
+
+Three things contradicting each other in four lines, and it is REACHABLE, not
+a preset artifact: end a match after the first plan and this is what you get.
+
+CAUSE: all three ending paths (end match, report, block) set `pstate = 'solo'`
+and left `agreed` and `partnerAmount` exactly as they were. So the header
+flipped to the unpartnered version while the amount line kept quoting a person
+who is gone.
+
+DECIDED AND FIXED: THEIR NUMBER LEAVES WITH THEM. Yours and the cadence are
+the commitment, and the commitment continues - that is the whole meaning of
+"your challenge continues". The next partner sets their own at the next first
+plan. All three paths now reset `partnerAmount` to yours.
+
+Also fixed alongside it: "0 / 3 this week" was showing with no partner. It is
+a number that cannot move, because a session needs both of you. The weekly
+counter now appears only while partnered.
+
+The card now reads: `Run 3x a week · 3 km each time · Find a match`.
