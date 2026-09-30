@@ -67,7 +67,7 @@ export default function ChallengeScreen() {
         title: template.title,
         customTitle: null
       });
-      router.push('/onboarding/invite');
+      router.push('/onboarding/partner');
     } catch (error: any) {
       notify('Could not set your challenge', error.message);
     }

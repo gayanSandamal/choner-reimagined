@@ -28,11 +28,16 @@ import { captureError } from '@/lib/observability';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
 
-// Step 3 — how do you want to do this?
+// TEMPORARILY DOING TWO JOBS.
 //
-// Three real paths rather than one invite with a buried fallback. Invite and
-// Find carry equal visual weight; Solo is deliberately lighter, because it is
-// a valid choice but not the one that makes the product work.
+// This was onboarding's last step. That role now belongs to partner.tsx, which
+// is a handoff to the Find tab rather than a copy of it: onboarding must not
+// run a search or send an invite itself.
+//
+// It stays here because it is ALSO the app's invite screen. app/(tabs)/find.tsx
+// and app/(tabs)/challenges.tsx both push to it, and both are frozen pending
+// the Find and Challenges reviews. Rewriting or deleting this file would break
+// them. It retires when Find is rebuilt and takes the invite flow properly.
 type Phase = 'choose' | 'emailEntry' | 'pending' | 'finding';
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
