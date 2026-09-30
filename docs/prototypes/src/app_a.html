@@ -87,6 +87,10 @@
   .segt{display:flex;background:#F1EEEA;border-radius:16px;padding:4px;gap:4px;}
   .segt button{flex:1;border:none;background:none;border-radius:12px;padding:11px 0;font:inherit;font-size:12.5px;font-weight:500;color:var(--pmuted);cursor:pointer;}
   .segt button.on{background:var(--card);color:var(--pink);box-shadow:var(--shadow-soft);}
+  /* Seven options do not fit one row: How often runs 1x-6x then Daily. A grid
+     rather than wrapped flex, so "Daily" cannot push its row out of line. */
+  .segt.wrap{display:grid;grid-template-columns:repeat(4,1fr);width:100%;box-sizing:border-box;}
+  .segt.wrap button{min-width:0;padding:9px 0;font-size:12px;}
   .qprompt{font-size:14px;font-weight:600;margin:16px 0 10px;line-height:1.35;}
   .qprompt:first-child{margin-top:4px;}
   .habit{background:var(--card);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow-card);margin-bottom:18px;}

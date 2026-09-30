@@ -1580,3 +1580,56 @@ CODE_VS_PROTOTYPE.md
 Deliberately not done: re-diffing CODE_VS_PROTOTYPE.md screen by screen
 against the rebuilt Challenges prototype. That is a real piece of work and
 none of Gayan's current tasks depend on it.
+
+---
+
+## 2026-09-30 — The card that promised it was editable
+
+Three gaps, all of them the same gap: the review decided the model and the
+prototypes kept the old questions.
+
+1. THE CARD LIED. "You can change this until you start searching for a match"
+   sat under a chevron on a plain div. Nothing happened when you tapped it, on
+   either prototype. It is a button now, and it opens a one-question screen:
+   the ACTIVITY, and nothing else. Locked the moment anything other than "no
+   partner" is true — searching, invited, pending or paired.
+
+2. CREATING A COMMITMENT ASKED HOW MUCH AND HOW OFTEN. It must not. Restated,
+   because it keeps getting rebuilt: the first commitment asks THE ACTIVITY
+   ONLY. Both other numbers are agreed with the partner at the first plan.
+   That is the promise that deleted app/onboarding/target.tsx; asking at
+   creation asks the same question twice, and the second answer would overrule
+   the first, which makes the first a waste of the person's time.
+
+3. SO NOTHING ASKED THEM AT ALL. The Challenges prototype's first plan never
+   collected them either. It does now: How much each time, and How often as
+   1x to 6x then Daily, both marked as agreed once and then fixed.
+
+Also built, having been decided on the 29th and never drawn: the STREAK TARGET
+screen. Asked once, right after the first plan is ACCEPTED, presets 10 / 20 /
+30, with the weeks estimate computed live from target / cadence.
+
+FOUND WHILE DOING IT, and fixed: "End this match" on the app-flow Find tab set
+a sheet that nothing rendered — the button was a dead end. It is a screen
+now, in the rail, with the six reasons. "Something felt off" states the report
+handoff instead of vanishing, because those screens are not in this prototype.
+
+Vocabulary swept again in the app flow: "Commitment 1 of 2 this week" —
+"Session 1 of 2", the Community feed's "14 commitments kept together" — "14
+sessions together", and the heart comment now says it counts sessions with
+this partner, which is the pair count and not the streak.
+
+### The invite code migration was the one draft the review changed
+Checked all five drafts against the review. Four stand untouched: reflections
+RLS, the tone column expand/contract pair, and photo status. None of them
+touch anything Challenges decided.
+
+`202609291300_short_invite_code.sql` did need it: the 48 hour expiry was
+decided after the file was written. Added there rather than in a follow-up, as
+SCHEMA_CHALLENGES.md offered. The check is a BEFORE UPDATE trigger, not a line
+in accept_invite_by_code, because the deep link calls accept_challenge_invite
+directly and a trigger is the one place both paths pass through.
+
+NOT ADDED to the app-flow prototype: the streak target screen. Its Home is
+still on the old model and draws no circles, so a picker for a number nothing
+displays would be noise. It goes in with the Home rebuild.
