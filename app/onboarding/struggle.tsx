@@ -17,19 +17,9 @@ export default function StruggleScreen() {
       title="What's stopped you "
       titleEmphasis="before?"
       subtitle="Be honest. This is how Choner knows where to support you most."
-      footer={
-        <>
-          <Button label="Continue" disabled={!struggle} onPress={next} />
-          <Button
-            label="Skip for now"
-            variant="ghost"
-            onPress={() => {
-              setStruggle(null);
-              next();
-            }}
-          />
-        </>
-      }
+      // No skip: one tap, and it shapes the tone of everything Choner says.
+      // Editable later in Edit profile.
+      footer={<Button label="Continue" disabled={!struggle} onPress={next} />}
     >
       {STRUGGLES.map((option) => (
         <OptionCard
