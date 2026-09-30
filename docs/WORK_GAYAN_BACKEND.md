@@ -139,7 +139,9 @@ wrong, and it is the only hard sequencing constraint in your whole list:
 
     1. YOU run 202609291100 (expand)   <- nothing has run it; it is yours
     2. Dinesh merges and ships fe10
-    3. YOU re-issue the four matching RPCs against accountability_style
+    3. YOU re-issue the matching RPC against accountability_style
+       (DONE 30 Sept, 202609301700. Only get_match_pool() ever read
+       profiles.accountability_mode; the other three of "four" were superseded)
     4. YOU set choner.allow_tone_contract = 'on' and run 202609291110
 
 `accountability_style` does not exist until step 1. fe10 is written and waiting
