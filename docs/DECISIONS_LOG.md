@@ -1633,3 +1633,71 @@ directly and a trigger is the one place both paths pass through.
 NOT ADDED to the app-flow prototype: the streak target screen. Its Home is
 still on the old model and draws no circles, so a picker for a number nothing
 displays would be noise. It goes in with the Home rebuild.
+
+---
+
+## 2026-10-01 (prototypes) — Nine changes from the testing pass
+
+### Locked and built
+1. The line "Everything else, like distance, time and place..." is gone from
+   A few quick questions. It explained something the screen never claimed.
+2. ALREADY ON THE MOVE IS ITS OWN SCREEN AGAIN, reversing 29 September. Find
+   landing is the radar again. What stays on landing is ONE button, with NO
+   count - we do not have a real number, and a fabricated one is the kind of
+   thing nobody remembers is fabricated.
+3. Directory cards are bigger: six per screen, not eight, and the list ends in
+   a spinner that never resolves. Flagged as a small lie and kept on purpose.
+4. The matched card carries weight now: both faces, a green tick between them,
+   what you are paired ON, how long, and the two ways out.
+5. REPORT AND BLOCK were decided on 22 September and never built in the app
+   flow - only in the original Find prototype. Added: the full menu on the
+   partner card, categories SCOPED (Fake profile / Something else until the
+   pair has actually met, all five after), both ending in the same neutral
+   line.
+6. "Finish" is "Complete session". The flow was already right after the QR
+   scan; the word was wrong.
+8. Pick a challenge had NO top bar at all, so it had neither a back button nor
+   the progress dots every other onboarding screen shows. Given stepBar().
+
+### 7. THE AMOUNT IS PER PERSON. THE CADENCE IS SHARED.
+Losing a match because one wants 5 km and the other 3 km is a waste of a
+match. What the product is about is showing up for each other, not matching
+capacities.
+
+    cadence   SHARED. It defines the week, the repair debt, and how long a
+              streak takes. Two cadences means two different weeks.
+    amount    PER PERSON. You set yours at the first plan; they set theirs
+              when they accept. The card reads "You 5 km · Gayan 3 km".
+
+A circle still fills only when BOTH finish THEIR number.
+
+The unit never differs, because it is set by the activity - which is what made
+the workouts change necessary rather than optional.
+
+### 9. WORKOUTS: UP TO FOUR EXERCISES, AND THEY DO NOT MATCH
+Asked for an opinion, gave one, and it is now decided.
+
+  - "Which exercise?" is GONE from onboarding
+  - challenge creation asks for UP TO FOUR, with the activity, and they stay
+    editable until a search starts, exactly like the activity
+  - matching reads the ACTIVITY and the DURATION. The exercises never reach it
+  - Workouts are measured in MINUTES, like Yoga
+  - the directory shows them, on workout rows only
+
+WHY, and it is not mainly the variable count: "Push-ups" is not a pool. Nine
+exercises fragment an already small user base nine ways, and two people who
+both want to work out on Tuesday mornings should not fail to match because one
+picked squats.
+
+The exercises become COLOUR, not criteria: a signal to a human reading a
+directory card, never an input to the algorithm. Worth saying out loud so
+nobody assumes later that they filter.
+
+It also dissolves the reps-versus-minutes problem rather than solving it. With
+four exercises on one commitment there is no single rep count to agree on, so
+duration is the only honest unit - and one shared unit is exactly what
+question 7 needed.
+
+ASKED AND ANSWERED: "creation asks the activity only" was a locked rule. The
+exercises are part of WHAT the activity is rather than a negotiation, so they
+belong on that screen and stay editable until search. The rule holds.

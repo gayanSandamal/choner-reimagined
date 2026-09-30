@@ -13,7 +13,10 @@ const ACTS = {
   walk:{l:'Walking',verb:'Walk',noun:'walk',i:'walk',u:'km',d:4,step:0.5},
   cycle:{l:'Cycling',verb:'Cycle',noun:'ride',i:'bike',u:'km',d:10,step:1},
   yoga:{l:'Yoga',verb:'Yoga',noun:'session',i:'leaf',u:'min',d:30,step:5},
-  work:{l:'Workouts',verb:'Workout',noun:'workout',i:'dumb',u:'',d:0,step:1}
+  // DECIDED 1 October: minutes, like Yoga. Four exercises on one commitment
+  // have no single rep count between them, and one shared unit is what lets
+  // two people match on "Workouts, 30 min" without both picking push-ups.
+  work:{l:'Workouts',verb:'Workout',noun:'workout',i:'dumb',u:'min',d:30,step:5}
 };
 const EX = { push:['Push-ups','reps',20,5], squat:['Squats','reps',30,5], lunge:['Lunges','reps per leg',12,2], situp:['Sit-ups','reps',30,5], pull:['Pull-ups','reps',10,1], plank:['Plank','sec',60,10], burpee:['Burpees','reps',15,5], jj:['Jumping jacks','reps',50,10], stretch:['Stretching routine','min',10,5] };
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -23,7 +26,7 @@ const REASONS = [['sleep','Too tired'],['clock','No time'],['cloud','Weather'],[
 /* ---------- state ---------- */
 function sess(n, day, o){ return Object.assign({ n, day, time:'7:00 AM', place:'Diyasaru Park', mode:'together', st:'planned', you:'idle', gy:'idle', moved:null, repair:false }, o||{}); }
 function fresh(){
-  return { cur:'tab', hist:[], has:true, canMeet:true, act:'run', ex:'push', amt:3, cadence:2, partner:'paired', matchedOn:'Friday', week:3,
+  return { cur:'tab', hist:[], has:true, canMeet:true, act:'run', exs:['push','squat'], amt:3, partnerAmt:3, cadence:2, partner:'paired', matchedOn:'Friday', week:3,
     // starget: the streak the person chose. circles: what has actually
     // happened, in order - 'done', 'missed', and everything after is 'todo'.
     // kept is the PAIR count behind the heart, which is a different number.
@@ -35,20 +38,26 @@ function fresh(){
 }
 let S = fresh();
 const A = () => ACTS[S.act];
-const exOf = () => EX[S.ex];
+const MAX_EX = 4;
+// Descriptive only. They show on the card and in the directory; they are never
+// an input to matching, which reads the activity and the duration.
+const exOf = () => EX[S.exs[0]];
+const exList = () => S.exs.map(k => EX[k][0]).join(', ');
 const agreed = () => S.sessions.length > 0 || S.kept > 0;
-const title = () => !agreed() ? (S.act === 'work' ? exOf()[0] : A().l) : (S.act === 'work' ? `${exOf()[0]} ${S.cadence}× a week` : `${A().verb} ${S.cadence}× a week`);
+const title = () => !agreed() ? A().l : `${A().verb} ${S.cadence}× a week`;
 // Before a match only the ACTIVITY exists, and it is editable until a search
 // starts. How much and how often are agreed with the partner, at the first plan.
 const amtTxt = () => {
-  if (agreed()) return S.act === 'work' ? `${S.amt} ${exOf()[1]}` : `${S.amt} ${A().u}`;
+  // The amount is per person; the cadence is shared. Two people who cannot
+  // agree on 5 km versus 3 km should not lose the match over it.
+  if (agreed()) return S.partnerAmt === S.amt ? `${S.amt} ${A().u}` : `You ${S.amt} ${A().u} · Gayan ${S.partnerAmt} ${A().u}`;
   if (S.partner === 'paired') return "You'll agree how much and how often at your first plan";
   if (S.partner !== 'none') return "Locked while you're looking for a match";
   return 'You can change this until you start searching for a match';
 };
 // Sessions are named by the day they fall on, never by number. "Run 2" only
 // made sense inside the weekly card, and that card is gone.
-const sName = s => `${s.day}'s ${S.act==='work' ? exOf()[0].toLowerCase() : A().noun}`;
+const sName = s => `${s.day}'s ${A().noun}`;
 const keptTxt = n => `${n} session${n === 1 ? '' : 's'}`;
 // The streak row: always exactly starget circles. A miss does not add one, and
 // a repair turns a missed circle back to done rather than appending.
@@ -132,7 +141,7 @@ function activeCard(){
     : tappable ? `button class="atap" data-act="open-sel" data-v="${S.sessions.indexOf(s)}"`
     : 'div class="atap"';
   return `<div class="hero acard"><div class="h-eb">${agreed()?'Your commitment':"Let's make it happen"}</div>${mEnded}
-    <${tapAttr}><span class="bigic">${ic(A().i,1.8)}</span><span><span class="h-title" style="display:block;">${esc(title())}</span><small class="amt">${agreed()?esc(amtTxt())+' each time':esc(amtTxt())}</small></span>${tappable?ic('chev',2).replace('<svg','<svg class="chev2"'):''}</${tappable?'button':'div'}>
+    <${tapAttr}><span class="bigic">${ic(A().i,1.8)}</span><span><span class="h-title" style="display:block;">${esc(title())}</span><small class="amt">${agreed() && S.partnerAmt === S.amt ? esc(amtTxt())+' each time' : esc(amtTxt())}</small></span>${tappable?ic('chev',2).replace('<svg','<svg class="chev2"'):''}</${tappable?'button':'div'}>
     ${prog}${partner}${action}</div>`;
 }
 // THIS WEEK is cut. A circle carries its own day, so the card was showing the
@@ -145,7 +154,7 @@ function weekCardOld(){
   const wk = S.sessions.filter(s => !s.repair);
   for (let i = 0; i < Math.max(tg, wk.length); i++){
     const s = wk[i];
-    if (!s) { nodes.push(`<div class="wnode"><span class="wdot"></span><div><b>${esc(S.act==='work'?exOf()[0]:A().verb)} ${i+1}</b><small>Not planned yet</small></div></div>`); continue; }
+    if (!s) { nodes.push(`<div class="wnode"><span class="wdot"></span><div><b>${esc(A().verb)} ${i+1}</b><small>Not planned yet</small></div></div>`); continue; }
     const cls = s.st === 'done' ? 'ok' : s.st === 'missed' ? 'miss' : s.st === 'cancelled' ? 'cx' : s.st === 'today' ? 'now' : '';
     const lab = s.st === 'done' ? 'Done' : s.st === 'missed' ? 'Missed' : s.st === 'cancelled' ? 'Cancelled by both' : s.st === 'today' ? 'Today' : 'Upcoming';
     nodes.push(`<button class="wnode" data-act="open-sel" data-v="${S.sessions.indexOf(s)}"><span class="wdot ${cls}">${s.st==='done'?ic('check',3):''}</span><div><b>${esc(sName(s))}</b><small>${esc(amtTxt())} · ${s.day}${s.moved?` · moved from ${s.moved}`:''}</small></div><span class="wlab ${cls}">${lab}</span></button>`);
@@ -220,8 +229,8 @@ SC.plan = { bar:() => '', nav:() => navBar('tab'), onEnter:() => {
     <div class="flabel" style="margin-top:8px;">Day</div><div class="sel-wrap" style="margin-bottom:14px;"><select id="pd-day" aria-label="Day">${opts.map(x => `<option ${x===d.day?'selected':''}>${x}</option>`).join('')}</select></div>
     <div class="flabel">Time</div><input class="txt" type="time" id="pd-time" value="${d.time}" aria-label="Time" style="margin-bottom:14px;">
     ${d.mode==='together' && S.canMeet && k !== 'move' ? `<div class="flabel">Place</div><input class="txt" id="pd-place" value="${esc(d.place)}" placeholder="Where will you meet?" aria-label="Place">` : ''}
-    ${k === 'first' ? `<div class="sect">How much each time?</div><div class="stepper"><button data-act="pd-amt" data-v="-1" aria-label="Less">−</button><div class="v">${d.amt}<small>${S.act==='work'?EX[S.ex][1]:A().u}</small></div><button data-act="pd-amt" data-v="1" aria-label="More">+</button></div>
-    <div class="sect">How often?</div><div class="segt wrap">${[1,2,3,4,5,6,7].map(c => `<button class="${d.cad===c?'on':''}" data-act="pd-cad" data-v="${c}">${c===7?'Daily':c+'×'}</button>`).join('')}</div>
+    ${k === 'first' ? `<div class="sect">How much for you each time?</div><div class="stepper"><button data-act="pd-amt" data-v="-1" aria-label="Less">−</button><div class="v">${d.amt}<small>${A().u}</small></div><button data-act="pd-amt" data-v="1" aria-label="More">+</button></div>
+    <div class="hint">Yours only. Gayan sets their own when they accept.</div><div class="sect">How often?</div><div class="segt wrap">${[1,2,3,4,5,6,7].map(c => `<button class="${d.cad===c?'on':''}" data-act="pd-cad" data-v="${c}">${c===7?'Daily':c+'×'}</button>`).join('')}</div>
     <div class="hint">Both of these are agreed once, here, and then they hold for the challenge.</div>` : ''}
     <div class="foot">${btn('Send to Gayan','plan-confirm')}<div class="hint center">Gayan sees this and accepts, or suggests another. Nothing is planned until you both say yes.</div></div>`; } };
 function planDays(){
@@ -239,7 +248,7 @@ SC.today = { bar:() => '', nav:() => navBar('tab'), body:() => {
     else if (s.you === 'onway') body = `${stline('Gayan', s.gy!=='idle', gyStat(s))}${btn("I'm here",'d-here')}`;
     else if (s.you === 'here' && s.gy !== 'here') body = `<div class="notice">${ic('clock',1.8)}<span>You're here. Waiting for Gayan.</span></div><button class="waitbtn" disabled>Waiting for Gayan...</button>`;
     else if (s.you === 'here' && !S.together) body = `<div class="notice ok">${ic('together',1.8)}<span>Gayan is here too.</span></div>${btn('Confirm with QR','',{go:'qr',icon:'qr'})}`;
-    else body = `<div class="notice ok">${ic('fire',1.8)}<span>You're together. ${esc(amtTxt())} starts now.</span></div>${btn('Finish','d-finish')}`;
+    else body = `<div class="notice ok">${ic('fire',1.8)}<span>You're together. ${esc(amtTxt())} starts now.</span></div>${btn('Complete session','d-finish')}`;
     return `${hdr("Today's the day")}<div class="hero"><div class="h-title"><span class="bigic sm">${ic(A().i,1.8)}</span><span>${esc(amtTxt())}</span></div><div class="h-when">${s.time}</div>${hrow('pin',esc(s.place))}${youG()}${body}</div>${s.you==='idle'?ghost("Can't make it today",'cant-open'):''}`;
   }
   return `${hdr("Today's session")}<div class="hero"><div class="h-title"><span class="bigic sm">${ic(A().i,1.8)}</span><span>${esc(amtTxt())}</span></div><div class="h-when">${s.day}</div>${youG()}${stline('You',s.you==='done',youStat(s))}${stline('Gayan',s.gy==='done',gyStat(s))}
@@ -280,19 +289,19 @@ SC.miss = { bar:() => '', nav:() => navBar('tab'), body:() => {
 // ACTIVITY ONLY. How much and how often are agreed with the partner at the
 // first plan, which is the promise that deleted the onboarding target screen.
 // Asking here and again there would ask the same question twice.
-SC.newc = { bar:() => '', nav:() => navBar('tab'), onEnter:() => { S.nw = { act:'run', ex:'push' }; }, body:() => {
+SC.newc = { bar:() => '', nav:() => navBar('tab'), onEnter:() => { S.nw = { act:'run', exs:['push','squat'] }; }, body:() => {
   const n = S.nw;
   return `${hdr('Your commitment')}<div class="p-sub">Pick what you want to do. How much and how often you'll agree with your partner.</div><div class="flabel">Activity</div><div class="agrid">${Object.keys(ACTS).map(k => `<button class="gcard ${n.act===k?'on':''}" data-act="nw-act" data-v="${k}">${ic(ACTS[k].i,1.8)}<div class="t">${ACTS[k].l}</div></button>`).join('')}</div>
-    ${n.act==='work'?`<div class="flabel" style="margin-top:14px;">Exercise</div><div class="pill-row">${Object.keys(EX).map(k => `<button class="pill ${n.ex===k?'on':''}" data-act="nw-ex" data-v="${k}">${EX[k][0]}</button>`).join('')}</div>`:''}
+    ${n.act==='work'?`<div class="flabel" style="margin-top:16px;">Which exercises? <span class="fnote">up to ${MAX_EX}</span></div><div class="pill-row">${Object.keys(EX).map(k => { const on = n.exs.includes(k); const full = n.exs.length >= MAX_EX && !on; return `<button class="pill ${on?'on':''}" data-act="nw-ex" data-v="${k}" ${full?'disabled':''}>${EX[k][0]}</button>`; }).join('')}</div><div class="hint">These show on your card and in Already on the move. They do not affect who you are matched with - that is the activity and how long.</div>`:''}
     <div class="foot">${btn('Create commitment','nw-create')}<div class="hint center">You can change this until you start searching for a match.</div></div>`; } };
 
 // ---------------------------------------------------------------- edit activity
 // Reached by tapping the card before a search starts. The only editable field,
 // so it is one screen with one question and no partner involved.
-SC.editact = { bar:() => '', nav:() => navBar('tab'), onEnter:() => { S.nw = { act:S.act, ex:S.ex }; }, body:() => {
+SC.editact = { bar:() => '', nav:() => navBar('tab'), onEnter:() => { S.nw = { act:S.act, exs:S.exs.slice() }; }, body:() => {
   const n = S.nw;
   return `${hdr('Change your activity')}<div class="p-sub">Only until you start searching. After that it is what Gayan signed up for.</div><div class="flabel">Activity</div><div class="agrid">${Object.keys(ACTS).map(k => `<button class="gcard ${n.act===k?'on':''}" data-act="nw-act" data-v="${k}">${ic(ACTS[k].i,1.8)}<div class="t">${ACTS[k].l}</div></button>`).join('')}</div>
-    ${n.act==='work'?`<div class="flabel" style="margin-top:14px;">Exercise</div><div class="pill-row">${Object.keys(EX).map(k => `<button class="pill ${n.ex===k?'on':''}" data-act="nw-ex" data-v="${k}">${EX[k][0]}</button>`).join('')}</div>`:''}
+    ${n.act==='work'?`<div class="flabel" style="margin-top:16px;">Which exercises? <span class="fnote">up to ${MAX_EX}</span></div><div class="pill-row">${Object.keys(EX).map(k => { const on = n.exs.includes(k); const full = n.exs.length >= MAX_EX && !on; return `<button class="pill ${on?'on':''}" data-act="nw-ex" data-v="${k}" ${full?'disabled':''}>${EX[k][0]}</button>`; }).join('')}</div><div class="hint">These show on your card and in Already on the move. They do not affect who you are matched with - that is the activity and how long.</div>`:''}
     <div class="foot">${btn('Save','act-save')}${ghost('Cancel','',undefined,'tab')}</div>`; } };
 
 // ------------------------------------------------------------- the streak target
@@ -394,6 +403,8 @@ function acceptProposal(){
     // streak target get asked - the first moment the number means anything.
     if (p.kind === 'first'){
       S.amt = p.amt || S.amt; S.cadence = p.cad || S.cadence;
+      // Prototype: Gayan answers with a different number so the split shows.
+      S.partnerAmt = Math.max(A().step, +(S.amt - A().step * 2).toFixed(2));
       go('sgoal', {jump:true});
       return 'nav';
     }
@@ -418,7 +429,7 @@ const base = o => { S = Object.assign(fresh(), o || {}); };
 const PRESETS = [
   PR('none','Before a partner','Nothing picked yet', () => base({ has:false, partner:'none', kept:0 })),
   PR('nopartner','Before a partner','Partner not found yet', () => base({ partner:'none', kept:0 })),
-  PR('editact','Before a partner','Change the activity', () => { base({ partner:'none', kept:0 }); S.nw = { act:S.act, ex:S.ex }; S.cur = 'editact'; }),
+  PR('editact','Before a partner','Change the activity', () => { base({ partner:'none', kept:0 }); S.nw = { act:S.act, exs:S.exs.slice() }; S.cur = 'editact'; }),
   PR('searching','Before a partner','Searching', () => base({ partner:'searching', kept:0 })),
   PR('invited','Before a partner','Invite sent, waiting', () => base({ partner:'invited', kept:0 })),
   PR('pending','Before a partner','Waiting for Gayan to accept', () => base({ partner:'pending', kept:0 })),
@@ -560,14 +571,17 @@ function act(a, v){
     case 'share': S.shared = true; break;
     case 'new-open': go('newc'); return;
     case 'nw-act': S.nw.act = v; break;
-    case 'nw-ex': S.nw.ex = v; break;
-    case 'nw-create': Object.assign(S, { has:true, act:S.nw.act, ex:S.nw.ex, partner:'none', matchEnded:false, sessions:[], kept:0 }); S.hist = []; S.cur = 'tab'; break;
+    case 'nw-ex': { const i = S.nw.exs.indexOf(v);
+      if (i >= 0) S.nw.exs.splice(i, 1);
+      else if (S.nw.exs.length < MAX_EX) S.nw.exs.push(v);
+      break; }
+    case 'nw-create': Object.assign(S, { has:true, act:S.nw.act, exs:S.nw.exs.slice(), partner:'none', matchEnded:false, sessions:[], kept:0 }); S.hist = []; S.cur = 'tab'; break;
     // Editing the activity, which is all there is to edit before a search.
     case 'edit-act': go('editact'); return;
-    case 'act-save': { const changed = S.nw.act !== S.act || S.nw.ex !== S.ex; S.act = S.nw.act; S.ex = S.nw.ex; S.hist = []; S.cur = 'tab';
-      if (changed) S.dlg = { t:'Changed', m:`Your commitment is ${S.act === 'work' ? exOf()[0] : ACTS[S.act].l} now. Change it again any time before you search.` }; break; }
+    case 'act-save': { const changed = S.nw.act !== S.act || S.nw.exs.join() !== S.exs.join(); S.act = S.nw.act; S.exs = S.nw.exs.slice(); S.hist = []; S.cur = 'tab';
+      if (changed) S.dlg = { t:'Changed', m:`Your commitment is ${ACTS[S.act].l} now. Change it again any time before you search.` }; break; }
     // How much and how often, proposed with the first plan.
-    case 'pd-amt': { const st = S.act === 'work' ? EX[S.ex][3] : A().step; S.pd.amt = Math.max(st, +(S.pd.amt + (+v) * st).toFixed(1)); break; }
+    case 'pd-amt': { const st = A().step; S.pd.amt = Math.max(st, +(S.pd.amt + (+v) * st).toFixed(1)); break; }
     case 'pd-cad': S.pd.cad = +v; break;
     case 'sgoal-pick': S.starget = +v; break;
     case 'sgoal-set': S.circles = []; S.hist = []; S.cur = 'tab';

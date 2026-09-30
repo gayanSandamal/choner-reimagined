@@ -283,3 +283,36 @@
   .ccard2{display:flex;align-items:center;gap:13px;background:var(--card);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow-soft);margin-bottom:16px;}
   .ccard2 .bigic{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;flex:none;}
   .ccard2 .bigic svg{width:22px;height:22px;color:#fff;}
+
+  /* Already on the move: six cards per screen, so each one gets room. The
+     exercise line only appears on workout rows. */
+  .dcard.big{padding:16px 16px;gap:14px;border-radius:20px;}
+  .dcard.big .dav{width:50px;height:50px;font-size:15px;}
+  .dcard.big .dtx b{font-size:15px;}
+  .dcard.big .dtx small{font-size:12.5px;margin-top:3px;}
+  .dex{display:block;font-size:11.5px;color:var(--g2);font-style:normal;margin-top:5px;font-weight:500;}
+  /* the spinner that never resolves */
+  .dmore{display:flex;align-items:center;justify-content:center;gap:9px;padding:20px 0 6px;font-size:12px;color:var(--pmuted);}
+  .dspin{width:15px;height:15px;border-radius:50%;border:2px solid var(--pline);border-top-color:var(--g2);animation:dspin .8s linear infinite;flex:none;}
+  @keyframes dspin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion:reduce){.dspin{animation:none;}}
+  /* the one line on Find landing that replaces the inline list */
+  .dlink{display:flex;align-items:center;gap:11px;width:100%;background:var(--card);border:1px solid var(--pline);border-radius:16px;padding:14px 16px;margin-top:16px;font:inherit;font-size:13.5px;font-weight:500;color:var(--pink);cursor:pointer;box-shadow:var(--shadow-soft);}
+  .dlink svg{width:18px;height:18px;color:var(--g2);flex:none;}
+  .dlink span{flex:1;text-align:left;}
+  /* "up to 4" next to a field label */
+  .fnote{font-weight:400;color:var(--pmuted);font-size:11.5px;}
+  .pill:disabled{opacity:.4;cursor:default;}
+
+  /* the matched card: both faces, the tick, what you are paired on */
+  .mcard{position:relative;background:var(--card);border-radius:22px;padding:22px 18px 10px;box-shadow:var(--shadow-card);text-align:center;margin-bottom:14px;}
+  .mcard .ov-btn.mtop{position:absolute;top:10px;right:10px;background:none;color:var(--pmuted);}
+  .mfaces{display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+  .mfaces .anon{border:3px solid var(--card);}
+  .mfaces .anon:last-child{margin-left:-14px;}
+  .mtick{width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;z-index:3;margin:0 -10px;border:3px solid var(--card);flex:none;}
+  .mtick svg{width:15px;height:15px;}
+  .mnames{font-size:18px;font-weight:600;letter-spacing:-.2px;}
+  .mpair{display:inline-flex;align-items:center;gap:7px;background:#FFF1E4;color:#B04A00;border-radius:99px;padding:7px 14px;font-size:12.5px;font-weight:500;margin-top:10px;}
+  .mpair svg{width:15px;height:15px;}
+  .mmeta{font-size:11.5px;color:var(--pmuted);margin-top:8px;}
