@@ -5,13 +5,22 @@ import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Card } from '@/components/ui/Card';
+import { Chip } from '@/components/ui/Chip';
 import { AppText } from '@/components/ui/AppText';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
 import { useSession } from '@/providers/session-provider';
 import { useProfile, useUpdateProfile, useUploadAvatar } from '@/features/profile/hooks';
-import { GOALS, TONES } from '@/features/onboarding/constants';
+import {
+  AGE_BANDS,
+  AgeRangeValue,
+  GENDERS,
+  GenderValue,
+  GOALS,
+  STRUGGLES,
+  TONES
+} from '@/features/onboarding/constants';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
 
@@ -33,12 +42,18 @@ export default function EditProfileScreen() {
   const [fullName, setFullName] = useState('');
   const [goal, setGoal] = useState<string>('');
   const [tone, setTone] = useState<string>('');
+  const [struggle, setStruggle] = useState<string>('');
+  const [ageRange, setAgeRange] = useState<AgeRangeValue | ''>('');
+  const [gender, setGender] = useState<GenderValue | ''>('');
 
   useEffect(() => {
     if (profileQ.data) {
       setFullName(profileQ.data.full_name ?? '');
       setGoal(profileQ.data.primary_goal ?? '');
       setTone(profileQ.data.accountability_mode ?? '');
+      setStruggle(profileQ.data.main_struggle ?? '');
+      setAgeRange(profileQ.data.age_range ?? '');
+      setGender(profileQ.data.gender ?? '');
     }
   }, [profileQ.data]);
 
@@ -76,7 +91,16 @@ export default function EditProfileScreen() {
         payload: {
           full_name: fullName,
           ...(goal ? { primary_goal: goal } : {}),
+          // TODO(gayan-tone-column): `accountability_mode` is holding the TONE
+          // value, which is not an accountability mode, and it still defaults
+          // to 'solo' — a mode that no longer exists. When his task 5 splits
+          // the column, this write and the one in app/onboarding/energy.tsx
+          // (lines 34-51, the single write that saves the whole quiz) have to
+          // change together, or onboarding keeps writing the old shape.
           ...(tone ? { accountability_mode: tone } : {}),
+          ...(struggle ? { main_struggle: struggle } : {}),
+          ...(ageRange ? { age_range: ageRange } : {}),
+          ...(gender ? { gender: gender } : {}),
         },
       });
       router.back();
@@ -120,19 +144,12 @@ export default function EditProfileScreen() {
         <AppText variant="label">Primary goal</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {GOALS.map((g) => (
-            <Pressable
+            <Chip
               key={g.value}
+              label={g.label}
+              active={isSelected(g, goal)}
               onPress={() => setGoal(g.value)}
-              style={{
-                paddingVertical: 10, paddingHorizontal: 12,
-                borderRadius: theme.radius.md,
-                backgroundColor: isSelected(g, goal) ? theme.colors.surface2 : theme.colors.surface,
-                borderWidth: 1,
-                borderColor: isSelected(g, goal) ? theme.colors.primary2 : theme.colors.border,
-              }}
-            >
-              <AppText variant="caption">{g.label}</AppText>
-            </Pressable>
+            />
           ))}
         </View>
       </View>
@@ -141,22 +158,64 @@ export default function EditProfileScreen() {
         <AppText variant="label">How Choner talks to you</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {TONES.map((t) => (
-            <Pressable
+            <Chip
               key={t.value}
+              label={t.label}
+              active={isSelected(t, tone)}
               onPress={() => setTone(t.value)}
-              style={{
-                paddingVertical: 10, paddingHorizontal: 12,
-                borderRadius: theme.radius.md,
-                backgroundColor: isSelected(t, tone) ? theme.colors.surface2 : theme.colors.surface,
-                borderWidth: 1,
-                borderColor: isSelected(t, tone) ? theme.colors.primary2 : theme.colors.border,
-              }}
-            >
-              <AppText variant="caption">{t.label}</AppText>
-            </Pressable>
+            />
           ))}
         </View>
       </View>
+
+      <View style={{ gap: 8 }}>
+        <AppText variant="label">What stops you</AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {STRUGGLES.map((s) => (
+            <Chip
+              key={s.value}
+              label={s.label}
+              active={isSelected(s, struggle)}
+              onPress={() => setStruggle(s.value)}
+            />
+          ))}
+        </View>
+      </View>
+
+      {/* Age and gender are here because matching depends on them: gender
+          drives the "same gender only" filter and the age band feeds the
+          scoring. Without a way to correct them, a mistyped answer at
+          onboarding would follow someone forever. */}
+      <View style={{ gap: 8 }}>
+        <AppText variant="label">Your age</AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {AGE_BANDS.map((a) => (
+            <Chip
+              key={a.value}
+              label={a.label}
+              active={ageRange === a.value}
+              onPress={() => setAgeRange(a.value)}
+            />
+          ))}
+        </View>
+      </View>
+
+      <View style={{ gap: 8 }}>
+        <AppText variant="label">Your gender</AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {GENDERS.map((g) => (
+            <Chip
+              key={g.value}
+              label={g.label}
+              active={gender === g.value}
+              onPress={() => setGender(g.value)}
+            />
+          ))}
+        </View>
+      </View>
+
+      {/* Energy is deliberately absent. It asks how you are feeling THIS week,
+          so it is re-asked rather than edited. */}
 
       <Button label={updateMut.isPending ? 'Saving...' : 'Save changes'} onPress={onSave} disabled={updateMut.isPending} />
     </Screen>
