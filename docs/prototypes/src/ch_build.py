@@ -12,7 +12,7 @@ shell='''
   <header class="head">
     <div class="eyebrow">Choner app &middot; Challenges tab</div>
     <h1>Challenges, <b>the home of commitments</b></h1>
-    <p class="lede">Weekly shared commitments, built on the decisions of 26 September: rolling Monday to Sunday weeks, one session planned at a time, a streak counted in commitments both partners kept, recorded misses with one repair, and no partner search or feeds on this tab. Pick a scenario, then tap through. Every button works.</p>
+    <p class="lede">Rebuilt 29 September. A commitment is a weekly agreement; a session is one occurrence of it; a streak is a target number of sessions, drawn as circles. A circle fills only when BOTH of you finish, and can only be missed if the session was planned. Nothing resets: a miss costs the circle and one session owed against the week, and repair is choosing when to pay it. No partner search or feeds on this tab. Pick a scenario, then tap through. Every button works.</p>
   </header>
   <div class="grid">
     <nav class="rail" id="rail" aria-label="Challenges states"></nav>

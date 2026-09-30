@@ -26,6 +26,41 @@ Object.assign(IC, {
   separate:'<rect x="3" y="6" width="7" height="12" rx="1.5"/><rect x="14" y="6" width="7" height="12" rx="1.5"/>',
   qr:'<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h3v3h-3zM19 14v1M17 19h3M20 17v1"/>'
 });
+// A match is answered within 24 hours or it expires for both people. ONE
+// clock, started when the MATCH is created rather than when either side
+// answers, so the two of them always see the same number.
+const MATCH_WINDOW_H = 24;
+const matchLeft = () => `${S.matchH}h ${String(S.matchM).padStart(2,'0')}m left`;
+
+// Everyone on Choner, shown by default. A new user opening Find has to see
+// that the app is alive. No location: without it this is a first name and an
+// activity rather than a way to find someone in person.
+const DIR_NAMES = ['Nimali P','Ruwan S','Asanka K','Tharushi M','Dinuka W','Ishara B','Kasun J','Amaya R','Sachini L','Pasan G','Hiruni D','Chamath S','Nadeesha K','Tharindu A','Malsha P','Roshan F','Dilini W','Kavinda N','Sanduni H','Tharaka B','Piyumi S','Lahiru M','Yasas D','Nethmi C','Gayan S','Upeksha R','Janith K','Shenali T','Vishwa P','Anjali M'];
+const DIR_ACTS = [['Running','3 km','3\u00d7 a week'],['Walking','30 min','daily'],['Yoga','20 min','2\u00d7 a week'],['Running','5 km','2\u00d7 a week'],['Workout','45 min','3\u00d7 a week'],['Cycling','10 km','2\u00d7 a week'],['Jogging','2 km','4\u00d7 a week'],['Walking','5 km','3\u00d7 a week']];
+const DIR_COLS = ['#FD8302','#1E3A4C','#2E9E6B','#B04A00','#5C371F','#7C8C96'];
+function dirCards(){
+  const rows = DIR_NAMES.map((n, i) => {
+    const a = DIR_ACTS[i % DIR_ACTS.length];
+    const ini = n.split(' ').map(w => w[0]).join('');
+    return `<div class="dcard"><span class="dav" style="background:${DIR_COLS[i % DIR_COLS.length]};">${esc(ini)}</span><div class="dtx"><b>${esc(n)}</b><small>${esc(a[0])}  ·  ${esc(a[1])}  ·  ${a[2]}</small></div></div>`;
+  }).join('');
+  return `<div class="dsect">Already on the move</div><div class="dnote">People on Choner and what they've committed to.</div><div class="dgrid">${rows}</div>`;
+}
+
+// The six reasons a match ends, separate from the report categories: report
+// answers what was wrong with the person, this answers why the pairing did not
+// work. "Something felt off" is a door, not an outcome - it hands off to the
+// report flow rather than ending quietly, and it sits IN the list because
+// someone scanning for it who cannot find it picks "Prefer not to say".
+const END_REASONS = [
+  ['no_time', "We couldn't find a time that worked"],
+  ['no_reply', 'They stopped replying'],
+  ['pace', "Our pace or level didn't match"],
+  ['changing', "I'm changing what I'm doing"],
+  ['off', 'Something felt off'],
+  ['quiet', 'Prefer not to say']
+];
+
 const FIND_URL = '__FIND_URL__';
 const CH_URL = 'https://claude.ai/artifact/6ZrGVeuv7gRSoP2tmWkRav';
 
@@ -82,6 +117,8 @@ function fresh(){
     planProp:null, counterFrom:null, invPhase:'choose', sentEmail:null, sentVia:null, invMsg:null, sheet:null, searches:0, find:{ intent:false, mode:null, gender:null, areas:[] }, pstate:'solo', explore:false, photo:null, photoFrom:null,
     cs:'matched', mode:'together', tg:'idle', gPartner:'idle', youDone:false, gDone:false, together:false, kept:6, weekDone:0, pulseH:0, shared:null,
     plan:{ day:'Saturday', time:'7:00 AM', timeRaw:'07:00', place:'Diyasaru Park', next:'Thursday \u00b7 7:00 AM', nextDay:'Thursday', amt:null }, pd:null,
+    // the match clock, and which side has answered
+    matchH:23, matchM:12, iAccepted:false, matchExpired:false, endReason:null,
     cam:null, dlg:null, legalTab:'terms', codePhase:'success', pendingCode:null, forgotEmail:null, verifyEmail:null,
     ginvSent:null, notif:{ reminders:true, partner:true, nudges:false }, deadline:'9:00 PM' };
 }
@@ -132,7 +169,7 @@ function sheetHTML(){
 /* invite block shared by the onboarding choice screen and Invite a friend on Home */
 function inviteBlock(home){
   const p = S.invPhase;
-  const msgBox = `<div class="fld"><label for="ta-msg">Your message</label><textarea class="txt" id="ta-msg" rows="3" aria-label="Invite message">${esc(inviteMsg())}</textarea></div><div class="linkbox">${invLink()}<br>Code: <b>${invCode()}</b></div><div class="hint" style="margin:-8px 0 12px;">The link and the code go with your message. The code is for a friend who installs the app first.<br>How far and how often is not in the invite: you will agree that together once they join.</div>`;
+  const msgBox = `<div class="fld"><label for="ta-msg">Your message</label><textarea class="txt" id="ta-msg" rows="3" aria-label="Invite message">${esc(inviteMsg())}</textarea></div><div class="linkbox">${invLink()}<br>Code: <b>${invCode()}</b></div><div class="hint" style="margin:-8px 0 12px;">The link and the code go with your message. The code is for a friend who installs the app first. <b>It expires in 48 hours.</b><br>How far and how often is not in the invite: you will agree that together once they join.</div>`;
   if (p === 'email') return { mid:`${msgBox}${fld('inv-email','Their email',{ph:'name@example.com'})}`, foot:`${btn('Send by email','inv-send',{primary:true})}${ghost('Share a link instead','inv-share-back')}` };
   if (p === 'pending') return { mid:`<div class="pstat ok" style="margin-bottom:12px;">${ic('check',2)}${S.sentEmail?`Emailed to ${esc(S.sentEmail)}`:`Shared via ${esc(S.sentVia||'link')}`}</div>${codeBox()}<div class="procard"><div class="hint" style="margin:0 0 6px;">Your message</div><div style="font-size:13px;line-height:1.5;">${esc(inviteMsg())}<br>${invLink()}<br>Code: ${invCode()}</div></div>
       <div style="display:flex;flex-direction:column;gap:8px;"><button class="btn" data-act="inv-resend" style="padding:13px 0;font-size:14px;">Resend</button>${ghost('Invite someone else instead','inv-share-back')}</div>`,
@@ -608,7 +645,15 @@ def('editwhy', { ph:'T4b', group:'Tabs', label:'Profile: edit your why', bar:() 
 def('challenges', { ph:'T1', group:'Tabs', label:'Challenges tab', bar:() => appBar(), nav:() => navBar('challenges'),
   body:() => { const partnered = S.pstate === 'partnered';
     if (S.explore) return `<div class="p-h1" style="margin-bottom:2px;">Challenges</div>${S.agreed && S.pstate === 'partnered' ? `<div class="p-sub">What you've committed to.</div>` : ''}<div class="hero"><div class="h-eb">Start something together</div><div class="h-title">Pick what you want to do with your partner.</div>${btn("Let's do this",'',{go:'browse'})}</div>`;
-    const partner = partnered ? youG() : S.pstate === 'finding' ? `<div class="hrow">${ic('find',1.8)}<span>Partner: searching\u2026</span></div><button class="linkq" data-go="find">Go to Find ${ic('chev',2)}</button>` : S.pstate === 'waiting' ? `<div class="hrow">${ic('clock',1.8)}<span>Partner: invited, waiting to join</span></div><button class="linkq" data-go="find">Go to Find ${ic('chev',2)}</button>` : `<div class="hrow">${ic('user',1.8)}<span>Partner: not found yet</span></div><button class="linkq" data-go="find">Go to Find ${ic('chev',2)}</button>`;
+    // Every handoff to Find is a standard button, not a text link: it is the
+    // clear next step, and a link reads as an afterthought beside a full-width
+    // primary. The label names what the person gets. "Partner: not found yet"
+    // is gone - the button already says it.
+    const partner = partnered ? youG()
+      : S.pstate === 'finding' ? `<div class="hrow">${ic('find',1.8)}<span>Partner: searching\u2026</span></div>${btn('See your search','',{go:'find'})}`
+      : S.pstate === 'waiting' ? `<div class="hrow">${ic('clock',1.8)}<span>Partner: invited, waiting to join</span></div>${btn('See your invite','',{go:'find'})}`
+      : S.pstate === 'match' ? `<div class="hrow">${ic('clock',1.8)}<span>A match is waiting on your answer.</span></div>${btn('See your match','',{go:'find'})}`
+      : btn('Find a match','',{go:'find'});
     const action = !partnered ? '' : S.planProp ? (S.planProp.by === 'gy' ? `<div class="btn-2">${btn('Accept','plan-accept')}<button class="btn-o" data-act="plan-counter">Suggest another</button></div>` : `<div class="hrow">${ic('clock',1.8)}<span>Waiting for Gayan to accept your plan</span></div>`) : S.cs === 'matched' ? btn(`Plan your first ${TXc().noun}`,'',{go:'plan'}) : S.cs === 'done' ? btn('Plan the next one','',{go:'plan'}) : btn(S.cs==='today'?"Open today's session":'View session','',{go:'commit'});
     const wk = partnered && S.agreed && S.cs !== 'matched' ? `<div class="wcard"><div class="rc-h">This week</div>${Array.from({length:S.cadence},(_, i) => { const done = i < S.weekDone, nxt = i === S.weekDone && S.cs !== 'done'; return `<div class="wnode"><span class="wdot ${done?'ok':nxt&&S.cs==='today'?'now':''}">${done?ic('check',3):''}</span><div><b>${esc(TXc().act)} ${i+1}</b><small>${done?'Done':nxt?`${S.plan.day} \u00b7 ${S.plan.time}`:'Not planned yet'}</small></div></div>`; }).join('')}<div class="wcopy">${S.weekDone>=S.cadence?"You kept this week's commitment.":S.cadence-S.weekDone===1?"1 more to keep this week's commitment.":`${S.cadence-S.weekDone} commitments still ahead.`}</div></div>` : '';
     return `<div class="p-h1" style="margin-bottom:2px;">Challenges</div>${S.agreed && S.pstate === 'partnered' ? `<div class="p-sub">What you've committed to.</div>` : ''}
@@ -624,28 +669,48 @@ def('find', { ph:'T2', group:'Tabs', label:'Find tab', bar:() => appBar(), nav:(
   body:() => { const partnered = S.pstate === 'partnered', finding = S.pstate === 'finding', waiting = S.pstate === 'waiting';
     const resume = S.pstate === 'solo' && S.find.intent && !findDone();
     let mid, sub = 'Someone else is looking for you too.';
-    if (partnered) { sub = 'Your match is here.'; mid = `<div class="procard center"><div class="seats" style="margin-bottom:10px;">${seat(initials(myName()),true)}${seat('GS',true)}</div><b>You and Gayan</b><div class="hint">Paired on ${esc(habitTitle())}</div></div>`; }
+    // A MATCH IS WAITING. This screen did not exist: Home said "See your match"
+    // and handed over to a Find tab with nothing on it. Three states, because
+    // one person can answer before the other.
+    if (S.pstate === 'match'){
+      sub = S.matchExpired ? 'That one got away.' : S.iAccepted ? 'Waiting on their answer.' : 'Someone is waiting on your answer.';
+      const clock = `<div class="mclock">${ic('clock',1.8)}<span>${matchLeft()}</span></div>`;
+      if (S.matchExpired) mid = `<div class="procard center"><div class="icobig bad">${ic('clock',1.8)}</div><b>This match expired.</b><div class="hint" style="margin-bottom:12px;">Neither of you answered within ${MATCH_WINDOW_H} hours, so you are both back in the pool.</div>${btn('Keep looking','begin-find')}</div>`;
+      else if (S.iAccepted) mid = `<div class="procard center">${anon(1,96)}<div style="margin-top:10px;"><b>Waiting for Gayan</b></div><div class="hint">You said yes. Nothing is matched until they do.</div>${clock}${ghost('Actually, not quite right','decline-match')}</div>`;
+      else mid = `<div class="center" style="margin:4px 0 12px;"><div style="display:flex;justify-content:center;margin-bottom:12px;">${anon(1,96)}</div><div class="p-h1" style="margin-bottom:6px;">You found <b>a Match.</b></div><div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--green);font-weight:500;">${ic('check',2.4).replace('<svg','<svg style="width:14px;height:14px"')} Gayan, photo confirmed</div></div>
+        <ul class="reasons"><li><span class="ck">${ic('check',2.6)}</span>You both want to ${esc(TXc().noun)}.</li><li><span class="ck">${ic('check',2.6)}</span>You're both in the Nugegoda area.</li><li><span class="ck">${ic('check',2.6)}</span>You're both looking for someone to keep you accountable.</li></ul>
+        ${clock}<div style="margin:8px 0 6px;">${btn("Let's do this",'accept-match')}${ghost('Not quite right','decline-match')}</div>`;
+    }
+    else if (partnered) { sub = 'Your match is here.'; mid = `<div class="procard center"><div class="seats" style="margin-bottom:10px;">${seat(initials(myName()),true)}${seat('GS',true)}</div><b>You and Gayan</b><div class="hint">Paired on ${esc(habitTitle())}</div>${ghost('End this match','endmatch-open')}</div>`; }
     else if (waiting) { sub = 'Your invite is out.'; mid = `<div class="hero"><div class="h-eb">Waiting for your friend to join</div><div class="h-sub" style="margin:0;">${S.sentEmail?`Emailed to ${esc(S.sentEmail)}`:`Shared via ${esc(S.sentVia||'link')}`}. Your challenge starts the moment they join.</div>${codeBox()}${btn('Share again','open-share',{icon:'share',cls:'row'})}${ghost('Invite someone else','inv-share-back',undefined,'ginvite')}</div>
-      <div class="center">${ghost('Find a match instead','begin-find')}${ghost('Cancel invite','cancel-invite')}</div>${proto('Simulate: your friend joins with the code','sim-join')}`; }
+      <div class="center" style="display:flex;flex-direction:column;gap:2px;">${ghost('Find a match instead','begin-find')}${ghost('Cancel invite','cancel-invite')}</div>${proto('Simulate: your friend joins with the code','sim-join')}`; }
     else if (finding) mid = `${radarSearching()}<div class="center"><b>Looking for your partner</b><div class="hint">We'll notify you the moment you're matched.</div></div>${ghost('Stop looking','stop-find')}${ghost('Invite someone you know instead','inv-start')}${proto("Simulate: you're matched",'sim-match')}`;
     else if (resume) mid = `<div class="procard center"><b>Finish setting up your search</b><div class="hint" style="margin-bottom:12px;">A couple of quick questions and we'll start looking.</div>${btn('Continue','find-resume')}</div>${ghost('Invite someone you know instead','inv-start')}`;
     else mid = `<button class="radar act" data-act="begin-find" aria-label="Find a match"><span class="ring"></span><span class="ring"></span><span class="ring"></span><span class="rc">Find a<br>Match</span></button><div class="tap">Tap to find a match</div>
       <div class="orl"><span>or</span></div><button class="btn-o row" data-act="inv-start">${ic('together',1.8)} Invite someone you know</button>
       <div class="center" style="margin-top:6px;"><button class="link" data-go="invitecode" style="font-size:12.5px;font-weight:500;">Have an invite code?</button></div>`;
-    return `<div class="p-h1" style="margin-bottom:4px;">Find</div><div class="p-sub">${sub}</div>${mid}<button class="lrow" data-go="whoelse" style="margin-top:14px;">${ic('community',1.8)}<span class="lt">See Who Else Is Here<small>People on Choner and what they've committed to</small></span>${ic('chev',2).replace('<svg','<svg class="chev"')}</button>`; },
-  note:N('Find tab', 'Two ways to get a partner, one at a time: find a match (no code) or invite someone you know (a link with a short code as backup). Every state lives on this one screen.', [
-    'FIND OWNS EVERY PARTNER PATH. Starting a search, sending an invite, entering a code, stopping, switching and cancelling all happen here and nowhere else. Home and onboarding only hand over to this screen',
-    'No partner: the radar (Find a match), "Invite someone you know", and a small "Have an invite code?" link for people who are already signed in',
+    // The commitment sits on Find too, activity only, and is locked the moment
+    // a search starts - the same card and the same rule as on Challenges.
+    const lock = S.pstate !== 'solo';
+    const comm = S.challenge && !partnered && S.pstate !== 'match' ? `<div class="ccard2"><span class="bigic">${ic(tpl().icon,1.8)}</span><div class="dtx"><b>${esc(tpl().t)}</b><small>${lock ? "Locked while you're looking for a match" : 'You can change this until you start searching for a match'}</small></div>${lock?'':ic('chev',2).replace('<svg','<svg class="chev2"')}</div>` : '';
+    return `<div class="p-h1" style="margin-bottom:4px;">Find</div><div class="p-sub">${sub}</div>${comm}${mid}${dirCards()}`; },
+  note:N('Find tab', 'Two ways to get a partner, one at a time, plus the match itself. Every state lives on this one screen.', [
+    'FIND OWNS EVERY PARTNER PATH. Starting a search, sending an invite, entering a code, stopping, switching, cancelling AND ENDING A MATCH all happen here and nowhere else. Home and onboarding only hand over to this screen',
+    'A MATCH IS WAITING (new 30 September): this state did not exist. Home said "See your match" and handed over to a Find tab with nothing on it. Three states, because one side can answer before the other: offered, you-accepted-waiting, and expired',
+    'THE MATCH CLOCK IS 24 HOURS, and it is ONE clock started when the match is CREATED, not when either side answers. Both people see the same number counting down. Unanswered, it expires and both go back in the pool',
+    'ALREADY ON THE MOVE (new 30 September): the directory is INLINE here now, under the circle, rather than a link to a separate screen. Everyone registered shows by default, because a new user has to see the app is alive, and there is NO LOCATION on the cards',
+    'The commitment sits here too, ACTIVITY ONLY, and is locked the moment a search starts. How much and how often are agreed with the partner at the first plan',
+    'END THIS MATCH is on the paired state, with six reasons. It moved here from Challenges on 30 September: ending a match is a partner path',
+    'No partner: the radar, "Invite someone you know", and a small "Have an invite code?" link',
     'Searching: the radar searching, Stop looking, and "Invite someone you know instead"',
     'Invite waiting: the code in large letters with Copy, Share again, Invite someone else, and "Find a match instead" or Cancel invite',
-    'Paired: You and Gayan',
-    'One at a time: starting an invite stops the search, and starting a search cancels the invite (the link and code stop working). Both ask first',
-    'The code is 6 characters (e.g. RUN4K7), made when the invite is created, used once, gone when the friend joins or the invite is cancelled'],
-    ['Open: if the friend already has an active challenge, what happens when they enter the code (end theirs first, replace it, or block)?','Open: should an unused code expire, e.g. after 7 days?','Needs backend: today the code is the 36-character invite token; add a short code column and look up invites by it']) });
+    'One at a time: starting an invite stops the search, and starting a search cancels the invite. Both ask first',
+    'The code is 6 characters (e.g. RUN4K7) and EXPIRES IN 48 HOURS. The person receiving it is told so'],
+    ['Open: if the friend already has an active challenge, what happens when they enter the code (end theirs, replace it, or block)?','Needs backend: the 24 hour match window and the 48 hour code expiry, the short code column, and a neutral end_match with reasons - today the only ways to end a match are block and report']) });
 
 def('whoelse', { ph:'T2a', group:'Tabs', label:'Who else is here', bar:() => '', nav:() => '',
   body:() => `${hdr('Who else is here')}<div class="p-sub">People on Choner right now and what they've committed to.</div>${[['Nimali P','Running \u00b7 3 km \u00b7 3x a week','#FD8302'],['Ruwan S','Walking \u00b7 30 min \u00b7 daily','#1E3A4C'],['Asanka K','Yoga \u00b7 20 min \u00b7 2x a week','#2E9E6B'],['Tharushi M','Running \u00b7 5 km \u00b7 2x a week','#8E5FD9'],['Dinuka W','Workout \u00b7 45 min \u00b7 3x a week','#D9534F'],['Ishara B','Walking \u00b7 5 km \u00b7 3x a week','#3B8FD1']].map(p => `<div class="feed-row"><div class="feed-init" style="background:${p[2]};">${initials(p[0])}</div><div><div class="feed-name">${p[0]}</div><div class="feed-meta">${p[1]}</div></div></div>`).join('')}`,
-  note:N('See Who Else Is Here', 'View only. This is where "who is here" lives: Find owns people, so Home does not repeat it.', ['Profile picture, name and what they have committed to','No way to message or match from this list'], null) });
+  note:N('Who else is here', 'SUPERSEDED 30 September. This list now sits INLINE on the Find tab as "Already on the move", under the circle, so it is the first thing a new user sees. This screen is kept only so the change is visible against what it replaced.', ['Everyone registered is shown BY DEFAULT: a new user has to see the app is alive','NO LOCATION. A first name and an activity, not a way to find someone in person','One card per person, standing apart rather than joined into a list','Profile picture, name and what they have committed to','No way to message or match from this list'], 'Needs backend: get_active_directory() is gated behind the show_in_directory opt-in, which defaults to false, and a minimum count of 5. Both go.') });
 
 def('community', { ph:'T3', group:'Tabs', label:'Community tab', bar:() => appBar(), nav:() => navBar('community'),
   body:() => `<div class="p-h1" style="margin-bottom:4px;">Community</div><div class="p-sub">Colombo, showing up together.</div>
@@ -853,6 +918,19 @@ function act(a, v){
     case 'nw-cad': S.nw.cad = +v; break;
     case 'nw-create': S.chosen = S.nw.act; S.ex = S.nw.ex; S.amount = S.nw.amt; S.cadence = S.nw.cad; S.explore = false; S.pstate = 'solo'; S.weekDone = 0; go('home', {replace:true}); S.hist = []; return;
     case 'sim-match': S.pstate = 'partnered'; S.cs = 'matched'; S.kept = 0; S.weekDone = 0; S.find.intent = false; if (!pairCanMeet()) S.mode = 'separate'; go('home', {replace:true}); S.hist = []; return;
+    case 'accept-match': S.iAccepted = true; return;
+    case 'decline-match': S.iAccepted = false; S.pstate = 'solo'; S.find.intent = false;
+      go('find', {jump:true}); dlg('Back in the pool', "We'll keep looking. Nobody is told you passed."); return;
+    // Ending a match lives HERE, not on Challenges: Find owns every partner
+    // path, and this is one. The reason is private either way.
+    case 'endmatch-open': S.sheet = 'endmatch'; S.endReason = null; break;
+    case 'end-reason': S.endReason = v; break;
+    case 'endmatch-send': {
+      if (S.endReason === 'off'){ S.sheet = 'report'; return; }
+      S.sheet = null; S.pstate = 'solo'; S.cs = 'matched'; S.find.intent = false;
+      go('find', {jump:true});
+      dlg('This match has ended.', 'Your challenge continues and your streak is untouched. You can look for a new partner anytime.');
+      return; }
     case 'stop-find': S.pstate = 'solo'; S.find.intent = false; break;
     case 'tog': S.notif[v] = !S.notif[v]; break;
     case 'signout': dlg('Sign out?', 'You can sign back in any time.', [['Cancel', null], ['Sign out', () => { S.user = null; S.f = {}; go('welcome', {jump:true}); }]]); return;

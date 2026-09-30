@@ -38,3 +38,13 @@
   .whyq{display:flex;gap:10px;align-items:flex-start;background:var(--card);border-left:2px solid rgba(253,131,2,.45);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.45;font-style:italic;box-shadow:var(--shadow-soft);}
   .whyq svg{width:16px;height:16px;color:var(--g2);flex:none;margin-top:2px;}
   .whyq small{display:block;font-size:11px;color:var(--pmuted);font-style:normal;margin-bottom:2px;}
+
+/* streak circles: one per session in the target, in the brand orange */
+/* 12 has to fit one line at 265px: 12*15 + 11*6 = 246. Longer streaks wrap,
+   which is fine - the row is a record, not a single-line badge. */
+.crow{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px;}
+.cdot{width:15px;height:15px;border-radius:50%;flex:none;}
+.cdot.done{background:linear-gradient(135deg,#FD8302,#FD5B01);}
+.cdot.missed{background:none;border:2px dashed rgba(253,91,1,.55);}
+.cdot.todo{background:none;border:1.5px solid var(--dim);}
+.rel-l.owe{color:#B04A00;font-weight:500;}

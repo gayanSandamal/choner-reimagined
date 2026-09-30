@@ -1539,3 +1539,44 @@ Filled circles are the Choner orange (#FD8302 / #FD5B01), not a neutral tone.
 ---
 
 REVIEW COMPLETE. 22 states, 6 groups, all walked.
+
+---
+
+## 2026-09-30 — The handover docs catch up with the review
+
+Gayan starts today, and the four files he was sent by hand were written
+BEFORE the Challenges review (last touched 11:00—14:26 on the 29th; the review
+ran 19:48—23:15). The review only wrote DECISIONS_LOG.md and
+SCHEMA_CHALLENGES.md, so the other files still described the old model.
+
+Nothing needs re-sending. Every doc is on `main` — he pulls. What was
+actually wrong was the CONTENT, now fixed:
+
+CHONER_MASTER_SPEC.md
+  - the streak line, wrong twice over, rewritten: sessions not commitments,
+    personal in ownership and shared in earning
+  - repair rewritten: a miss no longer ends the streak, one repair per week,
+    the repair fills the missed circle rather than adding one
+  - cadence 1x—6x or Daily, not 1x/2x/3x, and no longer on the card
+  - "one active challenge" softened: the ACTIVITY stays editable until a
+    search starts
+  - the schema paragraph now says there is no end date and no slot table, and
+    points at SCHEMA_CHALLENGES.md and the days_per_week bug
+  - "Commitment 1 of 2 this week" — "Session 1 of 2 this week"
+  - DECISIONS_LOG is no longer described as gitignored, because it is on main
+  - the two stale prototypes are marked stale in the table
+
+WORK_GAYAN_BACKEND.md
+  - the same wrong streak sentence, and the frozen note now says Challenges is
+    UNFROZEN with the schema agreed, pointing at the table that collides with
+    his task 5
+
+CODE_VS_PROTOTYPE.md
+  - prototype Version 25 — 29, and both "still under review" notes now say
+    the reviews are closed. NOT re-diffed against the new decisions: it is
+    labelled as the frozen-slice diff it is, so nobody reads it as the state
+    of Challenges.
+
+Deliberately not done: re-diffing CODE_VS_PROTOTYPE.md screen by screen
+against the rebuilt Challenges prototype. That is a real piece of work and
+none of Gayan's current tasks depend on it.
