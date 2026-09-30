@@ -13,6 +13,16 @@ states, 6 groups. Every decision below is settled, and the reasoning is in
 **Nothing here is built.** No migrations written yet, deliberately: agree the
 shape first, then we write them.
 
+**The five drafted migrations are NOT on `main`.** They are unreviewed and
+unrun, and leaving them off `main` is on purpose so nobody pushes them by
+accident. They live on `DineshDoluweera/chore/db-migrations-handover`:
+
+    git fetch origin
+    git show origin/DineshDoluweera/chore/db-migrations-handover --stat
+    git checkout origin/DineshDoluweera/chore/db-migrations-handover -- supabase/migrations
+
+Read them, argue with them, then they get merged.
+
 ---
 
 ## 1. The model, in one page
@@ -169,8 +179,8 @@ in the pool.
 `expires_at timestamptz`, and refuse acceptance past it.
 
 Note this is **not** in the short-code migration already drafted
-(`202609291300_short_invite_code.sql`) — it was decided afterwards. Add it there
-or in a follow-up.
+(`202609291300_short_invite_code.sql`, on the branch above) — it was decided
+afterwards. Add it there or in a follow-up.
 
 The person who **receives** the code sees a line saying it expires in 48 hours.
 Both parties can see the state.

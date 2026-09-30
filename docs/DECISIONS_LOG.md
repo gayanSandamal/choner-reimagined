@@ -1580,3 +1580,22 @@ CODE_VS_PROTOTYPE.md
 Deliberately not done: re-diffing CODE_VS_PROTOTYPE.md screen by screen
 against the rebuilt Challenges prototype. That is a real piece of work and
 none of Gayan's current tasks depend on it.
+
+---
+
+## 2026-09-30 (later) — The draft migrations are not on main, and now say so
+
+Caught while checking whether "pull main" was enough for Gayan. It was not,
+for one thing: the five drafted migrations are only on
+`DineshDoluweera/chore/db-migrations-handover`. Four doc references pointed at
+`supabase/migrations/2026092911*.sql` as if the files were there; two named the
+branch, two did not.
+
+DECIDED: they STAY off `main`. They are unreviewed and unrun, and an unrun
+migration sitting on `main` is one `supabase db push` away from being run by
+accident. Merging them for convenience would trade a real risk for a saved
+command.
+
+Instead every reference now names the branch, and SCHEMA_CHALLENGES.md carries
+the three commands to fetch them at the top, where he will hit it before the
+schema itself.
