@@ -422,7 +422,8 @@ const STYLE_FIT: Record<AccountabilityStyle, Record<AccountabilityStyle, number>
   team: { competitive: 0.6, momentum: 0.8, encouraging: 0.9, team: 1.0 }
 };
 
-// Total by construction: profiles.accountability_mode defaults to 'solo' and
+// Total by construction: profiles.accountability_style (accountability_mode
+// until fe10) defaults to 'solo' and
 // get_match_pool only guards NULL, so a non-tone value really does reach here.
 // Indexing STYLE_FIT['solo'] used to be `undefined`, and STYLE_FIT[a][b] then
 // threw a TypeError that aborted the whole matching run for every user.

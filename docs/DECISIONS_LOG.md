@@ -1665,3 +1665,49 @@ a record.
 ### The other three
 reflections_own_only (one drop policy), the tone expand (additive), and
 photo_status (additive) all stand unchanged and are safe to run.
+
+---
+
+## 2026-10-01 (later) — fe10: the app moves off accountability_mode
+
+The contract migration is guarded, which stops a push from breaking the app.
+It does not FIX anything — it just refuses. The app still wrote the old name
+in three places, so the guard would have refused forever.
+
+DONE: the app now reads `accountability_style` with a fallback to
+`accountability_mode`, and WRITES only the new name. Both writes moved
+together, as the old TODO said they had to: app/profile/edit.tsx and
+app/onboarding/energy.tsx (the single write that saves the whole quiz).
+
+WHY WRITE ONLY THE NEW NAME. 202609291100 installs a trigger that mirrors
+style back to mode. Writing both would be belt and braces that fights the
+trigger; writing only the new one means everything still reading the old name
+— the four matching RPCs, until Gayan re-issues them — keeps working, and
+nothing has to change again when the column is finally dropped.
+
+WHY THE FALLBACK ON READ. A row the backfill has not reached has
+`accountability_style` null and the tone in the old column. Without the
+fallback that person's tone badge silently disappears from Profile.
+
+THE ORDER IS NOT OPTIONAL, and this is the part to get wrong:
+
+    1. run 202609291100 (expand). The column does not exist before this, so
+       shipping the app change first breaks Profile and onboarding — the
+       exact failure the guard was added to prevent, just from the other side
+    2. merge fe10 (this change)
+    3. Gayan re-issues the four matching RPCs against accountability_style
+    4. only then: set choner.allow_tone_contract = 'on' and run 202609291110
+
+Step 3 is enforced: the contract migration scans pg_proc and refuses while any
+function still names the old column. Step 1 is NOT enforced by anything, which
+is why it is written here.
+
+NOT TOUCHED: `user_challenges.accountability_mode`. Different column, holds
+'solo' | 'partner', and every partner RPC branches on it. It goes with the
+Challenges rebuild.
+
+FOUND WHILE TYPECHECKING, not fixed: two pre-existing errors on `main`,
+`/onboarding/partner` and `/onboarding/photo` are not in expo-router's
+generated route types. The screens landed in fe8 and fe4; the generated
+`.expo/types/router.d.ts` is stale. Running the dev server once regenerates it.
+fe10 adds no new type errors.
