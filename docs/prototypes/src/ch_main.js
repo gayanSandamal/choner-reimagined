@@ -58,9 +58,15 @@ const circleRow = () => {
   return c;
 };
 const circlesDone = () => circleRow().filter(x => x === 'done').length;
+// Completion is about RESOLVED circles, not filled ones. A missed circle that
+// was never repaired is finished with - it just did not count. So a 12 session
+// streak can end at 11 of 12, and the extend prompt still has to appear.
+// Counting filled circles instead left an unrepaired miss stuck at 11 forever.
+const circlesLeft = () => circleRow().filter(x => x === 'todo').length;
+const streakComplete = () => circlesLeft() === 0;
 // target / cadence, shown as an estimate and never stored. Misses and repairs
 // move it, which is exactly why it is not a fact.
-const weeksLeft = () => Math.max(1, Math.ceil((S.starget - circlesDone()) / Math.max(1, S.cadence)));
+const weeksLeft = () => Math.max(1, Math.ceil(circlesLeft() / Math.max(1, S.cadence)));
 const daysLeft = d => 7 - DAYS.indexOf(d);
 const target = () => S.week === 1 ? Math.min(S.cadence, Math.max(1, Math.round(S.cadence * daysLeft(S.matchedOn) / 7))) : S.cadence;
 const weekDone = () => S.sessions.filter(s => s.st === 'done' && !s.repair).length;
@@ -154,13 +160,13 @@ function streakCard(){
   if (S.partner !== 'paired' && !S.matchEnded) return '';
   const row = circleRow(), done = circlesDone();
   const dots = row.map(x => `<i class="cdot ${x}"></i>`).join('');
-  const complete = done >= S.starget;
+  const complete = streakComplete();
   const est = complete ? '' : `<div class="rel-l">About ${weeksLeft()} more week${weeksLeft()===1?'':'s'} at ${S.cadence}\u00d7 a week.</div>`;
   const owed = S.owed && !complete
     ? `<div class="rel-l owe">You owe ${S.owed} session${S.owed===1?'':'s'} this week.</div>` : '';
   return `<div class="relc"><div class="rel-k">${ic('fire',1.8)}${done} of ${S.starget}</div>
     <div class="crow">${dots}</div>
-    ${complete ? `<div class="rel-l"><b>Streak complete.</b> Ready for the next one?</div>${btn('Extend your streak','streak-extend')}` : est + owed}
+    ${complete ? `<div class="rel-l"><b>Streak complete${done < S.starget ? ` at ${done} of ${S.starget}` : ''}.</b> Ready for the next one?</div>${btn('Extend your streak','streak-extend')}` : est + owed}
     <div class="hwrap st${stageOf(S.kept)}" style="margin-top:14px;"><div class="glow"></div><div class="rings"><i></i><i></i></div>${heartSvg(true, S.partner==='paired')}</div>
     <div class="rel-h">${S.kept} together with Gayan</div>
     <div class="rel-l">${S.kept ? `You've both shown up ${S.kept} time${S.kept===1?'':'s'}.` : 'Your first session together is next.'}</div></div>`;
