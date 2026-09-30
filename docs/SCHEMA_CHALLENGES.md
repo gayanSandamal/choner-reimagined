@@ -65,6 +65,13 @@ Four rules that between them decide most of the schema:
    ever. You owe one session against that week's commitment, and repair is
    choosing when to pay it.
 
+**When a streak completes.** When all N circles have *resolved*, not when N are
+filled. Resolved = filled, or missed and not repaired. The score is how many
+filled, so finishing at 11 of 12 is a real outcome and the extend prompt still
+appears. Requiring N filled would let an unrepaired miss silently stretch the
+streak's length, and once the week's one repair is spent the streak could never
+finish at all. (Behaviour only — nothing to migrate.)
+
 ---
 
 ## 2. The one new table
@@ -99,6 +106,25 @@ partnerships
   end_reason    text            -- see §5
 ```
 
+**One active partnership per person.** Not a new rule: it follows from one
+active challenge per user, and a circle filling only when *both* complete. With
+two partners the model cannot say which "both".
+
+`unique (user_a, user_b) where state = 'active'` alone does NOT enforce this. It
+only stops the same pair having two live rows; one person could still hold four
+partnerships. It takes three guards — the pair index, plus one-sided partial
+unique indexes on `user_a` and on `user_b`, both `where state = 'active'`. Even
+then a person can be `user_a` in one row and `user_b` in another (X in `(X, Y)`
+and in `(W, X)` with W < X < Y passes all three), so a trigger closes the
+cross-side case, with an advisory lock per person so two concurrent matches
+cannot both pass. Ended rows never block: someone whose partnership ended is
+free to be matched again. Migration `202609301500`.
+
+Consequence: pairing someone who is already partnered now raises inside the
+write to `user_challenges`. That is correct as a backstop, but the friendly
+guard (§8 item 1: block outright if already partnered) belongs in the invite
+and match functions themselves.
+
 **`partner_state` stays where it is.** Four of its five values — `solo`,
 `finding`, `invited`, `matched` — are *search* states, and searching is
 per-challenge. Only `partnered` describes a partnership. Leave the column alone
@@ -123,7 +149,8 @@ session rows that count toward it. Nothing else.
 **No `end_date`, and no slot table.** A circle can only be missed if it was
 planned, and sessions are planned one at a time — so there is no pre-computed
 schedule to keep in sync with the calendar. The streak ends when all 12 circles
-have resolved. You can finish at 11 of 12; no deadline exists anywhere.
+have resolved (filled, or missed and not repaired). You can finish at 11 of 12;
+no deadline exists anywhere.
 
 **No pause logic.** The rule "the schedule pauses while you have no partner"
 needs no implementation: no partner means no sessions get planned, which means
@@ -165,10 +192,21 @@ This is the session row, so it is what a circle is.
 | **add `'missed'` to the status check** | currently `planning, confirmed, verified, completed, cancelled, ended`. A planned session whose day passed with no check-in is a distinct outcome from `cancelled`, and it is what draws a marked circle. |
 | **add `is_repair boolean default false`** | a make-up session. See §6. |
 | **add `repairs_plan_id uuid`** | which missed session this one repairs — because repair **fills the missed circle**, it does not add a thirteenth. |
+| **add `due_at timestamptz`** | the one deadline for the session. See below. |
 
-**Missed is defined as:** no check-in by midnight of the planned day, local
-time. That definition already exists in the prototype notes; it just has nowhere
-to be written down.
+**Missed is defined as:** not completed by both people by `due_at`, where
+`due_at` is **the later of the two people's local midnights** after the planned
+day. "Local midnight" alone never said whose, which was harmless when each
+person had their own row and is not harmless now: Colombo and London are 4.5
+hours apart, so for 4.5 hours the same session would be missed for one person
+and still live for the other.
+
+`due_at` is computed once, when the plan is confirmed (the second person
+accepts), and again only if a confirmed session is moved. That gives the pair
+one deadline, means nobody is marked missed while it is still that day where
+they are, and means changing timezone later cannot move a deadline already
+agreed. The sweep compares `now() > due_at` and no longer joins `profiles` for a
+timezone. Migration `202609301600`, which also adds the sweep.
 
 ### `partner_matches`
 
@@ -224,10 +262,13 @@ with this person*; this answers *why this pairing didn't work*. Note
 `stopped_replying` here against `didnt_show_up` there — going quiet in the app
 is not a no-show at a physical meetup.
 
-**`something_felt_off` is a door, not an outcome.** Selecting it hands off to the
-existing report/block flow rather than ending quietly. It sits *in* the list on
-purpose: someone scanning for the unsafe option who cannot find it picks
-"Prefer not to say" instead, and that is the signal you most want.
+**`something_felt_off` is a door, not an outcome.** The RPC accepts all six
+reasons and ends the match; the client then offers the report flow. The server
+does **not** refuse it, because refusing would mean someone who felt unsafe
+cannot leave until they have filed a report — the opposite of what the reason
+is for. It sits *in* the list on purpose: someone scanning for the unsafe
+option who cannot find it picks "Prefer not to say" instead, and that is the
+signal you most want.
 
 **The reason is private.** The other person is told only that the match ended —
 same promise `blockConfirmCopy` already makes. Nothing in any partner-facing
