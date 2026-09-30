@@ -136,7 +136,8 @@ The prototypes implement this. The app does not yet.
 - **One session is planned at a time.** The next is planned as soon as the current one is done.
 - **One active challenge per user.** One repair per week.
 - **No solo mode.** Nothing can be logged without a partner.
-- Cadence is **1x, 2x or 3x a week**. Agreed once, by both people, at the first plan.
+- Cadence is **1x to 6x a week, or Daily**. Agreed once, by both people, at the first plan, and
+  it is not on the commitment card. (Widened 29 September; this file said 1x-3x until the 30th.)
 - Two modes per session: **Together** (meet, confirm with a QR code) or **Separately, together**.
 
 ### Tab ownership — the rule everything hangs off
@@ -151,7 +152,8 @@ The prototypes implement this. The app does not yet.
 | **Challenges** | the whole challenge lifecycle: create, end, cancel, history |
 | **Community** | the feed |
 
-Tab order is **Home, Find, Challenges, Community**.
+Tab order is **Home, Challenges, Find, Community** — changed 28 September in all three
+prototypes, and this file was not updated with them until the 30th.
 
 Anything Home cannot do itself is a **single tab switch** landing on that tab's own top screen,
 never mid-flow. Home's partner-less states therefore carry exactly one button ("Find a partner",
