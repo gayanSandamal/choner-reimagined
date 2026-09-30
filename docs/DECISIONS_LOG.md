@@ -1734,3 +1734,33 @@ two things that are now wrong:
 Also dropped two line numbers from the task (`edit.tsx:79`,
 `energy.tsx:34-51`). fe10 has moved both, and a line number in a handover doc
 is a hostage to the next edit. The filenames are enough.
+
+---
+
+## 2026-10-01 (plan) — The frontend work plan, rewritten
+
+WORK_DINESH_FRONTEND.md covered the 22 frozen screens. That slice is merged, and
+everything under its "Do not build yet" list is now unfrozen, so the file is
+rewritten rather than appended to.
+
+Nine sections, ordered so nothing is built twice: intro, create/edit the
+commitment, Find, the first plan and the streak target, the Challenges rebuild,
+the day of, Home, the sweeps. Sections A-C depend on nothing Gayan owns, which
+is why they are first - his timeline cannot stall the start of the work. Home is
+last because it only reflects state the other screens produce.
+
+TWO CLAIMS I HAD TO CORRECT WHILE WRITING IT, both from writing before checking:
+
+  - "no test harness, four test files". Wrong. jest and ts-jest ARE installed,
+    `npm test` exists, and there are TEN test files. What is actually missing is
+    jest-expo and testing-library: every one of the ten tests a pure function
+    and not one renders a component. The corrected entry says that precisely,
+    because "no harness" would have been read as "nothing is tested" and the
+    copy rules, matching weights and negotiation logic are all covered.
+  - "32 files contain a long dash". It is 89 LINES, and not all are user-facing.
+    Changed to say check each hit rather than replace blind.
+
+ALSO RECORDED AT THE TOP OF THE PLAN: three branches are still unmerged, and the
+one that matters is proto/editable-commitment. The artifacts are current; the
+prototype SOURCES on main are several versions behind them. Anyone reading
+docs/prototypes/src/ today is reading 30 September.
