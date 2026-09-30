@@ -32,8 +32,8 @@ policy is now exposure with nothing using it.
 **Do:** new migration dropping `challenge_reflections_partner_select`. Leave the four own-only
 policies alone.
 
-**Drafted:** `supabase/migrations/202609291000_reflections_own_only.sql` on branch
-`DineshDoluweera/chore/db-migrations-handover`. One line. Not run.
+**Drafted:** `supabase/migrations/202609291000_reflections_own_only.sql`, on `main`.
+One line. Not run.
 
 **Done when:** a partner reading another user's `challenge_reflections` rows gets zero rows.
 
@@ -102,8 +102,7 @@ web where the module does not provide it. Add `Platform.OS === 'web'` to the sam
 
 **Corrected 29 September after reading the migrations. Draft SQL is written:
 `supabase/migrations/202609291100_profiles_tone_column_expand.sql` and
-`...1110_..._contract.sql` on branch
-`DineshDoluweera/chore/db-migrations-handover`. Not run — no Docker here.**
+`...1110_..._contract.sql`, both on `main`. Neither is run — no Docker here.**
 
 There are **two** columns called `accountability_mode` and they do **not** have
 the same problem. The earlier version of this task conflated them.
@@ -155,8 +154,8 @@ Neither exists. The live-photo screen has nowhere to write.
 **Do:** a `photo_status` column with values meaning *photo confirmed* / *no photo*, plus a storage
 bucket with RLS so a user writes only their own.
 
-**Drafted:** `supabase/migrations/202609291200_photo_status.sql`, on branch
-`DineshDoluweera/chore/db-migrations-handover` — not on `main`. Two things in it are judgement
+**Drafted:** `supabase/migrations/202609291200_photo_status.sql`, on `main` and not run. Two
+things in it are judgement
 calls, so overrule them if you disagree:
 
 1. **It reuses the `avatars` bucket** rather than making a new one. `202607311000` already created
@@ -197,8 +196,8 @@ partners.
 active challenge** enters a code — end theirs, replace it, or block it? Recommendation was
 ask-then-replace, and block outright if they are already partnered. Do not resolve this silently.
 
-**Drafted:** `supabase/migrations/202609291300_short_invite_code.sql`, on branch
-`DineshDoluweera/chore/db-migrations-handover` — not on `main`. The long token stays as the
+**Drafted:** `supabase/migrations/202609291300_short_invite_code.sql`, on `main` and not run.
+It also carries the 48 hour code expiry. The long token stays as the
 deep-link payload; the code sits beside it. The alphabet drops `O 0 I 1 L U`, input is normalised
 so `run-4k7` works, and acceptance is a thin wrapper over `accept_challenge_invite` rather than a
 ninth rewrite of a function that has been redefined eight times. The open question above is

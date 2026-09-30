@@ -13,15 +13,23 @@ states, 6 groups. Every decision below is settled, and the reasoning is in
 **Nothing here is built.** No migrations written yet, deliberately: agree the
 shape first, then we write them.
 
-**The five drafted migrations are NOT on `main`.** They are unreviewed and
-unrun, and leaving them off `main` is on purpose so nobody pushes them by
-accident. They live on `DineshDoluweera/chore/db-migrations-handover`:
+**The five drafted migrations ARE on `main`, and none of them has been run.**
+Merged 30 September:
 
-    git fetch origin
-    git show origin/DineshDoluweera/chore/db-migrations-handover --stat
-    git checkout origin/DineshDoluweera/chore/db-migrations-handover -- supabase/migrations
+    supabase/migrations/202609291000_reflections_own_only.sql
+    supabase/migrations/202609291100_profiles_tone_column_expand.sql
+    supabase/migrations/202609291110_profiles_tone_column_contract.sql
+    supabase/migrations/202609291200_photo_status.sql
+    supabase/migrations/202609291300_short_invite_code.sql
 
-Read them, argue with them, then they get merged.
+**So `supabase db push` will now apply all five.** That is the one thing to know
+before running anything against a real database. Read them first, argue with
+them, change what you disagree with — they were written to be argued with, and
+two of them carry open questions that are not ours alone to settle.
+
+The expand/contract pair is deliberately two files: run `...1100` first, let
+both names stay in step, and only run `...1110` once nothing writes the old
+column.
 
 ---
 
@@ -179,8 +187,12 @@ in the pool.
 `expires_at timestamptz`, and refuse acceptance past it.
 
 Note this is **not** in the short-code migration already drafted
-(`202609291300_short_invite_code.sql`, on the branch above) — it was decided
-afterwards. Add it there or in a follow-up.
+(`202609291300_short_invite_code.sql`) when that file was written — it was
+decided afterwards. It has SINCE BEEN ADDED to that migration, as §5 of it:
+the column, the backfill, the default, and a BEFORE UPDATE trigger that refuses
+acceptance past it. The trigger rather than a check inside
+`accept_invite_by_code`, because the deep link calls `accept_challenge_invite`
+directly and the trigger is the one place both paths pass through.
 
 The person who **receives** the code sees a line saying it expires in 48 hours.
 Both parties can see the state.

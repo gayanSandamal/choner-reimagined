@@ -1599,3 +1599,29 @@ command.
 Instead every reference now names the branch, and SCHEMA_CHALLENGES.md carries
 the three commands to fetch them at the top, where he will hit it before the
 schema itself.
+
+---
+
+## 2026-09-30 (final) — The drafts went to main, and the warning changed with them
+
+Yesterday's entry decided the five drafts stay OFF `main`. They were merged to
+`main` today anyway, with the invite expiry, so that decision is reversed by
+the fact of it. Recorded rather than re-argued: Gayan starts today, one `git
+pull` is a better handover than three git commands, and the risk we named does
+not go away by being written down in a place nobody reads.
+
+WHAT THE RISK ACTUALLY IS: `supabase db push` applies every file in
+`supabase/migrations/`, so it will now run all five, including the
+expand/contract pair that is meant to be run in two stages with a verification
+between. The warning moved to the top of SCHEMA_CHALLENGES.md, where it is the
+first thing read, and says plainly that push will apply all five.
+
+Every "on branch ... not on main" reference in WORK_GAYAN_BACKEND.md and
+SCHEMA_CHALLENGES.md was corrected, and the invite-expiry note now says the
+48 hour rule HAS been added rather than still needing to be.
+
+STILL TRUE, and worth keeping straight: SCHEMA_CHALLENGES.md is an AGREEMENT,
+not a migration. It carries column shapes, constraints and a build order. There
+is no SQL in it and none of the Challenges schema is written. The five drafts
+on main are the earlier, unrelated fixes; the Challenges work is Gayan's to
+write against the agreement.
