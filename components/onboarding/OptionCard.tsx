@@ -7,13 +7,17 @@ import Animated, {
   withSpring
 } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
+import { Icon, IconName, isIconName } from '@/components/ui/Icon';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { theme } from '@/constants/theme';
 
 type Layout = 'grid' | 'row' | 'pill';
 
 interface Props {
-  icon: string;
+  // An icon key draws the line icon and takes its colour from the selection;
+  // anything else renders as-is. Screens still on emoji pass a plain string and
+  // get it back as text, which is why this is not narrowed to IconName.
+  icon?: IconName | React.ReactNode;
   label: string;
   description?: string;
   selected: boolean;
@@ -64,9 +68,19 @@ export function OptionCard({
       <Animated.View
         style={[styles.base, vertical ? styles.vertical : styles.horizontal, animatedStyle]}
       >
-        <View style={[styles.iconBox, layout === 'pill' && styles.iconBoxSm]}>
-          <AppText style={layout === 'pill' ? styles.iconSm : styles.icon}>{icon}</AppText>
-        </View>
+        {icon ? (
+          <View style={[styles.iconBox, layout === 'pill' && styles.iconBoxSm]}>
+            {isIconName(icon) ? (
+              <Icon
+                name={icon}
+                size={layout === 'pill' ? 18 : 22}
+                color={selected ? theme.colors.primary2 : theme.colors.muted}
+              />
+            ) : (
+              <AppText style={layout === 'pill' ? styles.iconSm : styles.icon}>{icon}</AppText>
+            )}
+          </View>
+        ) : null}
         <View style={[styles.textBlock, vertical ? styles.textBlockCentered : styles.textBlockFill]}>
           {badge ? (
             <View style={styles.badge}>

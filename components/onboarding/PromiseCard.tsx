@@ -1,10 +1,13 @@
 import { StyleSheet, View } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { AppText } from '@/components/ui/AppText';
+import { Icon, IconName, isIconName } from '@/components/ui/Icon';
 import { theme } from '@/constants/theme';
 
 interface Props {
-  icon: string;
+  // Same contract as OptionCard: an icon key draws the line icon, anything
+  // else renders as-is so emoji callers keep working until they are converted.
+  icon: IconName | React.ReactNode;
   title: string;
   description: string;
 }
@@ -13,7 +16,11 @@ export function PromiseCard({ icon, title, description }: Props) {
   return (
     <Card style={styles.card}>
       <View style={styles.iconBox}>
-        <AppText style={styles.icon}>{icon}</AppText>
+        {isIconName(icon) ? (
+          <Icon name={icon} size={22} color={theme.colors.primary} />
+        ) : (
+          <AppText style={styles.icon}>{icon}</AppText>
+        )}
       </View>
       <View style={styles.textBlock}>
         <AppText variant="subtitle">{title}</AppText>
