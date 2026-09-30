@@ -1,11 +1,16 @@
 # Code vs the splash-to-Home prototype — every difference
 
-Cross-referenced 2026-09-29 against prototype **Version 25**
+Cross-referenced 2026-09-29 against prototype **Version 29**
 (https://claude.ai/artifact/4Sk5AwVK4f4BouSWks8gon) by reading each file in the repo.
 
 **Scope.** The 22 frozen screens only: Launch, Account, Onboarding, plus Edit profile. The Home
-hero states and every Find / Challenges screen are still under review and are deliberately **not**
-listed as work. See the "Do not build yet" section at the end.
+hero states and every Find / Challenges screen are deliberately **not** listed as work here. See
+the "Do not build yet" section at the end.
+
+**The Find and Challenges reviews have since finished** (2026-09-29 evening). What they decided is
+in `docs/DECISIONS_LOG.md`, and the schema they need is agreed in `docs/SCHEMA_CHALLENGES.md`. This
+file has not been re-diffed against those decisions, so read it as the frozen-slice diff it is —
+not as the state of Challenges.
 
 **D** = Dinesh (frontend) · **G** = Gayan (backend)
 
@@ -355,8 +360,9 @@ web where it does not exist. Add `Platform.OS === 'web'`.
 
 ## 6. Do not build yet
 
-Driven by decisions still landing in the Find and Challenges reviews. Starting these means
-rebuilding them.
+Written while the Find and Challenges reviews were still open. Both are now closed: the schema is
+agreed in `docs/SCHEMA_CHALLENGES.md`, so the Challenges items below are unblocked, and the rest of
+what changed is in `docs/DECISIONS_LOG.md` under "Challenges review, parts 1—6".
 
 - **Session proposals.** Planning is now propose → accept / counter. There is no pending-session
   concept in the schema at all.

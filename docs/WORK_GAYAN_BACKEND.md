@@ -242,7 +242,11 @@ means building them twice.
   in matching.
 - **`app/(tabs)/challenges.tsx` and its tables**, rebuilt to weekly shared commitments. The code
   is a 7-day challenge with daily task check-ins; the decided product is a rolling weekly
-  commitment with a streak of commitments both partners kept.
+  commitment with a streak of SESSIONS both partners completed.
+
+  **These are now unfrozen and the schema is agreed: read `docs/SCHEMA_CHALLENGES.md`.** It
+  changes `user_challenges`, which task 5 already touches — read its §2 before that lands. It
+  also names a live bug in `pair_plans`: `days_per_week in (3, 4, 5, 7)` rejects 1x and 2x.
 
 When these unfreeze, **agree the schema in writing before either person starts.** The churn in this
 project has been in the data model, not the UI.

@@ -14,7 +14,8 @@ screen doing a job that belongs to another tab.
 | `docs/CODE_VS_PROTOTYPE.md` | Screen-by-screen diff between this spec and the current code |
 | `docs/WORK_GAYAN_BACKEND.md` | Gayan's task list with acceptance criteria |
 | `docs/WORK_DINESH_FRONTEND.md` | Dinesh's task list with acceptance criteria |
-| `docs/DECISIONS_LOG.md` | The dated record of every decision **and what was rejected**. Gitignored, so it will not appear in a clone |
+| `docs/DECISIONS_LOG.md` | The dated record of every decision **and what was rejected**. On `main` since 2026-09-29 |
+| `docs/SCHEMA_CHALLENGES.md` | The Challenges schema, agreed in writing before either of us builds it |
 | `docs/PROTOTYPE_HANDOVER.md` | How to rebuild the prototypes from source |
 
 **The prototypes are the visual spec.** They are interactive, every button works, and every screen
@@ -23,9 +24,9 @@ carries a notes panel on the right explaining what the app should do and where t
 | Prototype | Link | Covers |
 |---|---|---|
 | Splash to Home | https://claude.ai/artifact/4Sk5AwVK4f4BouSWks8gon | Auth, onboarding, Home, all four tabs |
-| Home states | https://claude.ai/artifact/CjFJ8NDqEAQaND14Ej99W2 | Every Home state by preset |
+| Home states | https://claude.ai/artifact/CjFJ8NDqEAQaND14Ej99W2 | Every Home state by preset. **Stale** - still on the pre-review streak |
 | Challenges tab | https://claude.ai/artifact/6ZrGVeuv7gRSoP2tmWkRav | Day-of flow, misses, repair, move, cancel, end |
-| Find & Challenges | https://claude.ai/artifact/YLKUahXoetAvC6JK2Kzw7M | The original Find flow |
+| Find & Challenges | https://claude.ai/artifact/YLKUahXoetAvC6JK2Kzw7M | The original Find flow. **Stale** - superseded by Splash to Home |
 
 ---
 
@@ -36,16 +37,23 @@ Choner pairs two people around a shared commitment and keeps them showing up for
 **The unit is a weekly shared commitment**, not a 7-day challenge with daily tasks. "Run 2x a
 week." The current code implements the old model and has to be rebuilt.
 
-- **The streak counts commitments both partners kept.** Never days. Never one person's activity.
+- **The streak counts sessions, and it is yours.** Not days, not weeks, not the pair's. You pick a
+  target at the first plan — "a 12 session streak" — and a circle fills only when **both** of you
+  complete that session. Personal in ownership, shared in earning: it survives your partner
+  leaving, they keep their own count, and you cannot advance it alone.
 - **Weeks run Monday to Sunday.** Week 1 is scaled from the match day to Sunday, so a pair matched
   on Friday with a 3x cadence owes fewer that week.
 - **One session is planned at a time.** The next is planned the moment the current one is done.
-- **One active challenge per user.** To change activity or cadence you end it and start another.
-- **One repair per week.** A missed commitment ends the streak, but one extra session within three
-  days, completed by both, carries the old count forward.
+- **One active challenge per user.** The **activity** stays editable until you start searching for
+  a match; everything else is agreed with your partner and then fixed.
+- **A miss does not end the streak. Nothing resets, ever.** The missed circle is marked and the
+  weekly commitment says you owe one session: repair it this week, or next week becomes 3x instead
+  of 2x. **One repair per week, maximum** — a second miss in the same week is simply lost. A repair
+  fills the missed circle rather than adding one, so a 12 session streak always has 12 circles.
 - **No solo mode.** Nothing can be logged without a partner. Every code path that offers going
   solo is removed.
-- **Cadence is 1x, 2x or 3x a week**, agreed once by both people at the first plan.
+- **Cadence is 1x to 6x a week, or Daily**, agreed once by both people at the first plan. It is
+  not on the commitment card.
 - **Two modes per session:** Together (meet up, confirm with a QR code) or Separately, together
   (same commitment, own place, own time).
 
@@ -54,6 +62,17 @@ The old model stored a challenge with an end date and daily task check-ins. The 
 rolling challenge with no end date, sessions that belong to a week, and a streak derived from
 sessions both people completed. `app/(tabs)/challenges.tsx` and its tables are a rebuild, not a
 refactor.
+
+**The streak needs no end date and no slot table.** A circle can only be missed if the session was
+planned, and sessions are planned one at a time — so there is no schedule to keep in sync, and
+pausing is not a feature, it is just what happens when nobody plans anything. In total:
+`target_sessions`, `started_at`, and the session rows themselves. The end date is *shown* as an
+estimate computed on screen ("About 6 weeks at 2x a week"), never stored.
+
+**Read `docs/SCHEMA_CHALLENGES.md` before writing any of it.** It carries the one new table
+(`partnerships`), the new columns, the three things we deliberately did not build, and a live bug:
+`days_per_week in (3, 4, 5, 7)` rejects 1x and 2x, and "Run 2x a week" is the product's own worked
+example.
 
 ---
 
@@ -219,7 +238,7 @@ separately and does not count toward the weekly target.
 - **Missed** = no check-in by midnight of the planned day, local time.
 - A one-sided miss is **recorded**: a reason from a short list plus an optional line. The partner
   sees a neutral message, never a blaming one.
-- The plan screen says which one of the week it is ("Commitment 1 of 2 this week") whenever the
+- The plan screen says which one of the week it is ("Session 1 of 2 this week") whenever the
   cadence is 2 or 3, so it is clear why only one day is being asked for.
 
 ### The day of
