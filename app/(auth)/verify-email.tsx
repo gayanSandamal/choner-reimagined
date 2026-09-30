@@ -3,10 +3,8 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { AppText } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { BrandMark } from '@/components/auth/BrandMark';
+import { AuthCenteredHeader } from '@/components/auth/AuthFormParts';
 import { resendVerification } from '@/features/auth/api';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
@@ -31,37 +29,29 @@ export default function VerifyEmailScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.header}>
-          <BrandMark width={150} />
-          <AppText style={styles.heading}>CHECK YOUR EMAIL</AppText>
-          <AppText variant="muted" style={styles.helper}>
-            We sent a verification link to {email ?? 'your inbox'}. Tap it to finish creating
-            your account.
-          </AppText>
+        <Animated.View entering={FadeInDown.delay(80).duration(360)}>
+          <AuthCenteredHeader
+            title="Check your email"
+            helper={`We sent a verification link to ${email ?? 'your inbox'}. Tap it to finish creating your account.`}
+          />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(180).duration(360)}>
           <Button
-            label={loading ? 'SENDING…' : 'RESEND EMAIL'}
-            variant="primary"
-            pill
+            label={loading ? 'Sending…' : 'Resend email'}
+            variant="gradient"
             size="lg"
             loading={loading}
             disabled={loading || !email}
-            leftIcon={<Ionicons name="mail-outline" size={20} color="#FFF" />}
             onPress={onResend}
           />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(260).duration(360)}>
           <Button
-            label="BACK TO SIGN IN"
+            label="Back to sign in"
             variant="outline"
-            pill
             size="lg"
-            leftIcon={
-              <Ionicons name="log-in-outline" size={18} color={theme.colors.primary} />
-            }
             onPress={() => router.replace('/(auth)/sign-in')}
           />
         </Animated.View>
@@ -72,14 +62,5 @@ export default function VerifyEmailScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
-  content: { flexGrow: 1, padding: 20, gap: 18, paddingTop: 40 },
-  header: { alignItems: 'center', gap: 10 },
-  heading: {
-    fontFamily: theme.fonts.display,
-    fontSize: 16,
-    letterSpacing: 1.5,
-    textAlign: 'center',
-    textTransform: 'uppercase'
-  },
-  helper: { textAlign: 'center' }
+  content: { flexGrow: 1, padding: 20, gap: 14, paddingTop: 40 }
 });

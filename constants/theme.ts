@@ -67,7 +67,11 @@ export const theme = {
     md: 20,
     lg: 28,
     xl: 36,
-    pill: 999
+    pill: 999,
+    // Buttons sit at 18 in the prototypes, between sm and md and narrower than
+    // the cards they sit on. Its own token because `lg` is also the corner of
+    // sheets and cards, which are deliberately rounder.
+    button: 18
   },
   shadow: {
     // Ink-tinted and much lighter than the old dark-theme shadows — on paper,
