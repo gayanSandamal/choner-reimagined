@@ -1711,3 +1711,26 @@ FOUND WHILE TYPECHECKING, not fixed: two pre-existing errors on `main`,
 generated route types. The screens landed in fe8 and fe4; the generated
 `.expo/types/router.d.ts` is stale. Running the dev server once regenerates it.
 fe10 adds no new type errors.
+
+---
+
+## 2026-10-01 (final) — Task 5 said either side could land first. It cannot.
+
+Asked whose job running 202609291100 is. It is Gayan's, and his task 5 said
+two things that are now wrong:
+
+  - "Either of us can land first." Not true any more. fe10 writes
+    `accountability_style`, and that column does not exist until the expand
+    migration runs. Shipping fe10 first fails onboarding and Edit profile on
+    save. HE LANDS FIRST, and it is the only hard sequencing constraint in his
+    whole list — so it is now a numbered block under its own heading rather
+    than a sentence in a paragraph.
+  - It still described the contract gate as "refuses while any row has the two
+    columns disagreeing", which is the check we established on the 30th is not
+    a check at all. Replaced with what the file actually does now: opt-in via
+    `choner.allow_tone_contract`, plus a pg_proc scan that refuses while any
+    function still names the old column.
+
+Also dropped two line numbers from the task (`edit.tsx:79`,
+`energy.tsx:34-51`). fe10 has moved both, and a line number in a handover doc
+is a hostage to the next edit. The filenames are enough.
