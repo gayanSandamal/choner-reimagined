@@ -67,7 +67,7 @@ export default function AcceptInviteScreen() {
                 landing on Home. The screen seeds itself from anything they
                 already answered and can be skipped, so an existing user
                 accepting a second invite isn't made to redo it. */}
-            <Button label="Continue" onPress={() => router.replace('/onboarding/why')} />
+            <Button label="Continue" onPress={() => router.replace('/challenge/why')} />
           </>
         ) : phase === 'needs-auth' ? (
           <>
