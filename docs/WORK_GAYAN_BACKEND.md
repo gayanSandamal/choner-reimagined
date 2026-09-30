@@ -130,20 +130,45 @@ rebuild**, not here. The draft only drops its dead `default 'solo'`
 moment it lands and every reader the moment it does not, and we are working on
 opposite sides of this column. So: add `accountability_style`, backfill, keep
 both names in step with a trigger, and drop the old one in a second migration
-once the app writes the new name. Either of us can land first.
+once the app writes the new name.
 
-**The contract step has a gate.** It refuses to run while any row has the two
-columns disagreeing, because that means something is still writing the old name
-and dropping the column would lose it. It also needs the four matching RPCs
-re-issued against the new name — re-issue all four, not just the live one, or
-a `db reset` replays an old body that no longer compiles.
+### YOU LAND FIRST. This is the one ordering that is not negotiable.
 
-**Two writers in the app, not one:** `app/profile/edit.tsx:79` and
-`app/onboarding/energy.tsx:34-51`, the single write that saves the whole
-onboarding quiz. Dinesh updates both in his fe10.
+An earlier version of this task said either of us could go first. That was
+wrong, and it is the only hard sequencing constraint in your whole list:
+
+    1. YOU run 202609291100 (expand)   <- nothing has run it; it is yours
+    2. Dinesh merges and ships fe10
+    3. YOU re-issue the four matching RPCs against accountability_style
+    4. YOU set choner.allow_tone_contract = 'on' and run 202609291110
+
+`accountability_style` does not exist until step 1. fe10 is written and waiting
+— it writes the new name, so shipping it before step 1 means onboarding and
+Edit profile both fail on save, against a column that is not there. Step 1 is
+additive and safe to run on its own, today, before anything else in this task.
+
+**The contract step's gate was rewritten on 30 September, because the first one
+was not a gate.** It used to ask whether the two columns disagree. They cannot
+disagree: the expand migration installs a trigger whose whole job is to keep
+them in step, so the check passed by construction and would have let the column
+be dropped out from under a live app. It now does two real things:
+
+  - it is OPT-IN. It does nothing and raises a NOTICE unless you
+    `set choner.allow_tone_contract = 'on'`. So `supabase db push` runs the
+    other four drafts and skips this one
+  - it scans `pg_proc` and REFUSES while any function still names
+    `accountability_mode`. That is what enforces step 3 — re-issue all four
+    matching RPCs, not just the live one, or a `db reset` replays an old body
+    that no longer compiles
+
+**Two writers in the app, not one:** `app/profile/edit.tsx` and
+`app/onboarding/energy.tsx` (the single write that saves the whole onboarding
+quiz). Both moved together in fe10, which also reads
+`accountability_style ?? accountability_mode` so a row your backfill has not
+reached still shows its tone instead of going blank.
 
 **Done when:** one meaning per column, no `'solo'` default anywhere, and the
-contract migration's gate passes.
+contract migration runs to completion with the opt-in set.
 
 ## 6. `photo_status` column and a storage bucket  ·  *new*
 
