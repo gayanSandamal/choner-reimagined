@@ -50,7 +50,7 @@ export default function EditProfileScreen() {
     if (profileQ.data) {
       setFullName(profileQ.data.full_name ?? '');
       setGoal(profileQ.data.primary_goal ?? '');
-      setTone(profileQ.data.accountability_mode ?? '');
+      setTone(profileQ.data.accountability_style ?? profileQ.data.accountability_mode ?? '');
       setStruggle(profileQ.data.main_struggle ?? '');
       setAgeRange(profileQ.data.age_range ?? '');
       setGender(profileQ.data.gender ?? '');
@@ -91,13 +91,12 @@ export default function EditProfileScreen() {
         payload: {
           full_name: fullName,
           ...(goal ? { primary_goal: goal } : {}),
-          // TODO(gayan-tone-column): `accountability_mode` is holding the TONE
-          // value, which is not an accountability mode, and it still defaults
-          // to 'solo' — a mode that no longer exists. When his task 5 splits
-          // the column, this write and the one in app/onboarding/energy.tsx
-          // (lines 34-51, the single write that saves the whole quiz) have to
-          // change together, or onboarding keeps writing the old shape.
-          ...(tone ? { accountability_mode: tone } : {}),
+          // Writes the NEW name only. 202609291100 keeps accountability_mode in
+          // step with a trigger, so anything still reading the old name - the
+          // four matching RPCs, until Gayan re-issues them - keeps working.
+          // Once the contract migration runs, the old column is simply gone and
+          // this line needs no further change.
+          ...(tone ? { accountability_style: tone } : {}),
           ...(struggle ? { main_struggle: struggle } : {}),
           ...(ageRange ? { age_range: ageRange } : {}),
           ...(gender ? { gender: gender } : {}),

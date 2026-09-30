@@ -45,7 +45,11 @@ export default function ProfileScreen() {
   const firesLit = challenge && challenge.status === 'active' ? 1 : 0;
   const fedToday = logsToday(challenge);
 
-  const hasTone = TONES.some((t) => t.value === profileQ.data?.accountability_mode);
+  // accountability_style is the tone. accountability_mode is the old name for
+  // the same value and is still written by the expand migration's trigger, so
+  // the fallback covers any row the backfill has not reached.
+  const tone = profileQ.data?.accountability_style ?? profileQ.data?.accountability_mode;
+  const hasTone = TONES.some((t) => t.value === tone);
 
   return (
     <Screen scroll={false}>
@@ -67,7 +71,7 @@ export default function ProfileScreen() {
               </AppText>
               <AppText variant="caption" muted>{session?.user.email}</AppText>
               <View style={styles.badgeRow}>
-                {hasTone ? <Badge label={toneLabel(profileQ.data?.accountability_mode) ?? ''} /> : null}
+                {hasTone ? <Badge label={toneLabel(tone) ?? ''} /> : null}
                 {features.pro && isPremium ? <Badge label="Pro" tone="warning" /> : null}
               </View>
             </View>
@@ -80,7 +84,7 @@ export default function ProfileScreen() {
 
             <AppText variant="caption" muted style={styles.goalLine}>
               Goal: {goalLabel(profileQ.data?.primary_goal) ?? '—'} · Style:{' '}
-              {toneLabel(profileQ.data?.accountability_mode) ?? '—'}
+              {toneLabel(tone) ?? '—'}
             </AppText>
 
             {features.pro && !isPremium ? (

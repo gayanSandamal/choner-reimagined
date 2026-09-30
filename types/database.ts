@@ -22,6 +22,7 @@ export interface Database {
           primary_goal: string | null;
           main_struggle: string | null;
           accountability_mode: string | null;
+          accountability_style: string | null;
           stress_level: string | null;
           onboarding_complete: boolean | null;
           // IANA zone, e.g. 'Asia/Colombo'. The missed-day sweep resolves each
@@ -46,6 +47,7 @@ export interface Database {
           primary_goal?: string | null;
           main_struggle?: string | null;
           accountability_mode?: string | null;
+          accountability_style?: string | null;
           stress_level?: string | null;
           onboarding_complete?: boolean | null;
           timezone?: string;
@@ -63,6 +65,7 @@ export interface Database {
           primary_goal?: string | null;
           main_struggle?: string | null;
           accountability_mode?: string | null;
+          accountability_style?: string | null;
           stress_level?: string | null;
           onboarding_complete?: boolean | null;
           timezone?: string;

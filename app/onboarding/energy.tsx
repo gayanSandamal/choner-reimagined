@@ -38,7 +38,9 @@ export default function EnergyScreen() {
           ...(struggle ? { main_struggle: struggle } : {}),
           ...(ageRange ? { age_range: ageRange } : {}),
           ...(gender ? { gender } : {}),
-          accountability_mode: tone,
+          // The new name. See app/profile/edit.tsx for why the old one is not
+          // written here as well: the migration's trigger does it.
+          accountability_style: tone,
           stress_level: energy,
           // Captured here rather than asked for. The column defaults to 'UTC',
           // and until now it was only ever corrected if someone happened to
