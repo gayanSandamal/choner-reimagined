@@ -160,6 +160,16 @@ comment on column public.challenge_invites.expires_at is
   'An unused invite expires 48 hours after it is created. Set on insert, not '
   'refreshed. Accepting past it is refused.';
 
+-- Backfill, in two halves on purpose. Dating every existing row from its
+-- created_at would retroactively expire every pending invite older than two
+-- days - people who were sent a code last week would find it dead with no
+-- warning and no way to tell why. New rule, so pending invites get the clock
+-- started from NOW; anything already accepted or cancelled is dated from
+-- created_at, where it is only a record.
+update public.challenge_invites
+set expires_at = now() + interval '48 hours'
+where expires_at is null and status = 'pending';
+
 update public.challenge_invites
 set expires_at = created_at + interval '48 hours'
 where expires_at is null;

@@ -1625,3 +1625,43 @@ not a migration. It carries column shapes, constraints and a build order. There
 is no SQL in it and none of the Challenges schema is written. The five drafts
 on main are the earlier, unrelated fixes; the Challenges work is Gayan's to
 write against the agreement.
+
+---
+
+## 2026-10-01 — Two of the five drafts stopped being safe the moment they
+reached main
+
+Re-checked all five against the current schema now that `supabase db push`
+will run them. Three stand as written. Two did not, and both faults were
+CREATED by the merge rather than being wrong on the branch.
+
+### The contract migration's gate was not a gate
+`202609291110` dropped `profiles.accountability_mode` behind a check of the
+form "do the two columns disagree?". They cannot disagree: the expand
+migration installs a trigger whose entire job is to keep them in step. The
+check passes by construction.
+
+On a branch that did not matter, because a human ran the file deliberately.
+On `main` it matters a lot: push runs expand and contract back to back, the
+gate passes, the column is dropped, and the running app — which still writes
+the old name, because fe10 has not merged — breaks.
+
+FIXED: the whole file is now opt-in. It does nothing and raises a NOTICE
+unless `choner.allow_tone_contract` is set to `'on'`. And it now checks the
+thing that can actually be checked: it scans pg_proc for any function still
+referencing `accountability_mode` and REFUSES if it finds one. That catches
+the four matching RPCs, which was gate 2 and was never enforced.
+
+### The invite expiry backfill would have killed live invites
+`expires_at = created_at + 48 hours` applied to every existing row means every
+pending invite older than two days is dead on arrival, with no warning to the
+person holding the code and nothing on screen explaining why.
+
+FIXED: pending invites get the clock started from `now()`. It is a new rule;
+it should not apply backwards to people who already have a code. Rows that are
+already accepted or cancelled keep `created_at + 48h`, where the value is only
+a record.
+
+### The other three
+reflections_own_only (one drop policy), the tone expand (additive), and
+photo_status (additive) all stand unchanged and are safe to run.
