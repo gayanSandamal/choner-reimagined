@@ -273,7 +273,8 @@ export interface Database {
           capability_value: number | null;
           beginner_start_value: number | null;
           commitment_value: number | null;
-          days_per_week: 3 | 4 | 5 | 7;
+          days_per_week: number | null;
+          target_sessions: number | null;
           mode: 'together' | 'separate';
         };
         Insert: {
@@ -292,7 +293,8 @@ export interface Database {
           capability_value?: number | null;
           beginner_start_value?: number | null;
           commitment_value?: number | null;
-          days_per_week?: 3 | 4 | 5 | 7;
+          days_per_week?: number | null;
+          target_sessions?: number | null;
           mode?: 'together' | 'separate';
         };
         Update: {
@@ -311,7 +313,8 @@ export interface Database {
           capability_value?: number | null;
           beginner_start_value?: number | null;
           commitment_value?: number | null;
-          days_per_week?: 3 | 4 | 5 | 7;
+          days_per_week?: number | null;
+          target_sessions?: number | null;
           mode?: 'together' | 'separate';
         };
         Relationships: [
