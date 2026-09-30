@@ -20,6 +20,9 @@ export default function OnboardingLayout() {
         <Stack.Screen name="energy" />
         {/* Once the profile is saved the quiz shouldn't be swipe-back reachable. */}
         <Stack.Screen name="reveal" options={{ gestureEnabled: false }} />
+        {/* Optional, and deliberately after the reveal: the photo is asked for
+            once the person has seen what Choner made of their answers. */}
+        <Stack.Screen name="photo" />
         {/* Challenge setup: pick the habit, then say why. Swiping back into
             the picker after the habit is applied would let someone change it
             behind a partner who already joined it. */}
