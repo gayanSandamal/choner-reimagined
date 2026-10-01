@@ -29,7 +29,7 @@ export function Negotiation({
   suggestAnotherLabel = 'Suggest another'
 }: {
   plan: PairPlan;
-  field: 'distance' | 'mode' | 'place' | 'time' | 'day_time';
+  field: 'distance' | 'cadence' | 'mode' | 'place' | 'time' | 'day_time';
   renderSuggest: (done: () => void) => ReactNode;
   helpLabel?: string;
   suggestAnotherLabel?: string;

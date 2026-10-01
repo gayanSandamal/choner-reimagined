@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { PairPlan, RepairDebt } from './types';
+import type { PairPlan, RepairDebt, Streak } from './types';
 
 export type PlanResult = { ok: true; [k: string]: unknown } | { ok: false; reason: string };
 
@@ -81,3 +81,11 @@ export const setRepairPreference = (missedPlanId: string, when: 'this_week' | 'n
 // no_partner, one_per_week, already_planning, not_found.
 export const startRepairPlan = (missedPlanId: string) =>
   rpc<PlanResult>('start_repair_plan', { p_missed_plan_id: missedPlanId });
+
+// --- Streak (SCHEMA_CHALLENGES.md §1) ---------------------------------------
+// Personal in ownership, shared in earning: it is your target on your
+// challenge, and a circle fills only when both of you complete the session.
+export const getStreak = (userChallengeId: string) =>
+  rpc<Streak>('get_streak', { p_user_challenge_id: userChallengeId });
+export const setStreakTarget = (userChallengeId: string, target: number) =>
+  rpc<PlanResult>('set_streak_target', { p_user_challenge_id: userChallengeId, p_target: target });

@@ -14,7 +14,14 @@ import { PairRow } from '@/components/challenges/PairRow';
 import { MatchBanner } from '@/components/challenges/MatchBanner';
 import { PairSafetyMenu } from '@/components/safety/PairSafetyMenu';
 import { PlanGateCard } from '@/components/plans/PlanGateCard';
-import { usePairPlan, useStartMeetupPlan } from '@/features/plans/hooks';
+import { RepairCard } from '@/components/plans/RepairCard';
+import { StreakCircles } from '@/components/streak/StreakCircles';
+import {
+  usePairPlan,
+  useRepairDebt,
+  useSessionStreak,
+  useStartMeetupPlan
+} from '@/features/plans/hooks';
 import { SharePrompt } from '@/components/community/SharePrompt';
 import { challengeHabitTitle, partnerStateOf, nudgeRefusalMessage } from '@/features/challenges/api';
 import {
@@ -72,9 +79,22 @@ export default function ChallengesScreen() {
   // Only Running/Walking/Cycling pairs ever have one (D4).
   const planQ = usePairPlan(partnered ? challenge?.id : undefined);
   const startMeetup = useStartMeetupPlan();
-  const sessionActivity = ['running', 'walking', 'cycling'].includes(
+  const sessionActivity = ['running', 'jogging', 'walking', 'cycling'].includes(
     challenge?.challenge_templates?.activity_key ?? ''
   );
+  // The streak belongs to the challenge, not the partnership: it is read for
+  // any challenge and survives a partner leaving. The debt needs the partner.
+  const sessionStreakQ = useSessionStreak(challenge?.id);
+  const repairQ = useRepairDebt(partnered ? challenge?.id : undefined);
+  const sessionStreak = sessionStreakQ.data;
+  const repairDebt = repairQ.data && repairQ.data.owed ? repairQ.data : null;
+  // "How long a streak?" is asked once the first plan has been accepted, or as
+  // soon as there is a session to show. Never before a plan exists.
+  const askStreakTarget =
+    Boolean(challenge?.id) &&
+    sessionStreak != null &&
+    sessionStreak.target == null &&
+    (sessionStreak.circles.length > 0 || (planQ.data != null && planQ.data.status !== 'planning'));
 
   const partnerReflectionsQ = usePartnerReflections(
     partnered ? partnerStatus?.partner_id : undefined
@@ -277,6 +297,16 @@ export default function ChallengesScreen() {
           </Animated.View>
         ) : (
           <>
+            {/* A missed session, and when to make it up. Above the plan card:
+                while a debt is open it is the next thing to decide. */}
+            {repairDebt && challenge?.id ? (
+              <RepairCard
+                debt={repairDebt}
+                userChallengeId={challenge.id}
+                partnerFirstName={firstName(partnerStatus?.name)}
+              />
+            ) : null}
+
             {/* D1: additive — the plan sits above today's habit, never in its place. */}
             {partnered && planQ.data && challenge?.id ? (
               <PlanGateCard
@@ -299,6 +329,39 @@ export default function ChallengesScreen() {
                       router.push({ pathname: '/plan/[challengeId]', params: { challengeId: challenge.id } })
                     )
                     .catch(() => {})
+                }
+              />
+            ) : null}
+
+            {/* The streak: target_sessions circles, one per session. */}
+            {sessionStreak?.target ? <StreakCircles streak={sessionStreak} /> : null}
+            {askStreakTarget && challenge?.id ? (
+              <View style={styles.streakAsk}>
+                <AppText style={styles.streakAskHeading}>How long a streak?</AppText>
+                <AppText style={styles.streakAskBody}>
+                  Pick a number of sessions to aim for. It is yours, not the pair's.
+                </AppText>
+                <Button
+                  label="Pick your streak"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/modals/streak-target',
+                      params: { challengeId: challenge.id }
+                    } as never)
+                  }
+                />
+              </View>
+            ) : null}
+            {/* All N circles resolved: offer the next length straight away. */}
+            {sessionStreak?.complete && challenge?.id ? (
+              <Button
+                label="Extend your streak"
+                variant="ghost"
+                onPress={() =>
+                  router.push({
+                    pathname: '/modals/streak-target',
+                    params: { challengeId: challenge.id }
+                  } as never)
                 }
               />
             ) : null}
@@ -560,6 +623,17 @@ const styles = StyleSheet.create({
   stakes: { textAlign: 'center', color: DIM, fontSize: 10, marginTop: 14 },
   empty: { alignItems: 'center', paddingVertical: 48, gap: theme.spacing(1.5) },
   emptyTitle: { fontSize: 18, color: theme.colors.text, textAlign: 'center' },
+  streakAsk: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(253,131,2,0.28)',
+    gap: 8
+  },
+  streakAskHeading: { fontSize: 19, color: theme.colors.text },
+  streakAskBody: { fontSize: 13, lineHeight: 19, color: theme.colors.muted },
   emptyBody: {
     fontSize: 12,
     color: theme.colors.muted,

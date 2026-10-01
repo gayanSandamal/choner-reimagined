@@ -111,8 +111,8 @@ export default function BrowseChallengesScreen() {
       >
         <ScreenHeader title="Choose a challenge" onBack={() => router.back()} />
         <SectionHeader
-          title="Quests"
-          subtitle="Seven days, one habit. Pick what you'll build the next week around."
+          title="Activities"
+          subtitle="Pick what you'll do. How much and how often are agreed with your partner."
         />
 
         <ScrollView

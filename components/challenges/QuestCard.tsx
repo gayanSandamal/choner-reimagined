@@ -121,21 +121,12 @@ export function QuestCard({
             ) : null}
 
             <View style={styles.metaRow}>
+              {/* Not "7 days" and not a difficulty: a challenge is a rolling
+                  weekly commitment now, and how much, how often and how it is
+                  done are agreed with a partner, not set by the activity. */}
               <View style={styles.metaLeft}>
                 <AppText variant="caption" muted>
-                  {durationDays} days ·{' '}
-                </AppText>
-                {[0, 1, 2].map((i) => (
-                  <Ionicons
-                    key={i}
-                    name="flame"
-                    size={11}
-                    color={i < pips ? theme.colors.primary : theme.colors.surface3}
-                    style={{ marginRight: 1 }}
-                  />
-                ))}
-                <AppText variant="caption" muted style={{ marginLeft: 4 }}>
-                  {difficulty}
+                  Together or separately
                 </AppText>
               </View>
 

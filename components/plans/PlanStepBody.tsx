@@ -3,6 +3,7 @@ import {
   ConfirmStep,
   DayTimeStep,
   HowMuchStep,
+  HowOftenStep,
   ModeStep,
   WhenStep,
   WhereStep
@@ -29,6 +30,8 @@ export function PlanStepBody({
   switch (step) {
     case 'how_much':
       return <HowMuchStep plan={plan} />;
+    case 'how_often':
+      return <HowOftenStep plan={plan} />;
     case 'mode':
       return <ModeStep plan={plan} />;
     case 'where':

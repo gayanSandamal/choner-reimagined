@@ -13,68 +13,61 @@ import {
   ToneValue
 } from './constants';
 
-export const DEFAULT_TEMPLATE_SLUG = 'onboarding-walk-10min';
+// The six activities, in the order they are listed everywhere. The picker
+// shows these and nothing else (decided 26 September; the templates are
+// supabase/migrations/202610020900).
+export const ACTIVITY_SLUGS = [
+  'activity-running',
+  'activity-jogging',
+  'activity-walking',
+  'activity-cycling',
+  'activity-yoga',
+  'activity-workouts'
+] as const;
 
-// The curated Step 1 list per goal (Challenge Setup Flow spec, Aug 2026), in
-// display order. One list per goal serves all three user types: someone who
-// knows what they want writes their own, someone with a rough idea browses,
-// and someone with no idea taps the pre-flagged recommendation below.
-const GOAL_OPTION_SLUGS: Record<GoalValue, string[]> = {
-  move_more: [
-    'onboarding-walk-10min',
-    'onboarding-run-1-mile',
-    'onboarding-pushups-20',
-    'onboarding-yoga-15min'
-  ],
-  // Deliberately short: the spec cut the screen-time and bedtime habits
-  // because neither a photo nor an honest tap can actually verify them.
-  sleep_better: ['onboarding-winddown-walk', 'onboarding-stretch-before-bed'],
-  reduce_stress: [
-    'onboarding-deep-breathing',
-    'onboarding-journaling',
-    'onboarding-walk-outside'
-  ],
-  improve_energy: [
-    'onboarding-morning-water',
-    'onboarding-morning-stretch',
-    'onboarding-no-caffeine-2pm'
-  ]
+export const WORKOUTS_SLUG = 'activity-workouts';
+
+export const DEFAULT_TEMPLATE_SLUG = 'activity-walking';
+
+// What each goal points at first (DECISIONS_LOG, 26 September). The goal is
+// the motivation, not a filter: every list below is completed with the rest of
+// the six, so nobody is shown fewer than six because of what they answered.
+//
+// "Stretching routine" was in the Sleep better list. It is an exercise inside
+// Workouts now, not an activity of its own, so it is not here.
+const GOAL_FIRST_SLUGS: Record<GoalValue, string[]> = {
+  move_more: ['activity-running', 'activity-jogging', 'activity-cycling', 'activity-walking'],
+  sleep_better: ['activity-walking', 'activity-yoga'],
+  reduce_stress: ['activity-yoga', 'activity-walking'],
+  improve_energy: ['activity-workouts', 'activity-running']
 };
 
-// Exactly one recommendation per goal — the option that carries the badge and
-// the habit both default tracks are provisioned with before Step 1 runs.
-const GOAL_TEMPLATE_SLUGS: Record<GoalValue, string> = {
-  move_more: 'onboarding-run-1-mile',
-  sleep_better: 'onboarding-winddown-walk',
-  reduce_stress: 'onboarding-deep-breathing',
-  improve_energy: 'onboarding-morning-water'
+const ACTIVITY_TITLES: Record<string, string> = {
+  'activity-running': 'Running',
+  'activity-jogging': 'Jogging',
+  'activity-walking': 'Walking',
+  'activity-cycling': 'Cycling',
+  'activity-yoga': 'Yoga',
+  'activity-workouts': 'Workouts'
 };
 
-const DEFAULT_HABIT_TITLE = 'Walk for 10 minutes every day';
-
-const GOAL_HABIT_TITLES: Record<GoalValue, string> = {
-  move_more: 'Run 1 mile',
-  sleep_better: '10-min wind-down walk',
-  reduce_stress: '5 minutes of deep breathing each morning',
-  improve_energy: 'Drink a glass of water first thing every morning'
-};
-
+// Exactly one recommendation per goal: the first of its list. It carries the
+// badge, and it is the activity a new account is provisioned with before the
+// picker runs.
 export function goalToTemplateSlug(goal: GoalValue | null): string {
-  return goal ? GOAL_TEMPLATE_SLUGS[goal] : DEFAULT_TEMPLATE_SLUG;
+  return goal ? GOAL_FIRST_SLUGS[goal][0] : DEFAULT_TEMPLATE_SLUG;
 }
 
-// Skipping the goal question can't mean "no options" — it shows the whole
-// curated set instead, deduped, with the walking habit recommended.
+// Always all six: the goal's own first, then the rest in the standard order.
+// A skipped goal leads with walking.
 export function challengeOptionSlugs(goal: GoalValue | null): string[] {
-  if (goal) return GOAL_OPTION_SLUGS[goal];
-  const all = Object.values(GOAL_OPTION_SLUGS).flat();
-  return Array.from(new Set([DEFAULT_TEMPLATE_SLUG, ...all]));
+  const first = goal ? GOAL_FIRST_SLUGS[goal] : [DEFAULT_TEMPLATE_SLUG];
+  return Array.from(new Set([...first, ...ACTIVITY_SLUGS]));
 }
 
-// Must stay in step with goalToTemplateSlug — a skipped goal falls back to the
-// walking template, so its title has to be the walking one too.
+// Must stay in step with goalToTemplateSlug.
 export function suggestedHabitTitle(goal: GoalValue | null): string {
-  return goal ? GOAL_HABIT_TITLES[goal] : DEFAULT_HABIT_TITLE;
+  return ACTIVITY_TITLES[goalToTemplateSlug(goal)];
 }
 
 const FIRST_WEEK: Record<EnergyValue, string> = {

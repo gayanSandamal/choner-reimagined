@@ -10,7 +10,9 @@ import { OptionCard } from '@/components/onboarding/OptionCard';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { useOnboarding } from '@/features/onboarding/context';
 import { useIsInvitee } from '@/features/onboarding/invitee';
-import { challengeOptionSlugs, goalToTemplateSlug } from '@/features/onboarding/mappings';
+import { challengeOptionSlugs, goalToTemplateSlug, WORKOUTS_SLUG } from '@/features/onboarding/mappings';
+import { ExercisePicker } from '@/components/challenges/ExercisePicker';
+import { getMyChallenge, setChallengeExercises } from '@/features/challenges/api';
 import { useChallengeTemplates, useSetMyChallengeHabit } from '@/features/challenges/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
@@ -32,6 +34,8 @@ export default function ChallengeScreen() {
   const { isInvitee, resolving } = useIsInvitee(userId);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Workouts only. Descriptive, so an empty list is a valid answer.
+  const [exercises, setExercises] = useState<string[]>([]);
 
   // The habit is locked and shared, so an invitee never picks one — they go
   // straight to their own reflection.
@@ -62,6 +66,16 @@ export default function ChallengeScreen() {
         templateId: template.id,
         customHabitTitle: null
       });
+      // Best-effort: the exercises are colour on a card. Failing to save them
+      // must not stop someone finishing onboarding.
+      if (template.slug === WORKOUTS_SLUG && exercises.length) {
+        try {
+          const mine = await getMyChallenge(userId);
+          if (mine?.id) await setChallengeExercises(mine.id, exercises);
+        } catch {
+          // They can be added later from the commitment.
+        }
+      }
       setChosenChallenge({
         templateId: template.id,
         title: template.title,
@@ -121,6 +135,9 @@ export default function ChallengeScreen() {
                 onPress={() => setSelectedId(t.id)}
               />
             ))}
+            {options.find((t: any) => t.id === selectedId)?.slug === WORKOUTS_SLUG ? (
+              <ExercisePicker value={exercises} onChange={setExercises} />
+            ) : null}
           </Animated.View>
         )}
       </ScrollView>

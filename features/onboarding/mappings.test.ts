@@ -1,4 +1,5 @@
 import {
+  ACTIVITY_SLUGS,
   DEFAULT_TEMPLATE_SLUG,
   challengeOptionSlugs,
   energyToFirstWeek,
@@ -12,52 +13,59 @@ import {
 import { ENERGY_LEVELS, GOALS, STRUGGLES, TONES } from './constants';
 
 describe('goalToTemplateSlug', () => {
-  it('maps every goal to its recommended template slug', () => {
-    expect(goalToTemplateSlug('move_more')).toBe('onboarding-run-1-mile');
-    expect(goalToTemplateSlug('sleep_better')).toBe('onboarding-winddown-walk');
-    expect(goalToTemplateSlug('reduce_stress')).toBe('onboarding-deep-breathing');
-    expect(goalToTemplateSlug('improve_energy')).toBe('onboarding-morning-water');
+  it('maps every goal to its recommended activity', () => {
+    expect(goalToTemplateSlug('move_more')).toBe('activity-running');
+    expect(goalToTemplateSlug('sleep_better')).toBe('activity-walking');
+    expect(goalToTemplateSlug('reduce_stress')).toBe('activity-yoga');
+    expect(goalToTemplateSlug('improve_energy')).toBe('activity-workouts');
   });
 
-  it('falls back to the walking template when the goal was skipped', () => {
+  it('falls back to walking when the goal was skipped', () => {
     expect(goalToTemplateSlug(null)).toBe(DEFAULT_TEMPLATE_SLUG);
   });
 });
 
 describe('challengeOptionSlugs', () => {
-  it('offers the curated list for each goal', () => {
-    expect(challengeOptionSlugs('move_more')).toHaveLength(4);
-    expect(challengeOptionSlugs('sleep_better')).toEqual([
-      'onboarding-winddown-walk',
-      'onboarding-stretch-before-bed'
+  it('always offers exactly the six activities, whatever the goal', () => {
+    for (const goal of [null, ...GOALS.map((g) => g.value)]) {
+      const slugs = challengeOptionSlugs(goal);
+      expect(slugs).toHaveLength(6);
+      expect([...slugs].sort()).toEqual([...ACTIVITY_SLUGS].sort());
+    }
+  });
+
+  it('leads with the goal\'s own activities, in their order', () => {
+    expect(challengeOptionSlugs('move_more').slice(0, 4)).toEqual([
+      'activity-running',
+      'activity-jogging',
+      'activity-cycling',
+      'activity-walking'
+    ]);
+    expect(challengeOptionSlugs('improve_energy').slice(0, 2)).toEqual([
+      'activity-workouts',
+      'activity-running'
     ]);
   });
 
-  it('always contains its own recommendation, so the badge never orphans', () => {
+  it('puts its own recommendation first, so the badge never orphans', () => {
     for (const g of GOALS) {
-      expect(challengeOptionSlugs(g.value)).toContain(goalToTemplateSlug(g.value));
+      expect(challengeOptionSlugs(g.value)[0]).toBe(goalToTemplateSlug(g.value));
     }
-    expect(challengeOptionSlugs(null)).toContain(goalToTemplateSlug(null));
+    expect(challengeOptionSlugs(null)[0]).toBe(DEFAULT_TEMPLATE_SLUG);
   });
 
-  it('shows the whole deduped set when the goal was skipped', () => {
-    const all = challengeOptionSlugs(null);
-    expect(all[0]).toBe(DEFAULT_TEMPLATE_SLUG);
-    expect(new Set(all).size).toBe(all.length);
-    expect(all).toContain('onboarding-journaling');
-  });
-
-  it('never offers a habit the spec retired', () => {
+  it('never offers one of the retired habits', () => {
     for (const goal of [null, ...GOALS.map((g) => g.value)]) {
-      expect(challengeOptionSlugs(goal)).not.toContain('onboarding-no-screens');
+      for (const slug of challengeOptionSlugs(goal)) expect(slug).toMatch(/^activity-/);
     }
   });
 });
 
 describe('suggestedHabitTitle', () => {
-  it('returns the recommended habit copy per goal, defaulting to walking', () => {
-    expect(suggestedHabitTitle('sleep_better')).toBe('10-min wind-down walk');
-    expect(suggestedHabitTitle(null)).toBe('Walk for 10 minutes every day');
+  it('names the recommended activity, defaulting to walking', () => {
+    expect(suggestedHabitTitle('move_more')).toBe('Running');
+    expect(suggestedHabitTitle('improve_energy')).toBe('Workouts');
+    expect(suggestedHabitTitle(null)).toBe('Walking');
   });
 });
 

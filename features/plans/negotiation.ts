@@ -1,3 +1,4 @@
+import { cadenceLabel } from './cadence';
 import { DISTANCES } from './copy';
 import { formatDayTime } from './format';
 
@@ -15,6 +16,7 @@ export function middleDistance(a: string, b: string): string | null {
 export const HELP_AFTER_ROUNDS = 3;
 
 export function proposalLabel(field: string, value: any): string {
+  if (field === 'cadence') return cadenceLabel(Number(value)) ?? String(value);
   if (field === 'distance' || field === 'mode') return String(value) === 'together'
     ? 'Run together'
     : String(value) === 'separate'

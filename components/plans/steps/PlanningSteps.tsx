@@ -8,6 +8,7 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Negotiation } from '@/components/plans/Negotiation';
 import { searchPlaces } from '@/features/plans/api';
 import { amountLine } from '@/features/plans/amounts';
+import { CADENCES, cadenceLabel } from '@/features/plans/cadence';
 import { COPY, DISTANCES, lines } from '@/features/plans/copy';
 import { formatDayTime } from '@/features/plans/format';
 import {
@@ -90,6 +91,38 @@ function Compare({ mine, theirs, them }: { mine: string; theirs: string | null; 
         <AppText muted style={styles.compareLabel}>{them}</AppText>
         <AppText style={styles.compareValue}>{theirs ?? '—'}</AppText>
       </View>
+    </View>
+  );
+}
+
+// How often. SHARED: one number for the pair, agreed like anything else in a
+// plan, because it defines the week for both of them. Asked once per pair, at
+// their first plan; later plans and repairs carry it and skip this step.
+export function HowOftenStep({ plan }: { plan: PairPlan }) {
+  const propose = useProposePlanValue();
+  const pick = (value: number, done: () => void) =>
+    guard(async () => {
+      const r = await propose.mutateAsync({ planId: plan.id, field: 'cadence', value });
+      done();
+      return r;
+    });
+  return (
+    <View style={styles.wrap}>
+      <AppText variant="title">How often, each week?</AppText>
+      <AppText muted>
+        You both do the same number. {plan.them.first_name} can agree or suggest another.
+      </AppText>
+      <Negotiation
+        plan={plan}
+        field="cadence"
+        renderSuggest={(done) => (
+          <View style={styles.options}>
+            {CADENCES.map((n) => (
+              <Option key={n} label={cadenceLabel(n) ?? String(n)} onPress={() => pick(n, done)} />
+            ))}
+          </View>
+        )}
+      />
     </View>
   );
 }
@@ -338,6 +371,7 @@ export function ConfirmStep({ plan }: { plan: PairPlan }) {
       <AppText variant="title">Your {plan.kind === 'first_run' ? 'first run' : 'meetup'}</AppText>
       <View style={styles.card}>
         <Row label="Distance" value={amountLine(plan) ?? '—'} />
+        {cadenceLabel(plan.cadence) ? <Row label="How often" value={cadenceLabel(plan.cadence)!} /> : null}
         <Row label="When" value={timing} />
         {together ? <Row label="Where" value={[plan.place_name, plan.place_text].filter(Boolean).join(' — ')} /> : null}
       </View>
