@@ -116,7 +116,7 @@ export function StartingPointOverlay({ status, habitTitle, busy, onSubmit, onDis
             <>
               <View style={styles.reassureCard}>
                 <AppText variant="caption" style={styles.reassureText}>
-                  That's fine — let's try it first. You can give us your number after you
+                  That's fine, let's try it first. You can give us your number after you
                   finish today.
                 </AppText>
               </View>

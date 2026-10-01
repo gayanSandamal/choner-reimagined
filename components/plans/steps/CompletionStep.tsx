@@ -3,14 +3,13 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/Chip';
 import { PairAvatars } from '@/components/plans/PairAvatars';
-import { useStreak } from '@/features/challenges/hooks';
 import { COPY, REACTIONS, lines } from '@/features/plans/copy';
-import { useRecordSessionShare, useTogglePlanReaction } from '@/features/plans/hooks';
+import { useRecordSessionShare, useSessionStreak, useTogglePlanReaction } from '@/features/plans/hooks';
+import { streakLine } from '@/features/plans/streak';
 import { planCopy } from '@/features/plans/activity';
 import { amountLine, myAmount, theirAmount } from '@/features/plans/amounts';
 import type { PairPlan } from '@/features/plans/types';
 import { notify } from '@/lib/alert';
-import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 
 function doneAt(m: { finished_at: string | null; checkin_at: string | null; checkin: string | null }) {
@@ -19,9 +18,18 @@ function doneAt(m: { finished_at: string | null; checkin_at: string | null; chec
 }
 
 // §3.17 State A (you're in, partner not yet) and §3.18 State B (both).
-export function CompletionStep({ plan, me }: { plan: PairPlan; me: { name: string; avatarUrl: string | null } }) {
-  const { session } = useSession();
-  const streak = useStreak(session?.user.id).data ?? 0;
+export function CompletionStep({
+  plan,
+  me,
+  challengeId
+}: {
+  plan: PairPlan;
+  me: { name: string; avatarUrl: string | null };
+  challengeId: string;
+}) {
+  // The streak is counted in sessions and belongs to the challenge. Nothing
+  // is printed until it has loaded: a "0" here would read as a reset.
+  const streak = streakLine(useSessionStreak(challengeId).data);
   const react = useTogglePlanReaction();
   const share = useRecordSessionShare();
   const both = plan.status === 'completed';
@@ -44,7 +52,7 @@ export function CompletionStep({ plan, me }: { plan: PairPlan; me: { name: strin
         <AppText variant="title">{COPY.youShowedUp}</AppText>
         {distance ? <AppText muted>{distance}</AppText> : null}
         {pair}
-        <AppText muted style={styles.center}>{streak} day streak</AppText>
+        {streak ? <AppText muted style={styles.center}>{streak}</AppText> : null}
         <AppText muted style={styles.center}>{lines.waitingFor(them)}</AppText>
       </View>
     );
@@ -64,7 +72,7 @@ export function CompletionStep({ plan, me }: { plan: PairPlan; me: { name: strin
     <View style={styles.wrap}>
       <AppText variant="title">{COPY.bothShowedUp}</AppText>
       {pair}
-      <AppText muted style={styles.center}>{streak} day streak</AppText>
+      {streak ? <AppText muted style={styles.center}>{streak}</AppText> : null}
 
       {/* Both runs, from whoever is looking — never one hardcoded name. */}
       <View style={styles.cards}>

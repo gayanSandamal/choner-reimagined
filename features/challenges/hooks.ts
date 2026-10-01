@@ -20,7 +20,6 @@ import {
   pauseChallenge,
   resumeChallenge,
   abandonChallenge,
-  getStreak,
   getReflections,
   saveReflections,
   getPartnerReflections,
@@ -270,14 +269,6 @@ export function useChallengeHistory(userId: string | undefined) {
   });
 }
 
-export function useStreak(userId: string | undefined) {
-  return useQuery({
-    queryKey: ['streak', userId],
-    queryFn: () => getStreak(userId!),
-    enabled: Boolean(userId),
-  });
-}
-
 export function useStartChallenge() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -298,8 +289,6 @@ export function useCompleteTask() {
     mutationFn: completeTask,
     onSuccess: (row: any, vars) => {
       queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
-      queryClient.invalidateQueries({ queryKey: ['insights'] });
-      queryClient.invalidateQueries({ queryKey: ['streak'] });
       queryClient.invalidateQueries({ queryKey: ['pair-checkins'] });
 
       // Only ask when the habit has a unit worth asking about, and only when

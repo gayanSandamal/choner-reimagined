@@ -1,4 +1,4 @@
-import { directoryExercises, directoryLine } from './format';
+import { DIRECTORY_PAGE, directoryExercises, directoryLine, directoryPage } from './format';
 
 describe('directoryLine', () => {
   it('matches the handover examples exactly', () => {
@@ -31,5 +31,21 @@ describe('directoryExercises', () => {
     expect(directoryExercises({ exercises: [' ', ''] })).toBeNull();
     // A server that has not run 202610011100 sends no key at all.
     expect(directoryExercises({})).toBeNull();
+  });
+});
+
+describe('directoryPage', () => {
+  const rows = Array.from({ length: 15 }, (_, i) => i);
+
+  it('shows six to a screen, not eight', () => {
+    expect(DIRECTORY_PAGE).toBe(6);
+    expect(directoryPage(rows, 1)).toHaveLength(6);
+    expect(directoryPage(rows, 2)).toHaveLength(12);
+    expect(directoryPage(rows, 3)).toHaveLength(15);
+  });
+
+  it('never shows less than one screen', () => {
+    expect(directoryPage(rows, 0)).toHaveLength(6);
+    expect(directoryPage([1, 2], 1)).toEqual([1, 2]);
   });
 });

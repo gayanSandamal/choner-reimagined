@@ -30,7 +30,7 @@ const FEATURES: { icon: keyof typeof Ionicons.glyphMap; label: string; body: str
   {
     icon: 'sparkles',
     label: 'Unlimited AI coach',
-    body: 'Chat anytime — your private accountability partner.'
+    body: 'Chat anytime with your private accountability coach.'
   },
   {
     icon: 'trending-up',
@@ -225,7 +225,7 @@ export default function PremiumModal() {
                   label={
                     busyPkg === pkg.identifier
                       ? 'Processing…'
-                      : `${pkg.product.title ?? 'Premium'} — ${pkg.product.priceString}`
+                      : `${pkg.product.title ?? 'Premium'} · ${pkg.product.priceString}`
                   }
                   variant="gradient"
                   loading={busyPkg === pkg.identifier}

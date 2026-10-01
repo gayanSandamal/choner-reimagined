@@ -60,7 +60,7 @@ export function matchEndedLine(role: EndedRole): string {
 export function blockConfirmCopy(partnerFirstName: string) {
   return {
     title: `Block ${partnerFirstName}?`,
-    message: `This ends your match right away. ${partnerFirstName} won't be told you blocked them — they'll just see the match has ended.`
+    message: `This ends your match right away. ${partnerFirstName} won't be told you blocked them. They'll just see the match has ended.`
   };
 }
 

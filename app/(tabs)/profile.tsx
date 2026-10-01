@@ -13,37 +13,36 @@ import { useProfile } from '@/features/profile/hooks';
 import { goalLabel, toneLabel } from '@/features/onboarding/mappings';
 import { TONES } from '@/features/onboarding/constants';
 import { useIsPremium } from '@/features/billing/hooks';
-import { useMyChallenge, useStreak } from '@/features/challenges/hooks';
+import { useChallengeHistoryScores, useMyChallenge, useMyPartner } from '@/features/challenges/hooks';
+import { useSessionStreak } from '@/features/plans/hooks';
+import { profileStats } from '@/features/profile/stats';
 import { signOut } from '@/features/auth/api';
 import { features } from '@/constants/features';
 import { theme } from '@/constants/theme';
 
 type GlyphName = keyof typeof Ionicons.glyphMap;
 
-function todayString() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function logsToday(challenge: any): number {
-  const today = todayString();
-  const tasks = (challenge?.challenge_tasks ?? []) as any[];
-  return tasks.filter((t) =>
-    (t.task_checkins ?? []).some((c: any) => (c.completed_at ?? '').slice(0, 10) === today)
-  ).length;
-}
-
 export default function ProfileScreen() {
   const { session } = useSession();
   const tabBarClearance = useTabBarClearance();
   const userId = session?.user.id;
   const profileQ = useProfile(userId);
-  const streakQ = useStreak(userId);
   const challengesQ = useMyChallenge(userId);
+  const partnerQ = useMyPartner(userId);
+  const historyQ = useChallengeHistoryScores(userId);
   const { isPremium } = useIsPremium();
 
   const challenge = challengesQ.data ?? null;
-  const firesLit = challenge && challenge.status === 'active' ? 1 : 0;
-  const fedToday = logsToday(challenge);
+  const streakQ = useSessionStreak(challenge?.id);
+  const partner = partnerQ.data?.partnered ? partnerQ.data : null;
+  // Sessions and challenges. The daily numbers that used to sit here (a day
+  // streak, logs today) counted a check-in that no longer exists.
+  const stats = profileStats({
+    streak: streakQ.data,
+    partnerName: partner?.first_name,
+    sessionsTogether: partner?.sessions_together,
+    finished: historyQ.data?.length
+  });
 
   // accountability_style is the tone. accountability_mode is the old name for
   // the same value and is still written by the expand migration's trigger, so
@@ -81,14 +80,14 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.statsRow}>
-              <StatTile value={`${streakQ.data ?? 0}`} label="day streak" icon="flame" tint={theme.colors.primary2} />
-              <StatTile value={`${fedToday}`} label="logs today" />
-              <StatTile value={`${firesLit}`} label={firesLit === 1 ? 'fire lit' : 'fires lit'} />
+              <StatTile value={stats[0].value} label={stats[0].label} tint={theme.colors.primary2} />
+              <StatTile value={stats[1].value} label={stats[1].label} icon="heart" />
+              <StatTile value={stats[2].value} label={stats[2].label} />
             </View>
 
             <AppText variant="caption" muted style={styles.goalLine}>
-              Goal: {goalLabel(profileQ.data?.primary_goal) ?? '—'} · Style:{' '}
-              {toneLabel(tone) ?? '—'}
+              Goal: {goalLabel(profileQ.data?.primary_goal) ?? 'not set'} · Style:{' '}
+              {toneLabel(tone) ?? 'not set'}
             </AppText>
 
             {features.pro && !isPremium ? (
@@ -126,7 +125,7 @@ export default function ProfileScreen() {
                 <SettingsRow
                   icon="sparkles-outline"
                   label="AI coach"
-                  sublabel="Talk through today's fire"
+                  sublabel="Talk it through"
                   onPress={() => router.push('/modals/ai-coach')}
                 />
               ) : null}
@@ -169,7 +168,7 @@ function StatTile({
         {icon ? <Ionicons name={icon} size={15} color={tint ?? theme.colors.text} /> : null}
         <AppText variant="subtitle" style={{ color: tint ?? theme.colors.text }}>{value}</AppText>
       </View>
-      <AppText variant="caption" muted style={{ marginTop: 2 }}>{label}</AppText>
+      <AppText variant="caption" muted style={styles.statLabel} numberOfLines={2}>{label}</AppText>
     </View>
   );
 }
@@ -219,6 +218,7 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   statValueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statLabel: { marginTop: 2, textAlign: 'center', paddingHorizontal: 4 },
   goalLine: { textAlign: 'center' },
   upsell: {
     flexDirection: 'row',

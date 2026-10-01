@@ -72,7 +72,7 @@ export default function EditWhyModal() {
             keyboardShouldPersistTaps="handled"
           >
             <AppText muted>
-              Change these any time — we'll use the new answers in tomorrow's reminder.
+              Change these any time. They stay private to you.
             </AppText>
             <ReflectionQuestionList
               draft={draft ?? emptyDraft()}

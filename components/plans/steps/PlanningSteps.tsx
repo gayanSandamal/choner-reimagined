@@ -83,7 +83,7 @@ function Compare({ mine, theirs, them }: { mine: string; theirs: string | null; 
       </View>
       <View style={styles.compareCol}>
         <AppText muted style={styles.compareLabel}>{them}</AppText>
-        <AppText style={styles.compareValue}>{theirs ?? '—'}</AppText>
+        <AppText style={styles.compareValue}>{theirs ?? 'Not yet'}</AppText>
       </View>
     </View>
   );
@@ -378,10 +378,10 @@ export function ConfirmStep({ plan }: { plan: PairPlan }) {
           : 'Your next session'}
       </AppText>
       <View style={styles.card}>
-        <Row label={amountLabel(plan.activity_key)} value={amountLine(plan) ?? '—'} />
+        <Row label={amountLabel(plan.activity_key)} value={amountLine(plan) ?? 'Not set'} />
         {cadenceLabel(plan.cadence) ? <Row label="How often" value={cadenceLabel(plan.cadence)!} /> : null}
         <Row label="When" value={timing} />
-        {together ? <Row label="Where" value={[plan.place_name, plan.place_text].filter(Boolean).join(' — ')} /> : null}
+        {together ? <Row label="Where" value={[plan.place_name, plan.place_text].filter(Boolean).join(', ')} /> : null}
       </View>
       {together ? (
         <>

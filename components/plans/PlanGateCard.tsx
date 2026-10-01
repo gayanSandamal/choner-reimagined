@@ -8,10 +8,11 @@ import { ACTIVITY_LABEL, COPY, lines } from '@/features/plans/copy';
 import type { PairPlan } from '@/features/plans/types';
 import { theme } from '@/constants/theme';
 import { formatDayTime } from '@/features/plans/format';
+import { cancelRequest, isPlanned, isSessionToday } from '@/features/plans/session';
 
-// C1 — "Plan your first run". Additive (decision D1): it sits ABOVE the TODAY
-// card and never replaces it, so the daily loop keeps running while the pair
-// plans. No sub-line under the heading: that sentence was removed twice.
+// The session card on Challenges. While the pair is still agreeing a plan it
+// is the gate into planning; once agreed it carries the plan, and hands off to
+// the details screen (and, on the day itself, straight into the session).
 export function PlanGateCard({
   plan,
   userChallengeId,
@@ -30,11 +31,29 @@ export function PlanGateCard({
   // Once agreed, the card carries the plan instead of the gate.
   if (plan.status !== 'planning') {
     const when = plan.starts_at ? formatDayTime(plan.starts_at) : null;
+    const noun = activityNoun(plan.activity_key);
+    const cancel = cancelRequest(plan);
+    // Details are about a session that is still ahead. Once both have scanned
+    // in it is under way, and the session itself is the only place to be.
+    const planned = isPlanned(plan);
+    const today = isSessionToday(plan);
     return (
       <View style={styles.card}>
         <AppText style={styles.eyebrow}>{lines.gateEyebrow(activity)}</AppText>
         {when ? <AppText style={styles.heading}>{lines.itsOn(when.day, when.time)}</AppText> : null}
-        <Button label="Open" variant="ghost" onPress={open} />
+        {cancel && !cancel.mine ? (
+          <AppText style={styles.ask}>{plan.them.first_name} asked to cancel this {noun}.</AppText>
+        ) : null}
+        {today || !planned ? <Button label={`Open today's ${noun}`} onPress={open} /> : null}
+        {planned ? (
+          <Button
+            label={cancel && !cancel.mine ? 'See the request' : 'Session details'}
+            variant="ghost"
+            onPress={() =>
+              router.push({ pathname: '/challenge/[id]', params: { id: userChallengeId } } as never)
+            }
+          />
+        ) : null}
       </View>
     );
   }
@@ -70,9 +89,11 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(253,131,2,0.28)'
+    borderColor: 'rgba(253,131,2,0.28)',
+    gap: 10
   },
-  eyebrow: { fontSize: 10, letterSpacing: 1.2, color: theme.colors.muted, marginBottom: 6 },
+  eyebrow: { fontSize: 10, letterSpacing: 1.2, color: theme.colors.muted },
   heading: { fontSize: 19, color: theme.colors.text },
+  ask: { fontSize: 13, color: theme.colors.primary2 },
   strong: { fontFamily: theme.fonts.bodyBold, color: theme.colors.primary }
 });

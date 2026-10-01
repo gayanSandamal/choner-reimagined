@@ -73,7 +73,7 @@ describe('ended copy', () => {
     expect(blockConfirmCopy('Gayan')).toEqual({
       title: 'Block Gayan?',
       message:
-        "This ends your match right away. Gayan won't be told you blocked them — they'll just see the match has ended."
+        "This ends your match right away. Gayan won't be told you blocked them. They'll just see the match has ended."
     });
   });
 });

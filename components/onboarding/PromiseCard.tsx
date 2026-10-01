@@ -10,9 +10,30 @@ interface Props {
   icon: IconName | React.ReactNode;
   title: string;
   description: string;
+  // Glass on the dark intro: a white wash on a white hairline, no blur. The
+  // default is the white paper card used everywhere else.
+  glass?: boolean;
 }
 
-export function PromiseCard({ icon, title, description }: Props) {
+export function PromiseCard({ icon, title, description, glass = false }: Props) {
+  if (glass) {
+    return (
+      <View style={[styles.card, styles.glass]}>
+        <View style={[styles.iconBox, styles.glassIconBox]}>
+          {isIconName(icon) ? (
+            <Icon name={icon} size={22} color={theme.colors.primary} />
+          ) : (
+            <AppText style={styles.icon}>{icon}</AppText>
+          )}
+        </View>
+        <View style={styles.textBlock}>
+          <AppText variant="subtitle" style={styles.glassTitle}>{title}</AppText>
+          <AppText variant="caption" style={styles.glassBody}>{description}</AppText>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <Card style={styles.card}>
       <View style={styles.iconBox}>
@@ -46,6 +67,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
+  glass: {
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing(2)
+  },
+  glassIconBox: { backgroundColor: 'rgba(255,255,255,0.08)' },
+  glassTitle: { color: '#FFFFFF' },
+  glassBody: { color: 'rgba(255,255,255,0.72)' },
   icon: { fontSize: 22, lineHeight: 28 },
   textBlock: { flex: 1, gap: 2 }
 });

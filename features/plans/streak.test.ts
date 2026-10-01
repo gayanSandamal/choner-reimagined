@@ -1,4 +1,4 @@
-import { circleDay, circleLabel, streakScore } from './streak';
+import { circleDay, circleLabel, streakLine, streakScore } from './streak';
 
 describe('streakScore', () => {
   it('counts filled circles against the target', () => {
@@ -27,5 +27,20 @@ describe('circles', () => {
     expect(circleLabel({ state: 'missed', at: null, plan_id: 'p', repairable: false }, 3)).toBe('Session 4, missed');
     expect(circleLabel({ state: 'planned', at: null, plan_id: 'p' }, 4)).toBe('Session 5, planned');
     expect(circleLabel({ state: 'ahead' }, 5)).toBe('Session 6, not planned yet');
+  });
+});
+
+describe('streakLine', () => {
+  it('counts sessions, never days', () => {
+    expect(streakLine({ done: 3, target: 12 })).toBe('3 of 12 in your streak');
+    expect(streakLine({ done: 1, target: null })).toBe('1 session done');
+    expect(streakLine({ done: 4, target: null })).toBe('4 sessions done');
+    expect(streakLine({ done: 3, target: 12 })).not.toMatch(/day/);
+  });
+
+  it('says nothing rather than print a zero', () => {
+    expect(streakLine(null)).toBeNull();
+    expect(streakLine(undefined)).toBeNull();
+    expect(streakLine({ done: 0, target: null })).toBeNull();
   });
 });

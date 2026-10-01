@@ -193,10 +193,8 @@ function SessionWiring() {
       // The match itself, which this handler used to leave stale. partner_matches
       // is not in the realtime publication, but a match always flips
       // user_challenges.partner_state to 'matched' — which IS published and is
-      // what fires this. On Find that was survivable because MatchCard only
-      // mounts once the state flips and so fetches fresh; on Challenges the card
-      // is always mounted (it renders null with no match), so the banner stayed
-      // invisible until the app was backgrounded and reopened.
+      // what fires this. Find reads the offer from this query, so without the
+      // invalidation the offer would not appear until the next poll.
       qc.invalidateQueries({ queryKey: ['my-match', userId] });
     };
 

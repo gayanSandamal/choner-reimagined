@@ -54,10 +54,10 @@ export const ENERGY_LEVELS: QuizOption<EnergyValue>[] = [
 // bands still score well there, so the boundaries here don't need to be
 // exact.
 export const AGE_BANDS: QuizOption<AgeRangeValue>[] = [
-  { value: '18-24', label: '18–24', description: '' },
-  { value: '25-34', label: '25–34', description: '' },
-  { value: '35-44', label: '35–44', description: '' },
-  { value: '45-54', label: '45–54', description: '' },
+  { value: '18-24', label: '18 to 24', description: '' },
+  { value: '25-34', label: '25 to 34', description: '' },
+  { value: '35-44', label: '35 to 44', description: '' },
+  { value: '45-54', label: '45 to 54', description: '' },
   { value: '55+', label: '55+', description: '' }
 ];
 

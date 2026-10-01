@@ -179,6 +179,9 @@ function RootLayoutNav() {
         options={{ presentation: 'modal', animation: 'fade', gestureEnabled: false }}
       />
       <Stack.Screen name="plan/[challengeId]" />
+      {/* Session details: one planned session. Notifications about a session
+          (running late, a nudge, a cancel request) open it directly. */}
+      <Stack.Screen name="challenge/[id]" />
       <Stack.Screen name="settings/index" />
       <Stack.Screen name="settings/notifications" />
       <Stack.Screen name="profile/edit" options={{ presentation: 'modal' }} />

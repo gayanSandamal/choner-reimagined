@@ -9,27 +9,16 @@ import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { Heart } from '@/components/challenges/Heart';
 import { MilestoneRow } from '@/components/community/MilestoneRow';
 import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
-import { useMyChallenge, useStreak } from '@/features/challenges/hooks';
-import {
-  useCityFeed,
-  usePartnerStatus,
-  useToggleMilestoneReaction
-} from '@/features/community/hooks';
+import { useMyChallenge, useMyPartner } from '@/features/challenges/hooks';
+import { useCityFeed, useToggleMilestoneReaction } from '@/features/community/hooks';
+import { heartCopy } from '@/features/home/hero';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 
 const ORANGE = '#FD8302';
 const DIM = '#D8D2CC';
 
-function firstName(name?: string | null) {
-  return (name ?? '').trim().split(/\s+/)[0] || '';
-}
-
-function todayString() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-// Community — ambient social proof, local and opt-in.
+// Community: ambient social proof, local and opt-in.
 //
 // Not a directory and not a feed to act on. Find is where you decide to get
 // matched; this is where you see that the whole thing actually works, including
@@ -41,30 +30,29 @@ export default function CommunityScreen() {
   const tabBarClearance = useTabBarClearance();
   const userId = session?.user.id;
   const challengeQ = useMyChallenge(userId);
-  const partnerStatusQ = usePartnerStatus(userId);
-  const streakQ = useStreak(userId);
+  // The pair comes from the partnership, which outlives a challenge, and the
+  // number is sessions both of you completed. Nothing here is a daily
+  // check-in: there is no such thing any more.
+  const partnerQ = useMyPartner(userId);
   const feedQ = useCityFeed();
   const react = useToggleMilestoneReaction();
 
   const challenge = challengeQ.data ?? null;
-  const partnerState = partnerStateOf(challenge);
-  const partnered = partnerState === 'partnered';
-  const partnerStatus = partnerStatusQ.data;
+  const partner = partnerQ.data?.partnered ? partnerQ.data : null;
+  const partnerState = partner ? 'partnered' : partnerStateOf(challenge);
+  const together = partner?.sessions_together ?? 0;
+  const pair = heartCopy({
+    partnerName: partner?.first_name ?? null,
+    partnerState,
+    sessionsTogether: together
+  });
   const city = feedQ.data?.city ?? null;
   const items = feedQ.data?.items ?? [];
-
-  const tasks = (challenge?.challenge_tasks ?? []) as any[];
-  const today = todayString();
-  const youCheckedIn =
-    tasks.length > 0 &&
-    tasks.every((t) =>
-      (t.task_checkins ?? []).some((c: any) => (c.completed_at ?? '').slice(0, 10) === today)
-    );
 
   const onRefresh = () => {
     feedQ.refetch();
     challengeQ.refetch();
-    partnerStatusQ.refetch();
+    partnerQ.refetch();
   };
 
   const onReact = (id: string, reacted: boolean) => {
@@ -100,27 +88,19 @@ export default function CommunityScreen() {
             feed, you can see your own pair. */}
         <Animated.View entering={FadeInDown.duration(320)} style={styles.pinned}>
           <View style={styles.pinnedHeart}>
-            <Heart
-              youCheckedIn={youCheckedIn}
-              partnerCheckedIn={Boolean(partnerStatus?.checked_in_today)}
-              partnerState={partnerState}
-              width={62}
-            />
+            {/* Your half is always lit; theirs lights once there is a them. */}
+            <Heart youCheckedIn partnerCheckedIn={Boolean(partner)} partnerState={partnerState} width={62} />
           </View>
           <View style={styles.pinnedBody}>
-            <AppText style={styles.pinnedTitle}>
-              {partnered
-                ? `You & ${firstName(partnerStatus?.name) || 'your partner'}`
-                : 'Doing this solo right now'}
-            </AppText>
+            <AppText style={styles.pinnedTitle}>{pair.title}</AppText>
             <AppText style={styles.pinnedSub}>
-              {challengeHabitTitle(challenge) ?? 'No challenge yet'}
+              {pair.line ?? challengeHabitTitle(challenge) ?? 'Nothing picked yet'}
             </AppText>
           </View>
-          {(streakQ.data ?? 0) > 0 ? (
+          {together > 0 ? (
             <View style={styles.streak}>
-              <AppText style={styles.streakNum}>{streakQ.data}</AppText>
-              <AppText style={styles.streakLabel}>days</AppText>
+              <AppText style={styles.streakNum}>{together}</AppText>
+              <AppText style={styles.streakLabel}>together</AppText>
             </View>
           ) : null}
         </Animated.View>
@@ -133,12 +113,12 @@ export default function CommunityScreen() {
             onRetry={() => feedQ.refetch()}
           />
         ) : items.length === 0 ? (
-          // Early-launch emptiness is expected, not an error — say so warmly.
+          // Early-launch emptiness is expected, not an error. Say so warmly.
           <View style={styles.empty}>
             <Ionicons name="leaf-outline" size={24} color={theme.colors.muted} />
             <AppText style={styles.emptyText}>
               {city ? `${city} is just getting started.` : 'Your city is just getting started.'}
-              {'\n'}Be one of the first to share a milestone.
+              {'\n'}Be one of the first to share a session.
             </AppText>
           </View>
         ) : (

@@ -51,7 +51,7 @@ export function PlanStepBody({
     case 'checkin':
       return <CheckinStep plan={plan} challengeId={challengeId} />;
     case 'completion':
-      return <CompletionStep plan={plan} me={me} />;
+      return <CompletionStep plan={plan} me={me} challengeId={challengeId} />;
     case 'ended':
       return <AppText muted>This match has ended.</AppText>;
     default:

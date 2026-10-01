@@ -14,8 +14,8 @@ export function meetupMessageProblem(body: string): MessageProblem | null {
 }
 
 export const PROBLEM_MESSAGE: Record<MessageProblem, string> = {
-  phone_number: "Phone numbers can't be sent here — keep it in the app.",
+  phone_number: "Phone numbers can't be sent here. Keep it in the app.",
   link: "Links can't be sent here.",
-  email: "Email addresses can't be sent here — keep it in the app.",
-  handle: "Social handles can't be sent here — keep it in the app."
+  email: "Email addresses can't be sent here. Keep it in the app.",
+  handle: "Social handles can't be sent here. Keep it in the app."
 };
