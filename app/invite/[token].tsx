@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
 import { useSession } from '@/providers/session-provider';
 import { useAcceptInvite } from '@/features/community/hooks';
+import { previewInvite } from '@/features/community/api';
 import { useProfile } from '@/features/profile/hooks';
 import { setPendingInviteToken, clearPendingInviteToken } from '@/lib/pending-invite';
 import { theme } from '@/constants/theme';
 
-type Phase = 'idle' | 'accepting' | 'success' | 'error' | 'needs-auth';
+type Phase = 'idle' | 'accepting' | 'confirm-replace' | 'success' | 'error' | 'needs-auth';
 
 export default function AcceptInviteScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
@@ -21,7 +22,23 @@ export default function AcceptInviteScreen() {
   const profileQ = useProfile(session?.user.id);
   const [phase, setPhase] = useState<Phase>('idle');
   const [message, setMessage] = useState('');
+  // Filled when accepting would replace the challenge they are already on.
+  const [replace, setReplace] = useState<{ from: string; to: string | null; inviter: string } | null>(null);
   const startedRef = useRef(false);
+
+  const accept = () => {
+    setPhase('accepting');
+    acceptInvite
+      .mutateAsync(String(token))
+      .then(() => {
+        clearPendingInviteToken();
+        setPhase('success');
+      })
+      .catch((e: any) => {
+        setPhase('error');
+        setMessage(e?.message ?? 'Could not accept this invite.');
+      });
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -59,16 +76,22 @@ export default function AcceptInviteScreen() {
 
     startedRef.current = true;
     setPhase('accepting');
-    acceptInvite
-      .mutateAsync(String(token))
-      .then(() => {
-        clearPendingInviteToken();
-        setPhase('success');
+
+    // An EXISTING account may already be on a challenge, and accepting swaps
+    // it for the inviter's. That used to happen without a word. Ask first:
+    // the preview says what accepting would do and changes nothing itself.
+    // If the preview fails for any reason, fall through to accepting: the
+    // RPC has its own checks and its own messages.
+    previewInvite(String(token))
+      .then((pv) => {
+        if (pv.found && pv.replaces && !pv.mine && !pv.blocked && !pv.expired) {
+          setReplace({ from: pv.replaces, to: pv.activity, inviter: pv.inviter_first_name });
+          setPhase('confirm-replace');
+          return;
+        }
+        accept();
       })
-      .catch((e: any) => {
-        setPhase('error');
-        setMessage(e?.message ?? 'Could not accept this invite.');
-      });
+      .catch(() => accept());
   }, [loading, session, token, profileQ.isLoading, profileQ.data]);
 
   return (
@@ -91,6 +114,28 @@ export default function AcceptInviteScreen() {
                 already answered and can be skipped, so accepting a second
                 invite does not mean redoing it. */}
             <Button label="Continue" onPress={() => router.replace('/challenge/why')} />
+          </>
+        ) : phase === 'confirm-replace' && replace ? (
+          <>
+            <Ionicons name="swap-horizontal" size={52} color={theme.colors.primary2} />
+            <AppText variant="title" style={styles.textCenter}>
+              Switch to {replace.inviter}'s challenge?
+            </AppText>
+            <AppText variant="muted" style={styles.textCenter}>
+              You're on {replace.from}. Joining {replace.inviter} replaces it
+              {replace.to ? ` with ${replace.to}` : ''}, and your progress on {replace.from} ends here.
+            </AppText>
+            <Button label={`Join ${replace.inviter}`} onPress={accept} />
+            <Button
+              label="Keep my challenge"
+              variant="ghost"
+              onPress={() => {
+                // Saying no is not an error and must not be asked again on the
+                // next launch.
+                clearPendingInviteToken();
+                router.replace('/(tabs)/home');
+              }}
+            />
           </>
         ) : phase === 'needs-auth' ? (
           <>

@@ -6,6 +6,7 @@ import {
   finishSession,
   getMeetupChat,
   getPairPlan,
+  getRepairDebt,
   issueSessionQr,
   proposePlanValue,
   proposeReschedule,
@@ -17,8 +18,10 @@ import {
   sendPairMessage,
   setArrival,
   setDistanceAnswer,
+  setRepairPreference,
   setSessionCheckin,
   startMeetupPlan,
+  startRepairPlan,
   togglePlanReaction,
   verifySessionQr,
   withdrawPlanProposal
@@ -101,5 +104,32 @@ export function useSendMeetupMessage() {
   return useMutation({
     mutationFn: ({ planId, body }: { planId: string; body: string }) => sendMeetupMessage(planId, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['meetup-chat'] })
+  });
+}
+
+// What the pair owes after a miss. Not polled: it only changes when a session
+// is swept as missed or a repair is started, and both invalidate 'pair-plan'.
+export function useRepairDebt(userChallengeId: string | undefined) {
+  return useQuery({
+    queryKey: ['pair-plan', 'repair-debt', userChallengeId],
+    queryFn: () => getRepairDebt(userChallengeId!),
+    enabled: Boolean(userChallengeId)
+  });
+}
+
+export function useSetRepairPreference() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ missedPlanId, when }: { missedPlanId: string; when: 'this_week' | 'next_week' }) =>
+      setRepairPreference(missedPlanId, when),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pair-plan'] })
+  });
+}
+
+export function useStartRepairPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (missedPlanId: string) => startRepairPlan(missedPlanId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pair-plan'] })
   });
 }

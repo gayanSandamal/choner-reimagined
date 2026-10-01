@@ -33,12 +33,19 @@ Also applied on 1 October, from `docs/SCHEMA_CHALLENGES.md` and the testing pass
 - The directory shows everyone, as an opt-OUT (`202610011100`)
 - Someone already partnered is refused in words, in `accept_invite_by_code()` and `confirm_match()` (`202610011200`)
 
-**Not built, and each needs a decision first:**
+**Built on 1 October, later the same day. Each closed a question by the rule nearest to hand; the migration header says which:**
 
-- **The repair debt.** The columns exist (`is_repair`, `repairs_plan_id`) and the sweep marks misses, but nothing computes what is owed. It needs "the week" defined for a pair in two timezones, the same question `due_at` had to answer.
-- **Per-person amounts.** `pair_plan_members.distance_answer` already holds one answer per person; what is missing is `confirm_plan()` accepting two different answers. That changes the planning flow, so it lands with Dinesh's task 9, not ahead of it.
-- **Jogging, and Cycling switched on.** `challenge_templates.activity_key` has no `jogging`, and the six activities do not map onto the current habit templates ("Run 1 mile", "20 push-ups"). This is the activity model behind Dinesh's task 1 and should be agreed there.
-- **An invitee with an active challenge but no partner.** `SCHEMA_CHALLENGES.md` §8 item 1, still open.
+- **Pairing was broken, and is fixed (`202610012400`).** Since `202609301500` no two people could be paired at all: the one-partnership-per-person trigger rejected the second half of the SAME pair, so every invite acceptance and every match confirmation rolled back. It went unseen because the live database had no pairings to make. Found by pairing two people inside a rolled-back transaction.
+- **The repair debt (`202610012100`, `...2500`).** `get_repair_debt()`, `set_repair_preference()`, `start_repair_plan()`. "The week" for two people in two timezones is answered the way `due_at` was: the pair runs on the clock of whoever has the later day. First miss of a week is owed, a second is lost, the debt lapses at the end of the following week, and the repair runs through the ordinary plan flow with `is_repair` set. There is no screen for it yet: that is Dinesh's task 17, and the hooks are in `features/plans/hooks.ts`.
+- **Per-person amounts (`202610012000`).** Two different answers settle the step instead of opening a negotiation, and `confirm_plan()` asks that both have answered, not agreed. The app reads amounts through `features/plans/amounts.ts`: *"You 5 km · Gayan 3 km"*, or *"5 km each time"* when they match.
+- **Jogging, and Cycling switched on (`202610012200`).** Jogging is its own activity, matched with joggers. The older goal-derived habits are untouched.
+- **An invitee who is already on a challenge is asked first (`202610012300`).** `preview_invite()` says what accepting would do; the invite screen asks *Switch to their challenge?* before anything is replaced. An existing account signing back in with a pending invite is sent to that screen instead of being switched silently.
+
+**Still not built:**
+
+- **The shared cadence at the first plan** (1x to 6x, then Daily). `days_per_week` accepts it; nothing sets it for both people at once. It belongs with Dinesh's task 9.
+- **The six activities as the ONLY things in the picker.** The older habit templates ("Run 1 mile", "20 push-ups", "Journaling") are still active and people are on them. Retiring them is the activity model behind the Create a commitment screen.
+- **A read for the streak circles.** Everything a circle needs is stored (`target_sessions`, session status, `repairs_plan_id`), but there is no function that returns the row of N circles. It should be written with the screen that draws it.
 
 ---
 

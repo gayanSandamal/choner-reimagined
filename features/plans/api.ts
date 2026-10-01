@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { PairPlan } from './types';
+import type { PairPlan, RepairDebt } from './types';
 
 export type PlanResult = { ok: true; [k: string]: unknown } | { ok: false; reason: string };
 
@@ -69,3 +69,15 @@ export type MeetupChat =
 export const getMeetupChat = (planId: string) => rpc<MeetupChat | null>('get_meetup_chat', { p_plan_id: planId });
 export const sendMeetupMessage = (planId: string, body: string) =>
   rpc<PlanResult>('send_meetup_message', { p_plan_id: planId, p_body: body });
+
+// --- Repair (SCHEMA_CHALLENGES.md §6) --------------------------------------
+// A miss leaves the pair owing one session. Repair is choosing when to pay
+// it, after which the ordinary plan flow runs on a session marked is_repair.
+export const getRepairDebt = (userChallengeId: string) =>
+  rpc<RepairDebt>('get_repair_debt', { p_user_challenge_id: userChallengeId });
+export const setRepairPreference = (missedPlanId: string, when: 'this_week' | 'next_week') =>
+  rpc<PlanResult>('set_repair_preference', { p_missed_plan_id: missedPlanId, p_when: when });
+// Reasons it can refuse: lost, expired, spent, repaired, in_progress,
+// no_partner, one_per_week, already_planning, not_found.
+export const startRepairPlan = (missedPlanId: string) =>
+  rpc<PlanResult>('start_repair_plan', { p_missed_plan_id: missedPlanId });

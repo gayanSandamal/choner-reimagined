@@ -893,6 +893,10 @@ export interface Database {
         Args: { p_user_challenge_id: string; p_exercises: string[] };
         Returns: string[];
       };
+      preview_invite: {
+        Args: { p_code: string };
+        Returns: Json;
+      };
       accept_invite_by_code: {
         Args: { p_code: string };
         Returns: string;

@@ -6,6 +6,7 @@ import { PairAvatars } from '@/components/plans/PairAvatars';
 import { useStreak } from '@/features/challenges/hooks';
 import { COPY, REACTIONS, lines } from '@/features/plans/copy';
 import { useRecordSessionShare, useTogglePlanReaction } from '@/features/plans/hooks';
+import { amountLine, myAmount, theirAmount } from '@/features/plans/amounts';
 import type { PairPlan } from '@/features/plans/types';
 import { notify } from '@/lib/alert';
 import { useSession } from '@/providers/session-provider';
@@ -23,7 +24,7 @@ export function CompletionStep({ plan, me }: { plan: PairPlan; me: { name: strin
   const react = useTogglePlanReaction();
   const share = useRecordSessionShare();
   const both = plan.status === 'completed';
-  const distance = plan.distance ?? '';
+  const distance = amountLine(plan) ?? '';
   const them = plan.them.first_name;
 
   const pair = (
@@ -66,8 +67,8 @@ export function CompletionStep({ plan, me }: { plan: PairPlan; me: { name: strin
 
       {/* Both runs, from whoever is looking — never one hardcoded name. */}
       <View style={styles.cards}>
-        <RunCard title="Your run" distance={distance} at={doneAt(plan.me)} />
-        <RunCard title={`${them}'s run`} distance={distance} at={doneAt(plan.them)} />
+        <RunCard title="Your run" distance={myAmount(plan) ?? ''} at={doneAt(plan.me)} />
+        <RunCard title={`${them}'s run`} distance={theirAmount(plan) ?? ''} at={doneAt(plan.them)} />
       </View>
 
       <View style={styles.chips}>
