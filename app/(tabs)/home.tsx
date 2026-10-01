@@ -4,15 +4,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppTopBar } from '@/components/navigation/AppTopBar';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
-import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
-import { ChallengeCard } from '@/components/home/ChallengeCard';
-import { WhyReminder } from '@/components/home/WhyReminder';
-import { SharePrompt } from '@/components/community/SharePrompt';
-import { useSession } from '@/providers/session-provider';
-import { useMyChallenge, useStreak } from '@/features/challenges/hooks';
-import { usePendingInvites, usePartnerStatus } from '@/features/community/hooks';
+import { LoadingState, ErrorState } from '@/components/ui/StateViews';
+import { HomeHeart } from '@/components/home/HomeHeart';
+import { HomeHeroCard } from '@/components/home/HomeHeroCard';
+import { JustHappened, PulseCard } from '@/components/home/PulseCard';
+import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
+import { useMyChallenge, useMyPartner } from '@/features/challenges/hooks';
+import { useHomePulse } from '@/features/home/api';
+import { homeHero } from '@/features/home/hero';
+import {
+  usePairPlan,
+  useRepairDebt,
+  useSessionStreak,
+  useStartMeetupPlan
+} from '@/features/plans/hooks';
 import { useProfile } from '@/features/profile/hooks';
+import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
 function greetingFor(date = new Date()) {
   const h = date.getHours();
@@ -23,36 +32,84 @@ function greetingFor(date = new Date()) {
   return 'Good night';
 }
 
+// Home: a living view of your commitment.
+//
+// Greeting, the shared heart, the commitment with its single next action, then
+// Choner Pulse and Just Happened. Rebuilt on the weekly model on 3 October.
+// The daily screen it replaces is gone: no check-in, no task list, no "log it
+// before 8pm", no reason line, no share prompt.
+//
+// HOME NEVER DOES ANOTHER TAB'S WORK. Its one button either switches tab
+// (Find for anything about a partner, Challenges for anything about the
+// challenge) or opens a sheet about the commitment already on screen: the
+// plan. It starts no search, sends no invite, and picks no challenge.
 export default function HomeScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const tabBarClearance = useTabBarClearance();
   const profileQ = useProfile(userId);
-  const challengesQ = useMyChallenge(userId);
-  const streakQ = useStreak(userId);
-  const invitesQ = usePendingInvites(userId);
-  const partnerStatusQ = usePartnerStatus(userId);
+  const challengeQ = useMyChallenge(userId);
+  const partnerQ = useMyPartner(userId);
+  const pulseQ = useHomePulse(userId);
 
-  // One challenge now, with a partner slot on it rather than a second row.
-  const challenge = challengesQ.data ?? null;
-  const streak = streakQ.data ?? 0;
+  const challenge = challengeQ.data ?? null;
+  // The partner comes from the partnership, which outlives a challenge.
+  const partner = partnerQ.data?.partnered ? partnerQ.data : null;
+  const planQ = usePairPlan(partner && challenge ? challenge.id : undefined);
+  const streakQ = useSessionStreak(challenge?.id);
+  const repairQ = useRepairDebt(partner && challenge ? challenge.id : undefined);
+  const startSession = useStartMeetupPlan();
 
-  // The invite still awaiting acceptance, if the partner half is 'invited'.
-  const waitingInvite = challenge
-    ? (invitesQ.data ?? []).find((i: any) => i.user_challenge_id === challenge.id)
-    : undefined;
+  const hero = homeHero({
+    activity: challenge ? challengeHabitTitle(challenge) ?? 'Your challenge' : null,
+    activityKey: (challenge?.challenge_templates?.activity_key ?? null) as string | null,
+    partnerState: partnerStateOf(challenge),
+    partnerName: partner?.first_name ?? null,
+    plan: planQ.data ?? null,
+    agreedBefore: (streakQ.data?.circles.length ?? 0) > 0,
+    repairOwed: Boolean(repairQ.data && repairQ.data.owed && repairQ.data.state === 'owed')
+  });
 
-  const refreshing = challengesQ.isRefetching || profileQ.isRefetching;
-  const onRefresh = () => {
-    challengesQ.refetch();
-    streakQ.refetch();
-    profileQ.refetch();
-    invitesQ.refetch();
-    partnerStatusQ.refetch();
+  const openPlan = () => {
+    if (challenge?.id) router.push({ pathname: '/plan/[challengeId]', params: { challengeId: challenge.id } });
   };
 
-  const fullName = profileQ.data?.full_name;
-  const firstName = fullName?.split(' ')[0];
+  const onAction = async () => {
+    const action = hero.action;
+    if (!action) return;
+    if (action.to === 'find') return router.push('/(tabs)/find');
+    if (action.to === 'challenges') return router.push('/(tabs)/challenges');
+    if (action.to === 'plan') return openPlan();
+    // start_session: open the next plan, then show it.
+    if (!challenge?.id) return;
+    try {
+      const res = (await startSession.mutateAsync(challenge.id)) as { ok?: boolean; reason?: string };
+      if (res?.ok === false && res.reason === 'partner_no_challenge') {
+        notify('Not yet', `${partner?.first_name ?? 'Your partner'} is choosing a new activity. You can plan once they have.`);
+        return;
+      }
+      if (res?.ok === false && res.reason !== 'already_planning') {
+        notify('Could not start that', 'Please try again.');
+        return;
+      }
+      openPlan();
+    } catch (error: any) {
+      notify('Could not start that', error.message);
+    }
+  };
+
+  const refreshing = challengeQ.isRefetching || profileQ.isRefetching;
+  const onRefresh = () => {
+    challengeQ.refetch();
+    profileQ.refetch();
+    partnerQ.refetch();
+    planQ.refetch();
+    streakQ.refetch();
+    repairQ.refetch();
+    pulseQ.refetch();
+  };
+
+  const firstName = profileQ.data?.full_name?.split(' ')[0];
 
   return (
     <View style={styles.root}>
@@ -62,8 +119,7 @@ export default function HomeScreen() {
           contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
         >
-          {/* Time-of-day greeting above the name, per spec: the muted line
-              carries the time, the name carries the weight. */}
+          {/* The muted line carries the time, the name carries the weight. */}
           <View style={styles.greeting}>
             <AppText variant="caption" muted>
               {greetingFor()}
@@ -71,38 +127,33 @@ export default function HomeScreen() {
             {firstName ? <AppText style={styles.name}>{firstName}</AppText> : null}
           </View>
 
-          {challengesQ.isLoading ? (
+          {challengeQ.isLoading || partnerQ.isLoading ? (
             <LoadingState />
-          ) : challengesQ.isError ? (
-            <ErrorState message={(challengesQ.error as Error).message} onRetry={() => challengesQ.refetch()} />
-          ) : !challenge ? (
-            <EmptyState
-              title="Ready when you are"
-              body="Pick a challenge, then find someone to do it with."
-              actionLabel="Choose a challenge"
-              onAction={() => router.push('/challenge/browse')}
-            />
+          ) : challengeQ.isError ? (
+            <ErrorState message={(challengeQ.error as Error).message} onRetry={() => challengeQ.refetch()} />
           ) : (
             <>
-              {/* Above the card: the reason is about the person, not the
-                  challenge, and belongs where they see it before logging. */}
-              <WhyReminder
-                userId={userId}
-                challenge={challenge}
-                dailyDeadline={profileQ.data?.daily_deadline}
+              <HomeHeart
+                partnerName={partner?.first_name ?? null}
+                partnerState={partnerStateOf(challenge)}
+                sessionsTogether={partner?.sessions_together ?? 0}
               />
-              <ChallengeCard
-                challenge={challenge}
-                streak={streak}
-                userName={fullName}
-                waitingPartnerEmail={waitingInvite?.email}
-                partnerStatus={partnerStatusQ.data}
+              <HomeHeroCard
+                hero={hero}
+                busy={startSession.isPending}
+                onAction={onAction}
+                onOpenFind={() => router.push('/(tabs)/find')}
               />
-              {/* Offered here as well as on Challenges — whichever screen the
-                  user happens to be on when the moment lands. */}
-              <SharePrompt userId={userId} challenge={challenge} streak={streak} />
             </>
           )}
+
+          {/* Decorative: Home is complete without it, so it never blocks or errors the screen. */}
+          {pulseQ.data ? (
+            <>
+              <PulseCard pulse={pulseQ.data} onOpenDirectory={() => router.push('/find/who-else')} />
+              <JustHappened pulse={pulseQ.data} />
+            </>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
     </View>

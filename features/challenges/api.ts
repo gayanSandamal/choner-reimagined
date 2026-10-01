@@ -686,8 +686,10 @@ export async function resumeChallenge(userChallengeId: string) {
   return setChallengeStatus(userChallengeId, 'active');
 }
 
+// Through the RPC, not a plain status update: ending a challenge also ends its
+// open sessions and releases a search, and must NOT end the partnership.
 export async function abandonChallenge(userChallengeId: string) {
-  return setChallengeStatus(userChallengeId, 'abandoned');
+  return endChallenge(userChallengeId);
 }
 
 export async function getStreak(userId: string) {
@@ -715,4 +717,49 @@ export async function getChallengeHistoryScores() {
   const { data, error } = await (supabase.rpc as any)('get_challenge_history');
   if (error) throw error;
   return (data ?? []) as import('./history').ChallengeHistoryItem[];
+}
+
+// Who I am partnered with, whether or not I have a challenge right now. A
+// partnership outlives the challenge it started on, so anything that needs
+// "do I have a partner" asks this rather than reading it off a challenge row.
+export type MyPartner =
+  | { partnered: false }
+  | {
+      partnered: true;
+      first_name: string;
+      avatar_url: string | null;
+      since: string;
+      // A challenge of mine that still names this partner (live if possible).
+      // Block and report take a challenge id.
+      my_challenge_id: string | null;
+      paired_on: string | null;
+      i_have_challenge: boolean;
+      partner_has_challenge: boolean;
+      // The heart: sessions both completed with this partner.
+      sessions_together: number;
+    };
+
+export async function getMyPartner() {
+  const { data, error } = await (supabase.rpc as any)('get_my_partner');
+  if (error) throw error;
+  return data as MyPartner;
+}
+
+export type EndChallengeResult =
+  | { ok: false; reason: 'not_found' | 'already_ended' }
+  | {
+      ok: true;
+      done: number;
+      target: number | null;
+      partner_kept: boolean;
+      partner_first_name: string | null;
+    };
+
+// Ends the challenge and saves its streak to history. The partner stays.
+export async function endChallenge(userChallengeId: string) {
+  const { data, error } = await (supabase.rpc as any)('end_challenge', {
+    p_user_challenge_id: userChallengeId
+  });
+  if (error) throw error;
+  return data as EndChallengeResult;
 }

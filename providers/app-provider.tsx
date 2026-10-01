@@ -20,9 +20,6 @@ import { getProfile, updateProfile } from '@/features/profile/api';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { MissReasonGate } from '@/components/challenges/MissReasonGate';
-import { StartingPointGate } from '@/components/challenges/StartingPointGate';
-import { CheckinValueGate } from '@/components/challenges/CheckinValueGate';
 import { MatchEndedGate } from '@/components/safety/MatchEndedGate';
 import { clearUser, identifyUser, initObservability } from '@/lib/observability';
 import { ReduceMotionContext } from '@/lib/motion';
@@ -280,9 +277,12 @@ export function AppProvider({ children }: PropsWithChildren) {
                   <ConfirmProvider>
                     <SessionWiring />
                     <NotificationGate />
-                    <MissReasonGate />
-                    <StartingPointGate />
-                    <CheckinValueGate />
+                    {/* The three daily-model sheets that used to open over every
+                        screen are gone with the daily model: "You missed
+                        yesterday", "Where are you starting from?" and the
+                        check-in amount. A missed SESSION is handled by the
+                        repair card on Challenges; how much and how often are
+                        agreed at the first plan. */}
                     <MatchEndedGate />
                     {children}
                   </ConfirmProvider>

@@ -58,12 +58,13 @@ Also applied on 1 October, from `docs/SCHEMA_CHALLENGES.md` and the testing pass
 - **The sample pool is on the six** (`202610021010`). All 406 challenges on habits with no activity belonged to `@choner.test` accounts. They were spread across the six, which also gives Jogging and Cycling a pool for the first time. Guarded by email domain: a real account is never moved.
 - **History carries the score** (`202610021020`): *Ended · 7 of 12 · September 2026*.
 
-**Still not built:**
+**Built on 3 October:**
 
-- **Home.** It is the last screen still on the daily model: the daily check-in, the old streak number and "log it before 8pm" all live there now and nowhere else. The daily reminder and missed-check-in cron jobs are still running to match. Home and those jobs should change together.
-- **Ending a challenge the new way.** "End this challenge" still abandons the row. Keeping the partner across it, so the pair picks a new activity together, needs a way to carry a partnership onto a new challenge and is not built.
-- **Find's matched screen.** End match, report and block belong there. Until it has them, the report and block menu stays in the Challenges top bar and `end_match()` has no button anywhere.
-- **Session details** (Dinesh's task 15) and the Find rebuild (section C).
+- **Home is rebuilt on the weekly model** (`app/(tabs)/home.tsx`). Greeting, the shared heart, the commitment with ONE next action, Choner Pulse and Just Happened. Its states are a tested pure function (`features/home/hero.ts`): every partner path is a tab switch to Find, every challenge path a tab switch to Challenges, and the only thing Home opens itself is the plan. The daily check-in, the task list, the reason line and the share prompt are deleted, not hidden.
+- **The daily jobs changed with it** (`202610030920`). `choner-daily-reminders` and `choner-missed-checkins` are unscheduled. In their place `choner-session-reminders` reminds each person once, in the two hours before a session they agreed. The three daily sheets that opened over every screen (missed yesterday, starting point, check-in amount) and the Daily deadline setting are gone.
+- **Choner Pulse is real numbers** (`202610030910`, `get_home_pulse()`): counts only, and a card with nothing to say is not drawn.
+- **Ending a challenge keeps the partner** (`202610030900`). `end_challenge()` ends the challenge, its open sessions and any search, and leaves the partnership alone; a challenge created while partnered is born partnered. `get_my_partner()` answers "who am I partnered with" whether or not there is a challenge, so the ended state still shows *You + Gayan*. The Challenges tab warns first, with the score the streak ends on.
+- **Find's matched screen** (`components/find/MatchedCard.tsx`). Both faces with a green tick, who, what they are paired on and for how long. Every way out of a match lives there and nowhere else: *End this match* (six private reasons, `app/modals/end-match.tsx`, through `end_my_match()`), and Report and Block behind the `···`. *Something felt off* ends the match first and only then offers the report, which `report_partner()` now accepts for an invited pair as well as a matched one. The menu is gone from the Challenges top bar.
 
 ---
 

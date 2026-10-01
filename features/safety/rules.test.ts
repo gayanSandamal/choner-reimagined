@@ -77,3 +77,49 @@ describe('ended copy', () => {
     });
   });
 });
+
+describe('ending a match, the neutral way', () => {
+  const endMigration = readFileSync(
+    join(__dirname, '../../supabase/migrations/202610030900_partner_outlives_the_challenge.sql'),
+    'utf8'
+  );
+
+  it('offers exactly the six reasons the server accepts', () => {
+    const { END_MATCH_REASONS } = require('./rules');
+    expect(END_MATCH_REASONS).toHaveLength(6);
+    for (const r of END_MATCH_REASONS) expect(endMigration).toContain(`'${r.value}'`);
+  });
+
+  it('keeps the reasons separate from the report categories', () => {
+    const { END_MATCH_REASONS } = require('./rules');
+    const reportValues = REPORT_CATEGORIES.map((c) => c.value as string);
+    for (const r of END_MATCH_REASONS) expect(reportValues).not.toContain(r.value);
+  });
+
+  it('always lets someone leave without saying why', () => {
+    const { END_MATCH_REASONS } = require('./rules');
+    expect(END_MATCH_REASONS.map((r: { value: string }) => r.value)).toContain('prefer_not_to_say');
+  });
+
+  it('opens the report flow for one reason only, and only after ending', () => {
+    const { END_MATCH_REASONS, offersReportAfter } = require('./rules');
+    const doors = END_MATCH_REASONS.filter((r: { value: any }) => offersReportAfter(r.value));
+    expect(doors.map((r: { value: string }) => r.value)).toEqual(['something_felt_off']);
+  });
+
+  it('never tells the other person why', () => {
+    const { endMatchConfirmCopy } = require('./rules');
+    expect(endMatchConfirmCopy('Gayan').message).toMatch(/not why/);
+    expect(matchEndedLine('other')).not.toMatch(/reason|because/i);
+  });
+
+  it('says how long a pair has been paired', () => {
+    const { pairedFor } = require('./rules');
+    const now = new Date('2026-10-03T12:00:00Z');
+    expect(pairedFor('2026-10-03T08:00:00Z', now)).toBe('since today');
+    expect(pairedFor('2026-10-02T08:00:00Z', now)).toBe('for 1 day');
+    expect(pairedFor('2026-09-28T08:00:00Z', now)).toBe('for 5 days');
+    expect(pairedFor('2026-09-12T08:00:00Z', now)).toBe('for 3 weeks');
+    expect(pairedFor(null, now)).toBeNull();
+  });
+});

@@ -8,14 +8,18 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { CommitmentCard } from '@/components/challenges/CommitmentCard';
-import { PairSafetyMenu } from '@/components/safety/PairSafetyMenu';
 import { PlanGateCard } from '@/components/plans/PlanGateCard';
 import { RepairCard } from '@/components/plans/RepairCard';
 import { StreakCircles } from '@/components/streak/StreakCircles';
 import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
 import { historyLine } from '@/features/challenges/history';
-import { useChallengeHistoryScores, useMyChallenge } from '@/features/challenges/hooks';
-import { usePartnerStatus } from '@/features/community/hooks';
+import {
+  useChallengeHistoryScores,
+  useEndChallenge,
+  useMyChallenge,
+  useMyPartner
+} from '@/features/challenges/hooks';
+import { streakScore } from '@/features/plans/streak';
 import { activityNoun } from '@/features/plans/activity';
 import { amountLine } from '@/features/plans/amounts';
 import { cadenceLabel } from '@/features/plans/cadence';
@@ -28,7 +32,7 @@ import {
 import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
-import { notify } from '@/lib/alert';
+import { confirmAction, notify } from '@/lib/alert';
 
 // The six that can plan a session. A challenge still on a retired habit has
 // no activity, so there is nothing to plan and no button is offered.
@@ -56,13 +60,18 @@ export default function ChallengesScreen() {
   const userId = session?.user.id;
   const challengeQ = useMyChallenge(userId);
   const profileQ = useProfile(userId);
-  const partnerStatusQ = usePartnerStatus(userId);
+  // The partner comes from the partnership, not the challenge row: ending a
+  // challenge does not end the match, so "You + Gayan" has to survive having
+  // no challenge at all.
+  const partnerQ = useMyPartner(userId);
   const historyQ = useChallengeHistoryScores(userId);
+  const endChallenge = useEndChallenge();
 
   const challenge = challengeQ.data ?? null;
-  const partnerState = partnerStateOf(challenge);
-  const partnered = partnerState === 'partnered';
-  const partnerName = firstName(partnerStatusQ.data?.name);
+  const myPartner = partnerQ.data?.partnered ? partnerQ.data : null;
+  const partnered = Boolean(myPartner);
+  const partnerState = partnered ? 'partnered' : partnerStateOf(challenge);
+  const partnerName = myPartner?.first_name ?? null;
   const activityKey = (challenge?.challenge_templates?.activity_key ?? null) as string | null;
   const canPlan = SESSION_ACTIVITIES.includes(activityKey ?? '');
 
@@ -93,6 +102,12 @@ export default function ChallengesScreen() {
     if (!challenge?.id) return;
     try {
       const res = (await startSession.mutateAsync(challenge.id)) as { ok?: boolean; reason?: string };
+      // Still partners, but they have ended their challenge and not picked the
+      // next activity yet, so there is nothing of theirs to plan toward.
+      if (res?.ok === false && res.reason === 'partner_no_challenge') {
+        notify('Not yet', `${partnerName ?? 'Your partner'} is choosing a new activity. You can plan once they have.`);
+        return;
+      }
       // "already_planning" is not a failure: there is a plan, so open it.
       if (res?.ok === false && res.reason !== 'already_planning') {
         notify('Could not start that', 'Please try again.');
@@ -104,9 +119,38 @@ export default function ChallengesScreen() {
     }
   };
 
+  // Ending a challenge is destructive to the STREAK and to nothing else, and
+  // says so before it happens: the score it ends on, where it goes, and that
+  // the partner stays.
+  const onEndChallenge = async () => {
+    if (!challenge?.id) return;
+    const score = streak ? streakScore(streak) : null;
+    const ok = await confirmAction({
+      title: 'End this challenge?',
+      message: [
+        score ? `Your streak ends here, at ${score}. It'll be saved to your history.` : "It'll be saved to your history.",
+        partnerName ? `${partnerName} stays your partner.` : null
+      ]
+        .filter(Boolean)
+        .join(' '),
+      confirmLabel: 'End challenge',
+      cancelLabel: 'Keep going',
+      destructive: true
+    });
+    if (!ok) return;
+    try {
+      const res = await endChallenge.mutateAsync(challenge.id);
+      if (!res.ok && res.reason !== 'already_ended') {
+        notify('Could not end that', 'Please try again.');
+      }
+    } catch (error: any) {
+      notify('Could not end that', error.message);
+    }
+  };
+
   const onRefresh = () => {
     challengeQ.refetch();
-    partnerStatusQ.refetch();
+    partnerQ.refetch();
     planQ.refetch();
     streakQ.refetch();
     repairQ.refetch();
@@ -133,16 +177,9 @@ export default function ChallengesScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <AppTopBar
-        accessory={
-          // Report and block must stay reachable from wherever a partner is
-          // visible. End match belongs on Find; until Find's matched screen
-          // carries this menu, it stays here rather than nowhere.
-          partnered && challenge?.id ? (
-            <PairSafetyMenu userChallengeId={challenge.id} partnerFirstName={partnerName ?? 'your partner'} />
-          ) : null
-        }
-      />
+      {/* No partner menu here any more: End match, Report and Block all live
+          on Find's matched card, which is where every partner action belongs. */}
+      <AppTopBar />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
@@ -154,9 +191,16 @@ export default function ChallengesScreen() {
 
         {!challenge ? (
           <Animated.View entering={FadeInDown.duration(360)} style={styles.empty}>
-            <AppText style={styles.emptyTitle}>Ready when you are.</AppText>
-            <AppText style={styles.emptyBody}>Pick what you will do, then find someone to do it with.</AppText>
-            <Button label="Create a commitment" onPress={() => router.push('/challenge/browse')} />
+            {/* No challenge, still a partner. This is the state the partnerships
+                table exists for: the match did not end with the challenge. */}
+            {partnerName ? <AppText style={styles.emptyPair}>You + {partnerName}</AppText> : null}
+            <AppText style={styles.emptyTitle}>Start something together</AppText>
+            <AppText style={styles.emptyBody}>
+              {partnerName
+                ? `Pick what you and ${partnerName} will do next.`
+                : 'Pick what you want to do with your partner.'}
+            </AppText>
+            <Button label="Let's do this" onPress={() => router.push('/challenge/browse')} />
           </Animated.View>
         ) : (
           <>
@@ -171,6 +215,7 @@ export default function ChallengesScreen() {
               cadence={cadenceLabel(plan?.cadence ?? streak?.cadence ?? null)}
               partnerState={partnerState}
               partnerFirstName={partnerName}
+              agreed={(streak?.circles.length ?? 0) > 0 || (plan != null && plan.status !== 'planning')}
               onChangeActivity={() => router.push('/challenge/browse')}
               onOpenFind={openFind}
             />
@@ -223,6 +268,15 @@ export default function ChallengesScreen() {
             {streak?.complete ? (
               <Button label="Extend your streak" variant="ghost" onPress={() => openStreakTarget(challenge.id)} />
             ) : null}
+
+            {/* Challenges owns ending a challenge. It ends the streak and the
+                challenge; it never ends the match. */}
+            <Button
+              label="End this challenge"
+              variant="ghost"
+              loading={endChallenge.isPending}
+              onPress={onEndChallenge}
+            />
           </>
         )}
 
@@ -253,6 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing(2)
   },
   empty: { gap: theme.spacing(1.5), paddingVertical: theme.spacing(4) },
+  emptyPair: { fontSize: 15, color: theme.colors.primary2, fontFamily: theme.fonts.bodyMedium },
   emptyTitle: { fontSize: 22, color: theme.colors.text },
   emptyBody: { fontSize: 14, lineHeight: 20, color: theme.colors.muted },
   next: {

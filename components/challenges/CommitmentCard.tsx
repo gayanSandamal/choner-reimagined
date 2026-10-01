@@ -21,6 +21,7 @@ export function CommitmentCard({
   cadence,
   partnerState,
   partnerFirstName,
+  agreed,
   onChangeActivity,
   onOpenFind
 }: {
@@ -33,6 +34,8 @@ export function CommitmentCard({
   cadence: string | null;
   partnerState: string;
   partnerFirstName: string | null;
+  // Whether the pair has agreed a plan yet. "Commitment" is not said before.
+  agreed: boolean;
   onChangeActivity: () => void;
   onOpenFind: () => void;
 }) {
@@ -43,7 +46,12 @@ export function CommitmentCard({
 
   const body = (
     <>
-      <AppText style={styles.eyebrow}>YOUR COMMITMENT</AppText>
+      {/* The word "commitment" is earned (docs/LANGUAGE_FLOW.md): it is the
+          result of picking something, finding someone and agreeing a plan,
+          so it is not used before all three have happened. */}
+      <AppText style={styles.eyebrow}>
+        {partnered ? (agreed ? 'YOUR COMMITMENT' : 'YOU FOUND YOUR MATCH') : "LET'S MAKE IT HAPPEN"}
+      </AppText>
       <AppText style={styles.activity}>{activity}</AppText>
       {exercises.length ? (
         <AppText muted style={styles.detail}>{exercises.join(', ')}</AppText>
