@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: CORS });
   }
 
-  let body: { inviterName?: string; email?: string; challengeId?: string; token?: string };
+  let body: { inviterName?: string; email?: string; challengeId?: string; token?: string; code?: string };
   try {
     body = await req.json();
   } catch {
@@ -33,6 +33,9 @@ Deno.serve(async (req) => {
   const base = (Deno.env.get("APP_INVITE_URL") ?? "choner://").replace(/\/?$/, "/");
   const acceptUrl = body.token ? `${base}invite/${body.token}` : null;
   const inviter = body.inviterName ?? "A friend";
+  // What a person types. The 6-character code (202609291300) when the caller
+  // sent one; the long token otherwise, which accept_invite_by_code still takes.
+  const typedCode = body.code ?? body.token;
 
   // When the base is a custom scheme (choner://), the button is useless to a
   // recipient who hasn't installed the app yet — and that's every invitee, plus
@@ -51,7 +54,7 @@ Deno.serve(async (req) => {
            ? "Install Choner, then tap <b>I have an invite code</b> on the welcome screen and enter:"
            : "Or enter this code in the app:"
        }</p>
-       <div style="font-family:monospace; font-size:18px; letter-spacing:1px; color:#F7FAFC; background:#0A2740; border:1px solid #16507E; border-radius:10px; padding:12px 16px; display:inline-block">${body.token}</div>
+       <div style="font-family:monospace; font-size:18px; letter-spacing:1px; color:#F7FAFC; background:#0A2740; border:1px solid #16507E; border-radius:10px; padding:12px 16px; display:inline-block">${typedCode}</div>
        ${
          isDeepLink && acceptUrl
            ? `<p style="color:#A5B6C8; font-size:12px; margin-top:14px">Already have the app? Open: ${acceptUrl}</p>`

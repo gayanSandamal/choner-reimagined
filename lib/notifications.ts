@@ -9,8 +9,12 @@ import { router } from 'expo-router';
 // token lookup throws. So in Expo Go the module is never loaded and every entry
 // point below is a no-op — the in-app notification centre still works, and a
 // development or store build gets the real thing.
+//
+// Web is the same case for a different reason: the module has no
+// getLastNotificationResponse there, so the launch-route hook throws
+// "ExpoNotifications" into the console on every load.
 const Notifications: typeof NotificationsModule | null =
-  Constants.executionEnvironment === ExecutionEnvironment.StoreClient
+  Platform.OS === 'web' || Constants.executionEnvironment === ExecutionEnvironment.StoreClient
     ? null
     : (require('expo-notifications') as typeof NotificationsModule);
 

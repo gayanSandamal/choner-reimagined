@@ -10,8 +10,12 @@ import { theme } from '@/constants/theme';
 
 // Manual redemption. The invite link is a `choner://` deep link, which does
 // nothing for someone who hasn't installed the app yet — and that's every
-// invitee. Pasting the code gets them to the same place: this hands off to
+// invitee. Typing the code gets them to the same place: this hands off to
 // app/invite/[token].tsx so acceptance lives in exactly one spot.
+//
+// The code is six characters with an activity prefix (RUN4K7). No maxLength:
+// invites sent before the short code existed carry the long token, and the
+// same field has to take those too.
 export default function InviteCodeScreen() {
   const [code, setCode] = useState('');
   const trimmed = code.trim();
@@ -22,13 +26,14 @@ export default function InviteCodeScreen() {
 
       <View style={styles.body}>
         <AppText variant="muted">
-          Paste the code from your invite email and we'll pull you into the challenge.
+          Enter the 6-character code from your friend's message or invite email and we'll pull
+          you into the challenge. It works for 48 hours.
         </AppText>
 
         <Input
           label="Invite code"
-          placeholder="e.g. 8f3a1c…"
-          autoCapitalize="none"
+          placeholder="e.g. RUN4K7"
+          autoCapitalize="characters"
           autoCorrect={false}
           value={code}
           onChangeText={setCode}

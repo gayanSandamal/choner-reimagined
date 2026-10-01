@@ -26,6 +26,14 @@ export function useUploadAvatar() {
   });
 }
 
+export function useUploadLivePhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.uploadLivePhoto,
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['profile', vars.userId] }),
+  });
+}
+
 export function useChangePassword() {
   return useMutation({ mutationFn: api.changePassword });
 }
