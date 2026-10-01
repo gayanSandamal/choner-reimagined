@@ -25,7 +25,7 @@ import { notify } from '@/lib/alert';
 
 type Mode = 'together' | 'separate' | 'either';
 
-const PACE_ACTIVITIES = ['running', 'cycling', 'walking'];
+const PACE_ACTIVITIES = ['running', 'jogging', 'cycling', 'walking'];
 
 // State 2 of the Find tab. Collects only what matching needs and doesn't
 // already know — everything about WHAT the challenge is was captured in

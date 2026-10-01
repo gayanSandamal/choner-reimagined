@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Negotiation } from '@/components/plans/Negotiation';
 import { searchPlaces } from '@/features/plans/api';
+import { amountLine } from '@/features/plans/amounts';
 import { COPY, DISTANCES, lines } from '@/features/plans/copy';
 import { formatDayTime } from '@/features/plans/format';
 import {
@@ -14,7 +15,7 @@ import {
   useProposePlanValue,
   useSetDistanceAnswer
 } from '@/features/plans/hooks';
-import { at, middleDistance, nextDays, TIME_SLOTS } from '@/features/plans/negotiation';
+import { at, nextDays, TIME_SLOTS } from '@/features/plans/negotiation';
 import type { PairPlan } from '@/features/plans/types';
 import { notify } from '@/lib/alert';
 import { theme } from '@/constants/theme';
@@ -33,6 +34,7 @@ async function guard(fn: () => Promise<any>) {
 function howFarHeading(activity: string | null) {
   if (activity === 'walking') return 'How far would you like to walk?';
   if (activity === 'cycling') return 'How far would you like to ride?';
+  if (activity === 'jogging') return 'How far would you like to jog?';
   return COPY.howFar;
 }
 
@@ -40,7 +42,6 @@ function howFarHeading(activity: string | null) {
 // person's is shown read-only and can never be edited from here (§3.4's bug).
 export function HowMuchStep({ plan }: { plan: PairPlan }) {
   const setAnswer = useSetDistanceAnswer();
-  const propose = useProposePlanValue();
   const mine = plan.me.distance_answer;
   const theirs = plan.them.distance_answer;
 
@@ -67,30 +68,13 @@ export function HowMuchStep({ plan }: { plan: PairPlan }) {
     );
   }
 
-  // Different answers: the shared negotiation, seeded with yours, theirs, or
-  // the middle of the two.
-  const middle = middleDistance(mine, theirs);
-  const suggest = (value: string, done: () => void) =>
-    guard(async () => {
-      const r = await propose.mutateAsync({ planId: plan.id, field: 'distance', value });
-      done();
-      return r;
-    });
+  // Both have answered. Different answers are not a conflict any more: the
+  // amount is per person, so the flow has already moved on to the next step
+  // and this is only seen for the moment before the plan refetches.
   return (
     <View style={styles.wrap}>
-      <AppText variant="title">{COPY.distanceConflict}</AppText>
+      <AppText variant="title">{howFarHeading(plan.activity_key)}</AppText>
       <Compare mine={mine} theirs={theirs} them={plan.them.first_name} />
-      <Negotiation
-        plan={plan}
-        field="distance"
-        renderSuggest={(done) => (
-          <View style={styles.options}>
-            <Option label={`Yours: ${mine}`} onPress={() => suggest(mine, done)} />
-            <Option label={`${plan.them.first_name}'s: ${theirs}`} onPress={() => suggest(theirs, done)} />
-            {middle ? <Option label={`Meet in the middle: ${middle}`} onPress={() => suggest(middle, done)} /> : null}
-          </View>
-        )}
-      />
     </View>
   );
 }
@@ -353,7 +337,7 @@ export function ConfirmStep({ plan }: { plan: PairPlan }) {
     <View style={styles.wrap}>
       <AppText variant="title">Your {plan.kind === 'first_run' ? 'first run' : 'meetup'}</AppText>
       <View style={styles.card}>
-        <Row label="Distance" value={plan.distance ?? '—'} />
+        <Row label="Distance" value={amountLine(plan) ?? '—'} />
         <Row label="When" value={timing} />
         {together ? <Row label="Where" value={[plan.place_name, plan.place_text].filter(Boolean).join(' — ')} /> : null}
       </View>

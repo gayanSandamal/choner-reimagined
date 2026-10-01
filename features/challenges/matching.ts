@@ -563,7 +563,7 @@ function scoreDays(a: Candidate, b: Candidate, inPerson: boolean, reasons: strin
 }
 
 const PACE_ORDER: Pace[] = ['slow', 'moderate', 'fast'];
-const PACE_ACTIVITIES = ['running', 'cycling', 'walking'];
+const PACE_ACTIVITIES = ['running', 'jogging', 'cycling', 'walking'];
 
 // Mismatched pace is one of the fastest ways to ruin a shared session —
 // someone is always either waiting or struggling.

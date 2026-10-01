@@ -283,6 +283,31 @@ export async function acceptInvite(codeOrToken: string) {
   return data as string | null;
 }
 
+// What accepting an invite WOULD do, before anything is changed. The server
+// cannot ask a question, so it answers one and the screen asks the person.
+export type InvitePreview =
+  | { found: false }
+  | {
+      found: true;
+      own: boolean;
+      status: string | null;
+      // Already accepted by the person looking: re-opening it is harmless.
+      mine: boolean;
+      expired: boolean;
+      expires_at: string | null;
+      inviter_first_name: string;
+      activity: string | null;
+      // The challenge that would be REPLACED, or null when nothing changes.
+      replaces: string | null;
+      blocked: 'you_partnered' | 'they_partnered' | null;
+    };
+
+export async function previewInvite(codeOrToken: string) {
+  const { data, error } = await supabase.rpc('preview_invite', { p_code: codeOrToken.trim() });
+  if (error) throw error;
+  return data as InvitePreview;
+}
+
 export type PartnerProofPhoto = {
   // task_checkins.id — needed to call markCheckinPhotoViewed once this photo
   // is actually shown to the partner.

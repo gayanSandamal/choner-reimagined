@@ -27,16 +27,29 @@ SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 // Accepts an invite that was opened while signed out, once the user has an
 // account and finished onboarding (so their own partner track exists to light).
+//
+// Silently ONLY for a new account, whose challenge they never chose. An
+// existing account signing back in is sent to the invite screen instead,
+// because accepting can replace the challenge they are on and that screen is
+// where they are asked first.
 function PendingInviteHandler() {
   const { session } = useSession();
   const profileQ = useProfile(session?.user.id);
   const acceptInvite = useAcceptInvite();
+  const router = useRouter();
   const handledRef = useRef(false);
+  // onboarding_complete as it was when this session's profile first loaded:
+  // true means the account already existed.
+  const wasCompleteRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     if (!session) {
       handledRef.current = false;
+      wasCompleteRef.current = null;
       return;
+    }
+    if (profileQ.data && wasCompleteRef.current === null) {
+      wasCompleteRef.current = Boolean(profileQ.data.onboarding_complete);
     }
     if (handledRef.current) return;
     if (!profileQ.data?.onboarding_complete) return;
@@ -44,6 +57,11 @@ function PendingInviteHandler() {
     (async () => {
       const token = await getPendingInviteToken();
       if (!token) return;
+      if (wasCompleteRef.current) {
+        // The invite screen accepts, asks, and clears the token itself.
+        router.push({ pathname: '/invite/[token]', params: { token } } as never);
+        return;
+      }
       try {
         await acceptInvite.mutateAsync(token);
       } catch {

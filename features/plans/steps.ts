@@ -1,3 +1,4 @@
+import { amountSettled } from './amounts';
 import type { PairPlan } from './types';
 
 // Where a pair is in the session flow, computed from the plan alone so every
@@ -30,7 +31,8 @@ export function planStep(p: PairPlan): PlanStep {
     if (!opener || !reply) return 'say_hi';
   }
 
-  if (!p.distance) return 'how_much';
+  // Both have answered; the answers need not match (the amount is per person).
+  if (!amountSettled(p)) return 'how_much';
   if (!p.mode) return 'mode';
 
   if (p.mode === 'together') {
