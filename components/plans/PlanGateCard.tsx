@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { PairAvatars } from '@/components/plans/PairAvatars';
+import { activityNoun, planCopy } from '@/features/plans/activity';
 import { ACTIVITY_LABEL, COPY, lines } from '@/features/plans/copy';
 import type { PairPlan } from '@/features/plans/types';
 import { theme } from '@/constants/theme';
@@ -53,8 +54,8 @@ export function PlanGateCard({
           plan.is_repair
             ? 'Plan the make-up session'
             : plan.kind === 'first_run'
-            ? COPY.gateButton
-            : 'Plan your meetup'
+            ? planCopy(plan.activity_key).gateButton
+            : `Plan your next ${activityNoun(plan.activity_key)}`
         }
         onPress={open}
       />

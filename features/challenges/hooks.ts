@@ -36,6 +36,7 @@ import {
   declineMatch,
   findAnotherMatch,
   nudgePartner,
+  getChallengeHistoryScores
 } from '@/features/challenges/api';
 
 export function useChallengeTemplates() {
@@ -248,6 +249,14 @@ export function useSaveReflections() {
     onSuccess: (_d, vars) => {
       queryClient.invalidateQueries({ queryKey: ['reflections', vars.userId] });
     },
+  });
+}
+
+export function useChallengeHistoryScores(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['challenge-history-scores', userId],
+    queryFn: () => getChallengeHistoryScores(),
+    enabled: Boolean(userId)
   });
 }
 

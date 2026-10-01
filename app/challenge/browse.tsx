@@ -1,210 +1,173 @@
-import { useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/AppText';
-import { Chip } from '@/components/ui/Chip';
-import { SectionHeader } from '@/components/ui/SectionHeader';
+import { Button } from '@/components/ui/button';
+import { IconName } from '@/components/ui/Icon';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
-import { QuestCard, type FireState } from '@/components/challenges/QuestCard';
-import { useChallengeTemplates, useMyChallenge, useStreak } from '@/features/challenges/hooks';
-import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
-import { useIsPremium } from '@/features/billing/hooks';
+import { LoadingState, ErrorState } from '@/components/ui/StateViews';
+import { OptionCard } from '@/components/onboarding/OptionCard';
+import { ExercisePicker } from '@/components/challenges/ExercisePicker';
+import {
+  useChallengeTemplates,
+  useMyChallenge,
+  useSetMyChallengeHabit
+} from '@/features/challenges/hooks';
+import { getMyChallenge, partnerStateOf, setChallengeExercises } from '@/features/challenges/api';
+import { ACTIVITY_SLUGS, WORKOUTS_SLUG } from '@/features/onboarding/mappings';
 import { useSession } from '@/providers/session-provider';
-import { features } from '@/constants/features';
+import { useQueryClient } from '@tanstack/react-query';
 import { theme } from '@/constants/theme';
+import { notify } from '@/lib/alert';
 
-type GlyphName = keyof typeof Ionicons.glyphMap;
-
-const CATEGORY_CHIP_ICONS: Record<string, GlyphName> = {
-  All: 'heart',
-  Movement: 'walk-outline',
-  Sleep: 'moon-outline',
-  Stress: 'leaf-outline',
-  Energy: 'flash-outline'
+const ACTIVITY_ICONS: Record<string, IconName> = {
+  running: 'run',
+  jogging: 'run',
+  walking: 'walk',
+  cycling: 'bike',
+  yoga: 'leaf',
+  home_workouts: 'dumb'
 };
 
-export default function BrowseChallengesScreen() {
+// Create a commitment, and change it.
+//
+// This screen asks THE ACTIVITY, AND NOTHING ELSE. Not how much, not how
+// often: those are agreed with a partner at the first plan, and asking here
+// would ask the same question twice. Workouts also asks for up to four
+// exercises, because they are part of WHAT the activity is rather than a
+// negotiation. They are descriptive and never reach matching.
+//
+// One screen for both jobs, because they are the same question. With no
+// challenge it creates one; with a challenge it changes the activity, which is
+// allowed until a search starts and locked from then on.
+export default function CreateCommitmentScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
+  const qc = useQueryClient();
   const templatesQ = useChallengeTemplates();
-  const challengesQ = useMyChallenge(userId);
-  const streakQ = useStreak(userId);
-  const { isPremium } = useIsPremium();
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const challengeQ = useMyChallenge(userId);
+  const applyHabit = useSetMyChallengeHabit();
 
-  const categories = useMemo(() => {
-    const set = new Set<string>(['All']);
-    (templatesQ.data ?? []).forEach((t: any) => t.category && set.add(capitalize(t.category)));
-    return Array.from(set);
+  const challenge = challengeQ.data ?? null;
+  const editing = Boolean(challenge);
+  // Anything but solo: searching, invited, matched or partnered.
+  const locked = editing && partnerStateOf(challenge) !== 'solo';
+
+  // The six, in their standard order, whatever order the query returned.
+  const activities = useMemo(() => {
+    const bySlug = new Map((templatesQ.data ?? []).map((t: any) => [t.slug, t]));
+    return ACTIVITY_SLUGS.map((slug) => bySlug.get(slug)).filter(Boolean) as any[];
   }, [templatesQ.data]);
 
-  const filtered = useMemo(() => {
-    // With Pro gated off, premium quests can't be unlocked — hide them rather
-    // than show dead "Unlock" cards.
-    const all = (templatesQ.data ?? []).filter((t: any) => features.pro || !t.is_premium);
-    return selectedCategory === 'All'
-      ? all
-      : all.filter((t: any) => capitalize(t.category) === selectedCategory);
-  }, [templatesQ.data, selectedCategory]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [exercises, setExercises] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  const challenge = challengesQ.data ?? null;
-  const streak = streakQ.data ?? 0;
-
-  // A live challenge can point at a template this list never shows: a custom
-  // habit (hidden by design so one user's text doesn't reach everyone else's
-  // Quests) or one that has since been retired. Either way the user's own fire
-  // would be missing from the list entirely, so it gets rendered from the
-  // challenge row instead of the template.
-  //
-  const offListTracks = useMemo(() => {
-    const visible = new Set((filtered as any[]).map((t) => t.id));
-    const templateId = challenge?.challenge_template_id;
-    if (!challenge || !templateId || visible.has(templateId)) return [];
-    return [
-      {
-        mode: (partnerStateOf(challenge) === 'partnered' ? 'partner' : 'solo') as 'solo' | 'partner',
-        challenge
-      }
-    ];
-  }, [filtered, challenge]);
-
-  // Their category ('custom', or a retired habit's) has no chip, so they only
-  // belong under "All" — a category filter is an explicit narrowing.
-  const showOffList = selectedCategory === 'All' && offListTracks.length > 0;
-
-  const fireStateFor = (templateId: string): FireState | undefined => {
-    if (challenge?.challenge_template_id !== templateId) return undefined;
-    return {
-      mode: partnerStateOf(challenge) === 'partnered' ? 'partner' : 'solo',
-      status: challenge.status,
-      streak
-    };
-  };
-
-  const onOpenQuest = (templateId: string, fireState: FireState | undefined) => {
-    // The partner track is only manageable from Home (the Solo|Partner
-    // toggle over the fire) — the template-detail screen only understands
-    // the solo track, so routing a partner-owned card there would silently
-    // let the user spin up an unrelated duplicate solo challenge.
-    if (fireState?.mode === 'partner') {
-      router.push('/(tabs)/home');
-      return;
+  // Start from what they already have. Once, so a refetch cannot undo a tap.
+  const [seeded, setSeeded] = useState(false);
+  useEffect(() => {
+    if (seeded || challengeQ.isLoading) return;
+    if (challenge) {
+      setSelectedId(challenge.challenge_template_id ?? null);
+      setExercises(((challenge as any).exercises as string[] | null) ?? []);
     }
-    router.push({ pathname: '/challenge/[id]', params: { id: templateId } });
+    setSeeded(true);
+  }, [seeded, challengeQ.isLoading, challenge]);
+
+  const selected = activities.find((t) => t.id === selectedId);
+  const isWorkouts = selected?.slug === WORKOUTS_SLUG;
+  // On a retired habit the current template is not one of the six, so nothing
+  // is preselected and any pick is a change.
+  const unchanged =
+    editing &&
+    selectedId === challenge?.challenge_template_id &&
+    (!isWorkouts ||
+      JSON.stringify(exercises) === JSON.stringify(((challenge as any).exercises as string[] | null) ?? []));
+
+  const onSave = async () => {
+    if (!userId || !selected || locked) return;
+    try {
+      setSaving(true);
+      await applyHabit.mutateAsync({ userId, templateId: selected.id, customHabitTitle: null });
+      if (isWorkouts) {
+        // Read the id back: creating does not return it.
+        const mine = await getMyChallenge(userId);
+        if (mine?.id) await setChallengeExercises(mine.id, exercises);
+      }
+      await qc.invalidateQueries({ queryKey: ['my-challenge'] });
+      // Creating a commitment is a setup action, and setup actions finish on
+      // Home, the same way onboarding does. Changing one goes back where it
+      // was opened from.
+      if (editing && router.canGoBack()) router.back();
+      else router.replace('/(tabs)/home');
+    } catch (error: any) {
+      notify(editing ? 'Could not change that' : 'Could not create that', error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Screen scroll={false}>
-      <ScrollView
-        contentContainerStyle={{ gap: theme.spacing(2), paddingBottom: theme.spacing(4) }}
-        refreshControl={
-          <RefreshControl
-            refreshing={templatesQ.isRefetching}
-            onRefresh={() => templatesQ.refetch()}
-            tintColor={theme.colors.primary}
-            colors={[theme.colors.primary]}
-          />
-        }
-      >
-        <ScreenHeader title="Choose a challenge" onBack={() => router.back()} />
-        <SectionHeader
-          title="Activities"
-          subtitle="Pick what you'll do. How much and how often are agreed with your partner."
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScreenHeader
+          title={editing ? 'Change your activity' : 'Create a commitment'}
+          onBack={() => router.back()}
         />
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRow}
-        >
-          {categories.map((item) => (
-            <Chip
-              key={item}
-              label={item}
-              active={selectedCategory === item}
-              onPress={() => setSelectedCategory(item)}
-              icon={
-                <Ionicons
-                  name={CATEGORY_CHIP_ICONS[item] ?? 'heart-outline'}
-                  size={14}
-                  color={theme.colors.text}
-                />
-              }
-            />
-          ))}
-        </ScrollView>
+        <AppText muted>
+          {locked
+            ? "Locked while you're looking for a match."
+            : 'Pick what you will do. How much and how often are agreed with your partner, at your first plan.'}
+        </AppText>
 
-        {templatesQ.isLoading ? (
+        {templatesQ.isLoading || challengeQ.isLoading ? (
           <LoadingState />
         ) : templatesQ.isError ? (
           <ErrorState
             icon="flash-off-outline"
-            title="Quests are catching their breath"
+            title="Activities are catching their breath"
             message={(templatesQ.error as Error).message}
             onRetry={() => templatesQ.refetch()}
           />
-        ) : filtered.length === 0 && !showOffList ? (
-          <EmptyState
-            icon="compass-outline"
-            title="Nothing in this category yet"
-            body="Try a different one, or check back soon."
-            actionLabel="See all"
-            onAction={() => setSelectedCategory('All')}
-          />
         ) : (
-          <View style={{ gap: theme.spacing(1.5) }}>
-            {showOffList
-              ? offListTracks.map(({ mode, challenge }, i) => {
-                  const template = challenge.challenge_templates as any;
-                  return (
-                    <QuestCard
-                      key={challenge.id}
-                      title={challengeHabitTitle(challenge) ?? 'Your habit'}
-                      description={template?.description ?? template?.summary}
-                      category={template?.category ?? 'custom'}
-                      durationDays={template?.duration_days ?? 7}
-                      difficulty={template?.difficulty ?? 'beginner'}
-                      fireState={{ mode, status: challenge.status, streak }}
-                      // Home, never the template detail screen: that screen
-                      // reads the template, so a custom habit would open under
-                      // the placeholder title and offer to start it fresh.
-                      onPress={() => router.push('/(tabs)/home')}
-                      delay={i * 50}
-                    />
-                  );
-                })
-              : null}
-            {filtered.map((t: any, i: number) => {
-              const fireState = fireStateFor(t.id);
-              return (
-                <QuestCard
-                  key={t.id}
-                  title={t.title}
-                  description={t.description ?? t.summary}
-                  category={t.category}
-                  durationDays={t.duration_days}
-                  difficulty={t.difficulty}
-                  locked={features.pro && t.is_premium && !isPremium}
-                  fireState={fireState}
-                  onPress={() => onOpenQuest(t.id, fireState)}
-                  delay={i * 50}
-                />
-              );
-            })}
+          <View style={[styles.options, locked && styles.locked]} pointerEvents={locked ? 'none' : 'auto'}>
+            {activities.map((t) => (
+              <OptionCard
+                key={t.id}
+                icon={ACTIVITY_ICONS[t.activity_key] ?? 'target'}
+                label={t.title}
+                description={t.summary}
+                selected={selectedId === t.id}
+                onPress={() => setSelectedId(t.id)}
+              />
+            ))}
+            {isWorkouts ? <ExercisePicker value={exercises} onChange={setExercises} /> : null}
           </View>
+        )}
+
+        {locked ? null : (
+          <>
+            <Button
+              label={editing ? 'Save' : 'Create'}
+              disabled={!selected || unchanged}
+              loading={saving}
+              onPress={onSave}
+            />
+            <AppText muted style={styles.note}>
+              You can change this until you start searching for a match.
+            </AppText>
+          </>
         )}
       </ScrollView>
     </Screen>
   );
 }
 
-function capitalize(s: string) {
-  return s ? s[0].toUpperCase() + s.slice(1) : s;
-}
-
 const styles = StyleSheet.create({
-  chipRow: { gap: 8, paddingRight: 12 }
+  content: { gap: theme.spacing(2), paddingBottom: theme.spacing(4) },
+  options: { gap: theme.spacing(1.5) },
+  locked: { opacity: 0.5 },
+  note: { fontSize: 12, textAlign: 'center' }
 });

@@ -6,6 +6,7 @@ import { PairAvatars } from '@/components/plans/PairAvatars';
 import { useStreak } from '@/features/challenges/hooks';
 import { COPY, REACTIONS, lines } from '@/features/plans/copy';
 import { useRecordSessionShare, useTogglePlanReaction } from '@/features/plans/hooks';
+import { planCopy } from '@/features/plans/activity';
 import { amountLine, myAmount, theirAmount } from '@/features/plans/amounts';
 import type { PairPlan } from '@/features/plans/types';
 import { notify } from '@/lib/alert';
@@ -67,8 +68,8 @@ export function CompletionStep({ plan, me }: { plan: PairPlan; me: { name: strin
 
       {/* Both runs, from whoever is looking — never one hardcoded name. */}
       <View style={styles.cards}>
-        <RunCard title="Your run" distance={myAmount(plan) ?? ''} at={doneAt(plan.me)} />
-        <RunCard title={`${them}'s run`} distance={theirAmount(plan) ?? ''} at={doneAt(plan.them)} />
+        <RunCard title={planCopy(plan.activity_key).yourCard} distance={myAmount(plan) ?? ''} at={doneAt(plan.me)} />
+        <RunCard title={planCopy(plan.activity_key).theirCard(them)} distance={theirAmount(plan) ?? ''} at={doneAt(plan.them)} />
       </View>
 
       <View style={styles.chips}>

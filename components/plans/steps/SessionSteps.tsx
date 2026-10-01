@@ -22,6 +22,7 @@ import {
   useVerifySessionQr
 } from '@/features/plans/hooks';
 import { at, nextDays, TIME_SLOTS } from '@/features/plans/negotiation';
+import { activityNoun, planCopy } from '@/features/plans/activity';
 import { myAmount, theirAmount } from '@/features/plans/amounts';
 import type { PairPlan } from '@/features/plans/types';
 import { RELAY_ACTIONS } from '@/lib/notifications';
@@ -207,7 +208,7 @@ export function FinishStep({ plan }: { plan: PairPlan }) {
   const finish = useFinishSession();
   return (
     <View style={styles.wrap}>
-      <AppText variant="title">{lines.together(myAmount(plan) ?? 'Your run')}</AppText>
+      <AppText variant="title">{lines.together(myAmount(plan) ?? planCopy(plan.activity_key).yourCard)}</AppText>
       <Button
         label={COPY.finishRun}
         loading={finish.isPending}
@@ -228,7 +229,7 @@ export function CheckinStep({ plan, challengeId }: { plan: PairPlan; challengeId
   const setCheckin = useSetSessionCheckin();
   const [asking, setAsking] = useState<'photo' | 'recovery' | null>(null);
   // Their number, not a shared one: this line is about what THEY finished.
-  const distance = theirAmount(plan) ?? 'run';
+  const distance = theirAmount(plan) ?? activityNoun(plan.activity_key);
 
   const reschedule = (plan.open_proposals ?? []).find((p) => p.field === 'reschedule');
   if (reschedule) return <ReschedulePanel plan={plan} />;
