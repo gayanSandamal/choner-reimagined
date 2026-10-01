@@ -708,3 +708,11 @@ export async function setChallengeExercises(userChallengeId: string, exercises: 
   if (error) throw error;
   return (data ?? []) as string[];
 }
+
+// Finished challenges with the score each ended on. One RPC rather than a
+// table read, because the score is counted from the challenge's sessions.
+export async function getChallengeHistoryScores() {
+  const { data, error } = await (supabase.rpc as any)('get_challenge_history');
+  if (error) throw error;
+  return (data ?? []) as import('./history').ChallengeHistoryItem[];
+}

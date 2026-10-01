@@ -5,7 +5,9 @@ export const ACTIVITY_LABEL: Record<string, string> = {
   running: 'Running',
   jogging: 'Jogging',
   walking: 'Walking',
-  cycling: 'Cycling'
+  cycling: 'Cycling',
+  yoga: 'Yoga',
+  home_workouts: 'Workouts'
 };
 
 export const COPY = {
@@ -38,7 +40,7 @@ export const COPY = {
   onMyWay: "I'm on my way",
   imHere: "I'm here",
   openQr: 'Open QR verification',
-  finishRun: 'Finish',
+  finishRun: 'Complete session',
   sameTime: 'Same time',
   differentTimes: 'Different times',
   checkinDone: 'Done',
@@ -77,7 +79,7 @@ export const lines = {
   chatOpen: (p: string) => `A temporary chat is now open between you and ${p}.`,
   together: (distance: string) => `You're together. ${distance} starts now.`,
   partnerDone: (p: string, distance: string) => `${p} has completed their ${distance}. Your turn.`,
-  laterNotice: (you: string) => `${you} hasn't run yet. They will do it later today.`,
+  laterNotice: (you: string) => `${you} hasn't done it yet. They will do it later today.`,
   completedNotice: (you: string, distance: string) => `${you} completed their ${distance}.`,
   waitingFor: (p: string) => `Waiting for ${p}.`,
   gateEyebrow: (activity: string) => `Challenges · ${activity}`

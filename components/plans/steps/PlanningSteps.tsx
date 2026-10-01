@@ -8,8 +8,9 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Negotiation } from '@/components/plans/Negotiation';
 import { searchPlaces } from '@/features/plans/api';
 import { amountLine } from '@/features/plans/amounts';
+import { amountLabel, amountOptions, howMuchHeading, planCopy } from '@/features/plans/activity';
 import { CADENCES, cadenceLabel } from '@/features/plans/cadence';
-import { COPY, DISTANCES, lines } from '@/features/plans/copy';
+import { COPY, lines } from '@/features/plans/copy';
 import { formatDayTime } from '@/features/plans/format';
 import {
   useConfirmPlan,
@@ -32,13 +33,6 @@ async function guard(fn: () => Promise<any>) {
 
 // "How far would you like to run?" — the handover's wording for running; the
 // same question for a walk or a ride.
-function howFarHeading(activity: string | null) {
-  if (activity === 'walking') return 'How far would you like to walk?';
-  if (activity === 'cycling') return 'How far would you like to ride?';
-  if (activity === 'jogging') return 'How far would you like to jog?';
-  return COPY.howFar;
-}
-
 // C4 — How much. Distance only. Your own answer is yours alone: the other
 // person's is shown read-only and can never be edited from here (§3.4's bug).
 export function HowMuchStep({ plan }: { plan: PairPlan }) {
@@ -49,9 +43,9 @@ export function HowMuchStep({ plan }: { plan: PairPlan }) {
   if (!mine) {
     return (
       <View style={styles.wrap}>
-        <AppText variant="title">{howFarHeading(plan.activity_key)}</AppText>
+        <AppText variant="title">{howMuchHeading(plan.activity_key)}</AppText>
         <View style={styles.options}>
-          {DISTANCES.map((d) => (
+          {amountOptions(plan.activity_key).map((d) => (
             <Option key={d} label={d} onPress={() => guard(() => setAnswer.mutateAsync({ planId: plan.id, value: d }))} />
           ))}
         </View>
@@ -62,7 +56,7 @@ export function HowMuchStep({ plan }: { plan: PairPlan }) {
   if (!theirs) {
     return (
       <View style={styles.wrap}>
-        <AppText variant="title">{howFarHeading(plan.activity_key)}</AppText>
+        <AppText variant="title">{howMuchHeading(plan.activity_key)}</AppText>
         <Compare mine={mine} theirs={null} them={plan.them.first_name} />
         <AppText muted>{lines.waitingFor(plan.them.first_name)}</AppText>
       </View>
@@ -74,7 +68,7 @@ export function HowMuchStep({ plan }: { plan: PairPlan }) {
   // and this is only seen for the moment before the plan refetches.
   return (
     <View style={styles.wrap}>
-      <AppText variant="title">{howFarHeading(plan.activity_key)}</AppText>
+      <AppText variant="title">{howMuchHeading(plan.activity_key)}</AppText>
       <Compare mine={mine} theirs={theirs} them={plan.them.first_name} />
     </View>
   );
@@ -138,14 +132,22 @@ export function ModeStep({ plan }: { plan: PairPlan }) {
     });
   return (
     <View style={styles.wrap}>
-      <AppText variant="title">{COPY.modeHeading}</AppText>
+      <AppText variant="title">{planCopy(plan.activity_key).modeHeading}</AppText>
       <Negotiation
         plan={plan}
         field="mode"
         renderSuggest={(done) => (
           <View style={styles.options}>
-            <Option label={COPY.modeTogether} detail={COPY.modeTogetherSub} onPress={() => pick('together', done)} />
-            <Option label={COPY.modeSeparate} detail={COPY.modeSeparateSub} onPress={() => pick('separate', done)} />
+            <Option
+              label={planCopy(plan.activity_key).modeTogether}
+              detail={planCopy(plan.activity_key).modeTogetherSub}
+              onPress={() => pick('together', done)}
+            />
+            <Option
+              label={planCopy(plan.activity_key).modeSeparate}
+              detail={planCopy(plan.activity_key).modeSeparateSub}
+              onPress={() => pick('separate', done)}
+            />
           </View>
         )}
       />
@@ -368,9 +370,15 @@ export function ConfirmStep({ plan }: { plan: PairPlan }) {
 
   return (
     <View style={styles.wrap}>
-      <AppText variant="title">Your {plan.kind === 'first_run' ? 'first run' : 'meetup'}</AppText>
+      <AppText variant="title">
+        {plan.is_repair
+          ? 'Your make-up session'
+          : plan.kind === 'first_run'
+          ? planCopy(plan.activity_key).firstTitle
+          : 'Your next session'}
+      </AppText>
       <View style={styles.card}>
-        <Row label="Distance" value={amountLine(plan) ?? '—'} />
+        <Row label={amountLabel(plan.activity_key)} value={amountLine(plan) ?? '—'} />
         {cadenceLabel(plan.cadence) ? <Row label="How often" value={cadenceLabel(plan.cadence)!} /> : null}
         <Row label="When" value={timing} />
         {together ? <Row label="Where" value={[plan.place_name, plan.place_text].filter(Boolean).join(' — ')} /> : null}

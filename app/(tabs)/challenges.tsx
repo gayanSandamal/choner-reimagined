@@ -1,211 +1,116 @@
-import { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppTopBar } from '@/components/navigation/AppTopBar';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
-import { Heart } from '@/components/challenges/Heart';
-import { PairRow } from '@/components/challenges/PairRow';
-import { MatchBanner } from '@/components/challenges/MatchBanner';
+import { CommitmentCard } from '@/components/challenges/CommitmentCard';
 import { PairSafetyMenu } from '@/components/safety/PairSafetyMenu';
 import { PlanGateCard } from '@/components/plans/PlanGateCard';
 import { RepairCard } from '@/components/plans/RepairCard';
 import { StreakCircles } from '@/components/streak/StreakCircles';
+import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
+import { historyLine } from '@/features/challenges/history';
+import { useChallengeHistoryScores, useMyChallenge } from '@/features/challenges/hooks';
+import { usePartnerStatus } from '@/features/community/hooks';
+import { activityNoun } from '@/features/plans/activity';
+import { amountLine } from '@/features/plans/amounts';
+import { cadenceLabel } from '@/features/plans/cadence';
 import {
   usePairPlan,
   useRepairDebt,
   useSessionStreak,
   useStartMeetupPlan
 } from '@/features/plans/hooks';
-import { SharePrompt } from '@/components/community/SharePrompt';
-import { challengeHabitTitle, partnerStateOf, nudgeRefusalMessage } from '@/features/challenges/api';
-import {
-  useMyChallenge,
-  useChallengeHistory,
-  useCompleteTask,
-  useNudgePartner,
-  usePartnerReflections,
-  useStreak
-} from '@/features/challenges/hooks';
-import { usePartnerStatus } from '@/features/community/hooks';
 import { useProfile } from '@/features/profile/hooks';
-import { captureProofPhoto, resolveProofType } from '@/features/challenges/capture';
-import { challengeDayIndex } from '@/features/challenges/why-rotation';
-import { reminderFor } from '@/features/challenges/reflections';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
-import { localDay } from '@/lib/time';
+import { notify } from '@/lib/alert';
 
-const ORANGE = '#FD8302';
-const ORANGE_SOFT = '#FDA340';
-const GREEN = '#2E9E6B';
-const DIM = '#D8D2CC';
-const BORDER = '#F4F2EF';
+// The six that can plan a session. A challenge still on a retired habit has
+// no activity, so there is nothing to plan and no button is offered.
+const SESSION_ACTIVITIES = ['running', 'jogging', 'walking', 'cycling', 'yoga', 'home_workouts'];
 
 function firstName(name?: string | null) {
-  return (name ?? '').trim().split(/\s+/)[0] || 'your partner';
+  return (name ?? '').trim().split(/\s+/)[0] || null;
 }
 
-// The Challenges tab, per the v3 spec: one heart, and whichever of the eight
-// states the user is actually in. The tab IS the challenge — browsing habits
-// lives behind "Choose a challenge" rather than competing with it.
+// The Challenges tab owns the CHALLENGE LIFECYCLE and nothing else: the
+// commitment, planning a session, the day of, misses and repair, the streak,
+// and history. Rebuilt on the weekly model on 2 October; the daily screen it
+// replaces (TODAY, "Mark as done", "Day 5 of 7", the nudge, the solo panel) is
+// gone, not hidden.
+//
+// Deliberately NOT here, so do not add them back:
+//   - partner search, invites and match banners. Find owns every partner path;
+//     the commitment card hands off to it with a button
+//   - a "this week" card or a weekly counter. A circle carries its own day
+//   - the partner's why. The why is private
+//   - anything that resets. A miss costs the circle and one session owed
 export default function ChallengesScreen() {
   const { session } = useSession();
   const tabBarClearance = useTabBarClearance();
   const userId = session?.user.id;
   const challengeQ = useMyChallenge(userId);
-  const streakQ = useStreak(userId);
   const profileQ = useProfile(userId);
   const partnerStatusQ = usePartnerStatus(userId);
-  const historyQ = useChallengeHistory(userId);
-  const completeTask = useCompleteTask();
-  const nudgeMut = useNudgePartner(userId);
-  const [pastOpen, setPastOpen] = useState(false);
-  // The outcome line under the button. Kept local rather than derived, because
-  // "Nudged Dinesh." and "Dinesh already logged today." are both answers to a
-  // tap and neither is a state the server reports back on its own.
-  const [nudgeNote, setNudgeNote] = useState<string | null>(null);
+  const historyQ = useChallengeHistoryScores(userId);
 
   const challenge = challengeQ.data ?? null;
   const partnerState = partnerStateOf(challenge);
   const partnered = partnerState === 'partnered';
-  const streak = streakQ.data ?? 0;
-  const partnerStatus = partnerStatusQ.data;
-  // Only Running/Walking/Cycling pairs ever have one (D4).
+  const partnerName = firstName(partnerStatusQ.data?.name);
+  const activityKey = (challenge?.challenge_templates?.activity_key ?? null) as string | null;
+  const canPlan = SESSION_ACTIVITIES.includes(activityKey ?? '');
+
   const planQ = usePairPlan(partnered ? challenge?.id : undefined);
-  const startMeetup = useStartMeetupPlan();
-  const sessionActivity = ['running', 'jogging', 'walking', 'cycling'].includes(
-    challenge?.challenge_templates?.activity_key ?? ''
-  );
+  const startSession = useStartMeetupPlan();
   // The streak belongs to the challenge, not the partnership: it is read for
   // any challenge and survives a partner leaving. The debt needs the partner.
-  const sessionStreakQ = useSessionStreak(challenge?.id);
+  const streakQ = useSessionStreak(challenge?.id);
   const repairQ = useRepairDebt(partnered ? challenge?.id : undefined);
-  const sessionStreak = sessionStreakQ.data;
+  const plan = planQ.data ?? null;
+  const streak = streakQ.data;
   const repairDebt = repairQ.data && repairQ.data.owed ? repairQ.data : null;
+
   // "How long a streak?" is asked once the first plan has been accepted, or as
   // soon as there is a session to show. Never before a plan exists.
   const askStreakTarget =
     Boolean(challenge?.id) &&
-    sessionStreak != null &&
-    sessionStreak.target == null &&
-    (sessionStreak.circles.length > 0 || (planQ.data != null && planQ.data.status !== 'planning'));
+    streak != null &&
+    streak.target == null &&
+    (streak.circles.length > 0 || (plan != null && plan.status !== 'planning'));
 
-  const partnerReflectionsQ = usePartnerReflections(
-    partnered ? partnerStatus?.partner_id : undefined
-  );
+  const openFind = () => router.push('/(tabs)/find');
+  const openPlan = (id: string) => router.push({ pathname: '/plan/[challengeId]', params: { challengeId: id } });
+  const openStreakTarget = (id: string) =>
+    router.push({ pathname: '/modals/streak-target', params: { challengeId: id } } as never);
 
-  const tasks = (challenge?.challenge_tasks ?? []) as any[];
-  const today = localDay(new Date());
-  const checkinFor = (task: any) =>
-    (task.task_checkins ?? []).find(
-      (c: any) => c.completed_at && localDay(c.completed_at) === today
-    );
-  const youCheckedIn = tasks.length > 0 && tasks.every((t) => checkinFor(t));
-  const partnerCheckedIn = Boolean(partnerStatus?.checked_in_today);
-  const nudgedToday = Boolean((partnerStatus as any)?.nudged_today);
-
-  const dayIndex = challengeDayIndex(challenge?.started_at);
-  const totalDays = challenge?.challenge_templates?.duration_days ?? 7;
-  const habit = challengeHabitTitle(challenge) ?? 'Your habit';
-  const completed = challenge?.status === 'completed';
-  // Only an unaccepted INVITE is genuinely not started. Someone in the
-  // matching pool keeps logging today — pairing is usually a minute or two but
-  // is not instant, and freezing their habit meanwhile punishes them for asking.
-  const notStarted = partnerState === 'invited';
-
-  // One line of the partner's own reasoning, now that a confirmed pairing can
-  // read it. Attributed to them by name — an unattributed quote reads as the
-  // app talking, which is the opposite of the point.
-  const partnerWhy = useMemo(() => {
-    const answers = partnerReflectionsQ.data ?? [];
-    for (const key of ['purpose', 'matters', 'gain'] as const) {
-      const line = reminderFor(answers.find((a) => a.question_key === key));
-      if (line) return line;
-    }
-    return null;
-  }, [partnerReflectionsQ.data]);
-
-  const pageMeta = completed
-    ? 'Complete'
-    : !challenge
-    ? ''
-    : partnerState === 'finding'
-    ? 'Matching'
-    : partnerState === 'invited'
-    ? 'Invited'
-    : partnered
-    ? `Day ${Math.min(dayIndex, totalDays)} of ${totalDays}`
-    : 'Solo';
-
-  const onMarkDone = async () => {
-    const task = tasks.find((t) => !checkinFor(t));
-    if (!task || !challenge || !userId) return;
-    let photoBase64: string | undefined;
-    if (resolveProofType(task, challenge) === 'photo') {
-      const shot = await captureProofPhoto();
-      // Backing out of the camera must not silently log the habit anyway.
-      if (shot.status === 'cancelled') return;
-      if (shot.status === 'captured') photoBase64 = shot.base64;
-    }
-    completeTask.mutate({ taskId: task.id, userChallengeId: challenge.id, userId, photoBase64 });
-  };
-
-  // Every refusal is a sentence, not a red error: "already logged" and "it's
-  // 1am where they are" are the system working, and the person who tapped
-  // deserves to know which one happened.
-  const onNudge = async () => {
-    setNudgeNote(null);
+  const onPlanSession = async () => {
+    if (!challenge?.id) return;
     try {
-      const res = await nudgeMut.mutateAsync();
-      setNudgeNote(
-        res.sent
-          ? `Nudged ${firstName(partnerStatus?.name)}.`
-          : nudgeRefusalMessage(res.reason, partnerStatus?.name)
-      );
-    } catch {
-      setNudgeNote(nudgeRefusalMessage('unknown', partnerStatus?.name));
+      const res = (await startSession.mutateAsync(challenge.id)) as { ok?: boolean; reason?: string };
+      // "already_planning" is not a failure: there is a plan, so open it.
+      if (res?.ok === false && res.reason !== 'already_planning') {
+        notify('Could not start that', 'Please try again.');
+        return;
+      }
+      openPlan(challenge.id);
+    } catch (error: any) {
+      notify('Could not start that', error.message);
     }
   };
 
   const onRefresh = () => {
     challengeQ.refetch();
-    streakQ.refetch();
     partnerStatusQ.refetch();
-  };
-
-  const statusLine = () => {
-    if (!partnered) {
-      if (partnerState === 'finding') {
-        return (
-          <>
-            <AppText style={styles.statusWarm}>Looking for your partner</AppText>
-            {'\n'}Usually within a minute or two.
-          </>
-        );
-      }
-      if (partnerState === 'invited') {
-        return <>Waiting for them to join{'\n'}Your challenge starts the moment they do.</>;
-      }
-      return <>Half a heart is still a start.</>;
-    }
-    if (youCheckedIn && partnerCheckedIn) {
-      return <>Day {streak} done. See you tomorrow.</>;
-    }
-    if (youCheckedIn) {
-      return (
-        <>
-          You're in. <AppText style={styles.statusStrong}>{firstName(partnerStatus?.name)}</AppText>{' '}
-          hasn't checked in yet.
-        </>
-      );
-    }
-    return <>{firstName(partnerStatus?.name)} is counting on you today.</>;
+    planQ.refetch();
+    streakQ.refetch();
+    repairQ.refetch();
+    historyQ.refetch();
   };
 
   if (challengeQ.isLoading) {
@@ -219,23 +124,22 @@ export default function ChallengesScreen() {
   if (challengeQ.isError) {
     return (
       <SafeAreaView style={styles.root}>
-        <ErrorState
-          message={(challengeQ.error as Error).message}
-          onRetry={() => challengeQ.refetch()}
-        />
+        <ErrorState message={(challengeQ.error as Error).message} onRetry={() => challengeQ.refetch()} />
       </SafeAreaView>
     );
   }
+
+  const history = historyQ.data ?? [];
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <AppTopBar
         accessory={
+          // Report and block must stay reachable from wherever a partner is
+          // visible. End match belongs on Find; until Find's matched screen
+          // carries this menu, it stays here rather than nowhere.
           partnered && challenge?.id ? (
-            <PairSafetyMenu
-              userChallengeId={challenge.id}
-              partnerFirstName={firstName(partnerStatus?.name)}
-            />
+            <PairSafetyMenu userChallengeId={challenge.id} partnerFirstName={partnerName ?? 'your partner'} />
           ) : null
         }
       />
@@ -243,280 +147,97 @@ export default function ChallengesScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={challengeQ.isRefetching}
-            onRefresh={onRefresh}
-            tintColor={ORANGE}
-          />
+          <RefreshControl refreshing={challengeQ.isRefetching} onRefresh={onRefresh} tintColor={theme.colors.primary} />
         }
       >
-        <View style={styles.pageHead}>
-          <AppText style={styles.pageTitle}>Challenges</AppText>
-          <AppText style={styles.pageMeta}>{pageMeta}</AppText>
-        </View>
-
-        {/* A match landing while you're mid-challenge shouldn't blow the whole
-            screen away — it arrives as a banner above whatever you were
-            already looking at. */}
-        <MatchBanner
-          city={profileQ.data?.city}
-          watch={partnerState === 'finding' || partnerState === 'matched'}
-        />
-
-        {/* Community has no post button; sharing is offered here, right after
-            the moment it refers to. */}
-        <SharePrompt userId={userId} challenge={challenge} streak={streak} />
+        <AppText style={styles.pageTitle}>Challenges</AppText>
 
         {!challenge ? (
           <Animated.View entering={FadeInDown.duration(360)} style={styles.empty}>
             <AppText style={styles.emptyTitle}>Ready when you are.</AppText>
-            <AppText style={styles.emptyBody}>
-              Pick a challenge, then find someone to do it with.
-            </AppText>
-            <Button label="Choose a challenge" onPress={() => router.push('/challenge/browse')} />
-          </Animated.View>
-        ) : completed ? (
-          <Animated.View entering={FadeInDown.duration(360)} style={styles.empty}>
-            <PairRow
-              youName={profileQ.data?.full_name}
-              youCheckedIn
-              partner={
-                partnered ? { kind: 'person', name: partnerStatus?.name, on: true } : { kind: 'open' }
-              }
-            />
-            <AppText style={styles.emptyTitle}>
-              {partnered ? `You and ${firstName(partnerStatus?.name)} did it.` : 'You did it.'}
-            </AppText>
-            <AppText style={styles.emptyBody}>
-              {totalDays} of {totalDays} days. Not one missed.
-            </AppText>
-            <Button
-              label="Start another challenge"
-              onPress={() => router.push('/challenge/browse')}
-            />
+            <AppText style={styles.emptyBody}>Pick what you will do, then find someone to do it with.</AppText>
+            <Button label="Create a commitment" onPress={() => router.push('/challenge/browse')} />
           </Animated.View>
         ) : (
           <>
-            {/* A missed session, and when to make it up. Above the plan card:
-                while a debt is open it is the next thing to decide. */}
-            {repairDebt && challenge?.id ? (
+            <CommitmentCard
+              activity={challengeHabitTitle(challenge) ?? 'Your commitment'}
+              exercises={
+                activityKey === 'home_workouts' ? (((challenge as any).exercises as string[] | null) ?? []) : []
+              }
+              // Both come from the plan, where they were agreed. With no
+              // partner there is no plan and so neither is shown.
+              amounts={plan ? amountLine(plan) : null}
+              cadence={cadenceLabel(plan?.cadence ?? streak?.cadence ?? null)}
+              partnerState={partnerState}
+              partnerFirstName={partnerName}
+              onChangeActivity={() => router.push('/challenge/browse')}
+              onOpenFind={openFind}
+            />
+
+            {/* A missed session, and when to make it up. While a debt is open
+                it is the next thing to decide, so it sits above the plan. */}
+            {repairDebt ? (
               <RepairCard
                 debt={repairDebt}
                 userChallengeId={challenge.id}
-                partnerFirstName={firstName(partnerStatus?.name)}
+                partnerFirstName={partnerName ?? 'your partner'}
               />
             ) : null}
 
-            {/* D1: additive — the plan sits above today's habit, never in its place. */}
-            {partnered && planQ.data && challenge?.id ? (
+            {/* The session: the plan while there is one, otherwise the way to
+                start the next. One at a time. */}
+            {partnered && plan ? (
               <PlanGateCard
-                plan={planQ.data}
+                plan={plan}
                 userChallengeId={challenge.id}
-                myName={(profileQ.data?.full_name ?? '').trim().split(/\s+/)[0] || 'You'}
+                myName={firstName(profileQ.data?.full_name) ?? 'You'}
                 myAvatarUrl={profileQ.data?.avatar_url ?? null}
               />
-            ) : partnered && sessionActivity && planQ.isSuccess && challenge?.id ? (
-              // D2: after the first run the daily loop carries on, and meeting
-              // up again is always one tap away — never a gate.
-              <Button
-                label="Plan a meetup"
-                variant="ghost"
-                loading={startMeetup.isPending}
-                onPress={() =>
-                  startMeetup
-                    .mutateAsync(challenge.id)
-                    .then(() =>
-                      router.push({ pathname: '/plan/[challengeId]', params: { challengeId: challenge.id } })
-                    )
-                    .catch(() => {})
-                }
-              />
-            ) : null}
-
-            {/* The streak: target_sessions circles, one per session. */}
-            {sessionStreak?.target ? <StreakCircles streak={sessionStreak} /> : null}
-            {askStreakTarget && challenge?.id ? (
-              <View style={styles.streakAsk}>
-                <AppText style={styles.streakAskHeading}>How long a streak?</AppText>
-                <AppText style={styles.streakAskBody}>
-                  Pick a number of sessions to aim for. It is yours, not the pair's.
+            ) : partnered && canPlan && planQ.isSuccess ? (
+              <View style={styles.next}>
+                <AppText style={styles.nextHeading}>Nothing planned yet.</AppText>
+                <AppText style={styles.nextBody}>
+                  Sessions are planned one at a time. {partnerName ?? 'Your partner'} agrees each one.
                 </AppText>
                 <Button
-                  label="Pick your streak"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/modals/streak-target',
-                      params: { challengeId: challenge.id }
-                    } as never)
-                  }
+                  label={`Plan your next ${activityNoun(activityKey)}`}
+                  loading={startSession.isPending}
+                  onPress={onPlanSession}
                 />
               </View>
             ) : null}
-            {/* All N circles resolved: offer the next length straight away. */}
-            {sessionStreak?.complete && challenge?.id ? (
-              <Button
-                label="Extend your streak"
-                variant="ghost"
-                onPress={() =>
-                  router.push({
-                    pathname: '/modals/streak-target',
-                    params: { challengeId: challenge.id }
-                  } as never)
-                }
-              />
-            ) : null}
 
-            <Heart
-              youCheckedIn={youCheckedIn}
-              partnerCheckedIn={partnerCheckedIn}
-              partnerState={partnerState}
-            />
-
-            <PairRow
-              youName={profileQ.data?.full_name}
-              youCheckedIn={youCheckedIn}
-              streak={partnered || partnerState === 'solo' ? streak : undefined}
-              partner={
-                partnerState === 'finding'
-                  ? { kind: 'seeking' }
-                  : partnerState === 'invited'
-                  ? { kind: 'person', name: partnerStatus?.name ?? '?', on: false }
-                  : partnered
-                  ? { kind: 'person', name: partnerStatus?.name, on: partnerCheckedIn }
-                  : { kind: 'open' }
-              }
-            />
-
-            <AppText style={styles.status}>{statusLine()}</AppText>
-
-            {/* Not started yet: the habit is shown dimmed, so it's visible
-                without pretending today counts toward anything. */}
-            <View style={[styles.card, notStarted && styles.cardDim]}>
-              <AppText style={styles.cardLabel}>
-                {notStarted ? 'WAITING TO START' : 'TODAY'}
-              </AppText>
-              <AppText style={styles.cardHabit}>{habit}</AppText>
-              <AppText style={styles.cardSub}>
-                {notStarted
-                  ? `${totalDays}-day challenge · not started`
-                  : `Day ${Math.min(dayIndex, totalDays)} of ${totalDays}${
-                      partnered
-                        ? ` · with ${firstName(partnerStatus?.name)}`
-                        : partnerState === 'finding'
-                        ? ' · going solo until then'
-                        : ''
-                    }`}
-              </AppText>
-              {notStarted ? null : youCheckedIn ? (
-                <View style={styles.done}>
-                  <Ionicons name="checkmark" size={16} color={GREEN} />
-                  <AppText style={styles.doneText}>Done today</AppText>
-                </View>
-              ) : (
-                <Button label="Mark as done" loading={completeTask.isPending} onPress={onMarkDone} />
-              )}
-            </View>
-
-            {/* The action the missed-day push has been asking for since July.
-                Only while there is something to nudge about: once they log,
-                this disappears rather than going grey. */}
-            {partnered && !partnerCheckedIn && !notStarted ? (
-              <View style={styles.nudge}>
-                {nudgedToday ? (
-                  <AppText style={styles.nudgeDone}>
-                    You nudged {firstName(partnerStatus?.name)} today.
-                  </AppText>
-                ) : (
-                  <Pressable
-                    style={styles.nudgeBtn}
-                    disabled={nudgeMut.isPending}
-                    onPress={onNudge}
-                  >
-                    <Ionicons name="hand-left-outline" size={15} color={ORANGE} />
-                    <AppText style={styles.nudgeBtnText}>
-                      {nudgeMut.isPending
-                        ? 'Sending…'
-                        : `Nudge ${firstName(partnerStatus?.name)}`}
-                    </AppText>
-                  </Pressable>
-                )}
-                {nudgeNote ? <AppText style={styles.nudgeNote}>{nudgeNote}</AppText> : null}
-              </View>
-            ) : null}
-
-            {/* Solo: calm and complete, never urgent. Two equal options, and
-                nothing on this screen moves or glows — that stillness is what
-                makes a partnered heart feel like something. */}
-            {partnerState === 'solo' ? (
-              <View style={styles.soloPanel}>
-                <AppText style={styles.soloText}>You're doing this alone right now.</AppText>
-                <View style={styles.soloOpts}>
-                  <Pressable style={styles.opt} onPress={() => router.push('/group/invite')}>
-                    <AppText style={styles.optText}>Invite someone</AppText>
-                  </Pressable>
-                  <Pressable style={styles.opt} onPress={() => router.push('/onboarding/invite')}>
-                    <AppText style={styles.optText}>Find a partner</AppText>
-                  </Pressable>
-                </View>
-              </View>
-            ) : null}
-
-            {partnerState === 'finding' ? (
-              <Pressable style={styles.escape} onPress={() => router.push('/group/invite')}>
-                <AppText style={styles.linkQuiet}>Invite someone you know instead</AppText>
-              </Pressable>
-            ) : null}
-
-            {partnerState === 'invited' ? (
-              <View style={styles.inviteLinks}>
-                <Pressable onPress={() => router.push('/group/invite')}>
-                  <AppText style={styles.link}>Resend invite</AppText>
-                </Pressable>
-                <Pressable onPress={() => router.push('/group/invite')}>
-                  <AppText style={styles.linkQuiet}>Invite someone else</AppText>
-                </Pressable>
-              </View>
-            ) : null}
-
-            {partnered && partnerWhy ? (
-              <View style={styles.why}>
-                <AppText style={styles.whyText}>
-                  {firstName(partnerStatus?.name)}:{' '}
-                  <AppText style={styles.whyQuote}>{partnerWhy}</AppText>
+            {/* The streak: the only standing number on this tab. */}
+            {streak?.target ? <StreakCircles streak={streak} /> : null}
+            {askStreakTarget ? (
+              <View style={styles.next}>
+                <AppText style={styles.nextHeading}>How long a streak?</AppText>
+                <AppText style={styles.nextBody}>
+                  Pick a number of sessions to aim for. It is yours, not the pair's.
                 </AppText>
+                <Button label="Pick your streak" onPress={() => openStreakTarget(challenge.id)} />
               </View>
             ) : null}
-
-            {partnered ? (
-              <AppText style={styles.stakes}>Miss a day and you both start over.</AppText>
+            {/* All N circles resolved: offer the next length straight away. */}
+            {streak?.complete ? (
+              <Button label="Extend your streak" variant="ghost" onPress={() => openStreakTarget(challenge.id)} />
             ) : null}
           </>
         )}
 
-        {/* Persistent on every state. */}
-        <View style={styles.past}>
-          <Pressable style={styles.pastHead} onPress={() => setPastOpen((v) => !v)}>
-            <Ionicons name={pastOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={ORANGE} />
-            <AppText style={styles.pastTitle}>Past challenges</AppText>
-          </Pressable>
-          {pastOpen ? (
-            (historyQ.data ?? []).length === 0 ? (
-              <AppText style={styles.pastEmpty}>Nothing finished yet.</AppText>
-            ) : (
-              (historyQ.data ?? []).map((h: any) => (
-                <View key={h.id} style={styles.pastRow}>
-                  <AppText style={styles.pastHabit}>
-                    {challengeHabitTitle(h) ?? h.challenge_templates?.title}
-                  </AppText>
-                  <AppText style={styles.pastMeta}>
-                    {h.status === 'completed' ? 'Completed' : 'Ended early'}
-                    {h.completed_at ? ` · ${new Date(h.completed_at).toLocaleDateString()}` : ''}
-                  </AppText>
-                </View>
-              ))
-            )
-          ) : null}
-        </View>
+        {/* History: finished challenges. Not tappable. */}
+        {history.length ? (
+          <View style={styles.history}>
+            <AppText style={styles.historyTitle}>HISTORY</AppText>
+            {history.map((h) => (
+              <View key={h.id} style={styles.historyRow}>
+                <AppText style={styles.historyActivity}>{h.title ?? 'A challenge'}</AppText>
+                <AppText style={styles.historyMeta}>{historyLine(h)}</AppText>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -525,105 +246,16 @@ export default function ChallengesScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
   content: { padding: 22, paddingBottom: theme.spacing(5) },
-  pageHead: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
+  pageTitle: {
+    fontFamily: theme.fonts.body,
+    fontSize: 24,
+    color: theme.colors.text,
     marginBottom: theme.spacing(2)
   },
-  pageTitle: { fontFamily: theme.fonts.body, fontSize: 24, color: theme.colors.text },
-  pageMeta: { fontSize: 11, color: theme.colors.muted },
-  status: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: theme.colors.muted,
-    marginBottom: 20,
-    lineHeight: 18
-  },
-  statusStrong: { color: ORANGE, fontFamily: theme.fonts.bodyBold },
-  statusWarm: { color: ORANGE_SOFT },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(28,43,51,0.04)',
-    borderRadius: 18,
-    padding: 18
-  },
-  cardDim: { opacity: 0.5 },
-  cardLabel: { fontSize: 9.5, letterSpacing: 1.6, color: theme.colors.muted, marginBottom: 8 },
-  cardHabit: { fontSize: 18, color: theme.colors.text, marginBottom: 5 },
-  cardSub: { fontSize: 11.5, color: theme.colors.muted, marginBottom: 16 },
-  done: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    borderRadius: 13,
-    paddingVertical: 14,
-    backgroundColor: 'rgba(79,201,138,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(79,201,138,0.25)'
-  },
-  doneText: { color: GREEN, fontSize: 14 },
-  nudge: { marginTop: 14, alignItems: 'center', gap: 8 },
-  nudgeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingVertical: 11,
-    paddingHorizontal: 18,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(253,131,2,0.35)',
-    backgroundColor: 'rgba(253,131,2,0.08)'
-  },
-  nudgeBtnText: { color: ORANGE, fontSize: 12.5 },
-  nudgeDone: { color: theme.colors.muted, fontSize: 11.5 },
-  nudgeNote: { color: theme.colors.muted, fontSize: 11, textAlign: 'center' },
-  soloPanel: {
-    marginTop: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: BORDER,
-    borderRadius: 16,
-    alignItems: 'center'
-  },
-  soloText: { color: theme.colors.muted, fontSize: 11.5, marginBottom: 12 },
-  soloOpts: { flexDirection: 'row', gap: 10, alignSelf: 'stretch' },
-  opt: {
-    // No `flex: 0` here — RN maps it to flex-basis:0% on web and collapses the
-    // element to zero height.
-    flexGrow: 1,
-    flexBasis: 0,
-    paddingVertical: 11,
-    paddingHorizontal: 8,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: BORDER,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center'
-  },
-  optText: { color: theme.colors.text, fontSize: 11.5 },
-  escape: { alignItems: 'center', marginTop: 20 },
-  inviteLinks: { flexDirection: 'row', gap: 20, justifyContent: 'center', marginTop: 20 },
-  link: { color: ORANGE, fontSize: 12 },
-  linkQuiet: { color: theme.colors.muted, fontSize: 12 },
-  why: {
-    marginTop: 12,
-    paddingVertical: 13,
-    paddingHorizontal: 15,
-    borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.025)',
-    borderLeftWidth: 2,
-    borderLeftColor: 'rgba(253,131,2,0.4)'
-  },
-  whyText: { color: '#7C8C96', fontSize: 11.5, lineHeight: 18 },
-  whyQuote: { color: theme.colors.text, fontStyle: 'italic' },
-  stakes: { textAlign: 'center', color: DIM, fontSize: 10, marginTop: 14 },
-  empty: { alignItems: 'center', paddingVertical: 48, gap: theme.spacing(1.5) },
-  emptyTitle: { fontSize: 18, color: theme.colors.text, textAlign: 'center' },
-  streakAsk: {
+  empty: { gap: theme.spacing(1.5), paddingVertical: theme.spacing(4) },
+  emptyTitle: { fontSize: 22, color: theme.colors.text },
+  emptyBody: { fontSize: 14, lineHeight: 20, color: theme.colors.muted },
+  next: {
     backgroundColor: theme.colors.surface,
     borderRadius: 18,
     padding: 18,
@@ -632,24 +264,17 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(253,131,2,0.28)',
     gap: 8
   },
-  streakAskHeading: { fontSize: 19, color: theme.colors.text },
-  streakAskBody: { fontSize: 13, lineHeight: 19, color: theme.colors.muted },
-  emptyBody: {
-    fontSize: 12,
-    color: theme.colors.muted,
-    textAlign: 'center',
-    marginBottom: theme.spacing(1)
-  },
-  past: {
-    marginTop: 26,
+  nextHeading: { fontSize: 19, color: theme.colors.text },
+  nextBody: { fontSize: 13, lineHeight: 19, color: theme.colors.muted },
+  history: {
+    marginTop: theme.spacing(2),
+    paddingTop: theme.spacing(2),
     borderTopWidth: 1,
-    borderTopColor: 'rgba(28,43,51,0.04)',
-    paddingTop: 16
+    borderTopColor: theme.colors.border,
+    gap: theme.spacing(1.5)
   },
-  pastHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  pastTitle: { color: theme.colors.muted, fontSize: 11.5 },
-  pastEmpty: { color: DIM, fontSize: 11, marginTop: 12 },
-  pastRow: { marginTop: 14 },
-  pastHabit: { color: '#7C8C96', fontSize: 11.5 },
-  pastMeta: { color: DIM, fontSize: 10, marginTop: 2 }
+  historyTitle: { fontSize: 10, letterSpacing: 1.2, color: theme.colors.muted },
+  historyRow: { gap: 2 },
+  historyActivity: { fontSize: 15, color: theme.colors.text },
+  historyMeta: { fontSize: 12, color: theme.colors.muted }
 });

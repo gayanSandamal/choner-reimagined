@@ -3,6 +3,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { Heart } from '@/components/challenges/Heart';
 import { PairAvatars } from '@/components/plans/PairAvatars';
+import { planCopy } from '@/features/plans/activity';
 import { COPY } from '@/features/plans/copy';
 import type { PairPlan } from '@/features/plans/types';
 import { theme } from '@/constants/theme';
@@ -27,7 +28,7 @@ export function StepsInIntro({
         </AppText>
       </AppText>
       <AppText muted style={styles.center}>
-        {COPY.stepsInSub}
+        {planCopy(plan.activity_key).stepsInSub}
       </AppText>
       <PairAvatars me={me} them={{ name: plan.them.first_name, avatarUrl: plan.them.avatar_url }} />
       <Button label={COPY.stepsInButton} onPress={onContinue} />

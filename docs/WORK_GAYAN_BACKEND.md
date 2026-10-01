@@ -50,12 +50,20 @@ Also applied on 1 October, from `docs/SCHEMA_CHALLENGES.md` and the testing pass
 
 **An outage, and the rule it leaves behind.** `202610020900` first added `legacy_template_id` as a foreign key. A second foreign key from `user_challenges` to `challenge_templates` makes every `challenge_templates(*)` embed ambiguous to PostgREST, and that embed is `getMyChallenge()`. Home, Challenges, Find and Profile failed for everyone, on every installed build, for roughly ten minutes until `202610020940` dropped the constraint. **Adding a second foreign key between two tables is a breaking API change here.**
 
+**Built on 2 October:**
+
+- **The Challenges tab is rebuilt** (`app/(tabs)/challenges.tsx`). The commitment card with its partner row, the session plan, the streak, the repair card and history. The daily screen it replaces is gone: no TODAY card, no "Mark as done", no "Day 5 of 7", no nudge, no solo panel, no partner why. Every state short of partnered hands off to Find with a button.
+- **Create a commitment** (`app/challenge/browse.tsx`). The activity and nothing else, with up to four exercises for Workouts. The same screen changes the activity, and `set_challenge_habit()` now refuses once a search has started (`202610021030`).
+- **Every activity plans sessions** (`202610021000`). `confirm_match()` only created a first plan for running, walking and cycling, so a Jogging, Yoga or Workouts pair was matched and had nothing to plan. Yoga and Workouts answer "how much" in minutes. The plan flow's words come from the activity (`features/plans/activity.ts`): nothing says "run" to someone doing yoga.
+- **The sample pool is on the six** (`202610021010`). All 406 challenges on habits with no activity belonged to `@choner.test` accounts. They were spread across the six, which also gives Jogging and Cycling a pool for the first time. Guarded by email domain: a real account is never moved.
+- **History carries the score** (`202610021020`): *Ended · 7 of 12 · September 2026*.
+
 **Still not built:**
 
-- **The Challenges tab rebuild itself** (Dinesh's section E). The streak and repair cards sit on top of the old daily screen; the daily TODAY card, "Day 7 of 7" and the old streak number are still underneath.
-- **Create a commitment as its own screen** (task 1). The existing list now shows the six, but it is still the old Quests layout, and exercises can only be picked in onboarding.
-- **Sessions for Yoga and Workouts.** `start_meetup_plan()` still only allows the four distance activities, because "how much" is a list of distances.
-- **Old habit challenges.** About 400 challenges, nearly all sample data, are on retired templates with no activity to move to.
+- **Home.** It is the last screen still on the daily model: the daily check-in, the old streak number and "log it before 8pm" all live there now and nowhere else. The daily reminder and missed-check-in cron jobs are still running to match. Home and those jobs should change together.
+- **Ending a challenge the new way.** "End this challenge" still abandons the row. Keeping the partner across it, so the pair picks a new activity together, needs a way to carry a partnership onto a new challenge and is not built.
+- **Find's matched screen.** End match, report and block belong there. Until it has them, the report and block menu stays in the Challenges top bar and `end_match()` has no button anywhere.
+- **Session details** (Dinesh's task 15) and the Find rebuild (section C).
 
 ---
 

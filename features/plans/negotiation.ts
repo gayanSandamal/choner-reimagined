@@ -18,9 +18,9 @@ export const HELP_AFTER_ROUNDS = 3;
 export function proposalLabel(field: string, value: any): string {
   if (field === 'cadence') return cadenceLabel(Number(value)) ?? String(value);
   if (field === 'distance' || field === 'mode') return String(value) === 'together'
-    ? 'Run together'
+    ? 'Together'
     : String(value) === 'separate'
-    ? 'Run separately, together'
+    ? 'Separately, together'
     : String(value);
   if (field === 'place') return [value?.name, value?.text].filter(Boolean).join(' — ');
   if (field === 'time' || field === 'day_time') {

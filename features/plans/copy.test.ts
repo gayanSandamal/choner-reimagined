@@ -11,7 +11,7 @@ const maybe = handover ? it : it.skip;
 describe('session copy matches the handover', () => {
   maybe('uses the handover wording, character for character', () => {
     const fixed = [
-      ...Object.values(COPY).filter((s) => !['You two', 'are in.', "You're paired.", "Let's plan it.", 'Finish', 'Waiting'].includes(s)),
+      ...Object.values(COPY).filter((s) => !['You two', 'are in.', "You're paired.", "Let's plan it.", 'Complete session', 'Waiting'].includes(s)),
       OPENER, ...Object.values(REPLIES), ...DISTANCES, ...RECOVERY_REASONS, ...REACTIONS
     ];
     const missing = fixed.filter((s) => !handover!.includes(s));
