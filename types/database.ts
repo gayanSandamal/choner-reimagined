@@ -31,6 +31,9 @@ export interface Database {
           // 'photo_confirmed' only ever via set_live_photo(). Any other change
           // to avatar_url resets it (202609291200).
           photo_status: 'photo_confirmed' | 'no_photo';
+          // Opt-out from "Already on the move" (202610011100). Written only
+          // through set_show_in_directory().
+          hide_from_directory: boolean;
           stress_level: string | null;
           onboarding_complete: boolean | null;
           // IANA zone, e.g. 'Asia/Colombo'. The missed-day sweep resolves each
@@ -286,6 +289,8 @@ export interface Database {
           commitment_value: number | null;
           days_per_week: number | null;
           target_sessions: number | null;
+          // Up to four, Workouts only. Written through set_challenge_exercises().
+          exercises: string[];
           mode: 'together' | 'separate';
         };
         Insert: {
@@ -884,6 +889,10 @@ export interface Database {
         Returns: string;
       };
       // Takes the short code or the long token; delegates to the one above.
+      set_challenge_exercises: {
+        Args: { p_user_challenge_id: string; p_exercises: string[] };
+        Returns: string[];
+      };
       accept_invite_by_code: {
         Args: { p_code: string };
         Returns: string;

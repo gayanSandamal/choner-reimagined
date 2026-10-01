@@ -92,7 +92,7 @@ export default function SettingsScreen() {
         />
         <ListItem
           title="Who else is here"
-          subtitle="Choose whether you appear in the list of active people."
+          subtitle="You appear in the list of active people. Turn that off here."
           icon="people"
           showChevron
           onPress={() => router.push('/find/who-else')}
