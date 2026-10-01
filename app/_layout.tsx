@@ -19,6 +19,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SplashView } from '@/components/SplashView';
+import { AuthLinkHandler } from '@/components/auth/AuthLinkHandler';
 import { useSplashHoldElapsed } from '@/lib/splash-hold';
 import { theme } from '@/constants/theme';
 
@@ -78,6 +79,14 @@ function RootLayoutNav() {
     // Cast: the typed-routes union regenerates from app/ on the next expo
     // build; until then the new segment literal isn't in the union.
     const inInviteGroup = (segments[0] as string) === 'invite';
+    // The two screens an email link lands on WITH a session: "You're verified"
+    // and the new-password form. Both sit in the auth group, which a signed-in
+    // person is otherwise routed out of, so without this the gate would bounce
+    // them to onboarding or Home before either screen rendered. Each one
+    // leaves by its own button.
+    const onAuthLanding =
+      inAuthGroup &&
+      ((segments[1] as string) === 'verified' || (segments[1] as string) === 'reset-password');
 
     if (!session) {
       if (!inAuthGroup && !inLegalGroup && !inInviteGroup) {
@@ -92,6 +101,7 @@ function RootLayoutNav() {
       // with onboarding_complete already true, and exits are explicit.
       const needsOnboarding = profileQ.data ? !profileQ.data.onboarding_complete : false;
       const inOnboarding = segments[0] === 'onboarding';
+      if (onAuthLanding) return;
       if (needsOnboarding && !inOnboarding && !inLegalGroup) {
         router.replace('/onboarding');
       } else if (!needsOnboarding && inAuthGroup) {
@@ -102,6 +112,7 @@ function RootLayoutNav() {
 
   return (
     <>
+      <AuthLinkHandler />
       <PendingInviteHandler />
       <Stack
         screenOptions={{

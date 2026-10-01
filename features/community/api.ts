@@ -225,6 +225,7 @@ export async function createInvite(input: {
         email: input.email,
         inviterName: input.inviterName,
         token: invite.token,
+        code: invite.code ?? undefined,
         challengeId: input.userChallengeId,
       },
     });
@@ -256,6 +257,7 @@ export async function listMyPendingInvites(userId: string) {
 export async function resendInvite(invite: {
   email: string;
   token: string;
+  code?: string | null;
   user_challenge_id?: string | null;
   inviterName?: string;
 }) {
@@ -264,14 +266,19 @@ export async function resendInvite(invite: {
       email: invite.email,
       inviterName: invite.inviterName,
       token: invite.token,
+      code: invite.code ?? undefined,
       challengeId: invite.user_challenge_id ?? undefined,
     },
   });
   if (error) throw error;
 }
 
-export async function acceptInvite(token: string) {
-  const { data, error } = await supabase.rpc('accept_challenge_invite', { p_token: token });
+// Takes whatever the person has: the 6-character code (`RUN4K7`, typed any way
+// round: `run-4k7` works) or the long token a deep link carries. The RPC
+// resolves either to the same invite and delegates to accept_challenge_invite,
+// so there is still exactly one acceptance path.
+export async function acceptInvite(codeOrToken: string) {
+  const { data, error } = await supabase.rpc('accept_invite_by_code', { p_code: codeOrToken.trim() });
   if (error) throw error;
   return data as string | null;
 }

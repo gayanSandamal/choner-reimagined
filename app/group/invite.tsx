@@ -24,7 +24,7 @@ export default function InviteScreen() {
   const [email, setEmail] = useState('');
   // Set once an invite exists, so the link is always shareable even if the
   // email didn't go out.
-  const [sent, setSent] = useState<{ email: string; token: string | null; emailed: boolean } | null>(
+  const [sent, setSent] = useState<{ email: string; token: string | null; code: string | null; emailed: boolean } | null>(
     null
   );
 
@@ -39,7 +39,12 @@ export default function InviteScreen() {
         inviterId: userId,
         inviterName: profileQ.data?.full_name ?? undefined,
       });
-      setSent({ email: email.trim(), token: result.token, emailed: result.emailed });
+      setSent({
+        email: email.trim(),
+        token: result.token,
+        code: result.code ?? null,
+        emailed: result.emailed
+      });
       setEmail('');
     } catch (e: any) {
       notify('Could not send invite', e.message);
@@ -48,7 +53,7 @@ export default function InviteScreen() {
 
   const onShare = async () => {
     if (!sent?.token) return;
-    const how = await shareInviteLink(sent.token, profileQ.data?.full_name);
+    const how = await shareInviteLink(sent.token, profileQ.data?.full_name, sent.code);
     if (how === 'copied') notify('Link copied', 'Paste it to your partner to bring them in.');
     if (how === 'failed') notify('Could not share', 'Copy the link shown above instead.');
   };
@@ -76,6 +81,17 @@ export default function InviteScreen() {
               : `We couldn't email ${sent.email}, but the invite is saved. Send them this link and it works the same:`
             : `We couldn't email ${sent.email}. The invite is saved — resend it once email is set up.`}
         </AppText>
+
+        {sent.code ? (
+          <View style={styles.linkBox}>
+            <AppText variant="muted">
+              Their code, good for 48 hours. They enter it under "I have an invite code".
+            </AppText>
+            <AppText variant="subtitle" selectable style={{ letterSpacing: 2 }}>
+              {sent.code}
+            </AppText>
+          </View>
+        ) : null}
 
         {sent.token ? (
           <>

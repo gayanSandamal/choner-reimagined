@@ -21,8 +21,16 @@ export interface Database {
           avatar_url: string | null;
           primary_goal: string | null;
           main_struggle: string | null;
-          accountability_mode: string | null;
+          // DROPPED on the live database by 202609291110. Kept in the Row type
+          // only so the read fallback in Profile still compiles against a local
+          // database that has not run the opt-in contract step. Never write it:
+          // it is deliberately absent from Insert and Update below.
+          accountability_mode?: string | null;
+          // The tone: competitive | momentum | encouraging | team.
           accountability_style: string | null;
+          // 'photo_confirmed' only ever via set_live_photo(). Any other change
+          // to avatar_url resets it (202609291200).
+          photo_status: 'photo_confirmed' | 'no_photo';
           stress_level: string | null;
           onboarding_complete: boolean | null;
           // IANA zone, e.g. 'Asia/Colombo'. The missed-day sweep resolves each
@@ -46,7 +54,6 @@ export interface Database {
           avatar_url?: string | null;
           primary_goal?: string | null;
           main_struggle?: string | null;
-          accountability_mode?: string | null;
           accountability_style?: string | null;
           stress_level?: string | null;
           onboarding_complete?: boolean | null;
@@ -64,7 +71,6 @@ export interface Database {
           avatar_url?: string | null;
           primary_goal?: string | null;
           main_struggle?: string | null;
-          accountability_mode?: string | null;
           accountability_style?: string | null;
           stress_level?: string | null;
           onboarding_complete?: boolean | null;
@@ -229,6 +235,8 @@ export interface Database {
           b_confirmed: boolean;
           status: 'pending' | 'confirmed' | 'declined' | 'expired';
           declined_by: string | null;
+          // created_at + 24h. One clock for both people (202609301300).
+          expires_at: string;
           created_at: string;
           updated_at: string;
         };
@@ -797,6 +805,11 @@ export interface Database {
           status: string | null;
           invited_by: string | null;
           token: string | null;
+          // The 6-character code a person can type, e.g. RUN4K7. Set by a
+          // trigger on insert (202609291300); the token stays the link payload.
+          code: string | null;
+          // created_at + 48h. Acceptance past it is refused by a trigger.
+          expires_at: string | null;
           accepted_by: string | null;
           accepted_at: string | null;
           created_at: string | null;
@@ -869,6 +882,34 @@ export interface Database {
       accept_challenge_invite: {
         Args: { p_token: string };
         Returns: string;
+      };
+      // Takes the short code or the long token; delegates to the one above.
+      accept_invite_by_code: {
+        Args: { p_code: string };
+        Returns: string;
+      };
+      set_live_photo: {
+        Args: { p_url: string };
+        Returns: Database['public']['Tables']['profiles']['Row'];
+      };
+      clear_live_photo: {
+        Args: Record<string, never>;
+        Returns: Database['public']['Tables']['profiles']['Row'];
+      };
+      // Neutral way out of a match. The reason is private: nothing
+      // partner-facing returns it.
+      end_match: {
+        Args: {
+          p_user_challenge_id: string;
+          p_reason:
+            | 'no_time_worked'
+            | 'stopped_replying'
+            | 'pace_mismatch'
+            | 'changing_what_i_do'
+            | 'something_felt_off'
+            | 'prefer_not_to_say';
+        };
+        Returns: void;
       };
       delete_account: {
         Args: Record<string, never>;

@@ -21,9 +21,9 @@ import { notify } from '@/lib/alert';
 // "Check your email" cannot offer Resend after a failed verification: there is
 // nothing to resend to.
 //
-// TODO(gayan-deeplinks): route here when creating the session from the link
-// fails because the token is expired or already consumed. Pass `kind` so the
-// right link is sent, and `email` when the app still knows it.
+// Routed to by components/auth/AuthLinkHandler when creating the session from
+// the link fails, with `kind` so the right link is re-sent. `email` is only
+// passed by callers that still know it; the link itself never does.
 export default function LinkExpiredScreen() {
   const { kind, email } = useLocalSearchParams<{ kind?: string; email?: string }>();
   const isReset = kind === 'reset';

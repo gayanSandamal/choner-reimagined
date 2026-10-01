@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
 
   // Build context: profile + active challenge + last 14 days of checkins.
   const [{ data: profile }, { data: active }] = await Promise.all([
-    admin.from('profiles').select('full_name, primary_goal, main_struggle, accountability_mode, stress_level').eq('id', user.id).maybeSingle(),
+    admin.from('profiles').select('full_name, primary_goal, main_struggle, accountability_style, stress_level').eq('id', user.id).maybeSingle(),
     admin
       .from('user_challenges')
       .select('*, challenge_templates(title, category), challenge_tasks(title)')
@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
   if (profile) {
     contextLines.push(
       `User: ${profile.full_name ?? 'unknown'}. Goal: ${profile.primary_goal ?? '—'}. ` +
-      `Struggle: ${profile.main_struggle ?? '—'}. Accountability: ${profile.accountability_mode ?? '—'}. ` +
+      `Struggle: ${profile.main_struggle ?? '—'}. Accountability: ${profile.accountability_style ?? '—'}. ` +
       `Stress: ${profile.stress_level ?? '—'}.`
     );
   }

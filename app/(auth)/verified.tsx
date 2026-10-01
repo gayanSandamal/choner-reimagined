@@ -11,12 +11,9 @@ import { theme } from '@/constants/theme';
 
 // Where someone lands after tapping the link in their verification email.
 //
-// TODO(gayan-deeplinks): by the time this screen renders the session must
-// already exist. `lib/supabase.ts` sets `detectSessionInUrl: false` and
-// nothing reads the tokens out of the link, so today the link verifies the
-// account on Supabase and drops the person back on "Check your email", not
-// signed in. Reading the tokens and creating the session is Gayan's task 2;
-// this screen is what should be routed to once it succeeds.
+// By the time this renders the session exists: components/auth/AuthLinkHandler
+// reads the tokens out of the link, creates the session, and only then routes
+// here. An expired or already-used link goes to link-expired.tsx instead.
 export default function VerifiedScreen() {
   const [inviteToken, setInviteToken] = useState<string | null>(null);
 

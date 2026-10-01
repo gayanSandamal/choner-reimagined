@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
 import { useSession } from '@/providers/session-provider';
 import { useAcceptInvite } from '@/features/community/hooks';
+import { useProfile } from '@/features/profile/hooks';
 import { setPendingInviteToken, clearPendingInviteToken } from '@/lib/pending-invite';
 import { theme } from '@/constants/theme';
 
@@ -17,6 +18,7 @@ export default function AcceptInviteScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
   const { session, loading } = useSession();
   const acceptInvite = useAcceptInvite();
+  const profileQ = useProfile(session?.user.id);
   const [phase, setPhase] = useState<Phase>('idle');
   const [message, setMessage] = useState('');
   const startedRef = useRef(false);
@@ -34,7 +36,27 @@ export default function AcceptInviteScreen() {
       setPhase('needs-auth');
       return;
     }
+    // Signed in, but which kind of account decides where this goes, so wait
+    // for the profile before doing anything.
+    if (profileQ.isLoading) return;
     if (startedRef.current) return;
+
+    // A NEW account has answered nothing yet: no goal, struggle, style, age,
+    // gender or energy, which is everything matching and the app's tone run
+    // on. Accepting here used to drop them on Home with an empty profile. So
+    // keep the invite, send them through onboarding, and let it be accepted
+    // the moment the quiz saves (PendingInviteHandler in app/_layout.tsx).
+    // The photo step then skips the challenge picker, because they inherit
+    // their partner's challenge, and they finish on the why.
+    //
+    // Fails open: no profile row (a read error) is treated as an existing
+    // account rather than trapping someone in onboarding.
+    if (profileQ.data && !profileQ.data.onboarding_complete) {
+      startedRef.current = true;
+      setPendingInviteToken(String(token)).then(() => router.replace('/onboarding'));
+      return;
+    }
+
     startedRef.current = true;
     setPhase('accepting');
     acceptInvite
@@ -47,7 +69,7 @@ export default function AcceptInviteScreen() {
         setPhase('error');
         setMessage(e?.message ?? 'Could not accept this invite.');
       });
-  }, [loading, session, token]);
+  }, [loading, session, token, profileQ.isLoading, profileQ.data]);
 
   return (
     <Screen>
@@ -63,10 +85,11 @@ export default function AcceptInviteScreen() {
             <AppText variant="muted" style={styles.textCenter}>
               Your shared fire is lit. You and your partner are in this together now.
             </AppText>
-            {/* Step 4: the partner who joined answers their own "Why" before
+            {/* Only an EXISTING account reaches this: a new one is sent
+                through onboarding above. They answer their own "Why" before
                 landing on Home. The screen seeds itself from anything they
-                already answered and can be skipped, so an existing user
-                accepting a second invite isn't made to redo it. */}
+                already answered and can be skipped, so accepting a second
+                invite does not mean redoing it. */}
             <Button label="Continue" onPress={() => router.replace('/challenge/why')} />
           </>
         ) : phase === 'needs-auth' ? (

@@ -54,6 +54,27 @@ export async function uploadAvatar(input: {
   return data.publicUrl;
 }
 
+/**
+ * Upload a photo taken live with the camera and mark it confirmed.
+ *
+ * Same `avatars` bucket as a gallery upload, but the write goes through
+ * set_live_photo(): that RPC is the only thing that can set
+ * photo_status = 'photo_confirmed' (202609291200). A plain avatar_url update
+ * resets the badge, which is what uploadAvatar() above does on purpose.
+ */
+export async function uploadLivePhoto(input: { userId: string; base64: string }) {
+  const path = `${input.userId}/live-${Date.now()}.jpg`;
+  const { error: uploadErr } = await supabase.storage
+    .from('avatars')
+    .upload(path, decodeBase64(input.base64), { contentType: 'image/jpeg', upsert: true });
+  if (uploadErr) throw uploadErr;
+
+  const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+  const { data, error } = await supabase.rpc('set_live_photo', { p_url: pub.publicUrl });
+  if (error) throw error;
+  return data;
+}
+
 export async function changePassword(newPassword: string) {
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw error;

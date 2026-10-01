@@ -564,6 +564,10 @@ export type MyMatch =
       // Whether this user's own tap produced the pairing. Decides which
       // question they are asked: "keep them?" versus "will you take them on?".
       i_requested: boolean;
+      // ISO time the pending match lapses: created_at + 24h, the same instant
+      // for both people. Absent until 202610011000 is applied, so treat a
+      // missing value as "no clock to show", not as expired.
+      expires_at?: string;
       searches_left: number;
       daily_limit: number;
     };

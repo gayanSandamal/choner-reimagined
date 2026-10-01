@@ -9,6 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/Icon';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
+import { useSession } from '@/providers/session-provider';
+import { useUploadLivePhoto } from '@/features/profile/hooks';
+import { getMyChallenge, partnerStateOf } from '@/features/challenges/api';
+import { acceptInvite } from '@/features/community/api';
+import { clearPendingInviteToken, getPendingInviteToken } from '@/lib/pending-invite';
 
 // One optional screen after the reveal.
 //
@@ -23,16 +28,49 @@ import { notify } from '@/lib/alert';
 export default function PhotoScreen() {
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const [uri, setUri] = useState<string | null>(null);
+  const { session } = useSession();
+  const userId = session?.user.id;
+  const uploadLivePhoto = useUploadLivePhoto();
+  const [shot, setShot] = useState<{ uri: string; base64: string } | null>(null);
+  const uri = shot?.uri ?? null;
   const [busy, setBusy] = useState(false);
 
-  const next = () => router.push('/onboarding/challenge');
+  // Someone who came in on an invite inherits their partner's challenge, so
+  // the picker and the partner choice would both be asking a question that is
+  // already answered: they go straight to the why and finish on Home.
+  //
+  // The invite is normally accepted in the background the moment the quiz
+  // saves (PendingInviteHandler in app/_layout.tsx). If that has not happened
+  // yet the token is still in storage, so it is accepted here rather than
+  // letting the person pick a challenge the acceptance would then overwrite.
+  const next = async () => {
+    let joined = false;
+    try {
+      const token = await getPendingInviteToken();
+      if (token) {
+        try {
+          await acceptInvite(token);
+        } finally {
+          // A dead token must not be retried on every launch.
+          await clearPendingInviteToken();
+        }
+      }
+      if (userId) {
+        const mine = await getMyChallenge(userId);
+        joined = partnerStateOf(mine) === 'partnered';
+      }
+    } catch {
+      // Fall through to the picker: a failed lookup must not trap onboarding.
+    }
+    if (joined) router.replace('/challenge/why');
+    else router.push('/onboarding/challenge');
+  };
 
   const onTake = async () => {
     try {
       setBusy(true);
-      const shot = await cameraRef.current?.takePictureAsync({ quality: 0.7 });
-      if (shot?.uri) setUri(shot.uri);
+      const taken = await cameraRef.current?.takePictureAsync({ quality: 0.7, base64: true });
+      if (taken?.uri && taken.base64) setShot({ uri: taken.uri, base64: taken.base64 });
     } catch (error: any) {
       notify('Could not take the photo', error.message);
     } finally {
@@ -41,16 +79,24 @@ export default function PhotoScreen() {
   };
 
   const onConfirm = async () => {
-    // TODO(gayan-photo): neither the `photo_status` column nor the storage
-    // bucket exists yet (his task 6). Upload the file, set the status to the
-    // photo-confirmed value, and only then continue. Nothing in the data model
-    // should be named `verified` either.
-    next();
+    if (!shot || !userId) return;
+    try {
+      setBusy(true);
+      // Upload first, continue second: the badge on this screen is a promise
+      // about what is stored, so it must not be shown for a photo that failed
+      // to save. set_live_photo() is what marks it photo_confirmed.
+      await uploadLivePhoto.mutateAsync({ userId, base64: shot.base64 });
+      await next();
+    } catch (error: any) {
+      notify('Could not save your photo', error.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
+  // Nothing to write: photo_status defaults to 'no_photo', which is what lets
+  // Profile offer "Add your photo" rather than "Retake your photo".
   const onSkip = () => {
-    // TODO(gayan-photo): leave photo_status at the no-photo value so Profile
-    // can offer "Add your photo" rather than "Retake your photo".
     next();
   };
 
@@ -117,8 +163,8 @@ export default function PhotoScreen() {
       <Animated.View entering={FadeInDown.delay(280).duration(360)} style={styles.footer}>
         {uri ? (
           <>
-            <Button label="Continue" onPress={onConfirm} />
-            <Button label="Retake" variant="ghost" onPress={() => setUri(null)} />
+            <Button label="Continue" loading={busy} disabled={busy} onPress={onConfirm} />
+            <Button label="Retake" variant="ghost" disabled={busy} onPress={() => setShot(null)} />
           </>
         ) : (
           <>

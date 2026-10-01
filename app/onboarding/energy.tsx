@@ -13,6 +13,7 @@ import { useSession } from '@/providers/session-provider';
 import { useUpdateProfile } from '@/features/profile/hooks';
 import { cityFromTimezone } from '@/features/community/milestones';
 import { theme } from '@/constants/theme';
+import { getPendingInviteToken } from '@/lib/pending-invite';
 import { notify } from '@/lib/alert';
 
 export default function EnergyScreen() {
@@ -58,9 +59,15 @@ export default function EnergyScreen() {
       // something the moment onboarding ends. Best-effort: a failure here must
       // not trap the user on onboarding — the RPC is idempotent and Step 1
       // re-ensures if needed.
+      //
+      // Not for someone who arrived on an invite: accepting it gives them
+      // their partner's challenge, and it is being accepted right now, off the
+      // same save. Provisioning a second one here would race it.
       try {
-        const template = await getTemplateBySlug(goalToTemplateSlug(goal));
-        await ensureChallenge.mutateAsync({ userId, templateId: template?.id });
+        if (!(await getPendingInviteToken())) {
+          const template = await getTemplateBySlug(goalToTemplateSlug(goal));
+          await ensureChallenge.mutateAsync({ userId, templateId: template?.id });
+        }
       } catch {
         // Swallowed on purpose — see note above.
       }
