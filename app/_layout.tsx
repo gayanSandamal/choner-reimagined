@@ -84,9 +84,10 @@ function RootLayoutNav() {
     // person is otherwise routed out of, so without this the gate would bounce
     // them to onboarding or Home before either screen rendered. Each one
     // leaves by its own button.
-    const onAuthLanding =
-      inAuthGroup &&
-      ((segments[1] as string) === 'verified' || (segments[1] as string) === 'reset-password');
+    // Widened first: without the generated route types (CI has none) the
+    // segments tuple is typed with a single element and [1] does not compile.
+    const leaf = (segments as string[])[1];
+    const onAuthLanding = inAuthGroup && (leaf === 'verified' || leaf === 'reset-password');
 
     if (!session) {
       if (!inAuthGroup && !inLegalGroup && !inInviteGroup) {
