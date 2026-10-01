@@ -13,13 +13,8 @@ import { RepairCard } from '@/components/plans/RepairCard';
 import { StreakCircles } from '@/components/streak/StreakCircles';
 import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
 import { historyLine } from '@/features/challenges/history';
-import {
-  useChallengeHistoryScores,
-  useEndChallenge,
-  useMyChallenge,
-  useMyPartner
-} from '@/features/challenges/hooks';
-import { streakScore } from '@/features/plans/streak';
+import { useEndChallengeAction } from '@/features/challenges/end-action';
+import { useChallengeHistoryScores, useMyChallenge, useMyPartner } from '@/features/challenges/hooks';
 import { activityNoun } from '@/features/plans/activity';
 import { amountLine } from '@/features/plans/amounts';
 import { cadenceLabel } from '@/features/plans/cadence';
@@ -32,7 +27,7 @@ import {
 import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
-import { confirmAction, notify } from '@/lib/alert';
+import { notify } from '@/lib/alert';
 
 // The six that can plan a session. A challenge still on a retired habit has
 // no activity, so there is nothing to plan and no button is offered.
@@ -65,7 +60,7 @@ export default function ChallengesScreen() {
   // no challenge at all.
   const partnerQ = useMyPartner(userId);
   const historyQ = useChallengeHistoryScores(userId);
-  const endChallenge = useEndChallenge();
+  const endAction = useEndChallengeAction();
 
   const challenge = challengeQ.data ?? null;
   const myPartner = partnerQ.data?.partnered ? partnerQ.data : null;
@@ -120,33 +115,9 @@ export default function ChallengesScreen() {
   };
 
   // Ending a challenge is destructive to the STREAK and to nothing else, and
-  // says so before it happens: the score it ends on, where it goes, and that
-  // the partner stays.
-  const onEndChallenge = async () => {
-    if (!challenge?.id) return;
-    const score = streak ? streakScore(streak) : null;
-    const ok = await confirmAction({
-      title: 'End this challenge?',
-      message: [
-        score ? `Your streak ends here, at ${score}. It'll be saved to your history.` : "It'll be saved to your history.",
-        partnerName ? `${partnerName} stays your partner.` : null
-      ]
-        .filter(Boolean)
-        .join(' '),
-      confirmLabel: 'End challenge',
-      cancelLabel: 'Keep going',
-      destructive: true
-    });
-    if (!ok) return;
-    try {
-      const res = await endChallenge.mutateAsync(challenge.id);
-      if (!res.ok && res.reason !== 'already_ended') {
-        notify('Could not end that', 'Please try again.');
-      }
-    } catch (error: any) {
-      notify('Could not end that', error.message);
-    }
-  };
+  // says so before it happens. Shared with the session details screen.
+  const onEndChallenge = () =>
+    endAction.end({ challengeId: challenge?.id, streak, partnerName });
 
   const onRefresh = () => {
     challengeQ.refetch();
@@ -274,7 +245,7 @@ export default function ChallengesScreen() {
             <Button
               label="End this challenge"
               variant="ghost"
-              loading={endChallenge.isPending}
+              loading={endAction.pending}
               onPress={onEndChallenge}
             />
           </>

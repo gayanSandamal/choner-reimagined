@@ -1,57 +1,47 @@
 import { useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppTopBar } from '@/components/navigation/AppTopBar';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
-import { LoadingState } from '@/components/ui/StateViews';
-import { Heart } from '@/components/challenges/Heart';
-import { Avatar } from '@/components/ui/Avatar';
-import { Radar } from '@/components/challenges/Radar';
 import { PressableScale } from '@/components/ui/PressableScale';
-import { MatchCard } from '@/components/challenges/MatchCard';
+import { LoadingState } from '@/components/ui/StateViews';
+import { Radar } from '@/components/challenges/Radar';
+import { MatchOffer } from '@/components/find/MatchOffer';
 import { MatchedCard } from '@/components/find/MatchedCard';
-import { MatchReportLink } from '@/components/safety/MatchReportLink';
-import { challengeHabitTitle, isDailySearchLimit, partnerStateOf } from '@/features/challenges/api';
+import { challengeHabitTitle, partnerStateOf, setPartnerState } from '@/features/challenges/api';
+import { consumeDeclineNotice, DECLINE_NOTICE } from '@/features/challenges/decline-notice';
 import {
-  useMyChallenge,
-  useMyPartner,
-  useJoinMatchPool,
-  useDeclineMatch,
   useLeaveMatchPool,
-  useLocations,
-  useMyMatch
+  useMyChallenge,
+  useMyMatch,
+  useMyPartner
 } from '@/features/challenges/hooks';
-import { usePartnerStatus } from '@/features/community/hooks';
+import { MATCH_EXPIRED_BODY, MATCH_EXPIRED_TITLE } from '@/features/challenges/match-clock';
+import { usePendingInvites } from '@/features/community/hooks';
 import { useProfile } from '@/features/profile/hooks';
+import { shareInviteLink } from '@/lib/invite-link';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
-import { consumeDeclineNotice, DECLINE_NOTICE, raiseDeclineNotice } from '@/features/challenges/decline-notice';
-import { confirmAction, notify } from '@/lib/alert';
+import { notify } from '@/lib/alert';
 
-const ORANGE = '#FD8302';
-const ORANGE_SOFT = '#FDA340';
-const GREEN = '#2E9E6B';
-const DIM = '#D8D2CC';
-const BORDER = '#F4F2EF';
-
-function firstName(name?: string | null) {
-  return (name ?? '').trim().split(/\s+/)[0] || 'your partner';
-}
-
-// The Find tab.
+// The Find tab owns every partner path: the search, the invite, the match
+// offer, and the match itself for as long as it lasts. Home and Challenges
+// hand off to it and start none of these themselves.
 //
-// Every other tab assumes a partner already exists or is being managed. This
-// one has to sell the idea of getting one in the first place — which is why it
-// is allowed to be persuasive rather than purely functional, and why the
-// objection ("why not just text a friend?") is named in the headline instead of
-// being left for the user to raise.
+// What it shows is decided by the server, in this order:
+//   a partnership         the matched card (it outlives the challenge)
+//   a match offer         offered / you accepted / expired, on one 24h clock
+//   searching             the radar, awake
+//   an invite sent        waiting for them to join
+//   otherwise             the landing: the radar, and the doors next to it
 export default function FindScreen() {
   const { session } = useSession();
+  const queryClient = useQueryClient();
   const tabBarClearance = useTabBarClearance();
   const userId = session?.user.id;
   // Poll while this screen is the one waiting on the matcher. The state it
@@ -60,14 +50,13 @@ export default function FindScreen() {
   // arriving.
   const [watchForMatch, setWatchForMatch] = useState(false);
   const challengeQ = useMyChallenge(userId, watchForMatch);
-  // Carries the no-match flag and the day's remaining searches, not just the
-  // match itself — this one call answers every state this screen can be in.
-  const searchState = useMyMatch(userId, watchForMatch).data;
+  // Carries the no-match flag, the expired flag and the day's remaining
+  // searches, not just the match itself: this one call answers every state
+  // this screen can be in.
+  const matchQ = useMyMatch(userId, watchForMatch);
+  const searchState = matchQ.data;
   const profileQ = useProfile(userId);
-  const partnerStatusQ = usePartnerStatus(userId);
-  const joinPool = useJoinMatchPool();
   const leavePool = useLeaveMatchPool();
-  const declineMatch = useDeclineMatch();
 
   const challenge = challengeQ.data ?? null;
   const partnerState = partnerStateOf(challenge);
@@ -82,19 +71,9 @@ export default function FindScreen() {
     setWatchForMatch(partnerState === 'finding' || partnerState === 'matched');
   }, [partnerState]);
   const habit = challengeHabitTitle(challenge);
-  const city = profileQ.data?.city ?? null;
-  const totalDays = challenge?.challenge_templates?.duration_days ?? 7;
-  // The template carries the unit and activity the copy is built from.
-  const template = challenge?.challenge_templates ?? null;
-  // Real suburb once they've set one; the timezone-derived city is a poor
-  // stand-in (it is 'Colombo' for everyone here) so it is only a fallback.
-  const locationsQ = useLocations();
-  const suburbLabel =
-    locationsQ.data?.find((l) => l.value === (challenge as any)?.preferred_location)?.label ?? null;
 
-  // A habit someone invented has nobody else in the pool doing it, so Find
-  // cannot help — the same rule Step 3 enforces, stated here rather than
-  // failing at the RPC.
+  // A habit someone invented has nobody else in the pool doing it, so the
+  // search cannot help. Stated here rather than failing at the RPC.
   const isCustomHabit = Boolean(challenge?.custom_habit_title);
 
   // The tap is intent, not submission: it opens the form, and the pool join
@@ -107,64 +86,20 @@ export default function FindScreen() {
     router.push('/find/form');
   };
 
-  // Back out of THIS pairing but stay in the pool — the spec's "keep looking":
-  // the request stays open and the form doesn't need re-filling. Declining
-  // (rather than just withdrawing the yes) matters because leaving it pending
-  // with nobody committed would strand the other person too.
-  const onFindSomeoneElse = async () => {
-    const matchId = searchState?.matched ? searchState.match_id : null;
-    if (!matchId) return;
-    const ok = await confirmAction({
-      title: 'Find someone else?',
-      message:
-        "You'll go back to looking, and so will they. This pairing won't be suggested again.",
-      confirmLabel: 'Find someone else',
-      cancelLabel: 'Keep waiting'
-    });
-    if (!ok) return;
-    try {
-      await declineMatch.mutateAsync(matchId);
-      raiseDeclineNotice();
-    } catch (error: any) {
-      notify('Could not do that', error.message);
-    }
-  };
-
-  // Out of the pool altogether. Declining first so the other person is
-  // released rather than left waiting on a match that can never complete.
-  const onStopLooking = async () => {
-    const matchId = searchState?.matched ? searchState.match_id : null;
+  const onStopSearch = async () => {
     if (!challenge?.id) return;
-    const ok = await confirmAction({
-      title: 'Stop looking?',
-      message:
-        "We'll take you out of the pool. Your challenge carries on solo, and you can start looking again whenever you want.",
-      confirmLabel: 'Stop looking',
-      cancelLabel: 'Keep waiting',
-      destructive: true
-    });
-    if (!ok) return;
     try {
-      if (matchId) await declineMatch.mutateAsync(matchId);
       await leavePool.mutateAsync(challenge.id);
     } catch (error: any) {
       notify('Could not stop', error.message);
     }
   };
 
-  const onCancel = async () => {
-    if (!challenge?.id) return;
-    try {
-      await leavePool.mutateAsync(challenge.id);
-    } catch (error: any) {
-      notify('Could not cancel', error.message);
-    }
-  };
-
   const onRefresh = () => {
     challengeQ.refetch();
-    partnerStatusQ.refetch();
+    matchQ.refetch();
     partnerQ.refetch();
+    queryClient.invalidateQueries({ queryKey: ['pending-invites'] });
   };
 
   if (challengeQ.isLoading) {
@@ -186,7 +121,7 @@ export default function FindScreen() {
           <RefreshControl
             refreshing={challengeQ.isRefetching}
             onRefresh={onRefresh}
-            tintColor={ORANGE}
+            tintColor={theme.colors.primary}
           />
         }
       >
@@ -204,43 +139,30 @@ export default function FindScreen() {
             since={myPartner.since}
             challengeId={myPartner.my_challenge_id}
           />
-        ) : partnerState === 'matched' ? (
-          // One-sided confirmation gets its own holding state rather than
-          // jumping straight to Paired.
-          searchState?.matched && searchState.i_confirmed && !searchState.they_confirmed ? (
-            <WaitingConfirmState
-              matchId={searchState.match_id}
-              partnerName={searchState.partner_first_name ?? 'them'}
-              onFindSomeoneElse={onFindSomeoneElse}
-              onStopLooking={onStopLooking}
-              busy={declineMatch.isPending || leavePool.isPending}
-            />
-          ) : (
-            <MatchCard city={suburbLabel ?? city} watch />
-          )
-        ) : partnerState === 'finding' ? (
+        ) : searchState?.matched ? (
+          <MatchOffer match={searchState} challengeId={challenge?.id ?? null} onRefresh={onRefresh} />
+        ) : partnerState === 'finding' || partnerState === 'matched' ? (
+          // 'matched' with no offer in hand is the moment between the matcher
+          // writing the state and the offer arriving: still the search.
           <SearchingState
-            habit={habit}
-            suburb={suburbLabel}
-            commitment={challenge?.commitment_value ?? null}
-            unit={template?.unit ?? null}
-            onCancel={onCancel}
-            cancelling={leavePool.isPending}
+            onStop={onStopSearch}
+            stopping={leavePool.isPending}
             noMatch={Boolean(searchState?.matched === false && searchState.no_match)}
-            searchesLeft={
-              searchState?.matched === false ? searchState.searches_left ?? null : null
-            }
+            expired={Boolean(searchState?.matched === false && searchState.expired)}
+            searchesLeft={searchState?.matched === false ? searchState.searches_left ?? null : null}
             dailyLimit={searchState?.matched === false ? searchState.daily_limit ?? null : null}
+          />
+        ) : partnerState === 'invited' && challenge ? (
+          <InvitedState
+            userId={userId}
+            challengeId={challenge.id}
+            inviterName={profileQ.data?.full_name ?? null}
           />
         ) : (
           <LandingState
             isCustomHabit={isCustomHabit}
             hasChallenge={Boolean(challenge)}
             habit={habit}
-            commitment={challenge?.commitment_value ?? null}
-            unit={template?.unit ?? null}
-            cadence={challenge?.days_per_week ?? null}
-            suburb={suburbLabel}
             onStart={onFind}
           />
         )}
@@ -249,51 +171,73 @@ export default function FindScreen() {
   );
 }
 
-// State 1 — the real landing page for this tab, and for many people the first
-// real exposure to the whole mechanic.
-// State 1 — Landing. Almost no UI on purpose: one tappable object and one
-// line of copy. Find's only job here is to make someone WANT a partner, and
-// it gets one shot at that.
+// The doors that sit under the radar wherever a search has not started:
+// the directory, an invite going out, and an invite coming in.
+function Doors({ invite = true }: { invite?: boolean }) {
+  return (
+    <View style={styles.doors}>
+      {/* No count on it. There is no real number, and a made-up one is the
+          kind of thing nobody later remembers was made up. */}
+      <Button label="Already on the move" variant="outline" onPress={() => router.push('/find/who-else')} />
+      <View style={styles.links}>
+        {invite ? (
+          <PressableScale
+            haptic="selection"
+            hitSlop={8}
+            accessibilityRole="button"
+            onPress={() => router.push('/group/invite')}
+          >
+            <AppText style={styles.link}>Invite someone you know</AppText>
+          </PressableScale>
+        ) : null}
+        <PressableScale
+          haptic="selection"
+          hitSlop={8}
+          accessibilityRole="button"
+          onPress={() => router.push('/invite/code')}
+        >
+          <AppText style={styles.link}>Have an invite code?</AppText>
+        </PressableScale>
+      </View>
+    </View>
+  );
+}
+
+// The landing. Almost no UI on purpose: one tappable object and one line of
+// copy. Find's only job here is to make someone WANT a partner.
 function LandingState({
   isCustomHabit,
   hasChallenge,
   habit,
-  commitment,
-  unit,
-  cadence,
-  suburb,
   onStart
 }: {
   isCustomHabit: boolean;
   hasChallenge: boolean;
   habit: string | null;
-  commitment: number | null;
-  unit: string | null;
-  cadence: number | null;
-  suburb: string | null;
   onStart: () => void;
 }) {
-  if (isCustomHabit) {
-    return (
-      <Animated.View entering={FadeInDown.duration(360)}>
-        <AppText style={styles.sub}>
-          Find can't help with a habit you wrote yourself — nobody else in the pool picked it.
-          Swap to one of the set habits, or invite someone you know.
-        </AppText>
-        <Button label="Invite someone instead" onPress={() => router.push('/onboarding/invite')} />
-      </Animated.View>
-    );
-  }
-
   if (!hasChallenge) {
     return (
-      <Animated.View entering={FadeInDown.duration(360)}>
-        <AppText style={styles.sub}>Pick a challenge first, then we can look for someone.</AppText>
-        <Button label="Browse challenges" onPress={() => router.push('/challenge/browse')} />
+      <Animated.View entering={FadeInDown.duration(360)} style={styles.block}>
+        <AppText style={styles.sub}>Pick what you want to do first, then we can look for someone.</AppText>
+        <Button label="Create a commitment" onPress={() => router.push('/challenge/browse')} />
+        <Doors invite={false} />
       </Animated.View>
     );
   }
 
+  if (isCustomHabit) {
+    return (
+      <Animated.View entering={FadeInDown.duration(360)} style={styles.block}>
+        <AppText style={styles.sub}>
+          The search works on the six set activities, and yours is one you wrote yourself. Change
+          your activity, or invite someone you know.
+        </AppText>
+        <Button label="Change your activity" onPress={() => router.push('/challenge/browse')} />
+        <Doors />
+      </Animated.View>
+    );
+  }
 
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
@@ -305,38 +249,33 @@ function LandingState({
 
       {/* The activity and nothing else. How much and how often are agreed
           with a partner at the first plan, so there is no amount or cadence to
-          show before a match, and the old daily default is not one. */}
+          show before a match. */}
       <View style={styles.radarActivity}>
         <AppText style={styles.radarName}>{habit ?? 'Your challenge'}</AppText>
       </View>
+
+      <Doors />
     </Animated.View>
   );
 }
 
-// State 2 — the search itself, now this tab's primary content rather than a
-// sub-state of somewhere else.
-// State 3 — Searching. Same radar, visually escalated so it reads as the
-// search waking up rather than a different screen.
+// Searching. Same radar, visually escalated so it reads as the search waking
+// up rather than a different screen.
 function SearchingState({
-  habit,
-  suburb,
-  commitment,
-  unit,
-  onCancel,
-  cancelling,
+  onStop,
+  stopping,
   noMatch,
+  expired,
   searchesLeft,
   dailyLimit
 }: {
-  habit: string | null;
-  suburb: string | null;
-  commitment: number | null;
-  unit: string | null;
-  onCancel: () => void;
-  cancelling: boolean;
+  onStop: () => void;
+  stopping: boolean;
   // We looked and nobody cleared the bar. Not the same as "give it a second":
-  // with nobody suitable doing this habit, waiting may never resolve at all.
+  // with nobody suitable doing this activity, waiting may never resolve.
   noMatch: boolean;
+  // The last offer ran out of time and both people came back here.
+  expired: boolean;
   searchesLeft: number | null;
   dailyLimit: number | null;
 }) {
@@ -345,6 +284,12 @@ function SearchingState({
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
       {declined ? <AppText style={styles.declined}>{DECLINE_NOTICE}</AppText> : null}
+      {expired && !declined ? (
+        <View style={styles.expired}>
+          <AppText style={styles.expiredTitle}>{MATCH_EXPIRED_TITLE}</AppText>
+          <AppText style={styles.expiredBody}>{MATCH_EXPIRED_BODY}</AppText>
+        </View>
+      ) : null}
 
       <Radar searching />
 
@@ -354,7 +299,7 @@ function SearchingState({
             matcher's own "looked and found nobody" record, not a timer. */}
         <AppText style={styles.searchStatusBody}>
           {noMatch
-            ? "No luck yet. You can close the app — we'll notify you the moment we find someone."
+            ? "No luck yet. You can close the app, and we'll notify you the moment we find someone."
             : "We'll notify you the moment we find a match."}
         </AppText>
       </View>
@@ -365,70 +310,97 @@ function SearchingState({
         </AppText>
       ) : null}
 
-      {/* The Back the handover asks for. Searching is a tab root rendered from
-          server state, so "back to the form" means editing your answers while
-          staying in the pool — the form prefills them, and re-submitting
-          doesn't spend a search. Leaving the pool is "Stop looking". */}
+      {/* Searching is a tab root rendered from server state, so "back to the
+          form" means editing your answers while staying in the pool: the form
+          prefills them, and re-submitting doesn't spend a search. */}
       <Button label="Edit answers" variant="ghost" onPress={() => router.push('/find/form')} />
-      <Button
-        label="Stop looking"
-        variant="ghost"
-        loading={cancelling}
-        onPress={onCancel}
-      />
+      <Button label="Stop looking" variant="ghost" loading={stopping} onPress={onStop} />
     </Animated.View>
   );
 }
 
-// State 4b — one side has confirmed, the other hasn't. Without this the
-// button appears to do nothing until the partner acts.
-function WaitingConfirmState({
-  matchId,
-  partnerName,
-  onFindSomeoneElse,
-  onStopLooking,
-  busy
+// An invite is out. The same wait as a search, for a person you named.
+function InvitedState({
+  userId,
+  challengeId,
+  inviterName
 }: {
-  matchId: string;
-  partnerName: string;
-  onFindSomeoneElse: () => void;
-  onStopLooking: () => void;
-  busy: boolean;
+  userId: string | undefined;
+  challengeId: string;
+  inviterName: string | null;
 }) {
-  return (
-    <Animated.View entering={FadeInDown.duration(360)} style={styles.paired}>
-      <View style={styles.pairedIcon}>
-        <Ionicons name="hourglass-outline" size={22} color={theme.colors.primary} />
-      </View>
-      <AppText style={styles.pairedBody}>
-        You're in. Waiting for {partnerName} to accept. Saying hi unlocks once you both have
-        accepted.
-      </AppText>
+  const queryClient = useQueryClient();
+  const invitesQ = usePendingInvites(userId);
+  const [busy, setBusy] = useState(false);
+  const invite: any = (invitesQ.data ?? []).find((i: any) => i.user_challenge_id === challengeId) ?? invitesQ.data?.[0];
 
-      {/* Two distinct intents, stated separately. A single "cancel" conflated
-          them: backing out of THIS pairing and leaving the pool entirely are
-          different things, and the word "cancel" reads as the second while
-          declining a match actually does the first. */}
-      <Button
-        label="Find someone else"
-        variant="ghost"
-        disabled={busy}
-        onPress={onFindSomeoneElse}
-      />
-      <Button label="Stop looking" variant="ghost" disabled={busy} onPress={onStopLooking} />
-      <MatchReportLink matchId={matchId} partnerFirstName={partnerName} />
+  const onShare = async () => {
+    if (!invite?.token) return;
+    const how = await shareInviteLink(invite.token, inviterName, invite.code ?? null);
+    if (how === 'copied') notify('Link copied', 'Paste it to your partner to bring them in.');
+    if (how === 'failed') notify('Could not share', 'Send them the code instead.');
+  };
+
+  // Back to the landing. The invite itself stays valid until it expires, so
+  // nothing is taken away from the person who was invited.
+  const onSearchInstead = async () => {
+    setBusy(true);
+    try {
+      await setPartnerState(challengeId, 'solo');
+      await queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+    } catch (error: any) {
+      notify('Could not do that', error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Animated.View entering={FadeInDown.duration(360)} style={styles.block}>
+      <AppText style={styles.heading}>Your invite is out.</AppText>
+      <AppText style={styles.sub}>
+        {invite?.email ? `Waiting for ${invite.email} to join.` : 'Waiting for them to join.'} You'll be
+        paired the moment they do.
+      </AppText>
+      {invite?.code ? (
+        <View style={styles.codeBox}>
+          <AppText style={styles.codeLabel}>THEIR CODE · GOOD FOR 48 HOURS</AppText>
+          <AppText style={styles.code} selectable>{invite.code}</AppText>
+        </View>
+      ) : null}
+      {invite?.token ? <Button label="Share the invite link" onPress={onShare} /> : null}
+      <Button label="Invite someone else" variant="ghost" onPress={() => router.push('/group/invite')} />
+      <Button label="Search for a match instead" variant="ghost" loading={busy} onPress={onSearchInstead} />
     </Animated.View>
   );
 }
 
-// State 5 — Paired. Hands off to Challenges rather than repeating what
-// Challenges already owns.
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
-  subStrong: { color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
+  content: { paddingHorizontal: 22, paddingBottom: theme.spacing(5) },
+  pageTitle: {
+    fontFamily: theme.fonts.body,
+    fontSize: 24,
+    color: theme.colors.text,
+    marginTop: theme.spacing(1.5),
+    marginBottom: theme.spacing(2.5)
+  },
+  block: { gap: theme.spacing(1.5) },
+  heading: { fontSize: 20, color: theme.colors.text, textAlign: 'center' },
+  sub: {
+    textAlign: 'center',
+    color: theme.colors.muted,
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 16,
+    paddingHorizontal: 6
+  },
   radarActivity: { alignItems: 'center', marginTop: 6 },
   radarName: { fontSize: 15, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
-  radarMeta: { fontSize: 12, color: theme.colors.muted, marginTop: 2 },
+  doors: { marginTop: theme.spacing(3), gap: theme.spacing(2) },
+  links: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 22, rowGap: 10 },
+  link: { color: theme.colors.primary2, fontSize: 13, fontFamily: theme.fonts.bodyMedium },
+  searchStatus: { alignItems: 'center', marginTop: 6, marginBottom: 22 },
   searchStatusTitle: {
     fontSize: 14.5,
     color: theme.colors.primary2,
@@ -442,129 +414,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     lineHeight: 18
   },
-  anotherCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.sm,
-    padding: theme.spacing(2),
-    alignItems: 'center',
-    marginTop: theme.spacing(3),
-    ...theme.shadow.sm
-  },
-  anotherTitle: { fontSize: 13, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
-  anotherBody: {
-    fontSize: 11.5,
-    color: theme.colors.muted,
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 14,
-    lineHeight: 17
-  },
-  anotherLink: { fontSize: 13, color: theme.colors.primary2, fontFamily: theme.fonts.bodyMedium },
-  content: { paddingHorizontal: 22, paddingBottom: theme.spacing(5) },
-  pageTitle: {
-    fontFamily: theme.fonts.body,
-    fontSize: 24,
-    color: theme.colors.text,
-    marginTop: theme.spacing(1.5),
-    marginBottom: theme.spacing(2.5)
-  },
-  hero: { marginBottom: theme.spacing(1) },
-  headline: {
-    textAlign: 'center',
-    color: theme.colors.text,
-    fontSize: 19,
-    lineHeight: 27,
-    marginBottom: 8
-  },
-  headlineAccent: { color: ORANGE_SOFT, fontFamily: theme.fonts.bodyBold },
-  sub: {
-    textAlign: 'center',
-    color: theme.colors.muted,
-    fontSize: 12,
-    lineHeight: 19,
-    marginBottom: 24,
-    paddingHorizontal: 6
-  },
-  proof: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: 'rgba(253,131,2,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(253,131,2,0.2)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 22
-  },
-  proofNum: { fontFamily: theme.fonts.bodyBold, fontSize: 26, color: ORANGE, lineHeight: 30 },
-  // flexShrink rather than flex:0 — the latter maps to flex-basis:0% on RN web
-  // and collapses the text to zero height.
-  proofText: { flexShrink: 1, fontSize: 11, color: theme.colors.muted, lineHeight: 17 },
-  proofTextStrong: { color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
-  steps: { marginBottom: 24, gap: 16 },
-  step: { flexDirection: 'row', gap: 13 },
-  stepNum: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(253,131,2,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  stepNumText: { fontSize: 11, color: ORANGE, fontFamily: theme.fonts.bodyBold },
-  stepBody: { flexShrink: 1, gap: 2 },
-  stepTitle: { color: theme.colors.text, fontSize: 12.5, fontFamily: theme.fonts.bodyBold },
-  stepDetail: { color: theme.colors.muted, fontSize: 11, lineHeight: 17 },
-  note: { textAlign: 'center', color: DIM, fontSize: 10.5, marginTop: 14, lineHeight: 17 },
-  customNote: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: BORDER,
-    borderRadius: 16,
-    padding: 16,
-    gap: theme.spacing(1.5)
-  },
-  customNoteText: { color: theme.colors.muted, fontSize: 11.5, lineHeight: 18 },
-  searchQuota: { fontSize: 10.5, color: DIM, marginTop: 10, textAlign: 'center' },
-  searchStatus: { alignItems: 'center', marginTop: 6, marginBottom: 22 },
-  searchHead: { color: ORANGE_SOFT, fontSize: 14, marginBottom: 6 },
-  searchDetail: { color: theme.colors.muted, fontSize: 11.5, lineHeight: 18, textAlign: 'center' },
-  searchHabit: { color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(28,43,51,0.04)',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 16
-  },
-  cardLabel: { fontSize: 9.5, letterSpacing: 1.6, color: theme.colors.muted, marginBottom: 8 },
-  cardHabit: { color: theme.colors.text, fontSize: 16, marginBottom: 4 },
-  cardSub: { color: theme.colors.muted, fontSize: 11 },
-  linkRow: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 6 },
-  link: { color: ORANGE, fontSize: 12 },
-  linkQuiet: { color: theme.colors.muted, fontSize: 12 },
-  paired: { alignItems: 'center', paddingTop: 16, gap: theme.spacing(1) },
-  pairedIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(79,201,138,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(79,201,138,0.25)',
-    marginBottom: theme.spacing(1)
-  },
-  pairedBody: {
-    color: theme.colors.muted,
-    fontSize: 12,
-    lineHeight: 20,
-    textAlign: 'center',
-    maxWidth: 240,
-    marginBottom: theme.spacing(1.5)
-  },
+  note: { textAlign: 'center', color: theme.colors.muted, fontSize: 11, marginBottom: 14, lineHeight: 17 },
   declined: {
     textAlign: 'center',
     color: theme.colors.text,
@@ -572,5 +422,26 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginBottom: 12
   },
-  pairedStrong: { color: theme.colors.text, fontFamily: theme.fonts.bodyBold }
+  expired: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 16,
+    gap: 4,
+    marginBottom: 12
+  },
+  expiredTitle: { fontSize: 15, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
+  expiredBody: { fontSize: 12.5, lineHeight: 19, color: theme.colors.muted },
+  codeBox: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 16,
+    alignItems: 'center',
+    gap: 6
+  },
+  codeLabel: { fontSize: 10, letterSpacing: 1.2, color: theme.colors.muted },
+  code: { fontSize: 26, letterSpacing: 4, color: theme.colors.text, fontFamily: theme.fonts.bodyBold }
 });

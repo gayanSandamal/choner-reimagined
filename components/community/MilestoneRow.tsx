@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { milestoneLine } from '@/features/community/milestone-copy';
 import type { FeedItem, MilestoneKind } from '@/features/community/milestones';
 import { relativeTime } from '@/lib/time';
 import { theme } from '@/constants/theme';
@@ -16,20 +17,6 @@ const BADGES: Record<MilestoneKind, { label: string; color: string }> = {
   matched: { label: 'Matched', color: theme.colors.muted },
   session_together: { label: 'Together', color: GREEN }
 };
-
-function describe(item: FeedItem) {
-  switch (item.kind) {
-    case 'streak':
-      return `hit a ${item.streak_days ?? 7}-day streak`;
-    case 'complete':
-      return `completed ${item.habit_title ? `“${item.habit_title}”` : 'their challenge'}`;
-    case 'matched':
-      return `found a partner for ${item.habit_title ? `“${item.habit_title}”` : 'a new habit'}`;
-    case 'session_together':
-      // Handover §3.18: "Dinesh & Gayan just finished their first run together".
-      return `just finished their ${item.habit_title ?? 'run'} together`;
-  }
-}
 
 // One opted-in moment from someone else in your city. No comments, no profile
 // link, no way to request a pairing — reading it is the entire interaction,
@@ -59,7 +46,7 @@ export function MilestoneRow({
 
       <View style={styles.body}>
         <AppText style={styles.text}>
-          <AppText style={styles.names}>{names}</AppText> {describe(item)}
+          <AppText style={styles.names}>{names}</AppText> {milestoneLine(item)}
         </AppText>
         <View style={styles.metaRow}>
           <View style={[styles.badge, { borderColor: `${badge.color}55` }]}>

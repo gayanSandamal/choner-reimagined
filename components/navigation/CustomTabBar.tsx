@@ -22,14 +22,14 @@ const LABELS: Record<string, string> = {
   challenges: 'Challenges',
   find: 'Find',
   community: 'Community',
-  insights: 'Insights',
   profile: 'Profile'
 };
 
-// The only tabs shown in the bar, in this order. Any other registered route
-// stays reachable programmatically but is hidden here — `insights` is still
-// unfinished, and `profile` now lives in the top bar's avatar instead, which
-// is what freed the fourth slot for Find.
+// The only tabs shown in the bar, in this order. `profile` is registered but
+// lives in the top bar's avatar instead, which is what freed the fourth slot
+// for Find. There is no Insights tab: it reported the daily model, and the
+// numbers that replaced it (the streak, sessions together) live on Challenges,
+// Home and Profile.
 const VISIBLE_ORDER = ['home', 'challenges', 'find', 'community'];
 
 // Geometry from the prototype (393pt frame): 14 top + 22 icon + 4 gap + 14

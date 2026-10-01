@@ -21,3 +21,11 @@ export function directoryExercises(row: { exercises?: string[] | null }): string
   const list = (row.exercises ?? []).map((e) => e.trim()).filter(Boolean).slice(0, 4);
   return list.length ? list.join(', ') : null;
 }
+
+// Six cards to a screen. The list is revealed a screen at a time as it is
+// scrolled, so it reads as a place with people arriving rather than a table.
+export const DIRECTORY_PAGE = 6;
+
+export function directoryPage<T>(rows: readonly T[], pages: number): T[] {
+  return rows.slice(0, Math.max(1, Math.floor(pages)) * DIRECTORY_PAGE);
+}

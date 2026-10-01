@@ -199,10 +199,10 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           userId: toUser,
           kind: 'partner_matched',
-          title: isRequester ? 'We found your partner' : `${otherName} wants to pair up`,
+          title: isRequester ? 'We found you a match' : `${otherName} wants to pair up`,
           body: isRequester
-            ? `${otherName} is doing ${habit} too — say yes to start.`
-            : `They're doing ${habit} as well. Accept to start together.`,
+            ? `${otherName} is doing ${habit} too. You both have 24 hours to accept.`
+            : `They're doing ${habit} as well. You both have 24 hours to accept.`,
           route: '/(tabs)/find'
         })
       });

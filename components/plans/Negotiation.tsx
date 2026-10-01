@@ -57,7 +57,7 @@ export function Negotiation({
       </PressableScale>
     ) : plan.founder_help_required ? (
       <AppText muted style={styles.note}>
-        We'll help you choose — someone from the team will be in touch.
+        We'll help you choose. Someone from the team will be in touch.
       </AppText>
     ) : null;
 

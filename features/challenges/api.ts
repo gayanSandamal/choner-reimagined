@@ -546,6 +546,9 @@ export type MyMatch =
       // which cannot tell "give it a moment" apart from "there is nobody",
       // and the second can be permanent rather than slow.
       no_match?: boolean;
+      // The last offer ran out of time (24h) and nothing has replaced it.
+      // Absent before 202610040900.
+      expired?: boolean;
       searches_left?: number;
       daily_limit?: number;
     }
@@ -647,7 +650,7 @@ export function nudgeRefusalMessage(reason: string, partnerName?: string | null)
     case 'already_nudged':
       return `You've already nudged ${who} today.`;
     case 'quiet_hours':
-      return `It's late where ${who} is — try in the morning.`;
+      return `It's late where ${who} is. Try in the morning.`;
     case 'no_partner':
       return 'No partner to nudge yet.';
     default:
@@ -690,13 +693,6 @@ export async function resumeChallenge(userChallengeId: string) {
 // open sessions and releases a search, and must NOT end the partnership.
 export async function abandonChallenge(userChallengeId: string) {
   return endChallenge(userChallengeId);
-}
-
-export async function getStreak(userId: string) {
-  const { data, error } = await supabase.rpc('get_user_insights', { p_user_id: userId });
-  if (error) throw error;
-  const insights = data as { streak_days?: number } | null;
-  return insights?.streak_days ?? 0;
 }
 
 // Up to four exercises on a Workouts commitment. Descriptive only: they show

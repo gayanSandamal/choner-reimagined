@@ -29,10 +29,6 @@ export default function OnboardingLayout() {
             people at the first plan, so there is nothing to inherit. */}
         <Stack.Screen name="challenge" options={{ gestureEnabled: false }} />
         <Stack.Screen name="partner" options={{ gestureEnabled: false }} />
-        {/* Not an onboarding screen any more, but still registered: Find and
-            Challenges both push to it for the invite flow. See the note at the
-            top of invite.tsx. */}
-        <Stack.Screen name="invite" options={{ gestureEnabled: false }} />
       </Stack>
     </OnboardingProvider>
   );

@@ -193,7 +193,7 @@ export default function FindFormScreen() {
             <AppText variant="caption" muted>
               {forcedMode === 'together'
                 ? `${template?.title ?? 'This'} is something you do together, so we'll only match you with someone you can meet.`
-                : `${template?.title ?? 'This'} is your own session — you'll each check in after.`}
+                : `${template?.title ?? 'This'} is your own session, and you'll each check in after.`}
             </AppText>
           </View>
         ) : (

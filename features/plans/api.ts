@@ -55,6 +55,13 @@ export const proposeReschedule = (planId: string, startsAt: string) =>
   rpc<PlanResult>('propose_reschedule', { p_plan_id: planId, p_starts_at: startsAt });
 export const acceptReschedule = (proposalId: string) =>
   rpc<PlanResult>('accept_reschedule', { p_proposal_id: proposalId });
+// The session details screen (202610040900).
+export const setRunningLate = (planId: string, minutes: number) =>
+  rpc<PlanResult>('set_running_late', { p_plan_id: planId, p_minutes: minutes });
+export const nudgeSession = (planId: string) => rpc<PlanResult>('nudge_session', { p_plan_id: planId });
+export const proposeCancel = (planId: string) => rpc<PlanResult>('propose_cancel', { p_plan_id: planId });
+export const answerCancel = (proposalId: string, agree: boolean) =>
+  rpc<PlanResult>('answer_cancel', { p_proposal_id: proposalId, p_agree: agree });
 export const sendEncouragement = (planId: string) => rpc<PlanResult>('send_encouragement', { p_plan_id: planId });
 
 export const togglePlanReaction = (planId: string, reaction: string) =>

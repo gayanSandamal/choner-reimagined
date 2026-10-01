@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,14 +10,19 @@ import { Button } from '@/components/ui/button';
 import { AppText } from '@/components/ui/text';
 import { useSession } from '@/providers/session-provider';
 import { useCreateInvite } from '@/features/community/hooks';
+import { setPartnerState } from '@/features/challenges/api';
 import { useMyChallenge } from '@/features/challenges/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { buildInviteLink, shareInviteLink } from '@/lib/invite-link';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
 
+// Invite someone you know. Reached from Find, which owns every partner path.
+// Sending puts the challenge into the 'invited' wait, and Find shows that
+// state until they join.
 export default function InviteScreen() {
   const { session } = useSession();
+  const queryClient = useQueryClient();
   const userId = session?.user.id;
   const profileQ = useProfile(userId);
   const challengesQ = useMyChallenge(userId);
@@ -39,6 +45,17 @@ export default function InviteScreen() {
         inviterId: userId,
         inviterName: profileQ.data?.full_name ?? undefined,
       });
+      // The invite row is what matters; the wait state is a courtesy on top of
+      // it, so a failure here must not read as "the invite didn't send".
+      if (challengesQ.data?.id && challengesQ.data.partner_state !== 'partnered') {
+        try {
+          await setPartnerState(challengesQ.data.id, 'invited');
+          queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
+          queryClient.invalidateQueries({ queryKey: ['pending-invites'] });
+        } catch {
+          // Find still shows the landing; the invite works either way.
+        }
+      }
       setSent({
         email: email.trim(),
         token: result.token,
@@ -61,7 +78,7 @@ export default function InviteScreen() {
   if (sent) {
     return (
       <Screen>
-        <ScreenHeader title="Invite a friend" onBack={() => router.back()} />
+        <ScreenHeader title="Invite someone" onBack={() => router.back()} />
 
         <View style={styles.statusRow}>
           <Ionicons
@@ -79,7 +96,7 @@ export default function InviteScreen() {
             ? sent.emailed
               ? 'They can also join with this link:'
               : `We couldn't email ${sent.email}, but the invite is saved. Send them this link and it works the same:`
-            : `We couldn't email ${sent.email}. The invite is saved — resend it once email is set up.`}
+            : `We couldn't email ${sent.email}. The invite is saved, and you can send it again from Find.`}
         </AppText>
 
         {sent.code ? (
@@ -111,12 +128,12 @@ export default function InviteScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title="Invite a friend" onBack={() => router.back()} />
+      <ScreenHeader title="Invite someone" onBack={() => router.back()} />
 
       <View style={{ gap: 8 }}>
         <AppText variant="muted">
-          Invite a friend to start a private challenge with you. They'll get an email with a link to
-          join — and you'll get a link you can send them directly.
+          Invite someone you know to do this with you. They get an email with a link to join, and
+          you get a link and a code you can send them yourself.
         </AppText>
       </View>
 

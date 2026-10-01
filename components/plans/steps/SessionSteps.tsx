@@ -83,7 +83,7 @@ export function DayOfStep({ plan, challengeId }: { plan: PairPlan; challengeId: 
   return (
     <View style={styles.wrap}>
       <ItsOn plan={plan} />
-      <AppText variant="title">{[plan.place_name, plan.place_text].filter(Boolean).join(' — ')}</AppText>
+      <AppText variant="title">{[plan.place_name, plan.place_text].filter(Boolean).join(', ')}</AppText>
       {status ? <AppText style={styles.status}>{status}</AppText> : null}
       <MeetupChat plan={plan} challengeId={challengeId} />
 

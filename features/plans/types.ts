@@ -10,6 +10,10 @@ export type PlanMember = {
   miss_reason: string | null;
   planned_at?: string | null;
   cant_make_it_at?: string | null;
+  // The day of (202610040900). All three start over when a session is moved.
+  late_minutes?: number | null;
+  late_at?: string | null;
+  nudged_at?: string | null;
 };
 
 export type PairPlan = {
@@ -48,7 +52,9 @@ export type PairPlan = {
 
 export type Proposal = {
   id: string;
-  field: 'distance' | 'cadence' | 'mode' | 'place' | 'time' | 'day_time' | 'reschedule';
+  // 'cancel' carries { expires_at }: past it the request has lapsed and the
+  // plan stands. Read it through cancelRequest() in features/plans/session.ts.
+  field: 'distance' | 'cadence' | 'mode' | 'place' | 'time' | 'day_time' | 'reschedule' | 'cancel';
   value: any;
   mine: boolean;
   round: number;

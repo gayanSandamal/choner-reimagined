@@ -22,7 +22,7 @@ export function proposalLabel(field: string, value: any): string {
     : String(value) === 'separate'
     ? 'Separately, together'
     : String(value);
-  if (field === 'place') return [value?.name, value?.text].filter(Boolean).join(' — ');
+  if (field === 'place') return [value?.name, value?.text].filter(Boolean).join(', ');
   if (field === 'time' || field === 'day_time') {
     const a = formatDayTime(value.starts_at);
     if (field === 'day_time' && value.other_at && value.other_at !== value.starts_at) {

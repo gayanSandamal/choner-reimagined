@@ -163,8 +163,7 @@ rather than new screens.
 - At the end of the list, a spinner that never resolves. It is a deliberate small lie, so a short
   list feels alive. It is written down so nobody later reads it as a hang
 
-**Needs backend:** `get_active_directory()` is gated behind `show_in_directory`, which defaults to
-false, and a minimum count of 5. Both go.
+**Backend:** done in `202610011100`: the directory is an opt-OUT and the minimum count is gone.
 
 ## 5. The Find form — `app/find/form.tsx`
 - **Mode is asked FIRST**, before location, as a hard filter: In person / Separately / Either
@@ -203,8 +202,8 @@ This is what someone opens Find to see for weeks, so it carries weight rather th
   use it, do not re-derive it
 - All three paths end on the same neutral line. `app/modals/match-ended.tsx` already does this
 
-**Needs backend:** there is no neutral `end_match` today, only `block_partner` and
-`report_partner`. Build the screen; wire the RPC when it lands.
+**Backend:** `end_my_match()` (`202610030900`). Built: `components/find/MatchedCard.tsx`,
+`app/modals/end-match.tsx`.
 
 ---
 

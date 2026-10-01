@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   acceptPlanProposal,
   acceptReschedule,
+  answerCancel,
   confirmPlan,
   finishSession,
   getMeetupChat,
@@ -9,6 +10,8 @@ import {
   getRepairDebt,
   getStreak,
   issueSessionQr,
+  nudgeSession,
+  proposeCancel,
   proposePlanValue,
   proposeReschedule,
   recordSessionShare,
@@ -20,6 +23,7 @@ import {
   setArrival,
   setDistanceAnswer,
   setRepairPreference,
+  setRunningLate,
   setStreakTarget,
   setSessionCheckin,
   startMeetupPlan,
@@ -83,6 +87,15 @@ export const useSetSessionCheckin = () =>
 export const useProposeReschedule = () =>
   usePlanMutation(({ planId, startsAt }: { planId: string; startsAt: string }) => proposeReschedule(planId, startsAt));
 export const useAcceptReschedule = () => usePlanMutation((id: string) => acceptReschedule(id));
+
+// The session details screen. All four change the plan, so the plan (and the
+// streak and debt keyed under it) refresh on success.
+export const useSetRunningLate = () =>
+  usePlanMutation(({ planId, minutes }: { planId: string; minutes: number }) => setRunningLate(planId, minutes));
+export const useNudgeSession = () => usePlanMutation((planId: string) => nudgeSession(planId));
+export const useProposeCancel = () => usePlanMutation((planId: string) => proposeCancel(planId));
+export const useAnswerCancel = () =>
+  usePlanMutation(({ proposalId, agree }: { proposalId: string; agree: boolean }) => answerCancel(proposalId, agree));
 export const useSendEncouragement = () => usePlanMutation((planId: string) => sendEncouragement(planId));
 
 export const useTogglePlanReaction = () =>
