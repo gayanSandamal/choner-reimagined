@@ -14,11 +14,12 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Radar } from '@/components/challenges/Radar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { MatchCard } from '@/components/challenges/MatchCard';
-import { PairSafetyMenu } from '@/components/safety/PairSafetyMenu';
+import { MatchedCard } from '@/components/find/MatchedCard';
 import { MatchReportLink } from '@/components/safety/MatchReportLink';
 import { challengeHabitTitle, isDailySearchLimit, partnerStateOf } from '@/features/challenges/api';
 import {
   useMyChallenge,
+  useMyPartner,
   useJoinMatchPool,
   useDeclineMatch,
   useLeaveMatchPool,
@@ -70,6 +71,10 @@ export default function FindScreen() {
 
   const challenge = challengeQ.data ?? null;
   const partnerState = partnerStateOf(challenge);
+  // The partnership, not the challenge: someone who has just ended their
+  // challenge is still matched, and Find must show that rather than a radar.
+  const partnerQ = useMyPartner(userId);
+  const myPartner = partnerQ.data?.partnered ? partnerQ.data : null;
 
   // Derived after the fact rather than passed in, because the value it depends
   // on comes out of the very query it controls.
@@ -159,6 +164,7 @@ export default function FindScreen() {
   const onRefresh = () => {
     challengeQ.refetch();
     partnerStatusQ.refetch();
+    partnerQ.refetch();
   };
 
   if (challengeQ.isLoading) {
@@ -172,16 +178,7 @@ export default function FindScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <AppTopBar
-        accessory={
-          partnerState === 'partnered' && challenge?.id ? (
-            <PairSafetyMenu
-              userChallengeId={challenge.id}
-              partnerFirstName={firstName(partnerStatusQ.data?.name)}
-            />
-          ) : null
-        }
-      />
+      <AppTopBar />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
@@ -195,7 +192,19 @@ export default function FindScreen() {
       >
         <AppText style={styles.pageTitle}>Find</AppText>
 
-        {partnerState === 'matched' ? (
+        {myPartner ? (
+          // Matched: what Find shows for as long as the pairing lasts. Decided
+          // from the partnership, so it holds between challenges too.
+          <MatchedCard
+            myName={profileQ.data?.full_name ?? null}
+            myAvatarUrl={profileQ.data?.avatar_url ?? null}
+            partnerName={myPartner.first_name}
+            partnerAvatarUrl={myPartner.avatar_url}
+            pairedOn={myPartner.paired_on}
+            since={myPartner.since}
+            challengeId={myPartner.my_challenge_id}
+          />
+        ) : partnerState === 'matched' ? (
           // One-sided confirmation gets its own holding state rather than
           // jumping straight to Paired.
           searchState?.matched && searchState.i_confirmed && !searchState.they_confirmed ? (
@@ -209,12 +218,6 @@ export default function FindScreen() {
           ) : (
             <MatchCard city={suburbLabel ?? city} watch />
           )
-        ) : partnerState === 'partnered' ? (
-          <PairedState
-            partnerName={firstName(partnerStatusQ.data?.name)}
-            partnerAvatarUrl={partnerStatusQ.data?.avatar_url ?? null}
-            habit={habit}
-          />
         ) : partnerState === 'finding' ? (
           <SearchingState
             habit={habit}
@@ -291,7 +294,6 @@ function LandingState({
     );
   }
 
-  const amount = commitment ? `${commitment}${unit ? ` ${unit}` : ''}` : null;
 
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
@@ -301,13 +303,11 @@ function LandingState({
 
       <Radar searching={false} onPress={onStart} />
 
+      {/* The activity and nothing else. How much and how often are agreed
+          with a partner at the first plan, so there is no amount or cadence to
+          show before a match, and the old daily default is not one. */}
       <View style={styles.radarActivity}>
         <AppText style={styles.radarName}>{habit ?? 'Your challenge'}</AppText>
-        <AppText style={styles.radarMeta}>
-          {[amount, cadence === 7 ? 'every day' : cadence ? `${cadence}× a week` : null]
-            .filter(Boolean)
-            .join(' · ')}
-        </AppText>
       </View>
     </Animated.View>
   );
@@ -423,55 +423,6 @@ function WaitingConfirmState({
 
 // State 5 — Paired. Hands off to Challenges rather than repeating what
 // Challenges already owns.
-function PairedState({
-  partnerName,
-  partnerAvatarUrl
-}: {
-  partnerName: string;
-  partnerAvatarUrl: string | null;
-  habit: string | null;
-}) {
-  // What Find shows every time it's opened while the pairing lasts — never the
-  // radar again. The old one-liner ("partners on X. Track it from
-  // Challenges.") is gone: the button below already says it.
-  return (
-    <Animated.View entering={FadeInDown.duration(360)}>
-      <View style={styles.paired}>
-        <Avatar uri={partnerAvatarUrl} name={partnerName} size={88} ring />
-        <AppText style={styles.pairedTitle}>You and {partnerName}</AppText>
-        <Button label="Go to Challenges" onPress={() => router.push('/(tabs)/challenges')} />
-      </View>
-
-      {/* Social proof, never a candidate list (handover §2.6). */}
-      <View style={styles.anotherCard}>
-        <AppText style={styles.anotherTitle}>Who else is here</AppText>
-        <Button
-          label="See Who Else Is Here"
-          variant="ghost"
-          onPress={() => router.push('/find/who-else')}
-        />
-      </View>
-
-      {/* Find works per-challenge, not per-user — without this the tab becomes
-          a dead end the moment someone matches once. */}
-      <View style={styles.anotherCard}>
-        <AppText style={styles.anotherTitle}>Starting another habit?</AppText>
-        <AppText style={styles.anotherBody}>
-          You can find a different partner for each challenge.
-        </AppText>
-        <PressableScale
-          onPress={() => router.push('/challenge/browse')}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="Find another partner"
-        >
-          <AppText style={styles.anotherLink}>Find another partner</AppText>
-        </PressableScale>
-      </View>
-    </Animated.View>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
   subStrong: { color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
@@ -606,7 +557,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(79,201,138,0.25)',
     marginBottom: theme.spacing(1)
   },
-  pairedTitle: { color: theme.colors.text, fontSize: 16 },
   pairedBody: {
     color: theme.colors.muted,
     fontSize: 12,

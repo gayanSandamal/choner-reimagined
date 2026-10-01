@@ -165,6 +165,10 @@ function RootLayoutNav() {
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
       <Stack.Screen
+        name="modals/end-match"
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
+      <Stack.Screen
         name="modals/report"
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />

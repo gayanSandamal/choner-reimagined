@@ -53,3 +53,11 @@ export async function getPairingMet(userChallengeId: string): Promise<boolean> {
   if (error) throw error;
   return Boolean(data);
 }
+
+// The neutral way out. Resolved from the partnership, not a challenge, so it
+// works for someone who is between challenges. The reason is private.
+export async function endMyMatch(reason: import('./rules').EndMatchReason): Promise<SafetyResult> {
+  const { data, error } = await (supabase.rpc as any)('end_my_match', { p_reason: reason });
+  if (error) throw error;
+  return data as SafetyResult;
+}

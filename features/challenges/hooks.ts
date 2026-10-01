@@ -36,7 +36,9 @@ import {
   declineMatch,
   findAnotherMatch,
   nudgePartner,
-  getChallengeHistoryScores
+  getChallengeHistoryScores,
+  endChallenge,
+  getMyPartner
 } from '@/features/challenges/api';
 
 export function useChallengeTemplates() {
@@ -427,5 +429,27 @@ export function useSetMissReason() {
     onSuccess: (_d, vars) => {
       queryClient.invalidateQueries({ queryKey: ['yesterday-status', vars.userChallengeId] });
     },
+  });
+}
+
+// Refetched on focus-ish intervals only while partnered state can change from
+// the outside (the other person ends it).
+export function useMyPartner(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['my-partner', userId],
+    queryFn: () => getMyPartner(),
+    enabled: Boolean(userId)
+  });
+}
+
+export function useEndChallenge() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userChallengeId: string) => endChallenge(userChallengeId),
+    onSuccess: () => {
+      for (const key of ['my-challenge', 'my-partner', 'pair-plan', 'challenge-history-scores', 'my-match', 'partner-status']) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
+    }
   });
 }

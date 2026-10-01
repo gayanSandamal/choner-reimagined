@@ -71,17 +71,10 @@ export default function SettingsScreen() {
         <SectionLabel label="Preferences" />
         <ListItem
           title="Notifications"
-          subtitle="Streak reminders, community nudges, and recovery suggestions."
+          subtitle="Session reminders and updates from your partner."
           icon="notifications"
           showChevron
           onPress={() => router.push('/settings/notifications')}
-        />
-        <ListItem
-          title="Daily deadline"
-          subtitle="When your day is measured — and when your partner gets nudged."
-          icon="time"
-          showChevron
-          onPress={() => router.push('/settings/deadline')}
         />
         <ListItem
           title="Edit profile"

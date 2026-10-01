@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { blockPartner, getPairingMet, reportMatch, reportPartner } from './api';
+import { blockPartner, endMyMatch, getPairingMet, reportMatch, reportPartner } from './api';
 
 // Ending a pairing changes nearly everything the pair screens read: the
 // challenge drops to solo, the partner and their timeline disappear, and a
@@ -12,7 +12,9 @@ function useInvalidatePairing() {
       'my-match',
       'partner-status',
       'pair-checkins',
-      'partner-reflections'
+      'partner-reflections',
+      'my-partner',
+      'pair-plan'
     ]) {
       queryClient.invalidateQueries({ queryKey: [key] });
     }
@@ -40,4 +42,9 @@ export function usePairingMet(userChallengeId: string | undefined) {
     queryFn: () => getPairingMet(userChallengeId!),
     enabled: Boolean(userChallengeId)
   });
+}
+
+export function useEndMyMatch() {
+  const invalidate = useInvalidatePairing();
+  return useMutation({ mutationFn: endMyMatch, onSuccess: invalidate });
 }
