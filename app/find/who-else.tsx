@@ -6,7 +6,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { useActiveDirectory, useSetShowInDirectory } from '@/features/directory/hooks';
-import { directoryLine } from '@/features/directory/format';
+import { directoryExercises, directoryLine } from '@/features/directory/format';
 import { notify } from '@/lib/alert';
 import { theme } from '@/constants/theme';
 
@@ -33,7 +33,8 @@ export default function WhoElseScreen() {
         <AppText variant="title">Who else is here.</AppText>
         <AppText muted>Everyone active on Choner right now, across every activity.</AppText>
 
-        {/* The opt-in lives where its effect is visible. */}
+        {/* On by default since 202610011100: this is an opt-OUT, and it lives
+            where its effect is visible. */}
         <View style={styles.optIn}>
           <AppText style={styles.optInLabel}>Show me here too</AppText>
           <Switch
@@ -61,6 +62,9 @@ export default function WhoElseScreen() {
                 <View style={styles.rowText}>
                   <AppText style={styles.name}>{row.first_name}</AppText>
                   <AppText muted style={styles.detail}>{directoryLine(row)}</AppText>
+                  {directoryExercises(row) ? (
+                    <AppText muted style={styles.detail}>{directoryExercises(row)}</AppText>
+                  ) : null}
                 </View>
               </View>
             ))}

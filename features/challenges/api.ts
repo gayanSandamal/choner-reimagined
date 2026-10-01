@@ -696,3 +696,15 @@ export async function getStreak(userId: string) {
   const insights = data as { streak_days?: number } | null;
   return insights?.streak_days ?? 0;
 }
+
+// Up to four exercises on a Workouts commitment. Descriptive only: they show
+// on the card and in the directory and never reach matching. The server
+// refuses once a search has started, the same lock the activity has.
+export async function setChallengeExercises(userChallengeId: string, exercises: string[]) {
+  const { data, error } = await supabase.rpc('set_challenge_exercises', {
+    p_user_challenge_id: userChallengeId,
+    p_exercises: exercises
+  });
+  if (error) throw error;
+  return (data ?? []) as string[];
+}

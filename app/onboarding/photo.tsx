@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
@@ -30,6 +30,11 @@ export default function PhotoScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const { session } = useSession();
   const userId = session?.user.id;
+  // Profile reuses this screen to add or retake the photo. There it is a
+  // detour, not a step: it goes back where it came from instead of on to the
+  // challenge picker.
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const fromProfile = from === 'profile';
   const uploadLivePhoto = useUploadLivePhoto();
   const [shot, setShot] = useState<{ uri: string; base64: string } | null>(null);
   const uri = shot?.uri ?? null;
@@ -44,6 +49,10 @@ export default function PhotoScreen() {
   // yet the token is still in storage, so it is accepted here rather than
   // letting the person pick a challenge the acceptance would then overwrite.
   const next = async () => {
+    if (fromProfile) {
+      router.back();
+      return;
+    }
     let joined = false;
     try {
       const token = await getPendingInviteToken();
@@ -174,7 +183,11 @@ export default function PhotoScreen() {
               disabled={!permission?.granted || busy}
               onPress={onTake}
             />
-            <Button label="Set up later" variant="ghost" onPress={onSkip} />
+            <Button
+              label={fromProfile ? 'Not now' : 'Set up later'}
+              variant="ghost"
+              onPress={onSkip}
+            />
           </>
         )}
       </Animated.View>

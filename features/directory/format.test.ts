@@ -1,4 +1,4 @@
-import { directoryLine } from './format';
+import { directoryExercises, directoryLine } from './format';
 
 describe('directoryLine', () => {
   it('matches the handover examples exactly', () => {
@@ -17,5 +17,19 @@ describe('directoryLine', () => {
     expect(directoryLine({ activity: 'Walking', commitment_value: null, unit: null, days_per_week: null })).toBe(
       'Walking'
     );
+  });
+});
+
+describe('directoryExercises', () => {
+  it('lists a workout row\'s exercises, at most four', () => {
+    expect(directoryExercises({ exercises: ['Squats', 'Push-ups', 'Plank'] })).toBe('Squats, Push-ups, Plank');
+    expect(directoryExercises({ exercises: ['a', 'b', 'c', 'd', 'e'] })).toBe('a, b, c, d');
+  });
+
+  it('prints nothing when there are none', () => {
+    expect(directoryExercises({ exercises: [] })).toBeNull();
+    expect(directoryExercises({ exercises: [' ', ''] })).toBeNull();
+    // A server that has not run 202610011100 sends no key at all.
+    expect(directoryExercises({})).toBeNull();
   });
 });

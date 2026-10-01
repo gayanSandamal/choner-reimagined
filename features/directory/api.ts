@@ -7,10 +7,13 @@ export type DirectoryRow = {
   commitment_value: number | null;
   unit: string | null;
   days_per_week: number | null;
+  // Workout rows only, up to four. Empty for every other activity.
+  exercises?: string[];
 };
 
-// visible=false means fewer than five people have opted in; the server
-// withholds the rows entirely rather than letting the client hide them.
+// `visible` is always true since 202610011100, which dropped the five-row
+// floor; it stays in the payload so the screen's quiet state still compiles.
+// `me_listed` is true unless the person switched themselves off (opt-out).
 export type Directory = { visible: boolean; me_listed: boolean; rows: DirectoryRow[] };
 
 export async function getActiveDirectory(): Promise<Directory> {

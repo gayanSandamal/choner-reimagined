@@ -13,3 +13,11 @@ export function directoryLine(row: {
   const detail = [amount, cadence].filter(Boolean).join(', ');
   return [row.activity ?? 'A challenge', detail || null].filter(Boolean).join(' · ');
 }
+
+// Workout rows carry up to four exercises, and this is the only place they
+// are shown. The server sends an empty list for every other activity, so an
+// empty or missing list means "print nothing", never a placeholder.
+export function directoryExercises(row: { exercises?: string[] | null }): string | null {
+  const list = (row.exercises ?? []).map((e) => e.trim()).filter(Boolean).slice(0, 4);
+  return list.length ? list.join(', ') : null;
+}

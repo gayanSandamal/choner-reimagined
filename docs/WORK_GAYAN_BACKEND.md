@@ -11,6 +11,37 @@ the end is the work that *would* get invalidated.
 Open it, click the screen named in each task on the left rail, and read the notes panel on the
 right — it carries the same reasoning plus the app file paths.
 
+## Status, 1 October
+
+Everything below was verified against the live project, not just the repo.
+
+| Task | State |
+|---|---|
+| 1. Why is own-only | Done. Policy dropped (`202609291000`) |
+| 2. Deep links create a session | Done in the app (`components/auth/AuthLinkHandler.tsx`). **Still needs `choner://verify-email` and `choner://reset-password` in the Supabase allowed redirect URLs**, which can only be set in the dashboard |
+| 3. Invitee routing | Done. New accounts go through onboarding with the invite kept, and skip the challenge picker |
+| 4. Notifications on web | Done |
+| 5. Tone column | Done. `profiles.accountability_mode` is dropped on live |
+| 6. Photo status | Done. Onboarding uploads through `set_live_photo()`; Profile can add or retake |
+| 7. Short invite code | Done. The prefix is the activity (`202610011300`); the email function is deployed |
+| 8. Edit profile fields | Done by Dinesh (fe5) |
+
+Also applied on 1 October, from `docs/SCHEMA_CHALLENGES.md` and the testing pass:
+
+- `get_my_match()` returns `expires_at` for the 24 hour countdown (`202610011000`)
+- Workout exercises, up to four, never sent to matching (`202610011050`)
+- The directory shows everyone, as an opt-OUT (`202610011100`)
+- Someone already partnered is refused in words, in `accept_invite_by_code()` and `confirm_match()` (`202610011200`)
+
+**Not built, and each needs a decision first:**
+
+- **The repair debt.** The columns exist (`is_repair`, `repairs_plan_id`) and the sweep marks misses, but nothing computes what is owed. It needs "the week" defined for a pair in two timezones, the same question `due_at` had to answer.
+- **Per-person amounts.** `pair_plan_members.distance_answer` already holds one answer per person; what is missing is `confirm_plan()` accepting two different answers. That changes the planning flow, so it lands with Dinesh's task 9, not ahead of it.
+- **Jogging, and Cycling switched on.** `challenge_templates.activity_key` has no `jogging`, and the six activities do not map onto the current habit templates ("Run 1 mile", "20 push-ups"). This is the activity model behind Dinesh's task 1 and should be agreed there.
+- **An invitee with an active challenge but no partner.** `SCHEMA_CHALLENGES.md` §8 item 1, still open.
+
+---
+
 **Order.** Task 1 is one line and closes a data leak; do it first. Then 2-3, which unblock two
 whole flows Dinesh cannot finish without you.
 

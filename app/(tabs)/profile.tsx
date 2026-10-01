@@ -50,6 +50,9 @@ export default function ProfileScreen() {
   // the fallback covers any row the backfill has not reached.
   const tone = profileQ.data?.accountability_style ?? profileQ.data?.accountability_mode;
   const hasTone = TONES.some((t) => t.value === tone);
+  // "Photo confirmed", never "verified": Choner checks the photo was taken
+  // live, not who is in it.
+  const photoConfirmed = profileQ.data?.photo_status === 'photo_confirmed';
 
   return (
     <Screen scroll={false}>
@@ -72,6 +75,7 @@ export default function ProfileScreen() {
               <AppText variant="caption" muted>{session?.user.email}</AppText>
               <View style={styles.badgeRow}>
                 {hasTone ? <Badge label={toneLabel(tone) ?? ''} /> : null}
+                {photoConfirmed ? <Badge label="Photo confirmed" tone="success" /> : null}
                 {features.pro && isPremium ? <Badge label="Pro" tone="warning" /> : null}
               </View>
             </View>
@@ -105,6 +109,18 @@ export default function ProfileScreen() {
                 icon="create-outline"
                 label="Edit profile"
                 onPress={() => router.push('/profile/edit')}
+              />
+              {/* Live camera only, the same screen onboarding uses. A gallery
+                  upload from Edit profile drops the badge on purpose. */}
+              <SettingsRow
+                icon="camera-outline"
+                label={photoConfirmed ? 'Retake your photo' : 'Add your photo'}
+                sublabel={
+                  photoConfirmed ? undefined : 'Taken live, so a match can see you are a real person'
+                }
+                onPress={() =>
+                  router.push({ pathname: '/onboarding/photo', params: { from: 'profile' } } as never)
+                }
               />
               {features.aiCoach ? (
                 <SettingsRow
