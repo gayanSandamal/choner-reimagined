@@ -49,7 +49,13 @@ export function PlanGateCard({
         them={{ name: plan.them.first_name, avatarUrl: plan.them.avatar_url }}
       />
       <Button
-        label={plan.kind === 'first_run' ? COPY.gateButton : 'Plan your meetup'}
+        label={
+          plan.is_repair
+            ? 'Plan the make-up session'
+            : plan.kind === 'first_run'
+            ? COPY.gateButton
+            : 'Plan your meetup'
+        }
         onPress={open}
       />
     </View>

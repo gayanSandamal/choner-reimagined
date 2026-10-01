@@ -2,12 +2,14 @@ import { amountSettled } from './amounts';
 import type { PairPlan } from './types';
 
 // Where a pair is in the session flow, computed from the plan alone so every
-// screen agrees. Order follows the handover: Say Hi → how much → mode → (6A)
+// screen agrees. Order follows the handover: Say Hi → how much → how often
+// (first plan only) → mode → (6A)
 // where → when → confirm → day of → QR → finish, or (6B) day & time →
 // confirm → check-in; then completion.
 export type PlanStep =
   | 'say_hi'
   | 'how_much'
+  | 'how_often'
   | 'mode'
   | 'where'
   | 'when'
@@ -33,6 +35,9 @@ export function planStep(p: PairPlan): PlanStep {
 
   // Both have answered; the answers need not match (the amount is per person).
   if (!amountSettled(p)) return 'how_much';
+  // How often is agreed once per pair. Only when the server says it is still
+  // open (null); a missing field is an older server, not an open question.
+  if (p.cadence === null) return 'how_often';
   if (!p.mode) return 'mode';
 
   if (p.mode === 'together') {

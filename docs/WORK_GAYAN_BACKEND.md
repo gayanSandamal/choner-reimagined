@@ -41,11 +41,21 @@ Also applied on 1 October, from `docs/SCHEMA_CHALLENGES.md` and the testing pass
 - **Jogging, and Cycling switched on (`202610012200`).** Jogging is its own activity, matched with joggers. The older goal-derived habits are untouched.
 - **An invitee who is already on a challenge is asked first (`202610012300`).** `preview_invite()` says what accepting would do; the invite screen asks *Switch to their challenge?* before anything is replaced. An existing account signing back in with a pending invite is sent to that screen instead of being switched silently.
 
+**Built on 1 October, the last round:**
+
+- **The picker is the six activities (`202610020900`).** Running, Jogging, Walking, Cycling, Yoga, Workouts; every older habit is retired from the picker. Matching pairs by template id, so 476 existing challenges were MOVED onto the canonical template for their activity, or new runners would never have met the existing pool. The old template is kept in `legacy_template_id`. Challenges on a habit with no activity (water, journaling, the named programmes) were left where they are.
+- **The shared cadence (`202610020910`, `...0930`).** A `cadence` field in the existing plan negotiation: one suggests, the other accepts, and it is written to the plan and to both challenges. Asked once per pair.
+- **The streak (`202610020920`).** `set_streak_target()` and `get_streak()`, which returns exactly `target` circles. Complete when all N resolve, not when N fill.
+- **Screens.** How often (plan flow), How long a streak (modal), the streak circles and the repair card on the Challenges tab, and the exercise picker for Workouts in onboarding.
+
+**An outage, and the rule it leaves behind.** `202610020900` first added `legacy_template_id` as a foreign key. A second foreign key from `user_challenges` to `challenge_templates` makes every `challenge_templates(*)` embed ambiguous to PostgREST, and that embed is `getMyChallenge()`. Home, Challenges, Find and Profile failed for everyone, on every installed build, for roughly ten minutes until `202610020940` dropped the constraint. **Adding a second foreign key between two tables is a breaking API change here.**
+
 **Still not built:**
 
-- **The shared cadence at the first plan** (1x to 6x, then Daily). `days_per_week` accepts it; nothing sets it for both people at once. It belongs with Dinesh's task 9.
-- **The six activities as the ONLY things in the picker.** The older habit templates ("Run 1 mile", "20 push-ups", "Journaling") are still active and people are on them. Retiring them is the activity model behind the Create a commitment screen.
-- **A read for the streak circles.** Everything a circle needs is stored (`target_sessions`, session status, `repairs_plan_id`), but there is no function that returns the row of N circles. It should be written with the screen that draws it.
+- **The Challenges tab rebuild itself** (Dinesh's section E). The streak and repair cards sit on top of the old daily screen; the daily TODAY card, "Day 7 of 7" and the old streak number are still underneath.
+- **Create a commitment as its own screen** (task 1). The existing list now shows the six, but it is still the old Quests layout, and exercises can only be picked in onboarding.
+- **Sessions for Yoga and Workouts.** `start_meetup_plan()` still only allows the four distance activities, because "how much" is a list of distances.
+- **Old habit challenges.** About 400 challenges, nearly all sample data, are on retired templates with no activity to move to.
 
 ---
 

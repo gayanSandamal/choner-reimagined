@@ -161,6 +161,10 @@ function RootLayoutNav() {
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
       <Stack.Screen
+        name="modals/streak-target"
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
+      <Stack.Screen
         name="modals/report"
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />

@@ -7,6 +7,7 @@ import {
   getMeetupChat,
   getPairPlan,
   getRepairDebt,
+  getStreak,
   issueSessionQr,
   proposePlanValue,
   proposeReschedule,
@@ -19,6 +20,7 @@ import {
   setArrival,
   setDistanceAnswer,
   setRepairPreference,
+  setStreakTarget,
   setSessionCheckin,
   startMeetupPlan,
   startRepairPlan,
@@ -131,5 +133,27 @@ export function useStartRepairPlan() {
   return useMutation({
     mutationFn: (missedPlanId: string) => startRepairPlan(missedPlanId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['pair-plan'] })
+  });
+}
+
+// The row of circles. Keyed under 'pair-plan' so anything that changes a
+// session (a check-in, a confirm, a repair) refreshes it for free.
+export function useSessionStreak(userChallengeId: string | undefined) {
+  return useQuery({
+    queryKey: ['pair-plan', 'streak', userChallengeId],
+    queryFn: () => getStreak(userChallengeId!),
+    enabled: Boolean(userChallengeId)
+  });
+}
+
+export function useSetStreakTarget() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userChallengeId, target }: { userChallengeId: string; target: number }) =>
+      setStreakTarget(userChallengeId, target),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['pair-plan'] });
+      qc.invalidateQueries({ queryKey: ['my-challenge'] });
+    }
   });
 }

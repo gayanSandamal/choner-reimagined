@@ -3,6 +3,7 @@
 // that uses it, so this file stays auditable against §8 line by line.
 export const ACTIVITY_LABEL: Record<string, string> = {
   running: 'Running',
+  jogging: 'Jogging',
   walking: 'Walking',
   cycling: 'Cycling'
 };
