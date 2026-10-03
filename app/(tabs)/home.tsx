@@ -1,7 +1,6 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppTopBar } from '@/components/navigation/AppTopBar';
+import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
@@ -48,6 +47,7 @@ export default function HomeScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const tabBarClearance = useTabBarClearance();
+  const topBar = useTopBar();
   const profileQ = useProfile(userId);
   const challengeQ = useMyChallenge(userId);
   const partnerQ = useMyPartner(userId);
@@ -115,11 +115,12 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.safe}>
         <AppTopBar />
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+          {...topBar.scrollProps}
+          contentContainerStyle={[styles.content, { paddingTop: topBar.contentTop, paddingBottom: tabBarClearance }]}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} progressViewOffset={topBar.progressViewOffset} tintColor={theme.colors.primary} />}
         >
           {/* The muted line carries the time, the name carries the weight. */}
           <View style={styles.greeting}>
@@ -157,7 +158,7 @@ export default function HomeScreen() {
             </>
           ) : null}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -165,7 +166,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
   safe: { flex: 1 },
-  content: { padding: 20, paddingTop: theme.spacing(1), paddingBottom: theme.spacing(4), gap: theme.spacing(2) },
+  content: { padding: 20, paddingTop: 0, paddingBottom: theme.spacing(4), gap: theme.spacing(2) },
   greeting: { gap: 2 },
   name: { fontFamily: theme.fonts.body, fontSize: 21, color: theme.colors.text }
 });

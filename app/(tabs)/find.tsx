@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { AppTopBar } from '@/components/navigation/AppTopBar';
+import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
@@ -44,6 +43,7 @@ export default function FindScreen() {
   const { session } = useSession();
   const queryClient = useQueryClient();
   const tabBarClearance = useTabBarClearance();
+  const topBar = useTopBar();
   const userId = session?.user.id;
   // Poll while this screen is the one waiting on the matcher. The state it
   // renders comes from partner_state, which the matcher changes server-side, so
@@ -107,23 +107,25 @@ export default function FindScreen() {
 
   if (challengeQ.isLoading) {
     return (
-      <SafeAreaView style={styles.root}>
+      <View style={[styles.root, { paddingTop: topBar.clearance }]}>
         <AppTopBar />
         <LoadingState />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <View style={styles.root}>
       <AppTopBar />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
+        {...topBar.scrollProps}
+          contentContainerStyle={[styles.content, { paddingTop: topBar.contentTop, paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
+            progressViewOffset={topBar.progressViewOffset}
             tintColor={theme.colors.primary}
           />
         }
@@ -170,7 +172,7 @@ export default function FindScreen() {
           />
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

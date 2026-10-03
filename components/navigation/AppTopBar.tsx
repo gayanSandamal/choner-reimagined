@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
@@ -17,12 +18,50 @@ import { theme } from '@/constants/theme';
 // `accessory` sits just left of your face — the pairing's "···" menu, on the
 // tabs where a pairing is live. Every other tab passes nothing and the bar is
 // unchanged.
+// Geometry from the prototype's .topbar: position absolute under the status
+// bar, 16 in from each side, 14/16 padding, at least 60 tall, radius 24. The
+// page scrolls underneath it and .content.tb starts 82 below the status bar
+// (the bar's 60 plus a 22 gap).
+const BAR_HEIGHT = 60;
+const GAP_BELOW = 22;
+
+// What a tab's scroll view needs so its content starts below the floating bar
+// and still scrolls up behind it.
+//
+// iOS gets a content inset rather than padding, so the pull-to-refresh spinner
+// appears below the bar instead of hidden behind it. Android has no content
+// inset; it pads the content and moves the spinner down with
+// progressViewOffset.
+export function useTopBar() {
+  const insets = useSafeAreaInsets();
+  const clearance = insets.top + BAR_HEIGHT + GAP_BELOW;
+
+  if (Platform.OS === 'ios') {
+    return {
+      clearance,
+      contentTop: 0,
+      progressViewOffset: undefined,
+      scrollProps: {
+        contentInset: { top: clearance },
+        contentOffset: { x: 0, y: -clearance },
+        scrollIndicatorInsets: { top: clearance - GAP_BELOW },
+        automaticallyAdjustContentInsets: false
+      }
+    };
+  }
+  return { clearance, contentTop: clearance, progressViewOffset: clearance, scrollProps: {} };
+}
+
 export function AppTopBar({ accessory }: { accessory?: ReactNode } = {}) {
   const { session } = useSession();
   const profileQ = useProfile(session?.user.id);
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.bar}>
+    // Floats over the page (#102). It used to sit in the layout as a header,
+    // so the page stopped at its lower edge and the strip around it read as
+    // white space rather than a bar hovering over content.
+    <View style={[styles.bar, { top: insets.top }]}>
       <AppText style={styles.logo}>
         choner<AppText style={styles.dot}>.</AppText>
       </AppText>
@@ -49,16 +88,18 @@ const styles = StyleSheet.create({
   // zIndex keeps its shadow drawing over the content scrolling below it, so the
   // bar reads as floating rather than as a header the page is cut off by.
   bar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    minHeight: BAR_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: theme.colors.navy,
     borderRadius: 24,
-    marginHorizontal: 16,
-    marginTop: 6,
     zIndex: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     ...theme.shadow.lg
   },
   right: { flexDirection: 'row', alignItems: 'center', gap: 12 },

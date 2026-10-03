@@ -1,8 +1,7 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { AppTopBar } from '@/components/navigation/AppTopBar';
+import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
@@ -29,6 +28,7 @@ const DIM = '#D8D2CC';
 export default function CommunityScreen() {
   const { session } = useSession();
   const tabBarClearance = useTabBarClearance();
+  const topBar = useTopBar();
   const userId = session?.user.id;
   const challengeQ = useMyChallenge(userId);
   // The pair comes from the partnership, which outlives a challenge, and the
@@ -60,15 +60,17 @@ export default function CommunityScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <View style={styles.root}>
       <AppTopBar />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
+        {...topBar.scrollProps}
+          contentContainerStyle={[styles.content, { paddingTop: topBar.contentTop, paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
+            progressViewOffset={topBar.progressViewOffset}
             tintColor={ORANGE}
           />
         }
@@ -132,7 +134,7 @@ export default function CommunityScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
