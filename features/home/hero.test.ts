@@ -109,7 +109,7 @@ describe('the heart', () => {
 
   it('is "You + ?" until there is a partner', () => {
     expect(heartCopy({ partnerName: null, partnerState: 'solo', sessionsTogether: 0 })).toEqual({ title: 'You + ?', count: null, line: null });
-    expect(heartCopy({ partnerName: null, partnerState: 'finding', sessionsTogether: 0 }).line).toBe('Looking for your partner.');
+    expect(heartCopy({ partnerName: null, partnerState: 'finding', sessionsTogether: 0 }).line).toBe('Searching for your partner.');
   });
 
   it('counts sessions with this partner, never days', () => {

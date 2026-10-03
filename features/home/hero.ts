@@ -206,7 +206,7 @@ export function heartCopy(i: {
     count: null,
     line:
       i.partnerState === 'finding'
-        ? 'Looking for your partner.'
+        ? 'Searching for your partner.'
         : i.partnerState === 'invited'
         ? 'Waiting for your partner to join.'
         : null

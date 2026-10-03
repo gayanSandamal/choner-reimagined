@@ -299,7 +299,7 @@ function SearchingState({
       <Radar searching />
 
       <View style={styles.searchStatus}>
-        <AppText style={styles.searchStatusTitle}>Looking…</AppText>
+        <AppText style={styles.searchStatusTitle}>Searching…</AppText>
         {/* Notify, don't ask people to keep checking. The switch keys off the
             matcher's own "looked and found nobody" record, not a timer. */}
         <AppText style={styles.searchStatusBody}>
@@ -319,7 +319,7 @@ function SearchingState({
           form" means editing your answers while staying in the pool: the form
           prefills them, and re-submitting doesn't spend a search. */}
       <Button label="Edit answers" variant="ghost" onPress={() => router.push('/find/form')} />
-      <Button label="Stop looking" variant="ghost" loading={stopping} onPress={onStop} />
+      <Button label="Stop searching" variant="ghost" loading={stopping} onPress={onStop} />
     </Animated.View>
   );
 }
