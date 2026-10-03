@@ -1,61 +1,55 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
+import { Icon, IconName } from '@/components/ui/Icon';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { useSession } from '@/providers/session-provider';
 import { useProfile } from '@/features/profile/hooks';
-import { goalLabel, toneLabel } from '@/features/onboarding/mappings';
-import { TONES } from '@/features/onboarding/constants';
-import { useIsPremium } from '@/features/billing/hooks';
-import { useChallengeHistoryScores, useMyChallenge, useMyPartner } from '@/features/challenges/hooks';
-import { useSessionStreak } from '@/features/plans/hooks';
-import { profileStats } from '@/features/profile/stats';
+import { useReflections } from '@/features/challenges/hooks';
+import { isAnswered, reminderFor } from '@/features/challenges/reflections';
+import { useNotificationPreferences, useUpdateNotificationPreferences } from '@/features/notifications/hooks';
 import { signOut } from '@/features/auth/api';
-import { features } from '@/constants/features';
 import { theme } from '@/constants/theme';
 
-type GlyphName = keyof typeof Ionicons.glyphMap;
-
+// Profile, as the prototype's T4 (#111): who you are, then one card per thing
+// you can change. Your photo, your details, your why, the two reminders as
+// switches right here, and the rest of settings.
+//
+// What it no longer carries: the three stat tiles, the tone badge and the
+// "Goal · Style" line. The numbers that matter live on Home and Challenges,
+// and the tone is an Edit profile answer, not a title.
 export default function ProfileScreen() {
   const { session } = useSession();
   const tabBarClearance = useTabBarClearance();
+  const topBar = useTopBar();
   const userId = session?.user.id;
   const profileQ = useProfile(userId);
-  const challengesQ = useMyChallenge(userId);
-  const partnerQ = useMyPartner(userId);
-  const historyQ = useChallengeHistoryScores(userId);
-  const { isPremium } = useIsPremium();
+  const reflectionsQ = useReflections(userId);
+  const prefsQ = useNotificationPreferences(userId);
+  const updatePrefs = useUpdateNotificationPreferences();
 
-  const challenge = challengesQ.data ?? null;
-  const streakQ = useSessionStreak(challenge?.id);
-  const partner = partnerQ.data?.partnered ? partnerQ.data : null;
-  // Sessions and challenges. The daily numbers that used to sit here (a day
-  // streak, logs today) counted a check-in that no longer exists.
-  const stats = profileStats({
-    streak: streakQ.data,
-    partnerName: partner?.first_name,
-    sessionsTogether: partner?.sessions_together,
-    finished: historyQ.data?.length
-  });
-
-  // accountability_style is the tone. accountability_mode is the old name for
-  // the same value and is still written by the expand migration's trigger, so
-  // the fallback covers any row the backfill has not reached.
-  const tone = profileQ.data?.accountability_style ?? profileQ.data?.accountability_mode;
-  const hasTone = TONES.some((t) => t.value === tone);
   // "Photo confirmed", never "verified": Choner checks the photo was taken
   // live, not who is in it.
   const photoConfirmed = profileQ.data?.photo_status === 'photo_confirmed';
+  const why = (reflectionsQ.data ?? []).find(isAnswered);
+  const whyLine = why ? reminderFor(why) : null;
+  const prefs = (prefsQ.data ?? {}) as Record<string, boolean | undefined>;
+  const setPref = (key: 'streak_alerts' | 'accountability_alerts', value: boolean) => {
+    if (userId) updatePrefs.mutate({ userId, patch: { [key]: value } as any });
+  };
 
   return (
-    <Screen scroll={false}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}>
+    <View style={styles.root}>
+      <AppTopBar />
+      <ScrollView
+        {...topBar.scrollProps}
+        contentContainerStyle={[styles.content, { paddingTop: topBar.contentTop, paddingBottom: tabBarClearance }]}
+        showsVerticalScrollIndicator={false}
+      >
         {profileQ.isLoading ? (
           <LoadingState />
         ) : profileQ.isError ? (
@@ -63,195 +57,154 @@ export default function ProfileScreen() {
         ) : (
           <>
             <View style={styles.hero}>
-              {/* Wrapper isolates Avatar's ring alignSelf:'flex-start' so the
-                  hero's alignItems:'center' still centers it. */}
-              <View>
-                <Avatar name={profileQ.data?.full_name ?? session?.user.email} uri={profileQ.data?.avatar_url} size={82} ring />
-              </View>
-              <AppText variant="title" style={styles.name}>
-                {profileQ.data?.full_name ?? 'Your profile'}
+              <Avatar
+                name={profileQ.data?.full_name ?? session?.user.email}
+                uri={profileQ.data?.avatar_url}
+                size={76}
+              />
+              <AppText style={styles.name}>{profileQ.data?.full_name ?? 'Your profile'}</AppText>
+              <AppText style={styles.email}>{session?.user.email}</AppText>
+              <AppText style={[styles.photoState, photoConfirmed && styles.photoOk]}>
+                {photoConfirmed ? 'Photo confirmed' : 'No photo yet'}
               </AppText>
-              <AppText variant="caption" muted>{session?.user.email}</AppText>
-              <View style={styles.badgeRow}>
-                {hasTone ? <Badge label={toneLabel(tone) ?? ''} /> : null}
-                {photoConfirmed ? <Badge label="Photo confirmed" tone="success" /> : null}
-                {features.pro && isPremium ? <Badge label="Pro" tone="warning" /> : null}
-              </View>
             </View>
 
-            <View style={styles.statsRow}>
-              <StatTile value={stats[0].value} label={stats[0].label} tint={theme.colors.primary2} />
-              <StatTile value={stats[1].value} label={stats[1].label} icon="heart" />
-              <StatTile value={stats[2].value} label={stats[2].label} />
-            </View>
-
-            <AppText variant="caption" muted style={styles.goalLine}>
-              Goal: {goalLabel(profileQ.data?.primary_goal) ?? 'not set'} · Style:{' '}
-              {toneLabel(tone) ?? 'not set'}
-            </AppText>
-
-            {features.pro && !isPremium ? (
-              <PressableScale style={styles.upsell} onPress={() => router.push('/modals/premium')} haptic="light">
-                <View style={styles.upsellIcon}>
-                  <Ionicons name="star" size={18} color={theme.colors.secondary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <AppText style={{ fontFamily: theme.fonts.bodyBold }}>Go Pro</AppText>
-                  <AppText variant="caption" muted>Unlock every quest and deeper coaching</AppText>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={theme.colors.muted} />
-              </PressableScale>
-            ) : null}
-
-            <View style={styles.group}>
-              <SettingsRow
-                icon="create-outline"
-                label="Edit profile"
-                onPress={() => router.push('/profile/edit')}
-              />
-              {/* Live camera only, the same screen onboarding uses. A gallery
-                  upload from Edit profile drops the badge on purpose. */}
-              <SettingsRow
-                icon="camera-outline"
-                label={photoConfirmed ? 'Retake your photo' : 'Add your photo'}
-                sublabel={
-                  photoConfirmed ? undefined : 'Taken live, so a match can see you are a real person'
-                }
-                onPress={() =>
-                  router.push({ pathname: '/onboarding/photo', params: { from: 'profile' } } as never)
-                }
-              />
-              {features.aiCoach ? (
-                <SettingsRow
-                  icon="sparkles-outline"
-                  label="AI coach"
-                  sublabel="Talk it through"
-                  onPress={() => router.push('/modals/ai-coach')}
-                />
-              ) : null}
-              <SettingsRow
-                icon="notifications-outline"
-                label="Notifications"
-                onPress={() => router.push('/modals/notifications')}
-              />
-              {features.pro ? (
-                <SettingsRow
-                  icon="star-outline"
-                  label="Premium"
-                  onPress={() => router.push('/modals/premium')}
-                />
-              ) : null}
-              <SettingsRow icon="settings-outline" label="Settings" onPress={() => router.push('/settings')} />
-              <SettingsRow icon="log-out-outline" label="Sign out" danger onPress={() => signOut()} last />
-            </View>
+            {/* Live camera only, the same screen onboarding uses. A gallery
+                upload from Edit profile drops the badge on purpose. */}
+            <Row
+              icon="camera"
+              label={photoConfirmed ? 'Retake your photo' : 'Add your photo'}
+              sub="Live camera only"
+              onPress={() => router.push({ pathname: '/onboarding/photo', params: { from: 'profile' } } as never)}
+            />
+            <Row
+              icon="user"
+              label="Edit profile"
+              sub="Name, goal, struggle, style, age and gender"
+              onPress={() => router.push('/profile/edit')}
+            />
+            {/* The only place a why can be read back: the answers are private. */}
+            <Row
+              icon="heart"
+              label="Why you're doing this"
+              sub={whyLine ?? 'Not answered yet'}
+              onPress={() => router.push('/modals/edit-why')}
+            />
+            <Toggle
+              icon="bell"
+              label="Session reminders"
+              sub="Before a session you planned"
+              value={prefs.streak_alerts ?? true}
+              onChange={(v) => setPref('streak_alerts', v)}
+            />
+            <Toggle
+              icon="community"
+              label="Partner updates"
+              value={prefs.accountability_alerts ?? true}
+              onChange={(v) => setPref('accountability_alerts', v)}
+            />
+            {/* Settings keeps Delete account, so it stays reachable. */}
+            <Row
+              icon="doc"
+              label="Terms, privacy, health"
+              sub="And your account settings"
+              onPress={() => router.push('/settings')}
+            />
+            <Row icon="logout" label="Sign out" danger onPress={() => signOut()} />
           </>
         )}
       </ScrollView>
-    </Screen>
-  );
-}
-
-function StatTile({
-  value,
-  label,
-  icon,
-  tint
-}: {
-  value: string;
-  label: string;
-  icon?: GlyphName;
-  tint?: string;
-}) {
-  return (
-    <View style={styles.statTile}>
-      <View style={styles.statValueRow}>
-        {icon ? <Ionicons name={icon} size={15} color={tint ?? theme.colors.text} /> : null}
-        <AppText variant="subtitle" style={{ color: tint ?? theme.colors.text }}>{value}</AppText>
-      </View>
-      <AppText variant="caption" muted style={styles.statLabel} numberOfLines={2}>{label}</AppText>
     </View>
   );
 }
 
-function SettingsRow({
+function Row({
   icon,
   label,
-  sublabel,
+  sub,
   onPress,
-  danger = false,
-  last = false
+  danger = false
 }: {
-  icon: GlyphName;
+  icon: IconName;
   label: string;
-  sublabel?: string;
+  sub?: string;
   onPress: () => void;
   danger?: boolean;
-  last?: boolean;
 }) {
-  const color = danger ? theme.colors.danger : theme.colors.text;
   return (
-    <PressableScale onPress={onPress} haptic="light" scaleTo="subtle" style={[styles.row, !last && styles.rowBorder]}>
-      <Ionicons name={icon} size={19} color={danger ? theme.colors.danger : theme.colors.primary2} style={{ width: 24 }} />
-      <View style={{ flex: 1 }}>
-        <AppText style={{ color }}>{label}</AppText>
-        {sublabel ? <AppText variant="caption" muted>{sublabel}</AppText> : null}
+    <PressableScale
+      onPress={onPress}
+      haptic="light"
+      scaleTo="subtle"
+      accessibilityRole="button"
+      accessibilityLabel={sub ? `${label}. ${sub}` : label}
+      style={styles.row}
+    >
+      <Icon name={icon} size={20} color={danger ? theme.colors.danger : theme.colors.muted} />
+      <View style={styles.rowText}>
+        <AppText style={[styles.rowLabel, danger && { color: theme.colors.danger }]}>{label}</AppText>
+        {sub ? (
+          <AppText style={styles.rowSub} numberOfLines={2}>
+            {sub}
+          </AppText>
+        ) : null}
       </View>
-      {!danger ? <Ionicons name="chevron-forward" size={18} color={theme.colors.muted} /> : null}
+      {danger ? null : <Icon name="chev" size={16} color={theme.colors.dim} strokeWidth={2} />}
     </PressableScale>
   );
 }
 
+function Toggle({
+  icon,
+  label,
+  sub,
+  value,
+  onChange
+}: {
+  icon: IconName;
+  label: string;
+  sub?: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <View style={styles.row}>
+      <Icon name={icon} size={20} color={theme.colors.muted} />
+      <View style={styles.rowText}>
+        <AppText style={styles.rowLabel}>{label}</AppText>
+        {sub ? <AppText style={styles.rowSub}>{sub}</AppText> : null}
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ true: theme.colors.primary2, false: theme.colors.dim }}
+        thumbColor="#FFFFFF"
+        accessibilityLabel={label}
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  // Screen already applies padding: 20; only add bottom clearance + rhythm here.
-  content: { paddingBottom: theme.spacing(4), gap: theme.spacing(2) },
-  hero: { alignItems: 'center', gap: 4, paddingTop: theme.spacing(1) },
-  name: { marginTop: theme.spacing(1) },
-  badgeRow: { flexDirection: 'row', gap: 8, marginTop: theme.spacing(1) },
-  statsRow: { flexDirection: 'row', gap: theme.spacing(1) },
-  statTile: {
-    flex: 1,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingVertical: theme.spacing(1.5),
-    alignItems: 'center'
-  },
-  statValueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statLabel: { marginTop: 2, textAlign: 'center', paddingHorizontal: 4 },
-  goalLine: { textAlign: 'center' },
-  upsell: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing(1.5),
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-    padding: theme.spacing(1.75),
-    ...theme.shadow.glow
-  },
-  upsellIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: 'rgba(253,131,2,0.16)',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  group: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden'
-  },
+  root: { flex: 1, backgroundColor: theme.colors.bg },
+  content: { paddingHorizontal: 22, gap: 10 },
+  hero: { alignItems: 'center', gap: 4, paddingVertical: theme.spacing(2) },
+  name: { marginTop: theme.spacing(1), fontSize: 18, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
+  email: { fontSize: 12.5, color: theme.colors.muted },
+  photoState: { fontSize: 12, color: theme.colors.muted, marginTop: 4 },
+  photoOk: { color: theme.colors.success },
+  // One white card per row, standing apart, as in the prototype.
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing(1.5),
-    paddingHorizontal: theme.spacing(2),
-    paddingVertical: theme.spacing(1.75)
+    gap: 14,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    ...theme.shadow.sm
   },
-  rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border }
+  rowText: { flex: 1, gap: 1 },
+  rowLabel: { fontSize: 14, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
+  rowSub: { fontSize: 11.5, lineHeight: 16, color: theme.colors.muted }
 });

@@ -25,12 +25,12 @@ const LABELS: Record<string, string> = {
   profile: 'Profile'
 };
 
-// The only tabs shown in the bar, in the prototype's order (navBar(): Home,
-// Find, Challenges, Community). `profile` is registered but lives in the top
-// bar's avatar instead, which is what freed the slot for Find. There is no
-// Insights tab: it reported the daily model, and the numbers that replaced it
-// (the streak, sessions together) live on Challenges, Home and Profile.
-const VISIBLE_ORDER = ['home', 'find', 'challenges', 'community'];
+// The only tabs shown in the bar, in this order (master spec section 2: Home,
+// Challenges, Find, Community). `profile` is registered but lives in the top
+// bar's avatar instead, which is what freed the fourth slot for Find. There is
+// no Insights tab: it reported the daily model, and the numbers that replaced
+// it (the streak, sessions together) live on Challenges, Home and Profile.
+const VISIBLE_ORDER = ['home', 'challenges', 'find', 'community'];
 
 // Geometry from the prototype (393pt frame): 14 top + 22 icon + 4 gap + 14
 // label line + 12 bottom. The pill floats 16pt above the screen edge.
