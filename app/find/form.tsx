@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +8,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { Icon } from '@/components/ui/Icon';
 import { LoadingState } from '@/components/ui/StateViews';
 import {
   useJoinMatchPool,
@@ -24,8 +26,6 @@ import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
 
 type Mode = 'together' | 'separate' | 'either';
-
-const PACE_ACTIVITIES = ['running', 'jogging', 'cycling', 'walking'];
 
 // State 2 of the Find tab. Collects only what matching needs and doesn't
 // already know — everything about WHAT the challenge is was captured in
@@ -52,7 +52,6 @@ export default function FindFormScreen() {
   // until tomorrow. Every pre-existing challenge also starts with a null
   // commitment, so that is the common case, not an edge one.
   const [askStartingPoint, setAskStartingPoint] = useState(false);
-  const startingPointAnswered = startingPointQ.data?.answered ?? true;
 
   const template = templateQ.data as any;
   const activityKey: string | null = template?.activity_key ?? null;
@@ -65,7 +64,6 @@ export default function FindFormScreen() {
     useState<'no_preference' | 'same_gender_only'>('no_preference');
   const [location, setLocation] = useState<string | null>(challenge?.preferred_location ?? null);
   const [locationQuery, setLocationQuery] = useState('');
-  const [pace, setPace] = useState<'slow' | 'moderate' | 'fast' | null>(null);
   const [skill, setSkill] = useState<'beginner' | 'casual' | 'intermediate' | 'advanced' | null>(null);
   const [courtAccess, setCourtAccess] = useState<string | null>(null);
   const [bikeAccess, setBikeAccess] = useState<string | null>(null);
@@ -83,7 +81,6 @@ export default function FindFormScreen() {
     }
     if (challenge.gender_preference) setGenderPreference(challenge.gender_preference);
     if (challenge.preferred_location) setLocation(challenge.preferred_location);
-    if (challenge.pace) setPace(challenge.pace);
     if (challenge.skill_level) setSkill(challenge.skill_level);
     if (challenge.court_access) setCourtAccess(challenge.court_access);
     if (challenge.bike_access) setBikeAccess(challenge.bike_access);
@@ -94,15 +91,16 @@ export default function FindFormScreen() {
   const inPerson = effectiveMode !== 'separate';
 
   const locations = locationsQ.data ?? [];
-  const filteredLocations = useMemo(() => {
+  // Suggestions only once they start typing, as in the prototype; an empty
+  // query shows none rather than the whole list of areas.
+  const suggestions = useMemo(() => {
     const q = locationQuery.trim().toLowerCase();
-    if (!q) return locations;
-    return locations.filter((l) => l.label.toLowerCase().includes(q));
+    if (!q) return [];
+    return locations.filter((l) => l.label.toLowerCase().includes(q)).slice(0, 6);
   }, [locations, locationQuery]);
 
   const selectedLabel = locations.find((l) => l.value === location)?.label ?? null;
 
-  const showPace = inPerson && PACE_ACTIVITIES.includes(activityKey ?? '');
   const showBadminton = activityKey === 'badminton';
   const showBike = activityKey === 'cycling';
 
@@ -115,7 +113,9 @@ export default function FindFormScreen() {
       mode: effectiveMode,
       preferredLocation: inPerson ? location : null,
       genderPreference,
-      pace: showPace ? pace : null,
+      // No pace question any more (#106): it is agreed with the partner after
+      // matching. null leaves whatever an older search saved untouched.
+      pace: null,
       skillLevel: showBadminton ? skill : null,
       courtAccess: showBadminton ? courtAccess : null,
       bikeAccess: showBike ? bikeAccess : null
@@ -125,11 +125,10 @@ export default function FindFormScreen() {
 
   const onSubmit = async () => {
     if (!challenge?.id) return;
-    // Ask here rather than bouncing away; the join retries once it's answered.
-    if (!startingPointAnswered) {
-      setAskStartingPoint(true);
-      return;
-    }
+    // No "Where are you starting from?" before searching (#107): on the weekly
+    // model distance and pace are agreed after matching. The sheet is kept
+    // only for a server that still refuses with starting_point_required, until
+    // 202610031000 removes that check.
     try {
       await join();
     } catch (error: any) {
@@ -236,53 +235,72 @@ export default function FindFormScreen() {
         {/* Location only matters when actually meeting up. */}
         {inPerson ? (
           <>
+            {/* The prototype's location picker (#105): the chosen area is a
+                gradient chip you can close; typing shows a few suggestions.
+                The old version listed every area as a pill. One area, because
+                the match pool keeps one preferred location per challenge. */}
             <AppText style={styles.fieldLabel}>Your area</AppText>
-            <Input
-              placeholder={selectedLabel ?? 'Search your area'}
-              value={locationQuery}
-              onChangeText={setLocationQuery}
-            />
-            <View style={styles.pillRow}>
-              {filteredLocations.slice(0, 12).map((l) => (
-                <Pill
-                  key={l.value}
-                  label={l.label}
-                  active={location === l.value}
-                  onPress={() => {
-                    setLocation(l.value);
-                    setLocationQuery('');
-                  }}
+            {location && selectedLabel ? (
+              <View style={styles.pillRow}>
+                <LinearGradient
+                  colors={theme.gradients.warm as unknown as readonly [string, string]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.areaChip}
+                >
+                  <AppText style={styles.areaChipLabel}>{selectedLabel}</AppText>
+                  <PressableScale
+                    onPress={() => setLocation(null)}
+                    haptic="selection"
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${selectedLabel}`}
+                    style={styles.areaChipX}
+                  >
+                    <Icon name="x" size={12} color="#FFFFFF" strokeWidth={2.4} />
+                  </PressableScale>
+                </LinearGradient>
+              </View>
+            ) : (
+              <>
+                <Input
+                  placeholder="Type an area"
+                  value={locationQuery}
+                  onChangeText={setLocationQuery}
+                  autoCorrect={false}
                 />
-              ))}
-              {filteredLocations.length === 0 ? (
-                <AppText variant="caption" muted>
-                  No area matches “{locationQuery}”.
-                </AppText>
-              ) : null}
-            </View>
+                {suggestions.length ? (
+                  <View style={styles.suggest}>
+                    {suggestions.map((l, i) => (
+                      <PressableScale
+                        key={l.value}
+                        onPress={() => {
+                          setLocation(l.value);
+                          setLocationQuery('');
+                          Keyboard.dismiss();
+                        }}
+                        haptic="selection"
+                        accessibilityRole="button"
+                        style={[styles.suggestRow, i > 0 && styles.suggestDivider]}
+                      >
+                        <AppText style={styles.suggestLabel}>{l.label}</AppText>
+                      </PressableScale>
+                    ))}
+                  </View>
+                ) : locationQuery.trim() ? (
+                  <AppText variant="caption" muted>
+                    No area matches “{locationQuery.trim()}”.
+                  </AppText>
+                ) : null}
+              </>
+            )}
           </>
         ) : null}
 
-        {showPace || showBadminton || showBike ? (
+        {showBadminton || showBike ? (
           <AppText variant="label" muted style={styles.sectionLabel}>
             {inPerson ? "Because you're meeting in person" : 'About your setup'}
           </AppText>
-        ) : null}
-
-        {showPace ? (
-          <>
-            <AppText style={styles.fieldLabel}>Typical pace</AppText>
-            <View style={styles.pillRow}>
-              {(['slow', 'moderate', 'fast'] as const).map((p) => (
-                <Pill
-                  key={p}
-                  label={p[0].toUpperCase() + p.slice(1)}
-                  active={pace === p}
-                  onPress={() => setPace(p)}
-                />
-              ))}
-            </View>
-          </>
         ) : null}
 
         {showBadminton ? (
@@ -424,6 +442,15 @@ function Pill({
       accessibilityLabel={label}
       style={[styles.pill, active && styles.pillActive]}
     >
+      {/* The prototype's .pill.on: the button gradient, not flat orange. */}
+      {active ? (
+        <LinearGradient
+          colors={theme.gradients.warm as unknown as readonly [string, string]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       <AppText style={[styles.pillLabel, active && styles.pillLabelActive]}>{label}</AppText>
     </PressableScale>
   );
@@ -485,7 +512,35 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface
   },
-  pillActive: { borderColor: 'transparent', backgroundColor: theme.colors.primary },
+  pillActive: { borderColor: 'transparent', overflow: 'hidden', ...theme.shadow.glow, shadowOpacity: 0.25, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
+  areaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: theme.radius.pill,
+    paddingVertical: 8,
+    paddingLeft: 14,
+    paddingRight: 8
+  },
+  areaChipLabel: { color: '#FFFFFF', fontSize: 13, fontFamily: theme.fonts.bodyMedium },
+  areaChipX: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  suggest: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden'
+  },
+  suggestRow: { paddingVertical: 12, paddingHorizontal: 16 },
+  suggestDivider: { borderTopWidth: 1, borderTopColor: theme.colors.border },
+  suggestLabel: { fontSize: 13.5, color: theme.colors.text },
   pillLabel: { fontSize: 13, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
   pillLabelActive: { color: '#FFFFFF' },
   footer: { padding: 20, paddingTop: theme.spacing(1) }

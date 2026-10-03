@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   Easing,
@@ -85,10 +85,43 @@ function AnimatedIcon({
   );
 }
 
+const LOGO = require('../../assets/choner-logo.png');
+
+// The brand mark breathing, not a spinning hourglass on an orange disc. That
+// disc was the old loading look and still showed on every tab's first load
+// (#114). Reduced motion gets the still mark.
+function LoadingMark() {
+  const reduceMotion = useReduceMotion();
+  const t = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    t.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 700, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+  }, [reduceMotion]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.55 + t.value * 0.45,
+    transform: [{ scale: 0.94 + t.value * 0.06 }]
+  }));
+
+  return (
+    <Animated.View style={style} accessibilityRole="progressbar" accessibilityLabel="Loading">
+      <Image source={LOGO} style={styles.loadingMark} resizeMode="contain" />
+    </Animated.View>
+  );
+}
+
 export function LoadingState({ label }: { label?: string }) {
   return (
     <Animated.View entering={FadeIn.duration(180)} style={styles.container}>
-      <AnimatedIcon name="hourglass-outline" tint="warm" animation="spin" />
+      <LoadingMark />
       {label ? (
         <AppText muted variant="caption">
           {label}
@@ -194,5 +227,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     ...theme.shadow.glow
-  }
+  },
+  // choner-logo.png is 542 x 368.
+  loadingMark: { width: 72, height: (72 * 368) / 542 }
 });

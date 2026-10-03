@@ -182,10 +182,7 @@ export default function SignUpScreen() {
                       records consent, so it is also what carries the links. */}
                   <AppText variant="caption" muted style={{ flex: 1 }}>
                     I agree to Choner's <LegalLink to="/legal/terms">Terms of use</LegalLink>,{' '}
-                    <LegalLink to="/legal/privacy">Privacy policy</LegalLink>,{' '}
-                    {/* No cookie policy screen exists yet; cookies are covered
-                        inside Privacy until one is written. */}
-                    <LegalLink to="/legal/privacy">Cookie policy</LegalLink> and{' '}
+                    <LegalLink to="/legal/privacy">Privacy policy</LegalLink> and{' '}
                     <LegalLink to="/legal/health-disclaimer">Health disclaimer</LegalLink>.
                   </AppText>
                 </Pressable>

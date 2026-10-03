@@ -1,5 +1,4 @@
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // expo-router supplies bottom-tabs internally; we don't import its types
 // here to avoid a hard dep on @react-navigation/bottom-tabs. The shape we
@@ -16,6 +15,7 @@ type TabBarProps = {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
+import { Icon, IconName } from '@/components/ui/Icon';
 
 const LABELS: Record<string, string> = {
   home: 'Home',
@@ -25,11 +25,11 @@ const LABELS: Record<string, string> = {
   profile: 'Profile'
 };
 
-// The only tabs shown in the bar, in this order. `profile` is registered but
-// lives in the top bar's avatar instead, which is what freed the fourth slot
-// for Find. There is no Insights tab: it reported the daily model, and the
-// numbers that replaced it (the streak, sessions together) live on Challenges,
-// Home and Profile.
+// The only tabs shown in the bar, in this order (master spec section 2: Home,
+// Challenges, Find, Community). `profile` is registered but lives in the top
+// bar's avatar instead, which is what freed the fourth slot for Find. There is
+// no Insights tab: it reported the daily model, and the numbers that replaced
+// it (the streak, sessions together) live on Challenges, Home and Profile.
 const VISIBLE_ORDER = ['home', 'challenges', 'find', 'community'];
 
 // Geometry from the prototype (393pt frame): 14 top + 22 icon + 4 gap + 14
@@ -48,16 +48,17 @@ export function useTabBarClearance() {
   return offset + PILL_HEIGHT + 24;
 }
 
-// All glyphs come from one family (MaterialCommunityIcons) so stroke weight
-// and optical size match across the bar — mixing families made each icon
-// render at a different weight and sit at a different height. Active vs
-// inactive is shown by color alone.
-const ICONS: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
-  home: 'home-outline',
+// The prototype's own line icons, drawn as SVG at stroke 2. Not an icon font:
+// a font is fetched the first time a glyph renders, and when that fetch failed
+// (a dev phone that lost the Metro server, issues #101/#103/#104/#109) the bar
+// showed no icons at all until the app was restarted. SVG has nothing to fetch.
+// Active vs inactive is shown by color alone.
+const ICONS: Record<string, IconName> = {
+  home: 'home',
   challenges: 'target',
-  find: 'account-search-outline',
-  community: 'account-multiple-outline',
-  profile: 'account-outline'
+  find: 'find',
+  community: 'community',
+  profile: 'user'
 };
 
 function TabButton({
@@ -84,11 +85,7 @@ function TabButton({
       accessibilityLabel={LABELS[routeName] ?? routeName}
       accessibilityState={{ selected: focused }}
     >
-      <MaterialCommunityIcons
-        name={ICONS[routeName] ?? 'circle-outline'}
-        size={ICON_SIZE}
-        color={iconColor}
-      />
+      <Icon name={ICONS[routeName] ?? 'target'} size={ICON_SIZE} color={iconColor} strokeWidth={2} />
       <Text style={[styles.label, { color: labelColor }]} numberOfLines={1}>
         {LABELS[routeName] ?? routeName}
       </Text>

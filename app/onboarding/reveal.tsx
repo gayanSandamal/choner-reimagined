@@ -5,7 +5,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Icon, IconName } from '@/components/ui/Icon';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useOnboarding } from '@/features/onboarding/context';
@@ -20,6 +19,9 @@ import {
 import { useSession } from '@/providers/session-provider';
 import { useProfile } from '@/features/profile/hooks';
 import { theme } from '@/constants/theme';
+
+// The prototype's --ok-ink, the green used on its "saved" and "confirmed" marks.
+const OK_INK = '#1F6B47';
 
 const SKIPPED_COPY = 'You skipped this. Choner adapts as you go';
 
@@ -90,7 +92,13 @@ export default function RevealScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(240).duration(360)} style={styles.meta}>
-          <Badge label="✓ Profile saved" tone="success" />
+          {/* The prototype's .okbadge: sentence case with a check, centred. The
+              shared Badge is uppercase and pinned to the left (alignSelf
+              flex-start), which is why this sat off-centre (#99). */}
+          <View style={styles.saved}>
+            <Icon name="check" size={13} color={OK_INK} strokeWidth={3} />
+            <AppText style={styles.savedLabel}>Profile saved</AppText>
+          </View>
           <AppText variant="caption" muted>
             Choner will refine this as you build your streak.
           </AppText>
@@ -126,5 +134,15 @@ const styles = StyleSheet.create({
   rowText: { flex: 1, gap: 2 },
   rowValue: { fontSize: 16 },
   meta: { alignItems: 'center', gap: theme.spacing(1) },
+  saved: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#E3F4EA',
+    borderRadius: theme.radius.pill,
+    paddingVertical: 5,
+    paddingHorizontal: 12
+  },
+  savedLabel: { fontFamily: theme.fonts.bodyBold, fontSize: 11.5, color: OK_INK },
   footer: { padding: 20, paddingTop: theme.spacing(1) }
 });

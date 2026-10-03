@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -7,9 +7,8 @@ import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import type { DirectoryRow } from '@/features/directory/api';
-import { useActiveDirectory, useSetShowInDirectory } from '@/features/directory/hooks';
+import { useActiveDirectory } from '@/features/directory/hooks';
 import { DIRECTORY_PAGE, directoryExercises, directoryLine, directoryPage } from '@/features/directory/format';
-import { notify } from '@/lib/alert';
 import { theme } from '@/constants/theme';
 
 // "Already on the move": proof that real people are here, never a candidate
@@ -21,34 +20,17 @@ import { theme } from '@/constants/theme';
 // not a way to find someone in person.
 export default function WhoElseScreen() {
   const dirQ = useActiveDirectory();
-  const setShow = useSetShowInDirectory();
   const dir = dirQ.data;
   const [pages, setPages] = useState(1);
   const rows = directoryPage(dir?.rows ?? [], pages);
-
-  const onToggle = async (next: boolean) => {
-    try {
-      await setShow.mutateAsync(next);
-    } catch (error: any) {
-      notify('Could not change that', error.message);
-    }
-  };
 
   const header = (
     <View style={styles.head}>
       <AppText variant="title">Already on the move.</AppText>
       <AppText muted>People with a commitment on Choner right now, across every activity.</AppText>
-      {/* An opt-OUT, and it lives where its effect is visible. */}
-      <View style={styles.optIn}>
-        <AppText style={styles.optInLabel}>Show me here too</AppText>
-        <Switch
-          value={Boolean(dir?.me_listed)}
-          disabled={!dir || setShow.isPending}
-          onValueChange={onToggle}
-          trackColor={{ true: theme.colors.primary, false: theme.colors.border }}
-          accessibilityLabel="Show me in Already on the move"
-        />
-      </View>
+      {/* No "Show me here too" switch (#108). Everyone with a commitment is
+          listed: get_active_directory() stopped reading show_in_directory, so
+          the switch changed nothing. */}
     </View>
   );
 
@@ -112,16 +94,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1, gap: 0 },
   head: { gap: theme.spacing(1.5), marginBottom: theme.spacing(2) },
   content: { paddingBottom: theme.spacing(4) },
-  optIn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.surface3,
-    borderRadius: theme.radius.md,
-    paddingVertical: theme.spacing(1.25),
-    paddingHorizontal: theme.spacing(1.5)
-  },
-  optInLabel: { color: theme.colors.text, fontSize: 14 },
   gap: { height: 10 },
   // A fixed height, so six of them make a screen whatever a row carries.
   card: {

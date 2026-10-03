@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -7,12 +7,15 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { IconName } from '@/components/ui/Icon';
-import { AnimatedBrandLogo } from '@/components/auth/AnimatedBrandLogo';
 import { IntroBackdrop } from '@/components/onboarding/IntroBackdrop';
 import { IntroHeadline } from '@/components/onboarding/IntroHeadline';
 import { PromiseCard } from '@/components/onboarding/PromiseCard';
 import { ProgressDots } from '@/components/onboarding/ProgressDots';
 import { theme } from '@/constants/theme';
+
+const LOGO = require('../../assets/choner-logo.png');
+// The artwork is 542 x 368.
+const LOGO_WIDTH = 120;
 
 const PROMISES: { icon: IconName; title: string; description: string }[] = [
   {
@@ -49,7 +52,15 @@ export default function WelcomeScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ProgressDots current={1} gradient />
           <Animated.View entering={FadeInDown.duration(360)} style={styles.hero}>
-            <AnimatedBrandLogo size={120} />
+            {/* The brand PNG, as in the prototype. The Lottie mark drew an
+                older navy-filled heart that read as a different logo (#97). */}
+            <Image
+              source={LOGO}
+              style={styles.logo}
+              resizeMode="contain"
+              accessibilityRole="image"
+              accessibilityLabel="Choner logo"
+            />
             <IntroHeadline />
             <AppText style={styles.sub}>
               Choner helps you stay{' '}
@@ -82,6 +93,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: { padding: 20, paddingTop: theme.spacing(2), gap: theme.spacing(3), flexGrow: 1 },
   hero: { alignItems: 'center', gap: theme.spacing(1.5) },
+  logo: { width: LOGO_WIDTH, height: (LOGO_WIDTH * 368) / 542 },
   sub: {
     textAlign: 'center',
     color: 'rgba(255,255,255,0.72)',

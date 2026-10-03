@@ -16,6 +16,7 @@ import {
   useFonts
 } from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
+import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SplashView } from '@/components/SplashView';
@@ -205,7 +206,12 @@ export default function RootLayout() {
     Poppins_400Regular,
     Poppins_500Medium,
     Poppins_600SemiBold,
-    Poppins_700Bold
+    Poppins_700Bold,
+    // Loaded with the app fonts rather than lazily on the first glyph. A lazy
+    // load that fails (a dev phone that can no longer reach Metro) surfaced as
+    // "Uncaught (in promise) UnableToDownloadAssetException" on whichever
+    // screen first drew an icon (#101, #103, #109).
+    ...Ionicons.font
   });
 
   const onLayoutRootView = useCallback(() => {

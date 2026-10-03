@@ -18,6 +18,7 @@ import { isPlanned } from '@/features/plans/session';
 import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 
 // Session details: the one screen about a single planned session.
 //
@@ -32,6 +33,7 @@ export default function SessionDetailsScreen() {
   const profileQ = useProfile(userId);
   const partnerQ = useMyPartner(userId);
   const planQ = usePairPlan(id);
+  const pull = usePullRefresh(() => planQ.refetch());
   const streakQ = useSessionStreak(id);
   const endAction = useEndChallengeAction();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -110,8 +112,8 @@ export default function SessionDetailsScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={planQ.isRefetching}
-            onRefresh={() => planQ.refetch()}
+            refreshing={pull.refreshing}
+            onRefresh={pull.onRefresh}
             tintColor={theme.colors.primary}
           />
         }
