@@ -97,6 +97,7 @@ const ICONS: Record<string, Shape[]> = {
     { cx: 12, cy: 13, r: 3.2 }
   ],
   check: [{ d: 'M5 12.5l4.5 4.5L19 7.5' }],
+  share: [{ d: 'M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 001 1h12a1 1 0 001-1v-6' }],
   back: [{ d: 'M15 5l-7 7 7 7' }],
   chev: [{ d: 'M9 5l7 7-7 7' }],
   x: [{ d: 'M6 6l12 12M18 6L6 18' }],

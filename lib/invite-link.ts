@@ -13,19 +13,24 @@ export function buildInviteLink(token: string) {
 export async function shareInviteLink(
   token: string,
   inviterName?: string | null,
-  code?: string | null
+  code?: string | null,
+  // The person's own words. The link and code are always appended, so the
+  // message, the link and the code travel together whatever they wrote.
+  customMessage?: string | null
 ): Promise<'copied' | 'shared' | 'failed'> {
   const url = buildInviteLink(token);
   // The link only opens for someone who already has the app. The code works
   // for everyone else, so a shared message carries both.
   const withCode = code ? ` Or open Choner, tap "I have an invite code" and enter ${code}.` : '';
-  const message = inviterName
+  const message = customMessage?.trim()
+    ? `${customMessage.trim()}\n${url}${code ? `\nCode: ${code}` : ''}`
+    : inviterName
     ? `${inviterName} invited you to a Choner challenge. Join here: ${url}${withCode}`
     : `Join my Choner challenge: ${url}${withCode}`;
 
   if (Platform.OS === 'web') {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(customMessage?.trim() ? message : url);
       return 'copied';
     } catch {
       return 'failed';
