@@ -82,6 +82,15 @@ const ICONS: Record<string, Shape[]> = {
   ],
   trend: [{ d: 'M3 17l6-6 4 4 8-8M15 7h6v6' }],
 
+  // navigation (the bottom bar, from the prototype's navBar())
+  home: [{ d: 'M3 11l9-7 9 7' }, { d: 'M5 10v9a1 1 0 001 1h3v-5h6v5h3a1 1 0 001-1v-9' }],
+  find: [
+    { cx: 12, cy: 8, r: 3.2 },
+    { d: 'M4 20c0-3.6 3.6-6 8-6' },
+    { cx: 17, cy: 17, r: 3 },
+    { d: 'M19.2 19.2L21 21' }
+  ],
+
   // chrome
   camera: [
     { d: 'M4 8h3l1.5-2h7L17 8h3v11H4z' },
