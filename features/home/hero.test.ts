@@ -1,4 +1,4 @@
-import { heartCopy, heartStage, homeHero, pulseHeadline, pulseMoments } from './hero';
+import { heartCopy, heartStage, homeHero, pulseChips, pulseHeadline, pulseMomentItems, pulseMoments } from './hero';
 import type { PairPlan, PlanMember } from '@/features/plans/types';
 
 const member = (o: Partial<PlanMember> = {}): PlanMember => ({
@@ -139,3 +139,42 @@ describe('Choner Pulse says only what is true', () => {
     expect(pulseHeadline({ ...zero, people: 879 })).toBe('879 people are on Choner right now');
   });
 });
+
+describe('pulse chips and moment kinds', () => {
+  const zero = { people: 0, by_activity: [], pairs: 0, new_pairs_today: 0, sessions_today: 0, sessions_planned: 0 };
+
+  it('shows only the counts above zero', () => {
+    expect(pulseChips(zero)).toEqual([]);
+    expect(pulseChips(null)).toEqual([]);
+    expect(pulseChips({ ...zero, new_pairs_today: 1, sessions_planned: 4 })).toEqual(['+1 new pair', '4 planned']);
+    expect(pulseChips({ ...zero, new_pairs_today: 2, sessions_today: 5 })).toEqual(['+2 new pairs', '+5 completed']);
+  });
+
+  it('gives each moment the picture it draws, and the same text as pulseMoments', () => {
+    const p = { ...zero, sessions_today: 1, new_pairs_today: 2, pairs: 1, sessions_planned: 3 };
+    expect(pulseMomentItems(p).map((m) => m.kind)).toEqual(['done', 'pair', 'pairs', 'count']);
+    expect(pulseMomentItems(p).map((m) => m.text)).toEqual(pulseMoments(p));
+  });
+});
+
+describe('Just Happened always has the busiest activity', () => {
+  const zero = { people: 0, by_activity: [], pairs: 0, new_pairs_today: 0, sessions_today: 0, sessions_planned: 0 };
+
+  it('adds the top activity as the last moment', () => {
+    const p = {
+      ...zero,
+      people: 300,
+      by_activity: [
+        { activity_key: 'running', title: 'Running', people: 123 },
+        { activity_key: 'walking', title: 'Walking', people: 175 }
+      ]
+    };
+    expect(pulseMoments(p)).toEqual(['175 people chose Walking.']);
+    expect(pulseMomentItems(p)[0]).toMatchObject({ kind: 'count', n: 175 });
+  });
+
+  it('skips activities with nobody on them', () => {
+    expect(pulseMoments({ ...zero, by_activity: [{ activity_key: 'yoga', title: 'Yoga', people: 0 }] })).toEqual([]);
+  });
+});
+

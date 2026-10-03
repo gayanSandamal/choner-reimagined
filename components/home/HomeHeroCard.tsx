@@ -3,19 +3,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { Icon, IconName } from '@/components/ui/Icon';
 import type { HomeHero } from '@/features/home/hero';
 import { theme } from '@/constants/theme';
 
 // The hero: the current commitment and the single next action. At most one
 // button. While searching there is none: the "Searching" row is the control,
 // and all it does is open Find, where stopping the search lives.
+//
+// Styled as the prototype's .hero: orange eyebrow, the activity's icon beside
+// its name, no border, the soft card shadow.
 export function HomeHeroCard({
   hero,
+  icon,
   busy,
   onAction,
   onOpenFind
 }: {
   hero: HomeHero;
+  // The activity's icon, shown beside the title when the title is the activity.
+  icon?: IconName | null;
   busy: boolean;
   onAction: () => void;
   onOpenFind: () => void;
@@ -23,7 +30,10 @@ export function HomeHeroCard({
   return (
     <View style={styles.card}>
       {hero.eyebrow ? <AppText style={styles.eyebrow}>{hero.eyebrow.toUpperCase()}</AppText> : null}
-      <AppText style={styles.title}>{hero.title}</AppText>
+      <View style={styles.titleRow}>
+        {icon ? <Icon name={icon} size={24} color={theme.colors.primary2} /> : null}
+        <AppText style={styles.title}>{hero.title}</AppText>
+      </View>
 
       {hero.searching ? (
         <PressableScale
@@ -52,15 +62,15 @@ export function HomeHeroCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 20,
-    gap: 10
+    borderRadius: 22,
+    padding: 18,
+    gap: 12,
+    ...theme.shadow.md
   },
-  eyebrow: { fontSize: 10, letterSpacing: 1.2, color: theme.colors.muted },
-  title: { fontSize: 24, color: theme.colors.text, lineHeight: 30 },
-  line: { fontSize: 14, lineHeight: 20, color: theme.colors.muted },
+  eyebrow: { fontSize: 11, letterSpacing: 0.9, color: theme.colors.primary2, fontFamily: theme.fonts.bodyBold },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  title: { flex: 1, fontSize: 20, lineHeight: 25, letterSpacing: -0.3, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
+  line: { fontSize: 13, lineHeight: 19.5, color: theme.colors.muted },
   searching: {
     flexDirection: 'row',
     alignItems: 'center',

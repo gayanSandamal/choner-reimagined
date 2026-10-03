@@ -1,6 +1,7 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
+import { activityIcon } from '@/components/home/activityIcons';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
@@ -122,13 +123,16 @@ export default function HomeScreen() {
           contentContainerStyle={[styles.content, { paddingTop: topBar.contentTop, paddingBottom: tabBarClearance }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} progressViewOffset={topBar.progressViewOffset} tintColor={theme.colors.primary} />}
         >
-          {/* The muted line carries the time, the name carries the weight. */}
-          <View style={styles.greeting}>
-            <AppText variant="caption" muted>
-              {greetingFor()}
-            </AppText>
-            {firstName ? <AppText style={styles.name}>{firstName}</AppText> : null}
-          </View>
+          {/* The prototype's .greet1: one line, the name carries the weight. */}
+          <AppText style={styles.greeting}>
+            {greetingFor()}
+            {firstName ? (
+              <>
+                {', '}
+                <AppText style={styles.name}>{firstName}</AppText>
+              </>
+            ) : null}
+          </AppText>
 
           {challengeQ.isLoading || partnerQ.isLoading ? (
             <LoadingState />
@@ -143,6 +147,7 @@ export default function HomeScreen() {
               />
               <HomeHeroCard
                 hero={hero}
+                icon={challenge ? activityIcon(challenge.challenge_templates?.activity_key as string | undefined) : null}
                 busy={startSession.isPending}
                 onAction={onAction}
                 onOpenFind={() => router.push('/(tabs)/find')}
@@ -167,6 +172,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
   safe: { flex: 1 },
   content: { padding: 20, paddingTop: 0, paddingBottom: theme.spacing(4), gap: theme.spacing(2) },
-  greeting: { gap: 2 },
-  name: { fontFamily: theme.fonts.body, fontSize: 21, color: theme.colors.text }
+  greeting: { fontSize: 15, lineHeight: 26, color: theme.colors.muted },
+  name: { fontFamily: theme.fonts.bodyMedium, fontSize: 19, color: theme.colors.text }
 });
