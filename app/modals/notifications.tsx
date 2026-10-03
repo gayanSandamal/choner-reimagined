@@ -11,6 +11,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews
 import { useSession } from '@/providers/session-provider';
 import { useMarkAllRead, useMarkRead, useNotifications } from '@/features/notifications/hooks';
 import { theme } from '@/constants/theme';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 
 const ICON_BY_KIND: Record<string, keyof typeof Ionicons.glyphMap> = {
   partner_activity: 'people',
@@ -43,6 +44,7 @@ export default function NotificationsModal() {
   const { session } = useSession();
   const userId = session?.user.id;
   const q = useNotifications(userId);
+  const pull = usePullRefresh(() => q.refetch());
   const markRead = useMarkRead(userId);
   const markAllRead = useMarkAllRead();
 
@@ -52,7 +54,7 @@ export default function NotificationsModal() {
     <Screen scroll={false}>
       <ScrollView
         contentContainerStyle={{ gap: theme.spacing(1), paddingBottom: theme.spacing(4) }}
-        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={theme.colors.primary} />}
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={theme.colors.primary} />}
       >
         <ScreenHeader title="Notifications" onClose={() => router.back()} />
 

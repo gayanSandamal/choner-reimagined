@@ -14,6 +14,7 @@ import { useCityFeed, useToggleMilestoneReaction } from '@/features/community/ho
 import { heartCopy } from '@/features/home/hero';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 
 const ORANGE = '#FD8302';
 const DIM = '#D8D2CC';
@@ -49,11 +50,9 @@ export default function CommunityScreen() {
   const city = feedQ.data?.city ?? null;
   const items = feedQ.data?.items ?? [];
 
-  const onRefresh = () => {
-    feedQ.refetch();
-    challengeQ.refetch();
-    partnerQ.refetch();
-  };
+  const { refreshing, onRefresh } = usePullRefresh(() =>
+    Promise.all([feedQ.refetch(), challengeQ.refetch(), partnerQ.refetch()])
+  );
 
   const onReact = (id: string, reacted: boolean) => {
     if (!userId) return;
@@ -68,7 +67,7 @@ export default function CommunityScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={feedQ.isRefetching}
+            refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor={ORANGE}
           />

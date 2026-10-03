@@ -28,6 +28,7 @@ import { shareInviteLink } from '@/lib/invite-link';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 
 // The Find tab owns every partner path: the search, the invite, the match
 // offer, and the match itself for as long as it lasts. Home and Challenges
@@ -95,12 +96,14 @@ export default function FindScreen() {
     }
   };
 
-  const onRefresh = () => {
-    challengeQ.refetch();
-    matchQ.refetch();
-    partnerQ.refetch();
-    queryClient.invalidateQueries({ queryKey: ['pending-invites'] });
-  };
+  const { refreshing, onRefresh } = usePullRefresh(() =>
+    Promise.all([
+      challengeQ.refetch(),
+      matchQ.refetch(),
+      partnerQ.refetch(),
+      queryClient.invalidateQueries({ queryKey: ['pending-invites'] })
+    ])
+  );
 
   if (challengeQ.isLoading) {
     return (
@@ -119,7 +122,7 @@ export default function FindScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={challengeQ.isRefetching}
+            refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor={theme.colors.primary}
           />

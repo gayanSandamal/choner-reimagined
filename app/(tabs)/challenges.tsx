@@ -28,6 +28,7 @@ import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 
 // The six that can plan a session. A challenge still on a retired habit has
 // no activity, so there is nothing to plan and no button is offered.
@@ -119,14 +120,16 @@ export default function ChallengesScreen() {
   const onEndChallenge = () =>
     endAction.end({ challengeId: challenge?.id, streak, partnerName });
 
-  const onRefresh = () => {
-    challengeQ.refetch();
-    partnerQ.refetch();
-    planQ.refetch();
-    streakQ.refetch();
-    repairQ.refetch();
-    historyQ.refetch();
-  };
+  const { refreshing, onRefresh } = usePullRefresh(() =>
+    Promise.all([
+      challengeQ.refetch(),
+      partnerQ.refetch(),
+      planQ.refetch(),
+      streakQ.refetch(),
+      repairQ.refetch(),
+      historyQ.refetch()
+    ])
+  );
 
   if (challengeQ.isLoading) {
     return (
@@ -155,7 +158,7 @@ export default function ChallengesScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={challengeQ.isRefetching} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
         }
       >
         <AppText style={styles.pageTitle}>Challenges</AppText>

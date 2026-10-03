@@ -22,6 +22,7 @@ import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 
 function greetingFor(date = new Date()) {
   const h = date.getHours();
@@ -98,16 +99,17 @@ export default function HomeScreen() {
     }
   };
 
-  const refreshing = challengeQ.isRefetching || profileQ.isRefetching;
-  const onRefresh = () => {
-    challengeQ.refetch();
-    profileQ.refetch();
-    partnerQ.refetch();
-    planQ.refetch();
-    streakQ.refetch();
-    repairQ.refetch();
-    pulseQ.refetch();
-  };
+  const { refreshing, onRefresh } = usePullRefresh(() =>
+    Promise.all([
+      challengeQ.refetch(),
+      profileQ.refetch(),
+      partnerQ.refetch(),
+      planQ.refetch(),
+      streakQ.refetch(),
+      repairQ.refetch(),
+      pulseQ.refetch()
+    ])
+  );
 
   const firstName = profileQ.data?.full_name?.split(' ')[0];
 
