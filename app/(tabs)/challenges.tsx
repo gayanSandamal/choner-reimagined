@@ -2,7 +2,7 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { AppTopBar } from '@/components/navigation/AppTopBar';
+import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 
 // The six that can plan a session. A challenge still on a retired habit has
 // no activity, so there is nothing to plan and no button is offered.
@@ -52,6 +53,7 @@ function firstName(name?: string | null) {
 export default function ChallengesScreen() {
   const { session } = useSession();
   const tabBarClearance = useTabBarClearance();
+  const topBar = useTopBar();
   const userId = session?.user.id;
   const challengeQ = useMyChallenge(userId);
   const profileQ = useProfile(userId);
@@ -119,14 +121,16 @@ export default function ChallengesScreen() {
   const onEndChallenge = () =>
     endAction.end({ challengeId: challenge?.id, streak, partnerName });
 
-  const onRefresh = () => {
-    challengeQ.refetch();
-    partnerQ.refetch();
-    planQ.refetch();
-    streakQ.refetch();
-    repairQ.refetch();
-    historyQ.refetch();
-  };
+  const { refreshing, onRefresh } = usePullRefresh(() =>
+    Promise.all([
+      challengeQ.refetch(),
+      partnerQ.refetch(),
+      planQ.refetch(),
+      streakQ.refetch(),
+      repairQ.refetch(),
+      historyQ.refetch()
+    ])
+  );
 
   if (challengeQ.isLoading) {
     return (
@@ -147,15 +151,21 @@ export default function ChallengesScreen() {
   const history = historyQ.data ?? [];
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <View style={styles.root}>
       {/* No partner menu here any more: End match, Report and Block all live
           on Find's matched card, which is where every partner action belongs. */}
       <AppTopBar />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
+        {...topBar.scrollProps}
+          contentContainerStyle={[styles.content, { paddingTop: topBar.contentTop, paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={challengeQ.isRefetching} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            progressViewOffset={topBar.progressViewOffset}
+            tintColor={theme.colors.primary}
+          />
         }
       >
         <AppText style={styles.pageTitle}>Challenges</AppText>
@@ -264,7 +274,7 @@ export default function ChallengesScreen() {
           </View>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

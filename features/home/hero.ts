@@ -206,7 +206,7 @@ export function heartCopy(i: {
     count: null,
     line:
       i.partnerState === 'finding'
-        ? 'Looking for your partner.'
+        ? 'Searching for your partner.'
         : i.partnerState === 'invited'
         ? 'Waiting for your partner to join.'
         : null
@@ -228,23 +228,69 @@ export type HomePulse = {
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
-// The lines Just Happened rotates through. Empty when nothing has happened,
+// One Just Happened moment. `kind` picks the picture drawn above the line:
+// a tick for completions, pairs of people for pairs, the number for the rest.
+export type PulseMoment = { kind: 'done' | 'pair' | 'pairs' | 'count'; n: number; text: string };
+
+// The moments Just Happened rotates through. Empty when nothing has happened,
 // and then the card is not drawn at all.
-export function pulseMoments(p: HomePulse | null | undefined): string[] {
+export function pulseMomentItems(p: HomePulse | null | undefined): PulseMoment[] {
   if (!p) return [];
-  const out: string[] = [];
+  const out: PulseMoment[] = [];
   if (p.sessions_today > 0) {
-    out.push(`${p.sessions_today} ${plural(p.sessions_today, 'session was', 'sessions were')} completed today.`);
+    out.push({
+      kind: 'done',
+      n: p.sessions_today,
+      text: `${p.sessions_today} ${plural(p.sessions_today, 'session was', 'sessions were')} completed today.`
+    });
   }
   if (p.new_pairs_today > 0) {
-    out.push(`${p.new_pairs_today} new ${plural(p.new_pairs_today, 'pair', 'pairs')} today.`);
+    out.push({
+      kind: 'pair',
+      n: p.new_pairs_today,
+      text: `${p.new_pairs_today} new ${plural(p.new_pairs_today, 'pair', 'pairs')} today.`
+    });
   }
   if (p.pairs > 0) {
-    out.push(`${p.pairs} ${plural(p.pairs, 'pair is', 'pairs are')} showing up together.`);
+    out.push({
+      kind: 'pairs',
+      n: p.pairs,
+      text: `${p.pairs} ${plural(p.pairs, 'pair is', 'pairs are')} showing up together.`
+    });
   }
   if (p.sessions_planned > 0) {
-    out.push(`${p.sessions_planned} ${plural(p.sessions_planned, 'session is', 'sessions are')} planned.`);
+    out.push({
+      kind: 'count',
+      n: p.sessions_planned,
+      text: `${p.sessions_planned} ${plural(p.sessions_planned, 'session is', 'sessions are')} planned.`
+    });
   }
+  // The busiest activity, so the card has something true to say whenever the
+  // Pulse above it does. Without it, a day with people but no pairs or
+  // sessions yet left Just Happened missing from Home (#112).
+  const top = [...p.by_activity].sort((a, b) => b.people - a.people)[0];
+  if (top && top.people > 0) {
+    out.push({
+      kind: 'count',
+      n: top.people,
+      text: `${top.people} ${plural(top.people, 'person', 'people')} chose ${top.title}.`
+    });
+  }
+  return out;
+}
+
+export function pulseMoments(p: HomePulse | null | undefined): string[] {
+  return pulseMomentItems(p).map((m) => m.text);
+}
+
+// The small chips under the Pulse tiles (the prototype's .dsum). Only counts
+// that are above zero, so a quiet day shows fewer chips, never a "+0".
+export function pulseChips(p: HomePulse | null | undefined): string[] {
+  if (!p) return [];
+  const out: string[] = [];
+  if (p.new_pairs_today > 0) out.push(`+${p.new_pairs_today} new ${plural(p.new_pairs_today, 'pair', 'pairs')}`);
+  if (p.sessions_today > 0) out.push(`+${p.sessions_today} completed`);
+  if (p.sessions_planned > 0) out.push(`${p.sessions_planned} planned`);
   return out;
 }
 

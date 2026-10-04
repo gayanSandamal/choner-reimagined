@@ -1,7 +1,7 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppTopBar } from '@/components/navigation/AppTopBar';
+import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
+import { activityIcon } from '@/components/home/activityIcons';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
@@ -22,6 +22,7 @@ import { useProfile } from '@/features/profile/hooks';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 
 function greetingFor(date = new Date()) {
   const h = date.getHours();
@@ -47,6 +48,7 @@ export default function HomeScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
   const tabBarClearance = useTabBarClearance();
+  const topBar = useTopBar();
   const profileQ = useProfile(userId);
   const challengeQ = useMyChallenge(userId);
   const partnerQ = useMyPartner(userId);
@@ -98,34 +100,39 @@ export default function HomeScreen() {
     }
   };
 
-  const refreshing = challengeQ.isRefetching || profileQ.isRefetching;
-  const onRefresh = () => {
-    challengeQ.refetch();
-    profileQ.refetch();
-    partnerQ.refetch();
-    planQ.refetch();
-    streakQ.refetch();
-    repairQ.refetch();
-    pulseQ.refetch();
-  };
+  const { refreshing, onRefresh } = usePullRefresh(() =>
+    Promise.all([
+      challengeQ.refetch(),
+      profileQ.refetch(),
+      partnerQ.refetch(),
+      planQ.refetch(),
+      streakQ.refetch(),
+      repairQ.refetch(),
+      pulseQ.refetch()
+    ])
+  );
 
   const firstName = profileQ.data?.full_name?.split(' ')[0];
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.safe}>
         <AppTopBar />
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
+          {...topBar.scrollProps}
+          contentContainerStyle={[styles.content, { paddingTop: topBar.contentTop, paddingBottom: tabBarClearance }]}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} progressViewOffset={topBar.progressViewOffset} tintColor={theme.colors.primary} />}
         >
-          {/* The muted line carries the time, the name carries the weight. */}
-          <View style={styles.greeting}>
-            <AppText variant="caption" muted>
-              {greetingFor()}
-            </AppText>
-            {firstName ? <AppText style={styles.name}>{firstName}</AppText> : null}
-          </View>
+          {/* The prototype's .greet1: one line, the name carries the weight. */}
+          <AppText style={styles.greeting}>
+            {greetingFor()}
+            {firstName ? (
+              <>
+                {', '}
+                <AppText style={styles.name}>{firstName}</AppText>
+              </>
+            ) : null}
+          </AppText>
 
           {challengeQ.isLoading || partnerQ.isLoading ? (
             <LoadingState />
@@ -140,6 +147,7 @@ export default function HomeScreen() {
               />
               <HomeHeroCard
                 hero={hero}
+                icon={challenge ? activityIcon(challenge.challenge_templates?.activity_key as string | undefined) : null}
                 busy={startSession.isPending}
                 onAction={onAction}
                 onOpenFind={() => router.push('/(tabs)/find')}
@@ -155,7 +163,7 @@ export default function HomeScreen() {
             </>
           ) : null}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -163,7 +171,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
   safe: { flex: 1 },
-  content: { padding: 20, paddingTop: theme.spacing(1), paddingBottom: theme.spacing(4), gap: theme.spacing(2) },
-  greeting: { gap: 2 },
-  name: { fontFamily: theme.fonts.body, fontSize: 21, color: theme.colors.text }
+  content: { padding: 20, paddingTop: 0, paddingBottom: theme.spacing(4), gap: theme.spacing(2) },
+  greeting: { fontSize: 15, lineHeight: 26, color: theme.colors.muted },
+  name: { fontFamily: theme.fonts.bodyMedium, fontSize: 19, color: theme.colors.text }
 });

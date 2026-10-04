@@ -82,12 +82,26 @@ const ICONS: Record<string, Shape[]> = {
   ],
   trend: [{ d: 'M3 17l6-6 4 4 8-8M15 7h6v6' }],
 
+  // navigation (the bottom bar, from the prototype's navBar())
+  home: [{ d: 'M3 11l9-7 9 7' }, { d: 'M5 10v9a1 1 0 001 1h3v-5h6v5h3a1 1 0 001-1v-9' }],
+  find: [
+    { cx: 12, cy: 8, r: 3.2 },
+    { d: 'M4 20c0-3.6 3.6-6 8-6' },
+    { cx: 17, cy: 17, r: 3 },
+    { d: 'M19.2 19.2L21 21' }
+  ],
+
   // chrome
   camera: [
     { d: 'M4 8h3l1.5-2h7L17 8h3v11H4z' },
     { cx: 12, cy: 13, r: 3.2 }
   ],
   check: [{ d: 'M5 12.5l4.5 4.5L19 7.5' }],
+  heart: [{ d: 'M12 20s-7-4.4-9.5-9C1 7.8 2.5 4.5 6 4.5c2 0 3.3 1.1 4 2.3.7-1.2 2-2.3 4-2.3 3.5 0 5 3.3 3.5 6.5C19 15.6 12 20 12 20z' }],
+  bell: [{ d: 'M6 16v-5a6 6 0 0112 0v5l1.5 2h-15zM10 20a2 2 0 004 0' }],
+  doc: [{ d: 'M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6' }],
+  logout: [{ d: 'M10 4H5a1 1 0 00-1 1v14a1 1 0 001 1h5M10 12h10M16.5 8.5L20 12l-3.5 3.5' }],
+  share: [{ d: 'M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 001 1h12a1 1 0 001-1v-6' }],
   back: [{ d: 'M15 5l-7 7 7 7' }],
   chev: [{ d: 'M9 5l7 7-7 7' }],
   x: [{ d: 'M6 6l12 12M18 6L6 18' }],

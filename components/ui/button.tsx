@@ -45,9 +45,7 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : size === 'lg' ? styles.sizeLg : styles.sizeMd;
   const variantBg =
-    variant === 'primary'
-      ? styles.primary
-      : variant === 'secondary'
+    variant === 'secondary'
       ? styles.secondary
       : variant === 'ghost'
       ? styles.ghost
@@ -81,7 +79,10 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
     </Animated.View>
   );
 
-  if (variant === 'gradient') {
+  // The prototypes' .btn: linear-gradient(135deg, #FD8302, #FD5B01) with the
+  // orange drop shadow. `primary` used to be flat #FD8302 under the same glow,
+  // which is the "old style" #98 reports, so both now draw the gradient.
+  if (variant === 'gradient' || variant === 'primary') {
     return (
       <PressableScale
         ref={ref}
@@ -131,7 +132,6 @@ const styles = StyleSheet.create({
   sizeSm: { paddingVertical: 10, paddingHorizontal: 14, minHeight: 40 },
   sizeMd: { paddingVertical: 14, paddingHorizontal: 18, minHeight: 52 },
   sizeLg: { paddingVertical: 18, paddingHorizontal: 22, minHeight: 60 },
-  primary: { backgroundColor: theme.colors.primary, ...theme.shadow.glow },
   secondary: {
     backgroundColor: theme.colors.surface2,
     borderWidth: 1,

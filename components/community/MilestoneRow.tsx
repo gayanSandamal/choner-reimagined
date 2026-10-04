@@ -3,24 +3,16 @@ import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { milestoneLine } from '@/features/community/milestone-copy';
-import type { FeedItem, MilestoneKind } from '@/features/community/milestones';
+import type { FeedItem } from '@/features/community/milestones';
 import { relativeTime } from '@/lib/time';
 import { theme } from '@/constants/theme';
-
-const ORANGE_SOFT = '#FDA340';
-const GREEN = '#2E9E6B';
-
-const BADGES: Record<MilestoneKind, { label: string; color: string }> = {
-  streak: { label: 'Streak', color: ORANGE_SOFT },
-  complete: { label: 'Complete', color: GREEN },
-  // Neutral by design: a Find success story is proof, not a trophy.
-  matched: { label: 'Matched', color: theme.colors.muted },
-  session_together: { label: 'Together', color: GREEN }
-};
 
 // One opted-in moment from someone else in your city. No comments, no profile
 // link, no way to request a pairing — reading it is the entire interaction,
 // apart from a single tap to say well done.
+//
+// Drawn as the prototype's .post (#116): its own white card, the face, the
+// names in bold, the line under them and the time.
 export function MilestoneRow({
   item,
   onReact
@@ -28,32 +20,17 @@ export function MilestoneRow({
   item: FeedItem;
   onReact: () => void;
 }) {
-  const badge = BADGES[item.kind];
-  const names = item.partner_name
-    ? `${item.sharer_name} & ${item.partner_name}`
-    : item.sharer_name;
+  const names = item.partner_name ? `${item.sharer_name} and ${item.partner_name}` : item.sharer_name;
+  const line = milestoneLine(item);
 
   return (
     <View style={styles.row}>
-      <View style={styles.avatars}>
-        <Avatar uri={item.sharer_avatar} name={item.sharer_name} size={30} />
-        {item.partner_name ? (
-          <View style={styles.overlap}>
-            <Avatar uri={item.partner_avatar} name={item.partner_name} size={30} />
-          </View>
-        ) : null}
-      </View>
+      <Avatar uri={item.sharer_avatar} name={item.sharer_name} size={38} />
 
       <View style={styles.body}>
-        <AppText style={styles.text}>
-          <AppText style={styles.names}>{names}</AppText> {milestoneLine(item)}
-        </AppText>
-        <View style={styles.metaRow}>
-          <View style={[styles.badge, { borderColor: `${badge.color}55` }]}>
-            <AppText style={[styles.badgeText, { color: badge.color }]}>{badge.label}</AppText>
-          </View>
-          <AppText style={styles.time}>{relativeTime(item.created_at)}</AppText>
-        </View>
+        <AppText style={styles.names}>{names}</AppText>
+        <AppText style={styles.text}>{line.charAt(0).toUpperCase() + line.slice(1)}.</AppText>
+        <AppText style={styles.time}>{relativeTime(item.created_at)}</AppText>
       </View>
 
       {/* A session post has no milestone row to react to. */}
@@ -77,21 +54,21 @@ export function MilestoneRow({
 }
 
 const styles = StyleSheet.create({
+  // .post
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing(1.5),
-    paddingVertical: theme.spacing(1.5)
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    ...theme.shadow.sm
   },
-  avatars: { flexDirection: 'row' },
-  overlap: { marginLeft: -12 },
-  body: { flexShrink: 1, flexGrow: 1, gap: 4 },
+  body: { flexShrink: 1, flexGrow: 1, gap: 2 },
+  names: { fontSize: 13, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
   text: { color: theme.colors.text, fontSize: 12.5, lineHeight: 18 },
-  names: { fontFamily: theme.fonts.bodyBold },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  badge: { borderWidth: 1, borderRadius: 100, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 9, letterSpacing: 0.8, fontFamily: theme.fonts.bodyBold },
-  time: { color: theme.colors.muted, fontSize: 10 },
+  time: { color: theme.colors.muted, fontSize: 10.5 },
   react: {
     flexDirection: 'row',
     alignItems: 'center',

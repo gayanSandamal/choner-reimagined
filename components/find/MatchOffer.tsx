@@ -137,9 +137,9 @@ export function MatchOffer({
   const onStopLooking = async () => {
     if (!challengeId) return;
     const ok = await confirmAction({
-      title: 'Stop looking?',
+      title: 'Stop searching?',
       message: 'You can start looking again whenever you want.',
-      confirmLabel: 'Stop looking',
+      confirmLabel: 'Stop searching',
       cancelLabel: 'Keep waiting',
       destructive: true
     });
@@ -187,7 +187,7 @@ export function MatchOffer({
         </AppText>
         {clockRow}
         <Button label="Back out" variant="ghost" disabled={busy} onPress={onBackOut} />
-        <Button label="Stop looking" variant="ghost" disabled={busy} onPress={onStopLooking} />
+        <Button label="Stop searching" variant="ghost" disabled={busy} onPress={onStopLooking} />
         <MatchReportLink matchId={match.match_id} partnerFirstName={name} />
       </Animated.View>
     );

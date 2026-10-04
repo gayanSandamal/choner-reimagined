@@ -10,7 +10,7 @@ export default function PrivacyScreen() {
     <Screen scroll={false}>
       <ScrollView contentContainerStyle={{ gap: theme.spacing(2), paddingBottom: theme.spacing(4) }}>
         <ScreenHeader title="Privacy Policy" onBack={() => router.back()} />
-        <AppText variant="caption" muted>Last updated: 2026-09-23</AppText>
+        <AppText variant="caption" muted>Last updated: 2026-10-03</AppText>
         <AppText>
           Choner ("we", "us") collects only the information needed to provide the service: account
           information you give us (name, email), the goals and challenge data you create in-app, and
@@ -41,7 +41,7 @@ export default function PrivacyScreen() {
         <AppText variant="subtitle">Your rights</AppText>
         <AppText muted>
           You can export or permanently delete your account at any time from Settings → Delete account.
-          Email privacy@choner.app for any data request.
+          Email hello@choner.io for any data request.
         </AppText>
       </ScrollView>
     </Screen>

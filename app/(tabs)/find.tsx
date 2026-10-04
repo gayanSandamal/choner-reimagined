@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { AppTopBar } from '@/components/navigation/AppTopBar';
+import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
@@ -28,6 +27,7 @@ import { shareInviteLink } from '@/lib/invite-link';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 
 // The Find tab owns every partner path: the search, the invite, the match
 // offer, and the match itself for as long as it lasts. Home and Challenges
@@ -43,6 +43,7 @@ export default function FindScreen() {
   const { session } = useSession();
   const queryClient = useQueryClient();
   const tabBarClearance = useTabBarClearance();
+  const topBar = useTopBar();
   const userId = session?.user.id;
   // Poll while this screen is the one waiting on the matcher. The state it
   // renders comes from partner_state, which the matcher changes server-side, so
@@ -95,32 +96,36 @@ export default function FindScreen() {
     }
   };
 
-  const onRefresh = () => {
-    challengeQ.refetch();
-    matchQ.refetch();
-    partnerQ.refetch();
-    queryClient.invalidateQueries({ queryKey: ['pending-invites'] });
-  };
+  const { refreshing, onRefresh } = usePullRefresh(() =>
+    Promise.all([
+      challengeQ.refetch(),
+      matchQ.refetch(),
+      partnerQ.refetch(),
+      queryClient.invalidateQueries({ queryKey: ['pending-invites'] })
+    ])
+  );
 
   if (challengeQ.isLoading) {
     return (
-      <SafeAreaView style={styles.root}>
+      <View style={[styles.root, { paddingTop: topBar.clearance }]}>
         <AppTopBar />
         <LoadingState />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <View style={styles.root}>
       <AppTopBar />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
+        {...topBar.scrollProps}
+          contentContainerStyle={[styles.content, { paddingTop: topBar.contentTop, paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={challengeQ.isRefetching}
+            refreshing={refreshing}
             onRefresh={onRefresh}
+            progressViewOffset={topBar.progressViewOffset}
             tintColor={theme.colors.primary}
           />
         }
@@ -167,7 +172,7 @@ export default function FindScreen() {
           />
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -294,7 +299,7 @@ function SearchingState({
       <Radar searching />
 
       <View style={styles.searchStatus}>
-        <AppText style={styles.searchStatusTitle}>Looking…</AppText>
+        <AppText style={styles.searchStatusTitle}>Searching…</AppText>
         {/* Notify, don't ask people to keep checking. The switch keys off the
             matcher's own "looked and found nobody" record, not a timer. */}
         <AppText style={styles.searchStatusBody}>
@@ -314,7 +319,7 @@ function SearchingState({
           form" means editing your answers while staying in the pool: the form
           prefills them, and re-submitting doesn't spend a search. */}
       <Button label="Edit answers" variant="ghost" onPress={() => router.push('/find/form')} />
-      <Button label="Stop looking" variant="ghost" loading={stopping} onPress={onStop} />
+      <Button label="Stop searching" variant="ghost" loading={stopping} onPress={onStop} />
     </Animated.View>
   );
 }

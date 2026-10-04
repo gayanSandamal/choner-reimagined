@@ -47,10 +47,11 @@ export default function PartnerChoiceScreen() {
 
   const onContinue = () => {
     if (!choice) return;
-    // TODO: when Find is rebuilt it should accept an intent so "Invite someone
-    // you know" opens its invite sheet directly. Until then both cards land on
-    // Find's top screen, which carries both doors anyway.
+    // Both land on Find, which owns every partner path. "Invite someone you
+    // know" then opens the invite screen on top of it, so it does what it says
+    // instead of leaving them on Find's landing (#100); Back returns to Find.
     router.replace('/(tabs)/find');
+    if (choice === 'invite') router.push('/group/invite');
   };
 
   return (

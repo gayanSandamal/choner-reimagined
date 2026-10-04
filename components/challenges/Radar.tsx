@@ -49,7 +49,7 @@ export function Radar({ searching, onPress }: Props) {
         scaleTo="subtle"
         haptic="medium"
         accessibilityRole="button"
-        accessibilityLabel={searching ? 'Looking for your partner' : 'Find a match'}
+        accessibilityLabel={searching ? 'Searching for your partner' : 'Find a match'}
         accessibilityState={{ disabled: searching }}
         style={styles.centerHit}
       >
@@ -60,7 +60,7 @@ export function Radar({ searching, onPress }: Props) {
           style={[styles.center, searching ? styles.centerSearching : styles.centerRest]}
         >
           <AppText style={styles.centerText}>
-            {searching ? 'Looking…' : 'Find a\nMatch'}
+            {searching ? 'Searching…' : 'Find a\nMatch'}
           </AppText>
         </LinearGradient>
       </PressableScale>
