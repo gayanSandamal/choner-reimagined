@@ -25,8 +25,6 @@ import {
   getPartnerReflections,
   setMyChallengeHabit,
   setChallengeTarget,
-  getStartingPointStatus,
-  setStartingPoint,
   setCheckinValue,
   joinMatchPool,
   leaveMatchPool,
@@ -202,25 +200,6 @@ export function useSetChallengeTarget() {
   return useMutation({
     mutationFn: setChallengeTarget,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
-    },
-  });
-}
-
-export function useStartingPointStatus(userChallengeId: string | undefined) {
-  return useQuery({
-    queryKey: ['starting-point', userChallengeId],
-    queryFn: () => getStartingPointStatus(userChallengeId!),
-    enabled: Boolean(userChallengeId),
-  });
-}
-
-export function useSetStartingPoint() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: setStartingPoint,
-    onSuccess: (_d, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['starting-point', vars.userChallengeId] });
       queryClient.invalidateQueries({ queryKey: ['my-challenge'] });
     },
   });

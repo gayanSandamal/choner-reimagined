@@ -14,13 +14,9 @@ import {
   useJoinMatchPool,
   useLocations,
   useMyChallenge,
-  useChallengeTemplate,
-  useStartingPointStatus,
-  useSetStartingPoint
+  useChallengeTemplate
 } from '@/features/challenges/hooks';
-import { StartingPointOverlay } from '@/components/challenges/StartingPointOverlay';
-import { challengeHabitTitle } from '@/features/challenges/api';
-import { isDailySearchLimit, isStartingPointRequired } from '@/features/challenges/api';
+import { isDailySearchLimit } from '@/features/challenges/api';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
@@ -39,19 +35,6 @@ export default function FindFormScreen() {
   const templateQ = useChallengeTemplate(challenge?.challenge_template_id);
   const locationsQ = useLocations();
   const joinPool = useJoinMatchPool();
-  const startingPointQ = useStartingPointStatus(challenge?.id);
-  const setStartingPoint = useSetStartingPoint();
-
-  // The spec's gate: a Find request can't be submitted without capability (or
-  // a beginner's starting point) and commitment, because matching quality
-  // depends on both.
-  //
-  // It has to be answerable HERE. Routing to the Home prompt instead is a dead
-  // end for anyone who already tapped "Remind me tomorrow" that day — the
-  // prompt is snoozed, so the one route to satisfying this gate is closed
-  // until tomorrow. Every pre-existing challenge also starts with a null
-  // commitment, so that is the common case, not an edge one.
-  const [askStartingPoint, setAskStartingPoint] = useState(false);
 
   const template = templateQ.data as any;
   const activityKey: string | null = template?.activity_key ?? null;
@@ -126,16 +109,10 @@ export default function FindFormScreen() {
   const onSubmit = async () => {
     if (!challenge?.id) return;
     // No "Where are you starting from?" before searching (#107): on the weekly
-    // model distance and pace are agreed after matching. The sheet is kept
-    // only for a server that still refuses with starting_point_required, until
-    // 202610031000 removes that check.
+    // model distance and pace are agreed after matching.
     try {
       await join();
     } catch (error: any) {
-      if (isStartingPointRequired(error)) {
-        setAskStartingPoint(true);
-        return;
-      }
       if (isDailySearchLimit(error)) {
         notify(
           "That's today's searches",
@@ -365,31 +342,6 @@ export default function FindFormScreen() {
         />
       </View>
 
-      {askStartingPoint && startingPointQ.data ? (
-        <StartingPointOverlay
-          status={startingPointQ.data}
-          habitTitle={challengeHabitTitle(challenge)}
-          busy={setStartingPoint.isPending || joinPool.isPending}
-          onSubmit={async (answer) => {
-            try {
-              await setStartingPoint.mutateAsync({
-                userChallengeId: challenge.id,
-                capability: answer.capability ?? null,
-                beginnerStart: answer.beginnerStart ?? null,
-                commitment: answer.commitment
-              });
-              setAskStartingPoint(false);
-              // Straight on into the search they actually asked for, rather
-              // than making them press "Start looking" a second time.
-              await join();
-            } catch (error: any) {
-              setAskStartingPoint(false);
-              notify('Could not save that', error.message);
-            }
-          }}
-          onDismiss={() => setAskStartingPoint(false)}
-        />
-      ) : null}
     </SafeAreaView>
   );
 }

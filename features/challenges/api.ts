@@ -410,55 +410,6 @@ export async function getPartnerReflections(partnerId: string): Promise<Reflecti
 // human does the pairing. Nothing here auto-matches.
 // ============================================================
 
-// ============================================================
-// The Home starting-point prompt ("Where are you starting from?")
-// ============================================================
-
-export interface BeginnerOption {
-  // Null is the "Not sure" choice — a beginner who can't estimate still gets
-  // to move on rather than being forced to invent a number.
-  value: number | null;
-  label: string;
-}
-
-export interface StartingPointStatus {
-  needs_prompt: boolean;
-  answered?: boolean;
-  capability_value?: number | null;
-  beginner_start_value?: number | null;
-  commitment_value?: number | null;
-  metric_type?: 'distance' | 'duration' | 'reps' | null;
-  unit?: string | null;
-  default_target?: number | null;
-  beginner_options?: BeginnerOption[];
-  activity_key?: string | null;
-}
-
-export async function getStartingPointStatus(userChallengeId: string) {
-  const { data, error } = await (supabase.rpc as any)('get_starting_point_status', {
-    p_user_challenge_id: userChallengeId
-  });
-  if (error) throw error;
-  return data as StartingPointStatus;
-}
-
-// Capability null + beginnerStart set = the "I'm new to this" branch. All
-// three null is a dismiss, which only stamps the date so it returns tomorrow.
-export async function setStartingPoint(payload: {
-  userChallengeId: string;
-  capability?: number | null;
-  beginnerStart?: number | null;
-  commitment?: number | null;
-}) {
-  const { error } = await (supabase.rpc as any)('set_starting_point', {
-    p_user_challenge_id: payload.userChallengeId,
-    p_capability: payload.capability ?? null,
-    p_beginner_start: payload.beginnerStart ?? null,
-    p_commitment: payload.commitment ?? null
-  });
-  if (error) throw error;
-}
-
 // Onboarding Step 8 — "how much / how often". Same owner-only update pattern
 // as setPartnerState below. Mode defaults to the template's forced_mode when
 // the activity doesn't leave it to the user (e.g. Badminton is always
@@ -520,14 +471,6 @@ export async function joinMatchPool(
   });
   if (error) throw error;
   return data as string;
-}
-
-// The server refuses a request without capability/commitment — matching
-// quality depends on them. The client routes to the Home prompt instead of
-// showing a raw Postgres error.
-export function isStartingPointRequired(error: unknown): boolean {
-  const message = (error as { message?: string } | null)?.message ?? '';
-  return message.includes('starting_point_required');
 }
 
 export async function leaveMatchPool(userChallengeId: string) {
