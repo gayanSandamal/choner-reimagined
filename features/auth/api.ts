@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase';
 import { SignInInput, SignUpInput } from './schema';
+import { signUpOutcome } from './sign-up-result';
 
 // Supabase answers "Invalid login credentials" for BOTH a wrong password and
 // an email with no account — deliberately, so nobody can probe which addresses
@@ -46,7 +47,13 @@ export async function signUp(values: SignUpInput) {
   });
   if (error) throw error;
 
-  if (!data.session) {
+  const outcome = signUpOutcome(data.user, Boolean(data.session));
+  if (outcome === 'already_registered') {
+    // No email was sent. Same wording Supabase uses when confirmation is off,
+    // so authErrorMessage() gives the one "try signing in" message for both.
+    throw new Error('User already registered');
+  }
+  if (outcome === 'needs_verification') {
     // Email confirmation required — sign in will fail until verified.
     return { needsVerification: true } as const;
   }
