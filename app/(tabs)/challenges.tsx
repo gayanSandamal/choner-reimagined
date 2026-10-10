@@ -259,7 +259,7 @@ export default function ChallengesScreen() {
         {/* History: finished challenges. Not tappable. */}
         {history.length ? (
           <View style={styles.history}>
-            <AppText style={styles.historyTitle}>HISTORY</AppText>
+            <AppText style={styles.historyTitle}>History</AppText>
             {history.map((h) => (
               <View key={h.id} style={styles.historyRow}>
                 <AppText style={styles.historyActivity}>{h.title ?? 'A challenge'}</AppText>
@@ -276,16 +276,31 @@ export default function ChallengesScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
   content: { padding: 22, paddingBottom: theme.spacing(5) },
+  // .p-h1: 24 / 300 / ls -.5 / lh 1.28 (choner-challenges-tab.html:117). The
+  // size and weight were right; the tracking and leading were missing.
   pageTitle: {
     fontFamily: theme.fonts.body,
     fontSize: 24,
+    letterSpacing: -0.5,
+    lineHeight: 31,
     color: theme.colors.text,
     marginBottom: theme.spacing(2)
   },
   empty: { gap: theme.spacing(1.5), paddingVertical: theme.spacing(4) },
   emptyPair: { fontSize: 15, color: theme.colors.primary2, fontFamily: theme.fonts.bodyMedium },
-  emptyTitle: { fontSize: 22, color: theme.colors.text },
-  emptyBody: { fontSize: 14, lineHeight: 20, color: theme.colors.muted },
+  emptyTitle: {
+    fontFamily: theme.fonts.bodyMedium,
+    fontSize: 20,
+    letterSpacing: -0.3,
+    lineHeight: 25,
+    color: theme.colors.text
+  },
+  emptyBody: {
+    fontFamily: theme.fonts.bodyRegular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: theme.colors.muted
+  },
   next: {
     backgroundColor: theme.colors.surface,
     borderRadius: 18,
@@ -295,8 +310,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(253,131,2,0.28)',
     gap: 8
   },
-  nextHeading: { fontSize: 19, color: theme.colors.text },
-  nextBody: { fontSize: 13, lineHeight: 19, color: theme.colors.muted },
+  nextHeading: { fontFamily: theme.fonts.bodyMedium, fontSize: 19, color: theme.colors.text },
+  nextBody: {
+    fontFamily: theme.fonts.bodyRegular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: theme.colors.muted
+  },
   history: {
     marginTop: theme.spacing(2),
     paddingTop: theme.spacing(2),
@@ -304,8 +324,14 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.border,
     gap: theme.spacing(1.5)
   },
-  historyTitle: { fontSize: 10, letterSpacing: 1.2, color: theme.colors.muted },
+  historyTitle: {
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: theme.colors.muted
+  },
   historyRow: { gap: 2 },
-  historyActivity: { fontSize: 15, color: theme.colors.text },
-  historyMeta: { fontSize: 12, color: theme.colors.muted }
+  historyActivity: { fontFamily: theme.fonts.bodyMedium, fontSize: 15, color: theme.colors.text },
+  historyMeta: { fontFamily: theme.fonts.bodyRegular, fontSize: 12, color: theme.colors.muted }
 });

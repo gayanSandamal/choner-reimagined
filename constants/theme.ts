@@ -131,6 +131,7 @@ export const theme = {
   // ("What are you **starting with?**"), which is the prototype's signature.
   fonts: {
     body: 'Poppins_300Light',
+    bodyRegular: 'Poppins_400Regular',
     bodyMedium: 'Poppins_500Medium',
     bodyBold: 'Poppins_600SemiBold',
     display: 'Poppins_300Light',

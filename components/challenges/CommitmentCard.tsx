@@ -50,7 +50,7 @@ export function CommitmentCard({
           result of picking something, finding someone and agreeing a plan,
           so it is not used before all three have happened. */}
       <AppText style={styles.eyebrow}>
-        {partnered ? (agreed ? 'YOUR COMMITMENT' : 'YOU FOUND YOUR MATCH') : "LET'S MAKE IT HAPPEN"}
+        {partnered ? (agreed ? 'Your commitment' : 'You found your match') : "Let's make it happen"}
       </AppText>
       <AppText style={styles.activity}>{activity}</AppText>
       {exercises.length ? (
@@ -103,10 +103,31 @@ const styles = StyleSheet.create({
     overflow: 'hidden'
   },
   top: { padding: 18, gap: 4 },
-  eyebrow: { fontSize: 10, letterSpacing: 1.2, color: theme.colors.muted, marginBottom: 2 },
-  activity: { fontSize: 22, color: theme.colors.text },
-  detail: { fontSize: 14, color: theme.colors.text },
-  lock: { fontSize: 12, marginTop: 4 },
+  // Against the prototype. Every one of these used to set a size and no
+  // fontFamily, so they all rendered Poppins 300 Light via AppText's `body`
+  // default — which is why the card read as uniformly thin (#122).
+  //
+  //   .h-eb      11 / 600 / ls .9 / uppercase / --g2   (app_a.html:208)
+  //   .h-title   20 / 500 / ls -.3 / lh 1.25           (app_a.html:209)
+  //   .amt       12.5 / muted                          (ch_css.css:7)
+  //   .dtx small 12 / muted                            (app_a.html:279)
+  eyebrow: {
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 11,
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+    color: theme.colors.primary2,
+    marginBottom: 2
+  },
+  activity: {
+    fontFamily: theme.fonts.bodyMedium,
+    fontSize: 20,
+    letterSpacing: -0.3,
+    lineHeight: 25,
+    color: theme.colors.text
+  },
+  detail: { fontFamily: theme.fonts.bodyRegular, fontSize: 12.5, color: theme.colors.muted },
+  lock: { fontFamily: theme.fonts.bodyRegular, fontSize: 12, marginTop: 4 },
   partner: {
     padding: 18,
     paddingTop: 14,
@@ -114,6 +135,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.border
   },
-  partnerLine: { fontSize: 13, color: theme.colors.muted },
-  pair: { fontSize: 16, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium }
+  partnerLine: { fontFamily: theme.fonts.bodyRegular, fontSize: 13, color: theme.colors.muted },
+  // .youg is 13, with only the NAME inside it at weight 500. partnerRow()
+  // returns one plain string, so the line takes a single weight; splitting the
+  // name out is a change to features/challenges/history.ts and not this issue.
+  pair: { fontFamily: theme.fonts.bodyMedium, fontSize: 13, color: theme.colors.text }
 });
