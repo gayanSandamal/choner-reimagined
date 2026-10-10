@@ -63,7 +63,18 @@ export async function signUp(values: SignUpInput) {
       id: data.user.id,
       full_name: values.fullName,
     });
-    if (profileError) throw profileError;
+    // Deliberately not thrown (#126). By this point the account exists and the
+    // session is live, so throwing showed "Sign up failed" to someone who was
+    // already signed in, and their next attempt hit "already registered" - a
+    // dead end with no way forward.
+    //
+    // Nothing is actually lost: on_auth_user_created (202605241200) already
+    // inserts the profile row and reads full_name out of raw_user_meta_data,
+    // which is the same options.data passed above. This upsert is belt and
+    // braces, so a failure is worth a line in the log and nothing more.
+    if (profileError) {
+      console.warn('[signUp] profile upsert failed, continuing:', profileError.message);
+    }
   }
   return { needsVerification: false } as const;
 }
