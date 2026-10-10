@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button } from '@/components/ui/button';
+import { AuthTopBar } from '@/components/auth/AuthTopBar';
 import { AuthCenteredHeader } from '@/components/auth/AuthFormParts';
 import { resendVerification } from '@/features/auth/api';
 import { theme } from '@/constants/theme';
@@ -28,6 +29,14 @@ export default function VerifyEmailScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
+      {/* Back to the form they just filled in, not the shared
+          goBackOrWelcome(): sign-up arrives here with router.replace, so
+          there is no history entry and the shared helper would land on
+          welcome instead (#127). */}
+      {/* "Create account", not "Check your email": the bar names the flow and
+          the page heading names the step, as on sign-up, and this is still
+          step two of creating an account. */}
+      <AuthTopBar title="Create account" onBack={() => router.replace('/(auth)/sign-up')} />
       <ScrollView contentContainerStyle={styles.content}>
         <Animated.View entering={FadeInDown.delay(80).duration(360)}>
           <AuthCenteredHeader
@@ -62,5 +71,6 @@ export default function VerifyEmailScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
-  content: { flexGrow: 1, padding: 20, gap: 14, paddingTop: 40 }
+  // No paddingTop: 40 any more, the bar occupies that space now.
+  content: { flexGrow: 1, padding: 20, gap: 14 }
 });

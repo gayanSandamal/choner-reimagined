@@ -69,7 +69,9 @@ export function AppTopBar({ accessory }: { accessory?: ReactNode } = {}) {
       <View style={styles.right}>
         {accessory}
         <PressableScale
-          onPress={() => router.push('/(tabs)/profile')}
+          // navigate, not push: Profile is a sibling tab, and pushing it
+          // stacked a history entry on every avatar tap (#124).
+          onPress={() => router.navigate('/(tabs)/profile')}
           scaleTo="subtle"
           haptic="selection"
           accessibilityRole="button"

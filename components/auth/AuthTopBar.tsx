@@ -7,12 +7,14 @@ import { theme } from '@/constants/theme';
 
 // The floating navy bar the sign-in and sign-up prototypes open with: back
 // arrow left, screen title centred, a spacer right so the title stays centred.
-export function AuthTopBar({ title }: { title: string }) {
+// onBack overrides the default for a screen that was reached by replace()
+// and so has no history to go back to.
+export function AuthTopBar({ title, onBack }: { title: string; onBack?: () => void }) {
   return (
     <View style={styles.bar}>
       <PressableScale
         haptic="light"
-        onPress={goBackOrWelcome}
+        onPress={onBack ?? goBackOrWelcome}
         style={styles.slot}
         hitSlop={8}
         accessibilityRole="button"

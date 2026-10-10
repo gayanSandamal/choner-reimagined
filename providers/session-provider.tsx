@@ -43,21 +43,29 @@ export function SessionProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     let cancelled = false;
 
+    // Every exit sets loading false, including a throw. Without the catch a
+    // network failure on boot left the app on the splash screen for good,
+    // because nothing else clears it (#126).
     const restore = async () => {
-      const { data } = await supabase.auth.getSession();
-      const stored = data.session ?? null;
-      // Nothing stored: normal signed-out boot, no server round trip needed.
-      if (!stored) {
-        if (!cancelled) {
-          setSession(null);
-          setLoading(false);
+      try {
+        const { data } = await supabase.auth.getSession();
+        const stored = data.session ?? null;
+        // Nothing stored: normal signed-out boot, no server round trip needed.
+        if (!stored) {
+          if (!cancelled) setSession(null);
+          return;
         }
-        return;
+        const stillValid = await validateStoredSession();
+        if (cancelled) return;
+        setSession(stillValid ? stored : null);
+      } catch {
+        // Could not reach the server. Leave whatever is stored alone and let
+        // the app decide from it, exactly as validateStoredSession does for an
+        // inconclusive answer: signing someone out over dropped wifi is worse.
+        if (!cancelled) setSession(null);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      const stillValid = await validateStoredSession();
-      if (cancelled) return;
-      setSession(stillValid ? stored : null);
-      setLoading(false);
     };
 
     restore();
@@ -71,9 +79,14 @@ export function SessionProvider({ children }: PropsWithChildren) {
     // how a ghost session survives a DB reset. Re-check on the way back in.
     const appStateSub = AppState.addEventListener('change', (next) => {
       if (next !== 'active') return;
-      supabase.auth.getSession().then(({ data: current }) => {
-        if (current.session) validateStoredSession();
-      });
+      // Caught: this runs every time the app comes back to the foreground,
+      // including right after iOS dismisses the push-permission dialog, and an
+      // unhandled rejection there is the console error in #126. Nothing to do
+      // about a failed check but try again next time.
+      supabase.auth
+        .getSession()
+        .then(({ data: current }) => (current.session ? validateStoredSession() : null))
+        .catch(() => undefined);
     });
 
     return () => {
