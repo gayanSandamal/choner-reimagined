@@ -392,18 +392,26 @@ function Pill({
       accessibilityRole="radio"
       accessibilityState={{ selected: active }}
       accessibilityLabel={label}
-      style={[styles.pill, active && styles.pillActive]}
+      style={[active ? styles.pillActive : styles.pill]}
     >
-      {/* The prototype's .pill.on: the button gradient, not flat orange. */}
+      {/* The prototype's .pill.on swaps the BACKGROUND (choner-find-flow.html
+          :139-140). Drawing the gradient as an absoluteFill child instead
+          meant the pill had to clip it, and overflow:'hidden' + a 999 radius
+          + elevation squared the corners off on Android — but only while
+          selected, because that was the only state that clipped (#120).
+          The gradient is the surface now, so nothing clips. */}
       {active ? (
         <LinearGradient
           colors={theme.gradients.warm as unknown as readonly [string, string]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      ) : null}
-      <AppText style={[styles.pillLabel, active && styles.pillLabelActive]}>{label}</AppText>
+          style={styles.pillFill}
+        >
+          <AppText style={[styles.pillLabel, styles.pillLabelActive]}>{label}</AppText>
+        </LinearGradient>
+      ) : (
+        <AppText style={styles.pillLabel}>{label}</AppText>
+      )}
     </PressableScale>
   );
 }
@@ -464,7 +472,22 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface
   },
-  pillActive: { borderColor: 'transparent', overflow: 'hidden', ...theme.shadow.glow, shadowOpacity: 0.25, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
+  // Selected keeps the same 1.5 border, transparent, so the box is identical
+  // in both states and the row cannot reflow on selection.
+  pillActive: {
+    borderRadius: theme.radius.pill,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    ...theme.shadow.glow,
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 }
+  },
+  pillFill: {
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    borderRadius: theme.radius.pill
+  },
   areaChip: {
     flexDirection: 'row',
     alignItems: 'center',
