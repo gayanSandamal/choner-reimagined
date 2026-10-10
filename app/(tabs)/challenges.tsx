@@ -1,5 +1,4 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
@@ -125,19 +124,28 @@ export default function ChallengesScreen() {
     ])
   );
 
+  // Both of these used to drop AppTopBar entirely, so the bar vanished while
+  // the screen loaded and reappeared when it settled (#121). They carry it
+  // now, with the same clearance the loaded branch leaves.
   if (challengeQ.isLoading) {
     return (
-      <SafeAreaView style={styles.root}>
-        <LoadingState />
-      </SafeAreaView>
+      <View style={styles.root}>
+        <AppTopBar />
+        <View style={{ paddingTop: topBar.clearance }}>
+          <LoadingState />
+        </View>
+      </View>
     );
   }
 
   if (challengeQ.isError) {
     return (
-      <SafeAreaView style={styles.root}>
-        <ErrorState message={(challengeQ.error as Error).message} onRetry={() => challengeQ.refetch()} />
-      </SafeAreaView>
+      <View style={styles.root}>
+        <AppTopBar />
+        <View style={{ paddingTop: topBar.clearance }}>
+          <ErrorState message={(challengeQ.error as Error).message} onRetry={() => challengeQ.refetch()} />
+        </View>
+      </View>
     );
   }
 

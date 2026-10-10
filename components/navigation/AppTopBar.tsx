@@ -22,8 +22,14 @@ import { theme } from '@/constants/theme';
 // bar, 16 in from each side, 14/16 padding, at least 60 tall, radius 24. The
 // page scrolls underneath it and .content.tb starts 82 below the status bar
 // (the bar's 60 plus a 22 gap).
-const BAR_HEIGHT = 60;
-const GAP_BELOW = 22;
+// Exported, because six other files were guessing at them. Anything drawing
+// this pill, or leaving room below it, reads these rather than its own numbers
+// (#121).
+export const TOP_BAR_HEIGHT = 60;
+export const TOP_BAR_GAP = 22;
+
+const BAR_HEIGHT = TOP_BAR_HEIGHT;
+const GAP_BELOW = TOP_BAR_GAP;
 
 // What a tab's scroll view needs so its content starts below the floating bar
 // and still scrolls up behind it.
@@ -50,6 +56,36 @@ export function useTopBar() {
     };
   }
   return { clearance, contentTop: clearance, progressViewOffset: clearance, scrollProps: {} };
+}
+
+// How far below the status bar a page's content has to start to clear the
+// floating pill. Named to mirror useTabBarClearance().
+export function useTopBarClearance() {
+  const insets = useSafeAreaInsets();
+  return insets.top + TOP_BAR_HEIGHT + TOP_BAR_GAP;
+}
+
+// The same pill, for a screen that needs a back arrow and a title instead of
+// the wordmark and your face. Floats exactly as AppTopBar does, so content
+// scrolls underneath it rather than stopping at its edge — which is the
+// difference the Find form was missing (#121).
+export function TopBarPill({
+  left,
+  title,
+  right
+}: {
+  left?: ReactNode;
+  title: string;
+  right?: ReactNode;
+}) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.bar, { top: insets.top }]}>
+      <View style={styles.slot}>{left}</View>
+      <AppText style={styles.pillTitle}>{title}</AppText>
+      <View style={styles.slot}>{right}</View>
+    </View>
+  );
 }
 
 export function AppTopBar({ accessory }: { accessory?: ReactNode } = {}) {
@@ -105,6 +141,14 @@ const styles = StyleSheet.create({
     ...theme.shadow.lg
   },
   right: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  slot: { minWidth: 28, alignItems: 'center', justifyContent: 'center' },
+  pillTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 16,
+    color: theme.colors.onNavy
+  },
   logo: { fontFamily: theme.fonts.bodyBold, fontSize: 16, color: theme.colors.onNavy },
   dot: { color: theme.colors.primary }
 });

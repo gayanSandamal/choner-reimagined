@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TopBarPill, useTopBarClearance } from '@/components/navigation/AppTopBar';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/ui/AppText';
@@ -34,6 +35,7 @@ export default function FindFormScreen() {
   const challenge = challengeQ.data as any;
   const templateQ = useChallengeTemplate(challenge?.challenge_template_id);
   const locationsQ = useLocations();
+  const clearance = useTopBarClearance();
   const joinPool = useJoinMatchPool();
 
   const template = templateQ.data as any;
@@ -126,29 +128,34 @@ export default function FindFormScreen() {
 
   if (challengeQ.isLoading || templateQ.isLoading) {
     return (
-      <SafeAreaView style={styles.root}>
+      <SafeAreaView style={styles.root} edges={['bottom', 'left', 'right']}>
         <LoadingState />
       </SafeAreaView>
     );
   }
 
+  // edges without 'top': the pill positions itself against insets.top, so
+  // letting SafeAreaView pad the top as well would count it twice.
   return (
-    <SafeAreaView style={styles.root}>
-      <View style={styles.topbar}>
-        <PressableScale
-          onPress={() => router.back()}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          style={styles.backSlot}
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.colors.onNavy} />
-        </PressableScale>
-        <AppText style={styles.topbarTitle}>Find</AppText>
-        <View style={styles.backSlot} />
-      </View>
+    <SafeAreaView style={styles.root} edges={['bottom', 'left', 'right']}>
+      <TopBarPill
+        title="Find"
+        left={
+          <PressableScale
+            onPress={() => router.back()}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
+            <Ionicons name="chevron-back" size={20} color={theme.colors.onNavy} />
+          </PressableScale>
+        }
+      />
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: clearance }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <AppText variant="label" muted style={styles.eyebrow}>
           Find a partner{template?.title ? `, ${template.title}` : ''}
         </AppText>
@@ -418,20 +425,8 @@ function Pill({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
-  topbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.navy,
-    borderRadius: 24,
-    marginHorizontal: 16,
-    marginTop: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    ...theme.shadow.lg
-  },
-  backSlot: { width: 20 },
-  topbarTitle: { color: theme.colors.onNavy, fontFamily: theme.fonts.bodyBold, fontSize: 16 },
+  // No local top bar any more: TopBarPill draws it, floating, from the one
+  // place the geometry lives (#121). paddingTop comes from useTopBarClearance.
   content: { padding: 20, gap: theme.spacing(1), paddingBottom: theme.spacing(4) },
   eyebrow: { textTransform: 'uppercase', letterSpacing: 1 },
   emphasis: { fontFamily: theme.fonts.bodyBold },
