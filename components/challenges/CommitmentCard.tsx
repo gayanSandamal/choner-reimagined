@@ -23,7 +23,8 @@ export function CommitmentCard({
   partnerFirstName,
   agreed,
   onChangeActivity,
-  onOpenFind
+  onOpenFind,
+  showPartnerRow = true
 }: {
   activity: string;
   // Workouts only. Empty for everything else.
@@ -38,6 +39,9 @@ export function CommitmentCard({
   agreed: boolean;
   onChangeActivity: () => void;
   onOpenFind: () => void;
+  // Find renders this card too, and its partner row's handoff button says
+  // "Find a match" — which on Find points at the screen you are already on.
+  showPartnerRow?: boolean;
 }) {
   const solo = partnerState === 'solo';
   const partnered = partnerState === 'partnered';
@@ -83,12 +87,16 @@ export function CommitmentCard({
         <View style={styles.top}>{body}</View>
       )}
 
-      <View style={styles.partner}>
-        {row.line ? (
-          <AppText style={row.kind === 'partnered' ? styles.pair : styles.partnerLine}>{row.line}</AppText>
-        ) : null}
-        {row.kind === 'handoff' ? <Button label={row.button} onPress={onOpenFind} /> : null}
-      </View>
+      {showPartnerRow ? (
+        <View style={styles.partner}>
+          {row.line ? (
+            <AppText style={row.kind === 'partnered' ? styles.pair : styles.partnerLine}>
+              {row.line}
+            </AppText>
+          ) : null}
+          {row.kind === 'handoff' ? <Button label={row.button} onPress={onOpenFind} /> : null}
+        </View>
+      ) : null}
     </View>
   );
 }
