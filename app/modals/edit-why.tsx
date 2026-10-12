@@ -4,7 +4,8 @@ import { router } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { Icon } from '@/components/ui/Icon';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { ReflectionQuestionList } from '@/components/challenges/ReflectionQuestionList';
 import {
@@ -56,7 +57,24 @@ export default function EditWhyModal() {
 
   return (
     <Screen scroll={false} contentStyle={styles.screen}>
-      <ScreenHeader title="Why you're doing this" onClose={() => router.back()} />
+      {/* The prototype's .hdr for a modal (app_b.js:712, bar and nav both
+          empty): the title at 16/600 on the left, a plain close on the right.
+          Not the shared ScreenHeader, whose 44px circled button and Light-300
+          title are the "old style" in #135. ScreenHeader is on 17 other
+          screens, so it is left alone here rather than restyled app-wide. */}
+      <View style={styles.hdr}>
+        <AppText style={styles.hdrTitle}>Why you&apos;re doing this</AppText>
+        <PressableScale
+          haptic="light"
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={() => router.back()}
+          style={styles.hdrClose}
+        >
+          <Icon name="x" size={20} color={theme.colors.muted} strokeWidth={2} />
+        </PressableScale>
+      </View>
       {reflectionsQ.isLoading ? (
         <LoadingState />
       ) : reflectionsQ.isError ? (
@@ -71,9 +89,7 @@ export default function EditWhyModal() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <AppText muted>
-              Change these any time. They stay private to you.
-            </AppText>
+            <AppText style={styles.sub}>Change these any time. They stay private to you.</AppText>
             <ReflectionQuestionList
               draft={draft ?? emptyDraft()}
               onChange={setDraft}
@@ -96,6 +112,24 @@ export default function EditWhyModal() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, gap: 0 },
-  content: { gap: theme.spacing(3), paddingBottom: theme.spacing(3), flexGrow: 1 },
+  // .hdr: row, centred, 2 above and 18 below.
+  hdr: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2, marginBottom: 18 },
+  // .ht: 16/600, taking the row.
+  hdrTitle: {
+    flex: 1,
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 16,
+    color: theme.colors.text
+  },
+  hdrClose: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  // .p-sub: 13, muted, 1.55 line height, 20 below.
+  sub: {
+    fontFamily: theme.fonts.bodyRegular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: theme.colors.muted,
+    marginBottom: 4
+  },
+  content: { gap: theme.spacing(2), paddingBottom: theme.spacing(3), flexGrow: 1 },
   footer: { paddingTop: theme.spacing(1) }
 });

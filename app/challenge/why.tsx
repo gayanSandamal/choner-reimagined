@@ -5,7 +5,6 @@ import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/Card';
 import { LoadingState } from '@/components/ui/StateViews';
 import { ReflectionQuestionList } from '@/components/challenges/ReflectionQuestionList';
 import { useOnboarding } from '@/features/onboarding/context';
@@ -94,24 +93,32 @@ export default function WhyScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Animated.View entering={FadeInDown.duration(360)} style={styles.header}>
-          <AppText variant="label" muted>
+          <AppText variant="label" muted style={styles.eyebrow}>
             {isInvitee ? "You're in" : 'Your first challenge'}
           </AppText>
-          <AppText variant="title">Before you start, let's get clear on why.</AppText>
-          <AppText muted>
-            We'll bring one of these back to you each day, so the reason is there on the days
-            it's hard.
+          {/* The house copy ladder (app/find/form.tsx): eyebrow, a title whose
+              point carries a bold span, then a muted line. The title used to be
+              one flat Light-300 string, which is the "old style" in #135. */}
+          <AppText variant="title">
+            Before you start, let&apos;s get clear on{' '}
+            <AppText style={styles.emphasis}>why</AppText>.
+          </AppText>
+          <AppText style={styles.sub}>
+            We&apos;ll bring one of these back to you each day, so the reason is there on the
+            days it&apos;s hard.
           </AppText>
         </Animated.View>
 
         {habit ? (
           <Animated.View entering={FadeInDown.delay(100).duration(360)}>
-            <Card style={styles.habitCard}>
-              <AppText variant="subtitle">{habit}</AppText>
-              <AppText variant="caption" muted>
-                {isInvitee ? "Your partner's challenge, you're doing it together" : null}
-              </AppText>
-            </Card>
+            <View style={styles.habitCard}>
+              <AppText style={styles.habitTitle}>{habit}</AppText>
+              {isInvitee ? (
+                <AppText style={styles.habitSub}>
+                  Your partner&apos;s challenge, you&apos;re doing it together
+                </AppText>
+              ) : null}
+            </View>
           </Animated.View>
         ) : null}
 
@@ -142,6 +149,30 @@ const styles = StyleSheet.create({
     flexGrow: 1
   },
   header: { gap: theme.spacing(1) },
-  habitCard: { gap: theme.spacing(0.5) },
+  eyebrow: { textTransform: 'uppercase', letterSpacing: 1 },
+  emphasis: { fontFamily: theme.fonts.bodyBold },
+  sub: {
+    fontFamily: theme.fonts.bodyRegular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: theme.colors.muted
+  },
+  // The borderless shadow.sm card the current screens use, not Card's
+  // bordered default (#135).
+  habitCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 3,
+    ...theme.shadow.sm
+  },
+  habitTitle: { fontFamily: theme.fonts.bodyMedium, fontSize: 15, color: theme.colors.text },
+  habitSub: {
+    fontFamily: theme.fonts.bodyRegular,
+    fontSize: 12.5,
+    lineHeight: 17,
+    color: theme.colors.muted
+  },
   footer: { padding: 20, paddingTop: theme.spacing(1), gap: theme.spacing(1) }
 });
