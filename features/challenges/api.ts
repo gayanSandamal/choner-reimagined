@@ -56,6 +56,14 @@ export async function getMyChallenge(userId: string) {
     .eq('user_id', userId)
     .in('status', ['active', 'pending', 'paused'])
     .order('started_at', { ascending: false })
+    // Tie-break on id (#132). Nothing stops a user holding two live rows, and
+    // started_at defaults to now(), so rows provisioned in one transaction tie
+    // exactly. A LIMIT 1 over a tie picks arbitrarily — and can pick
+    // DIFFERENTLY after an UPDATE, because the updated tuple moves in the heap.
+    // That is a read and a write landing on different rows: you change your
+    // activity, the write hits one row, the card reads the other, and nothing
+    // appears to have happened.
+    .order('id', { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
@@ -115,16 +123,27 @@ export async function setMyChallengeHabit(payload: {
   customHabitTitle?: string | null;
 }) {
   const existing = await getMyChallenge(payload.userId);
-  if (!existing?.id) {
-    await ensureUserChallenge({
+  const userChallengeId =
+    existing?.id ??
+    (await ensureUserChallenge({
       userId: payload.userId,
       templateId: payload.templateId,
       customHabitTitle: payload.customHabitTitle
-    });
-    return;
+    }));
+
+  // Never return having written nothing (#132). The old shape returned right
+  // after ensureUserChallenge, and ensure_user_challenge is IDEMPOTENT: handed
+  // a user who already has a live row it returns that row's id and repoints
+  // nothing. So any time the read above missed a row that in fact existed,
+  // this function resolved successfully, the screen invalidated, navigated
+  // back, and the activity was unchanged — a save that reported success and
+  // did nothing.
+  if (!userChallengeId) {
+    throw new Error('Could not find a challenge to change.');
   }
+
   await setChallengeHabit({
-    userChallengeId: existing.id,
+    userChallengeId,
     templateId: payload.templateId,
     customHabitTitle: payload.customHabitTitle
   });
