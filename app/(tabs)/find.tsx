@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
@@ -10,8 +11,8 @@ import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { LoadingState } from '@/components/ui/StateViews';
 import { Radar } from '@/components/challenges/Radar';
-import { CommitmentCard } from '@/components/challenges/CommitmentCard';
 import { Icon } from '@/components/ui/Icon';
+import { activityIcon } from '@/components/home/activityIcons';
 import { MatchOffer } from '@/components/find/MatchOffer';
 import { MatchedCard } from '@/components/find/MatchedCard';
 import { challengeHabitTitle, partnerStateOf, setPartnerState } from '@/features/challenges/api';
@@ -170,7 +171,7 @@ export default function FindScreen() {
             isCustomHabit={isCustomHabit}
             hasChallenge={Boolean(challenge)}
             habit={habit}
-            exercises={((challenge as any)?.exercises as string[] | null) ?? []}
+            activityKey={(challenge?.challenge_templates?.activity_key as string | null) ?? null}
             onStart={onFind}
           />
         )}
@@ -212,6 +213,64 @@ function DirectoryRow() {
   );
 }
 
+// The prototype's .ccard2 (app_b.js:779): the commitment on Find is a COMPACT
+// ROW — a 42px gradient icon tile, the activity, one line of lock copy, and a
+// chevron. ~86pt.
+//
+// #125 reused the Challenges CommitmentCard here instead, which stacks the same
+// information vertically at ~159pt. That single substitution put the landing
+// ~73pt over the screen and is most of why it stopped fitting (#136).
+//
+// Tappable only while solo, same rule as the card it replaces: the activity is
+// locked the moment a search starts.
+function ActivityRow({
+  activity,
+  activityKey,
+  locked,
+  onPress
+}: {
+  activity: string;
+  activityKey: string | null;
+  locked: boolean;
+  onPress: () => void;
+}) {
+  const icon = activityIcon(activityKey) ?? 'target';
+  const body = (
+    <>
+      <LinearGradient
+        colors={theme.gradients.warm as unknown as readonly [string, string]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.actIcon}
+      >
+        <Icon name={icon} size={22} color="#FFFFFF" strokeWidth={1.8} />
+      </LinearGradient>
+      <View style={styles.actText}>
+        <AppText style={styles.actTitle}>{activity}</AppText>
+        <AppText style={styles.actSub}>
+          {locked
+            ? "Locked while you're looking for a match"
+            : 'You can change this until you start searching for a match'}
+        </AppText>
+      </View>
+      {locked ? null : <Icon name="chev" size={16} color={theme.colors.dim} strokeWidth={2} />}
+    </>
+  );
+
+  if (locked) return <View style={styles.actRow}>{body}</View>;
+  return (
+    <PressableScale
+      haptic="selection"
+      accessibilityRole="button"
+      accessibilityLabel={`${activity}. Change your activity`}
+      onPress={onPress}
+      style={styles.actRow}
+    >
+      {body}
+    </PressableScale>
+  );
+}
+
 // Everything below the radar, in the prototype's order (app_b.js:773-775):
 // the "or" divider, a full-width outline INVITE, then the small code link.
 // The directory is not here — it goes last, after all of it.
@@ -248,13 +307,13 @@ function LandingState({
   isCustomHabit,
   hasChallenge,
   habit,
-  exercises,
+  activityKey,
   onStart
 }: {
   isCustomHabit: boolean;
   hasChallenge: boolean;
   habit: string | null;
-  exercises: string[];
+  activityKey: string | null;
   onStart: () => void;
 }) {
   if (!hasChallenge) {
@@ -293,20 +352,14 @@ function LandingState({
           them is a claim about the pool the app can't back up. */}
       <AppText style={styles.sub}>Someone else is looking for you too.</AppText>
 
-      {/* The same card as Challenges, activity only: how much and how often
-          are agreed with a partner at the first plan. No partner row, because
-          its handoff button points at this very screen. */}
-      <CommitmentCard
+      {/* Activity only: how much and how often are agreed with a partner at
+          the first plan. A compact row, not the Challenges card — see
+          ActivityRow. */}
+      <ActivityRow
         activity={habit ?? 'Your commitment'}
-        exercises={exercises}
-        amounts={null}
-        cadence={null}
-        partnerState="solo"
-        partnerFirstName={null}
-        agreed={false}
-        onChangeActivity={() => router.push('/challenge/browse')}
-        onOpenFind={() => undefined}
-        showPartnerRow={false}
+        activityKey={activityKey}
+        locked={false}
+        onPress={() => router.push('/challenge/browse')}
       />
 
       <Radar searching={false} onPress={onStart} />
@@ -437,12 +490,15 @@ function InvitedState({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
   content: { paddingHorizontal: 22, paddingBottom: theme.spacing(5) },
+  // The prototype's .p-h1 with its inline override: no top margin at all, and
+  // 4 below (app_b.js:784). The 12 that used to sit on top is exactly the
+  // "Find sits further down from the top bar than the prototype" in #136 —
+  // the 22pt gap under the bar is already the specified one.
   pageTitle: {
     fontFamily: theme.fonts.body,
     fontSize: 24,
     color: theme.colors.text,
-    marginTop: theme.spacing(1.5),
-    marginBottom: theme.spacing(2.5)
+    marginBottom: 4
   },
   block: { gap: theme.spacing(1.5) },
   heading: { fontSize: 20, color: theme.colors.text, textAlign: 'center' },
@@ -467,6 +523,40 @@ const styles = StyleSheet.create({
   orlRule: { flex: 1, height: 1, backgroundColor: theme.colors.border },
   orlWord: { fontSize: 12, color: theme.colors.muted },
   // .dlink (app_a.html:300-302)
+  // The prototype's .ccard2: a 42px gradient tile, the activity, one line of
+  // lock copy, a chevron. padding 14/16, radius 18, 16 below. ~86pt all in.
+  actRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    width: '100%',
+    backgroundColor: theme.colors.surface,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    ...theme.shadow.sm
+  },
+  actIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  actText: { flex: 1, minWidth: 0 },
+  actTitle: {
+    fontFamily: theme.fonts.bodyMedium,
+    fontSize: 15,
+    color: theme.colors.text
+  },
+  actSub: {
+    fontFamily: theme.fonts.bodyRegular,
+    fontSize: 12.5,
+    lineHeight: 17,
+    color: theme.colors.muted,
+    marginTop: 3
+  },
   dlink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -487,7 +577,8 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.bodyMedium,
     color: theme.colors.text
   },
-  doors: { marginTop: theme.spacing(2) },
+  // No top margin: the "or" divider inside already carries its own 14 (#136).
+  doors: {},
   links: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 22, rowGap: 10 },
   link: { color: theme.colors.primary2, fontSize: 13, fontFamily: theme.fonts.bodyMedium },
   searchStatus: { alignItems: 'center', marginTop: 6, marginBottom: 22 },

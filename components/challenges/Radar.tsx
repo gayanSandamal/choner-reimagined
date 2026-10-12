@@ -14,7 +14,8 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { theme } from '@/constants/theme';
 import { useReduceMotion } from '@/lib/motion';
 
-const SIZE = 250;
+// The prototype's .radar: 230x230, margin 10px auto 6px (#136).
+const SIZE = 230;
 const CENTER = 104;
 // The CSS keyframes grow each ring 104px -> 250px. Animating width/height in
 // RN re-lays-out every frame; scaling a fixed 250px ring from this factor to 1
@@ -57,7 +58,7 @@ export function Radar({ searching, onPress }: Props) {
           colors={searching ? (['#FD8302', '#FD4E01'] as const) : (['#FDA340', '#FD7A02'] as const)}
           start={{ x: 0.15, y: 0 }}
           end={{ x: 0.85, y: 1 }}
-          style={[styles.center, searching ? styles.centerSearching : styles.centerRest]}
+          style={styles.center}
         >
           <AppText style={styles.centerText}>
             {searching ? 'Searching…' : 'Find a\nMatch'}
@@ -119,7 +120,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10
+    marginTop: 10,
+    marginBottom: 6
   },
   ring: {
     position: 'absolute',
@@ -137,20 +139,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  centerRest: {
-    shadowColor: '#FD5B01',
-    shadowOpacity: 0.28,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8
-  },
-  centerSearching: {
-    shadowColor: '#FD5B01',
-    shadowOpacity: 0.5,
-    shadowRadius: 32,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 12
-  },
+  // No orange shadow here either. These were two hand-written copies of the
+  // retired theme.shadow.glow — same #FD5B01 — which is why grepping the token
+  // did not find them. They were applied straight to the LinearGradient, a view
+  // with no opaque backgroundColor, so iOS could not build a rounded shadowPath
+  // and traced the gradient's rectangle instead: a square haze behind a round
+  // button. See DECISIONS_LOG 2026-10-12.
   centerText: {
     color: '#FFFFFF',
     fontFamily: theme.fonts.bodyBold,
