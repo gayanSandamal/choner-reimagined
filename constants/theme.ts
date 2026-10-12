@@ -97,6 +97,12 @@ export const theme = {
       shadowOffset: { width: 0, height: 10 },
       elevation: 8
     },
+    // RETIRED 2026-10-12 everywhere but the verified-email checkmark.
+    // Only apply this to a view with an OPAQUE backgroundColor: without one,
+    // iOS cannot build a rounded shadowPath and traces the child's RECTANGLE
+    // instead, which is what it did behind every button. Android draws its own
+    // grey elevation shadow and ignores shadowColor, so this was never orange
+    // there at all. See DECISIONS_LOG 2026-10-12.
     glow: {
       shadowColor: '#FD5B01',
       shadowOpacity: 0.32,

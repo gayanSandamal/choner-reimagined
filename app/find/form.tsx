@@ -472,11 +472,7 @@ const styles = StyleSheet.create({
   pillActive: {
     borderRadius: theme.radius.pill,
     borderWidth: 1.5,
-    borderColor: 'transparent',
-    ...theme.shadow.glow,
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 }
+    borderColor: 'transparent'
   },
   pillFill: {
     paddingVertical: 11,

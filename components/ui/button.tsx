@@ -125,9 +125,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
+  // No shadow: the orange glow is retired app-wide (see DECISIONS_LOG).
   gradientWrap: {
-    borderRadius: theme.radius.button,
-    ...theme.shadow.glow
+    borderRadius: theme.radius.button
   },
   gradientFill: {
     borderRadius: theme.radius.button,

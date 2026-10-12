@@ -1962,3 +1962,54 @@ ALSO RECORDED AT THE TOP OF THE PLAN: three branches are still unmerged, and the
 one that matters is proto/editable-commitment. The artifacts are current; the
 prototype SOURCES on main are several versions behind them. Anyone reading
 docs/prototypes/src/ today is reading 30 September.
+
+---
+
+## 2026-10-12 (shadows) — The orange glow is retired app-wide
+
+**Reverses 2026-09-2x "button glow stays" (line 37 of this log).** That decision
+was right about the value: `theme.shadow.glow` matched the artifact's
+`0 10px 26px rgba(253,91,1,.32)` exactly. It was wrong about whether the value
+could be drawn.
+
+WHAT WENT WRONG: the glow could not render as designed on either platform.
+
+- **iOS** only draws a rounded shadow when the view has an opaque
+  `backgroundColor`. `gradientWrap` in `button.tsx` has none — the
+  `LinearGradient` child is the surface. So iOS traced the shadow from the
+  child's alpha, which is a full **rectangle**, and drew a blurred rectangle
+  behind a pill-shaped button: wider than the button, bleeding over the card
+  above and the hint text below, with hard vertical edges. Confirmed on device.
+- **Android** draws its own grey elevation shadow from `elevation: 10` and
+  ignores `shadowColor` on most versions, so the "orange glow" was a dark
+  smudge there and never orange at all.
+
+WHY IT ONLY SURFACED NOW: `gradientWrap` also carried `overflow: 'hidden'`,
+which sets `masksToBounds` on iOS and suppresses a layer's own shadow. The glow
+was specified but never drawn. #120 removed `overflow: 'hidden'` so the
+corners would stop squaring off on Android, and that un-suppressed a shadow
+that had been dead code. **The artifact is a regression from #120, not a
+pre-existing fault.**
+
+WHAT THE AUDIT FOUND: of seven usages, the glow rendered **correctly in one**.
+Buttons and the selected Find pill drew the rectangle; the premium hero and the
+loading mark were suppressed by their own `overflow: 'hidden'`; `Card`'s `glow`
+and `gradient` variants are dead code with no caller. Only the verified-email
+checkmark circle, which has an opaque background, was right.
+
+DECIDED: remove six of the seven. **The verified-email checkmark is kept** —
+it is the one that drew correctly, because its circle has an opaque
+`backgroundColor` for iOS to build a real rounded shadowPath from. One screen,
+one moment, and it costs nothing to leave right. Lowering the opacity was rejected — a fainter
+rectangle is still a rectangle, and it would still be grey on Android.
+
+WHAT THIS IS NOT: the floating navy top bar and tab bar use `shadow.lg`, cards
+use `shadow.md`. Both untouched. The "floating dark frame" identity does not
+come from the glow and does not change. Gradient fills on buttons stay.
+
+COST: the app departs from the prototype's button shadow. Accepted: one
+correct instance out of seven does not justify carrying a platform-divergent
+effect into launch, and that one instance is kept.
+
+The token stays in `constants/theme.ts`, marked RETIRED with the reason, so the
+values survive and reapplying it is a deliberate act rather than an accident.
