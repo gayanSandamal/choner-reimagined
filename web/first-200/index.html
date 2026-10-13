@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The First 200 | Choner</title>
+<meta name="description" content="Choner helps you stay consistent with the healthy habits you want to build. We're bringing together the first 200 people ready to stop starting over.">
+<meta property="og:title" content="The First 200 | Choner">
+<meta property="og:description" content="We're bringing together the first 200 people ready to stop starting over.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap">
+<style>
+  /* ============ design tokens, copied from the real Choner app ============ */
+  :root{
+    --paper:#FDFCFB; --card:#FFFFFF; --ink:#1C2B33; --pmuted:#7C8C96; --dim:#D8D2CC; --pline:#EFEDEA;
+    --g1:#FD8302; --g2:#FD5B01; --navy:#001827; --green:#2E9E6B; --red:#C0392B;
+    --shadow-soft:0 2px 10px rgba(28,43,51,.06);
+    --shadow-card:0 8px 24px rgba(28,43,51,.07);
+    --shadow-btn:0 10px 26px rgba(253,91,1,.32);
+    --shadow-float:0 10px 24px rgba(0,24,39,.28);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'Poppins',-apple-system,system-ui,sans-serif;
+    min-height:100vh;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  button{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--g2);outline-offset:2px;}
+  img{max-width:100%;}
+
+  .shell{max-width:460px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+  /* ============ floating stepbar (the app's onboarding pattern) ============ */
+  .stepbar{
+    background:var(--navy);display:flex;justify-content:space-between;align-items:center;flex:none;
+    padding:16px 20px;margin:16px 16px 0;border-radius:24px;box-shadow:var(--shadow-float);
+  }
+  .back{background:none;border:none;color:#fff;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;padding:0;}
+  .back:disabled{opacity:.3;cursor:default;}
+  .back svg{width:20px;height:20px;}
+  .dots{display:flex;gap:6px;align-items:center;}
+  .dots i{width:7px;height:7px;border-radius:99px;background:rgba(255,255,255,.3);display:block;}
+  .dots i.on{width:22px;background:linear-gradient(135deg,var(--g1),var(--g2));}
+  .dots i.done{background:rgba(255,255,255,.7);}
+
+  .content{flex:1;padding:26px 22px 24px;display:flex;flex-direction:column;}
+  .steplbl{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--pmuted);margin-bottom:8px;}
+  .p-h1{font-size:25px;font-weight:300;letter-spacing:-.5px;line-height:1.28;margin-bottom:8px;text-wrap:balance;}
+  .p-h1 b{font-weight:600;color:var(--g2);}
+  .p-sub{font-size:13.5px;color:var(--pmuted);font-weight:300;line-height:1.55;margin-bottom:22px;}
+
+  /* ============ fields ============ */
+  .fld{display:flex;flex-direction:column;gap:9px;margin-bottom:14px;}
+  .fld label{font-size:12.5px;font-weight:500;}
+  .fld label span{color:var(--pmuted);font-weight:400;}
+  input.txt,select.txt{
+    width:100%;background:var(--card);border:1.5px solid var(--pline);border-radius:16px;
+    padding:14px 16px;font-family:inherit;font-size:16px;color:var(--ink);box-shadow:var(--shadow-soft);outline:none;
+  }
+  input.txt:focus,select.txt:focus{border-color:var(--g2);}
+  input.txt.bad{border-color:var(--red);}
+  .ferr{font-size:12px;color:var(--red);}
+  select.txt{appearance:none;-webkit-appearance:none;padding-right:44px;}
+  .sel-wrap{position:relative;}
+  .sel-wrap::after{content:'';position:absolute;right:18px;top:50%;width:7px;height:7px;border-right:1.6px solid var(--pmuted);border-bottom:1.6px solid var(--pmuted);transform:translateY(-70%) rotate(45deg);pointer-events:none;}
+
+  /* a field only bots can see. see HONEYPOT below */
+  .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
+
+  /* ============ choice rows ============ */
+  .choice{display:flex;align-items:center;gap:14px;background:var(--card);border:1.5px solid var(--pline);border-radius:18px;padding:15px 16px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow-soft);text-align:left;width:100%;font-family:inherit;color:inherit;}
+  .choice.on{border-color:var(--g2);background:linear-gradient(160deg,rgba(253,131,2,.07),rgba(253,91,1,.02));}
+  .choice .ic{width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;}
+  .choice .ic svg{width:22px;height:22px;color:var(--pmuted);}
+  .choice.on .ic svg{color:var(--g2);}
+  .choice .t{font-size:14px;font-weight:500;}
+  .choice .d{font-size:11.5px;color:var(--pmuted);margin-top:2px;}
+
+  /* ============ pill cards ============ */
+  .prow{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+  .pillcard{display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--card);border:1.5px solid var(--pline);border-radius:18px;padding:14px 8px;cursor:pointer;flex:1;min-width:0;font:inherit;color:var(--ink);box-shadow:var(--shadow-soft);text-align:center;}
+  .pillcard.on{border-color:var(--g2);background:linear-gradient(160deg,rgba(253,131,2,.07),rgba(253,91,1,.02));color:var(--g2);font-weight:600;}
+  .pillcard:disabled{opacity:.38;cursor:default;}
+  .pillcard .t{font-size:13px;}
+  .prow.wrap .pillcard{flex:0 1 auto;padding:11px 15px;}
+
+  /* ============ segmented control ============ */
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--pline);border-radius:999px;padding:3px;box-shadow:var(--shadow-soft);width:100%;margin-bottom:14px;}
+  .seg button{flex:1;border:none;background:none;border-radius:999px;padding:9px 10px;font-size:12.5px;font-weight:500;color:var(--pmuted);cursor:pointer;}
+  .seg button.on{background:var(--navy);color:#fff;}
+
+  .sect{font-size:11px;font-weight:600;color:var(--pmuted);letter-spacing:.6px;text-transform:uppercase;margin:16px 0 10px;}
+  .sect span{text-transform:none;font-weight:400;letter-spacing:0;}
+  .hint{font-size:11.5px;color:var(--pmuted);line-height:1.5;}
+
+  /* ============ buttons ============ */
+  .btn{width:100%;border:none;border-radius:18px;padding:16px 0;font-size:15px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:var(--shadow-btn);cursor:pointer;transition:transform .18s ease;}
+  .btn:active{transform:translateY(1px) scale(.99);}
+  .btn:disabled{opacity:.45;box-shadow:none;cursor:default;}
+  .btn-g{width:100%;border:none;background:none;color:var(--pmuted);font-size:13px;font-weight:500;padding:13px 0;cursor:pointer;}
+  .foot{margin-top:auto;padding-top:18px;display:flex;flex-direction:column;gap:2px;}
+  /* No footer button on the confirmation, so centre it rather than leaving a
+     dead third at the bottom. */
+  .content.done{justify-content:center;}
+  .foot .ferr{text-align:center;padding-bottom:8px;}
+
+  /* ============ cards ============ */
+  .card{background:var(--card);border-radius:20px;padding:18px;box-shadow:var(--shadow-card);}
+  .soft{background:var(--card);border-radius:16px;padding:13px 15px;box-shadow:var(--shadow-soft);font-size:12px;color:var(--pmuted);line-height:1.5;}
+  .soft b{color:var(--ink);font-weight:600;}
+
+  /* ============ consent ============ */
+  .chk{display:flex;gap:10px;align-items:flex-start;margin:10px 0 2px;cursor:pointer;background:none;border:none;text-align:left;font:inherit;color:var(--pmuted);font-size:12px;line-height:1.5;width:100%;}
+  .chk i{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--pline);flex:none;display:flex;align-items:center;justify-content:center;color:#fff;margin-top:1px;background:var(--card);}
+  .chk.on i{background:linear-gradient(135deg,var(--g1),var(--g2));border-color:transparent;}
+  .chk i svg{width:12px;height:12px;}
+  .chk u{color:var(--ink);text-decoration:underline;}
+
+  /* ============ welcome ============ */
+  .welcome{flex:1;display:flex;flex-direction:column;padding:0 22px 14px;}
+  .welcome .sp{flex:1;}
+  .welcome .brand{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;}
+  .wordmark{font-size:40px;font-weight:600;letter-spacing:-1.1px;color:var(--ink);}
+  .wordmark span{color:var(--g1);}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+           background:linear-gradient(135deg,var(--g1),var(--g2));-webkit-background-clip:text;
+           background-clip:text;color:transparent;}
+  .welcome .tag{font-size:14.5px;color:var(--pmuted);line-height:1.6;max-width:300px;font-weight:300;}
+  .welcome .tag b{color:var(--ink);font-weight:500;}
+  .acts{display:flex;flex-direction:column;gap:14px;width:100%;}
+
+  /* ============ confirmation ============ */
+  .center{text-align:center;}
+  .big-ok{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;margin:12px auto 18px;color:#fff;box-shadow:var(--shadow-btn);}
+  .big-ok svg{width:36px;height:36px;}
+  .codebox{border:1.5px dashed var(--dim);border-radius:18px;padding:18px;text-align:center;background:var(--paper);}
+  .codebox .lbl{font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--pmuted);margin-bottom:6px;}
+  .codebox .code{font-size:27px;font-weight:700;letter-spacing:2px;
+                 font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+                 user-select:all;-webkit-user-select:all;}
+  .summary{font-size:13px;color:var(--pmuted);line-height:1.6;text-align:center;margin-top:14px;}
+  .summary b{color:var(--ink);font-weight:600;}
+  .btn.row{display:flex;align-items:center;justify-content:center;gap:9px;}
+  .btn.row svg{width:18px;height:18px;}
+  .btn-link{width:100%;border:none;background:none;color:var(--pmuted);font-size:13px;font-weight:500;padding:12px 0 2px;cursor:pointer;}
+  .btn-link.done{color:var(--green);font-weight:600;}
+  .reass{text-align:center;font-size:11.5px;color:var(--pmuted);margin-top:10px;line-height:1.5;}
+  .reass b{color:var(--ink);font-weight:600;}
+
+  /* ============ the intro: one dark screen, as in the app ============
+     The app's onboarding opens on #001827 with warm radial glows. Matching it
+     here means the web app and the app open on the same image, and orange
+     only glows on navy. On paper it goes muddy. Step 1 returns to the paper. */
+  body.on-dark{background:var(--navy);}
+  .welcome.dark{
+    position:relative;overflow:hidden;color:#fff;
+    /* Painted once as a gradient rather than a blurred element: filter:blur()
+       on a looping layer is what actually drains a mid-range Android. */
+    background:
+      radial-gradient(58% 40% at 16% 76%, rgba(253,131,2,.22), transparent 70%),
+      radial-gradient(54% 38% at 88% 20%, rgba(253,91,1,.24), transparent 70%),
+      var(--navy);
+  }
+  .welcome.dark .brand{gap:14px;position:relative;z-index:1;}
+  /* A pool of the ground colour under the copy, so whatever passes behind the
+     words dims as it crosses them. .brand carries z-index:1, so this sits in
+     .brand's stacking context and therefore ABOVE .sig, which is what makes
+     it work, and why the opacity matters: much past .5 and it stops dimming
+     the line and starts deleting it. */
+  .welcome.dark .brand::before{
+    content:'';position:absolute;z-index:-1;inset:-24px -20px;
+    background:radial-gradient(58% 46% at 50% 50%, rgba(0,24,39,.5), transparent 62%);
+  }
+  .welcome.dark .acts{position:relative;z-index:1;}
+  .welcome.dark .wordmark{font-size:28px;color:#fff;}
+  .ask{font-size:26px;font-weight:300;line-height:1.3;letter-spacing:-.6px;max-width:320px;text-wrap:balance;margin-top:2px;}
+  .ask b{font-weight:600;background:linear-gradient(135deg,var(--g1),var(--g2));
+         -webkit-background-clip:text;background-clip:text;color:transparent;}
+  /* balance, so a short line does not strand one word on its own */
+  .welcome.dark .tag{font-size:13.5px;color:rgba(255,255,255,.72);max-width:320px;line-height:1.6;text-wrap:balance;}
+  .welcome.dark .tag.quiet{color:rgba(255,255,255,.52);}
+  .welcome.dark .btn{box-shadow:0 14px 30px rgba(253,91,1,.4);}
+
+  /* ---- "two signals finding each other" ----------------------------------
+     A 7s loop on ONE shared timeline: every element starts at delay 0 and
+     occupies its own slice of the cycle, so nothing drifts out of step and
+     no tail bleeds into the next pass.
+
+       0.0s  one dot pulses. alone.
+       1.2s  it pulses again. the repetition is the point
+       2.4s  a second dot arrives, deliberately out of sync
+       3.9s  a line draws between them
+       4.4s  both pulse together, full brightness. the payoff.
+       6.5s  fade back to one dot
+
+     Only transform and opacity animate. Both are composited, so the whole
+     loop costs no repaint. */
+  .sig{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+  .sig circle{transform-box:fill-box;transform-origin:50% 50%;}
+  .sig .ring,.sig .halo{fill:none;stroke:var(--g1);stroke-width:1.1;opacity:0;}
+  .sig .halo{stroke-width:.9;}
+  .sig .dot{fill:var(--g1);opacity:.75;}
+  .sig .link{stroke:url(#linkGrad);stroke-width:1;stroke-dasharray:360;stroke-dashoffset:360;opacity:0;}
+
+  .sig .a1{animation:sigA1 7s linear infinite;}
+  .sig .a2{animation:sigA2 7s linear infinite;}
+  .sig .nb{animation:sigNodeB 7s linear infinite;}
+  .sig .b1{animation:sigB1 7s linear infinite;}
+  .sig .sync{animation:sigSync 7s linear infinite;}
+  .sig .dot{animation:sigFlash 7s linear infinite;}
+  .sig .halo{animation:sigHalo 7s linear infinite;}
+  .sig .link{animation:sigLink 7s linear infinite;}
+
+  @keyframes sigA1{
+    0%{transform:scale(.3);opacity:0} 3%{opacity:.45}
+    17%,100%{transform:scale(1);opacity:0}
+  }
+  @keyframes sigA2{
+    0%,17%{transform:scale(.3);opacity:0} 20%{opacity:.45}
+    34%,100%{transform:scale(1);opacity:0}
+  }
+  /* B holds back until A has pulsed twice: the loneliness has to register
+     before the relief does. */
+  @keyframes sigNodeB{
+    0%,34%{opacity:0} 41%{opacity:1} 90%{opacity:1} 100%{opacity:0}
+  }
+  @keyframes sigB1{
+    0%,34%{transform:scale(.3);opacity:0} 38%{opacity:.4}
+    55%,100%{transform:scale(1);opacity:0}
+  }
+  @keyframes sigLink{
+    0%,56%{stroke-dashoffset:360;opacity:0}
+    58%{opacity:.3} 66%{stroke-dashoffset:0}
+    72%{opacity:.42} 88%{stroke-dashoffset:0;opacity:.3} 96%,100%{opacity:0}
+  }
+  /* The only moment at full strength. One payoff per loop, or it is wallpaper. */
+  @keyframes sigSync{
+    0%,63%{transform:scale(.3);opacity:0} 67%{opacity:.8}
+    86%,100%{transform:scale(1.15);opacity:0}
+  }
+  @keyframes sigFlash{
+    0%,63%{transform:scale(1);opacity:.75}
+    68%{transform:scale(1.9);opacity:1}
+    78%,100%{transform:scale(1);opacity:.75}
+  }
+  @keyframes sigHalo{
+    0%,63%{transform:scale(.25);opacity:0} 71%{opacity:.2}
+    93%,100%{transform:scale(1);opacity:0}
+  }
+
+  /* The last frame, held still: two dots and the line between them. */
+  @media (prefers-reduced-motion: reduce){
+    .sig *{animation:none !important;}
+    .sig .ring{opacity:.16;transform:scale(1);}
+    .sig .halo{opacity:.1;transform:scale(1);}
+    .sig .nb{opacity:1;}
+    .sig .dot{opacity:.9;transform:scale(1);}
+    .sig .link{stroke-dashoffset:0;opacity:.3;}
+  }
+
+  @media (min-width:600px){
+    body{padding-top:40px;padding-bottom:40px;}
+    .shell{min-height:auto;border-radius:28px;box-shadow:0 30px 60px rgba(0,10,20,.12);overflow:hidden;background:var(--paper);}
+    body.on-dark .shell{background:var(--navy);}
+  }
+</style>
+</head>
+<body>
+
+<div class="shell" id="app"></div>
+
+<script>
+/* =========================================================
+   CHONER | The First 200
+
+   Tokens, fonts and component classes are copied from the real
+   Choner app so the two look like one product.
+
+   Every vocabulary list below is the APP'S list, not an
+   approximation: activity_key values, the 70 location slugs,
+   the five time-of-day slots, the nine exercises and the quiz
+   enums all match what the database will accept. Changing one
+   here without changing it in the app breaks the join.
+
+   See docs/FIRST_200_BUILD_SPEC.md.
+========================================================== */
+
+/* ---------- the one thing to set before deploying ---------- */
+const ENDPOINT = 'https://bkncpybneoqjnkhhchxg.supabase.co/functions/v1/register-first-200';
+
+/* Where the page lives, for the referral link. Fixed rather than read from
+   location: on a file:// or data: URL origin is the string "null", and at
+   .../join/index.html the filename would ride along in every shared link. */
+const SHARE_BASE = 'https://join.choner.io/';
+
+const ic = (n, sw) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw||1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
+const IC = {
+  back:'<path d="M15 5l-7 7 7 7"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  run:'<circle cx="14.5" cy="4.5" r="1.6" fill="currentColor" stroke="none"/><path d="M10 21l1.6-5.4L9 14l1.2-4.4c.3-1 1.1-1.6 2-1.5l3 .4 2.6 2.6M14.5 9.1l-1.6 4 2.4 1.8L14.5 19"/>',
+  sleep:'<path d="M20 14.5A8 8 0 119.5 4a6.3 6.3 0 1010.5 10.5z"/>',
+  leaf:'<path d="M5 19c0-8 5-13 14-14 0 9-5 14-14 14zM5 19l8-8"/>',
+  bolt:'<path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" stroke-linejoin="round"/>',
+  redo:'<path d="M4 9a8 8 0 0114-4.9M20 15a8 8 0 01-14 4.9"/><path d="M18 3v5h-5M6 21v-5h5"/>',
+  community:'<circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="8" r="2.6"/><path d="M2.5 19c0-3.3 2.9-5.6 6.5-5.6s6.5 2.3 6.5 5.6"/><path d="M17 13.4c2.6 0 4.5 1.9 4.5 4.4"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  cloud:'<path d="M7 15a4 4 0 01.6-7.9A5 5 0 0117 9a3 3 0 010 6H7zM9 18l-1 2M13 18l-1 2M17 18l-1 2"/>',
+  together:'<circle cx="8" cy="8" r="2.6"/><circle cx="16" cy="8" r="2.6"/><path d="M4 20c0-3.3 2-5.6 4-5.6M20 20c0-3.3-2-5.6-4-5.6"/><path d="M9.5 12.5l2.5 2 2.5-2"/>',
+  separate:'<rect x="3" y="6" width="7" height="12" rx="1.5"/><rect x="14" y="6" width="7" height="12" rx="1.5"/>',
+  walk:'<circle cx="13" cy="4.5" r="1.6"/><path d="M11 21l1.5-6-2.5-2 1-5 3 1 2 3M8 12l-1 3M15 11l3 2"/>',
+  bike:'<circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-7h5l3 7M10 9l-1.5-3H6M15 9l-2 7"/>',
+  dumb:'<path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1"/>',
+  share:'<path d="M12 15V3M12 3L8 7M12 3l4 4"/><path d="M5 12v7a1 1 0 001 1h12a1 1 0 001-1v-7"/>',
+};
+
+/* ---------- the quiz, from features/onboarding/constants.ts ---------- */
+const GOALS = [
+  ['move_more','Move more','Build an active routine','run'],
+  ['sleep_better','Sleep better','Rest and recover well','sleep'],
+  ['reduce_stress','Reduce stress','Feel calmer day to day','leaf'],
+  ['improve_energy','Improve energy','Stay sharp and focused','bolt'],
+];
+const STRUGGLES = [
+  ['start_but_stop','I start but stop','Good intentions, hard to stay consistent','redo'],
+  ['lack_accountability','I lack accountability','No one keeping me on track','community'],
+  ['too_busy',"I'm too busy",'Life gets in the way every time','clock'],
+  ['overwhelmed','I feel overwhelmed',"Don't even know where to begin",'cloud'],
+];
+const AGES = [['18-24','18 to 24'],['25-34','25 to 34'],['35-44','35 to 44'],['45-54','45 to 54'],['55+','55+']];
+const GENDERS = [['male','Male'],['female','Female'],['prefer_not_to_say','Prefer not to say']];
+
+/* mode: user_challenges.mode, plus 'either' for the pool preference. */
+const MODES = [
+  ['together','Together','Meet up in person for sessions','together'],
+  ['either','Either works','Open to either, whatever fits that day','community'],
+  ['separate','Separately, together','Same commitment, your own place','separate'],
+];
+
+/* The SIX ACTIVE templates, in the app's sort_order. Keys are activity_key,
+   which is what matching reads. Note Workouts stores 'home_workouts'.
+   Badminton is NOT here: its template exists but is_active = false. */
+const ACTIVITIES = [
+  ['running','Running','run'],
+  ['jogging','Jogging','run'],
+  ['walking','Walking','walk'],
+  ['cycling','Cycling','bike'],
+  ['yoga','Yoga','leaf'],
+  ['home_workouts','Workouts','dumb'],
+];
+
+/* features/challenges/exercises.ts. Free text, stored as written. */
+const EXERCISES = ['Push-ups','Squats','Lunges','Sit-ups','Pull-ups','Plank','Burpees','Jumping jacks','Stretching routine'];
+const MAX_EXERCISES = 4;
+
+/* matching.ts SLOT_ORDER. Multi-select here: the app stores one slot and
+   blocks an in-person pair whose slots differ, but someone free in the
+   morning OR the evening is matchable with both camps, and in a pool this
+   thin that is the difference between a pair and none. */
+const TIMES = [
+  ['early_morning','Early morning'],
+  ['morning','Morning'],
+  ['afternoon','Afternoon'],
+  ['evening','Evening'],
+  ['night','Night'],
+];
+
+/* public.locations, verbatim. value = the slug stored in the database,
+   label = what the app displays, so the two read identically. */
+const COLOMBO_CITY = [
+  ['fort','Fort (Colombo 1)'],['slave_island','Slave Island (Colombo 2)'],
+  ['union_place','Union Place (Colombo 2)'],['kollupitiya','Kollupitiya (Colombo 3)'],
+  ['bambalapitiya','Bambalapitiya (Colombo 4)'],['havelock_town','Havelock Town (Colombo 5)'],
+  ['narahenpita','Narahenpita (Colombo 5)'],['kirulapone_north','Kirulapone North (Colombo 5)'],
+  ['wellawatte','Wellawatte (Colombo 6)'],['pamankada','Pamankada (Colombo 6)'],
+  ['kirulapone_south','Kirulapone South (Colombo 6)'],['cinnamon_gardens','Cinnamon Gardens (Colombo 7)'],
+  ['borella','Borella (Colombo 8)'],['dematagoda','Dematagoda (Colombo 9)'],
+  ['maradana','Maradana (Colombo 10)'],['maligawatta','Maligawatta (Colombo 10)'],
+  ['panchikawatte','Panchikawatte (Colombo 10)'],['pettah','Pettah (Colombo 11)'],
+  ['hulftsdorp','Hulftsdorp (Colombo 12)'],['kotahena','Kotahena (Colombo 13)'],
+  ['kochchikade','Kochchikade (Colombo 13)'],['bloemendhal','Bloemendhal (Colombo 13)'],
+  ['grandpass','Grandpass (Colombo 14)'],['mattakkuliya','Mattakkuliya (Colombo 15)'],
+  ['modara','Modara (Colombo 15)'],['mutwal','Mutwal (Colombo 15)'],
+  ['madampitiya','Madampitiya (Colombo 15)'],
+];
+const GREATER_COLOMBO = [
+  ['ambatale','Ambatale'],['athurugiriya','Athurugiriya'],['batuwatta','Batuwatta'],
+  ['boralesgamuwa','Boralesgamuwa'],['dalugama','Dalugama'],['dehiwala','Dehiwala'],
+  ['hokandara','Hokandara'],['homagama','Homagama'],['ja_ela','Ja-Ela'],
+  ['kadawatha','Kadawatha'],['kaduwela','Kaduwela'],['kalubowila','Kalubowila'],
+  ['kandana','Kandana'],['katunayake','Katunayake'],['kelaniya','Kelaniya'],
+  ['kesbewa','Kesbewa'],['kohuwala','Kohuwala'],['kolonnawa','Kolonnawa'],
+  ['koswatte','Koswatte'],['kotikawatta','Kotikawatta'],['kottawa','Kottawa'],
+  ['maharagama','Maharagama'],['malabe','Malabe'],['mattegoda','Mattegoda'],
+  ['moratuwa','Moratuwa'],['mount_lavinia','Mount Lavinia'],['mulleriyawa','Mulleriyawa'],
+  ['nawala','Nawala'],['nugegoda','Nugegoda'],['oruwala','Oruwala'],
+  ['pannipitiya','Pannipitiya'],['pelawatte','Pelawatte'],['peliyagoda','Peliyagoda'],
+  ['piliyandala','Piliyandala'],['ragama','Ragama'],['rajagiriya','Rajagiriya'],
+  ['ratmalana','Ratmalana'],['kotte','Sri Jayawardenepura Kotte'],
+  ['thalawathugoda','Thalawathugoda'],['wattala','Wattala'],['welikada','Welikada'],
+  ['wickramasinghapura','Wickramasinghapura'],
+];
+/* 25 districts. 'colombo_other' is a Colombo address outside the 69 above. */
+const SL_DISTRICTS = [
+  ['colombo_other','Colombo (outside the areas above)'],
+  ['gampaha','Gampaha'],['kalutara','Kalutara'],['kandy','Kandy'],['matale','Matale'],
+  ['nuwara_eliya','Nuwara Eliya'],['galle','Galle'],['matara','Matara'],
+  ['hambantota','Hambantota'],['jaffna','Jaffna'],['kilinochchi','Kilinochchi'],
+  ['mannar','Mannar'],['vavuniya','Vavuniya'],['mullaitivu','Mullaitivu'],
+  ['batticaloa','Batticaloa'],['ampara','Ampara'],['trincomalee','Trincomalee'],
+  ['kurunegala','Kurunegala'],['puttalam','Puttalam'],['anuradhapura','Anuradhapura'],
+  ['polonnaruwa','Polonnaruwa'],['badulla','Badulla'],['monaragala','Monaragala'],
+  ['ratnapura','Ratnapura'],['kegalle','Kegalle'],
+];
+
+const labelOf = (list, v) => (list.find(x => x[0] === v) || [])[1] || '';
+
+/* ---------- state ---------- */
+const ORDER = ['welcome','t1','goal','struggle','agegender','mode','location','activity','confirm'];
+const DOTS  = ['t1','goal','struggle','agegender','mode','location','activity'];
+
+const params = new URLSearchParams(location.search);
+let S = {
+  cur:'welcome',
+  f:{ name:'', email:'', phone:'' }, err:{},
+  goal:null, struggle:null, age:null, gender:null,
+  mode:null, times:[],
+  locArea:'colombo', location:null,
+  activity:null, exercises:[],
+  consentContact:false,
+  busy:false, submitErr:null,
+  accessCode:null, claimToken:null,
+  ref: params.get('ref') || null,
+  src: params.get('src') || null,
+};
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function validEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim()); }
+
+/* Lenient: 07X XXX XXXX, +947..., 947... all arrive. A number we cannot parse
+   is kept as typed rather than dropped: a human will read it. */
+function normalisePhone(v){
+  const d = String(v||'').replace(/[^0-9+]/g,'');
+  if (!d) return null;
+  if (d.charAt(0) === '+') return d;
+  if (d.charAt(0) === '0')  return '+94' + d.slice(1);
+  if (d.slice(0,2) === '94') return '+' + d;
+  return d;
+}
+
+function go(id){ S.cur = id; S.submitErr = null; render(); window.scrollTo(0,0); }
+
+/* ---------- shared pieces ---------- */
+function stepbar(dotId){
+  const idx = DOTS.indexOf(dotId);
+  const d = DOTS.map((id,i) => `<i class="${i===idx?'on':i<idx?'done':''}"></i>`).join('');
+  const canBack = ORDER.indexOf(S.cur) > 1;
+  return `<div class="stepbar"><button class="back" ${canBack?'':'disabled'} data-back="1" aria-label="Back">${ic('back',2.2)}</button><div class="dots">${d}</div><div style="width:32px"></div></div>`;
+}
+const btn = (label, opts={}) => `<button class="btn" ${opts.go?`data-go="${opts.go}"`:''} ${opts.act?`data-act="${opts.act}"`:''} ${opts.dis?'disabled':''}>${label}</button>`;
+const ttl = (n, a, b, sub) => `<div class="steplbl">Step ${n} of ${DOTS.length}</div><div class="p-h1">${a}<b>${b}</b></div><div class="p-sub">${sub}</div>`;
+const rows = (list, field, sel) => list.map(o =>
+  `<button class="choice ${sel===o[0]?'on':''}" data-act="pick" data-field="${field}" data-v="${o[0]}">
+     <div class="ic">${ic(o[3],1.8)}</div><div><div class="t">${o[1]}</div><div class="d">${o[2]}</div></div>
+   </button>`).join('');
+const pills = (list, field, sel) => list.map(o =>
+  `<button class="pillcard ${sel===o[0]?'on':''}" data-act="pick" data-field="${field}" data-v="${o[0]}"><div class="t">${o[1]}</div></button>`).join('');
+
+/* ---------- screens ---------- */
+/* Two points, near opposite corners, so the line between them passes
+   diagonally BEHIND the question rather than above it. The copy is long
+   enough that a block of animation would push the button off a small phone;
+   as a background layer it reads as atmosphere instead of a widget. */
+const SIGNALS = `<svg class="sig" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="linkGrad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#FD8302"/><stop offset="1" stop-color="#FD5B01"/>
+    </linearGradient>
+  </defs>
+  <circle class="halo" cx="200" cy="350" r="170"/>
+  <line class="link" x1="88" y1="486" x2="312" y2="214"/>
+  <circle class="ring a1"   cx="88" cy="486" r="70"/>
+  <circle class="ring a2"   cx="88" cy="486" r="70"/>
+  <circle class="ring sync" cx="88" cy="486" r="70"/>
+  <circle class="dot"       cx="88" cy="486" r="4.5"/>
+  <g class="nb">
+    <circle class="ring b1"   cx="312" cy="214" r="70"/>
+    <circle class="ring sync" cx="312" cy="214" r="70"/>
+    <circle class="dot"       cx="312" cy="214" r="4.5"/>
+  </g>
+</svg>`;
+
+function screenWelcome(){
+  return `<div class="welcome dark">
+    ${SIGNALS}
+    <div class="sp"></div>
+    <div class="brand">
+      <div class="eyebrow">The First 200</div>
+      <div class="wordmark">choner<span>.</span></div>
+      <div class="ask">What if someone was <b>counting on you</b> to show up?</div>
+      <div class="tag">Choner helps you stay consistent with the healthy habits you want to build.</div>
+      <div class="tag quiet">Be one of the first 200 to start something different.</div>
+    </div>
+    <div class="sp"></div>
+    <div class="acts">${btn('Count Me In',{go:'t1'})}</div>
+  </div>`;
+}
+
+function screenT1(){
+  const ok = S.f.name.trim().length > 1 && validEmail(S.f.email);
+  return `${stepbar('t1')}<div class="content">
+    ${ttl(1,"Let's get ",'started',"Just the basics for now. Thirty seconds, that's it.")}
+    <div class="fld"><label for="f-name">Your name</label>
+      <input class="txt" id="f-name" type="text" placeholder="Your full name" value="${esc(S.f.name)}" autocomplete="name"></div>
+    <div class="fld"><label for="f-email">Email</label>
+      <input class="txt ${S.err.email?'bad':''}" id="f-email" type="email" placeholder="you@email.com" value="${esc(S.f.email)}" autocomplete="email" inputmode="email">
+      ${S.err.email?`<div class="ferr">${S.err.email}</div>`:''}</div>
+    <div class="fld"><label for="f-phone">Phone <span>optional</span></label>
+      <input class="txt" id="f-phone" type="tel" placeholder="07X XXX XXXX" value="${esc(S.f.phone)}" autocomplete="tel" inputmode="tel"></div>
+
+    <!-- HONEYPOT: off-screen and unlabelled, so no person ever fills it in.
+         A submission that carries it is a bot, and the server drops it. -->
+    <input class="hp" type="text" id="f-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+    <div class="foot">${btn('Continue',{act:'next-t1', dis:!ok})}</div>
+  </div>`;
+}
+
+function screenGoal(){
+  return `${stepbar('goal')}<div class="content">
+    ${ttl(2,"What's your main ",'goal?',"Pick the one that matters most right now. You can change it later.")}
+    ${rows(GOALS,'goal',S.goal)}
+    <div class="foot">${btn('Continue',{act:'next-goal', dis:!S.goal})}</div>
+  </div>`;
+}
+
+function screenStruggle(){
+  return `${stepbar('struggle')}<div class="content">
+    ${ttl(3,"What's stopped you ",'before?',"Most people pick the first two. You're not alone.")}
+    ${rows(STRUGGLES,'struggle',S.struggle)}
+    <div class="foot">${btn('Continue',{act:'next-struggle', dis:!S.struggle})}</div>
+  </div>`;
+}
+
+function screenAgeGender(){
+  return `${stepbar('agegender')}<div class="content">
+    ${ttl(4,'How old are ','you?','Helps us pair you with someone at a similar stage.')}
+    <div class="prow">${pills(AGES.slice(0,3),'age',S.age)}</div>
+    <div class="prow">${pills(AGES.slice(3),'age',S.age)}</div>
+    <div class="sect">What's your gender?</div>
+    <div class="prow">${pills(GENDERS,'gender',S.gender)}</div>
+    <div class="foot">${btn('Continue',{act:'next-agegender', dis:!(S.age && S.gender)})}</div>
+  </div>`;
+}
+
+function screenMode(){
+  return `${stepbar('mode')}<div class="content">
+    ${ttl(5,'How do you want to ','show up?','This decides who you could be matched with.')}
+    ${rows(MODES,'mode',S.mode)}
+    <div class="sect">When do you usually go?</div>
+    <div class="prow wrap">${TIMES.map(([v,l]) =>
+      `<button class="pillcard ${S.times.includes(v)?'on':''}" data-act="time" data-v="${v}"><div class="t">${l}</div></button>`).join('')}</div>
+    <div class="hint">Pick as many as work for you. More options means more people we can pair you with.</div>
+    <div class="foot">${btn('Continue',{act:'next-mode', dis:!(S.mode && S.times.length)})}</div>
+  </div>`;
+}
+
+function screenLocation(){
+  const opt = ([v,l]) => `<option value="${v}" ${S.location===v?'selected':''}>${esc(l)}</option>`;
+  const opts = S.locArea === 'colombo'
+    ? `<optgroup label="Colombo City">${COLOMBO_CITY.map(opt).join('')}</optgroup>
+       <optgroup label="Greater Colombo">${GREATER_COLOMBO.map(opt).join('')}</optgroup>`
+    : SL_DISTRICTS.map(opt).join('');
+
+  /* mode is step 4, so the answer is already known. 'separate' and 'either'
+     have no geographic constraint at all, so telling those people they are "on
+     file" would be both discouraging and untrue. */
+  const note = S.locArea !== 'other' ? '' : `<div class="soft">${
+    S.mode === 'together'
+      ? "In-person sessions start in the Colombo area. You can still be matched now if you're open to <b>Separately, together</b>: same commitment, your own place."
+      : "<b>Separately, together</b> works anywhere in Sri Lanka. You and your partner keep the same commitment in your own places, so your district doesn't limit who you match with."
+  }</div>`;
+
+  return `${stepbar('location')}<div class="content">
+    ${ttl(6,'Where are ','you based?','Together sessions need somewhere to meet. Separately, together works anywhere.')}
+    <div class="seg">
+      <button class="${S.locArea==='colombo'?'on':''}" data-act="locarea" data-v="colombo">Colombo area</button>
+      <button class="${S.locArea==='other'?'on':''}" data-act="locarea" data-v="other">Elsewhere in Sri Lanka</button>
+    </div>
+    <div class="fld"><label for="f-loc">${S.locArea==='colombo'?'Your area':'Your district'}</label>
+      <div class="sel-wrap"><select class="txt" id="f-loc">
+        <option value="" ${!S.location?'selected':''} disabled>Select one</option>${opts}
+      </select></div></div>
+    ${note}
+    <div class="foot">${btn('Continue',{act:'next-location', dis:!S.location})}</div>
+  </div>`;
+}
+
+function screenActivity(){
+  const needsEx = S.activity === 'home_workouts';
+  const ok = S.activity && S.consentContact && (!needsEx || S.exercises.length);
+  return `${stepbar('activity')}<div class="content">
+    ${ttl(7,'One more thing. ','What activity?',"We'll suggest this as your first commitment.")}
+    ${ACTIVITIES.map(a =>
+      `<button class="choice ${S.activity===a[0]?'on':''}" data-act="pick-activity" data-v="${a[0]}">
+         <div class="ic">${ic(a[2],1.8)}</div>
+         <div><div class="t">${a[1]}</div><div class="d">Together or separately</div></div>
+       </button>`).join('')}
+
+    ${needsEx ? `
+      <div class="sect">Which exercises? <span>up to ${MAX_EXERCISES}</span></div>
+      <div class="prow wrap">${EXERCISES.map(e => {
+        const on = S.exercises.includes(e);
+        const full = S.exercises.length >= MAX_EXERCISES && !on;
+        return `<button class="pillcard ${on?'on':''}" data-act="ex" data-v="${esc(e)}" ${full?'disabled':''}><div class="t">${esc(e)}</div></button>`;
+      }).join('')}</div>
+      <div class="hint">These show on your card. They don't affect who you're matched with. That's the activity and how long.</div>` : ''}
+
+    <div class="sect" style="margin-bottom:4px;">Before you finish</div>
+    <div class="hint" style="margin-bottom:8px;">We'll use your answers to look for someone
+      compatible, and show them your first name and activity. Nothing else.</div>
+    <button class="chk ${S.consentContact?'on':''}" data-act="consent" data-v="contact" type="button">
+      <i>${S.consentContact?ic('check',3):''}</i>
+      <span>I agree to be contacted by Choner by email or phone, and to Choner's <u>Privacy policy</u>.</span></button>
+
+    <div class="foot">
+      ${S.submitErr?`<div class="ferr">${esc(S.submitErr)}</div>`:''}
+      ${btn(S.busy?'Saving&hellip;':'Finish',{act:'finish', dis:!ok || S.busy})}
+    </div>
+  </div>`;
+}
+
+function screenConfirm(){
+  const refUrl = `${SHARE_BASE}${S.claimToken?'?ref='+S.claimToken:''}`;
+  const where = (S.locArea === 'colombo'
+    ? labelOf(COLOMBO_CITY.concat(GREATER_COLOMBO), S.location)
+    : labelOf(SL_DISTRICTS, S.location)).replace(/\s*\(.*\)$/, '');
+  const how = S.mode === 'together' ? 'together'
+            : S.mode === 'separate' ? 'separately, together' : 'either way';
+  const when = S.times.map(t => labelOf(TIMES,t).toLowerCase()).join(', ');
+
+  return `<div class="content done">
+    <div class="center">
+      <div class="big-ok">${ic('check',2.6)}</div>
+      <div class="p-h1">You're <b>in.</b></div>
+      <div class="p-sub">You're one of The First 200. We'll be in touch before Choner goes online.</div>
+    </div>
+
+    <div class="codebox">
+      <div class="lbl">Your code</div>
+      <div class="code">${esc(S.accessCode || '')}</div>
+    </div>
+    <div class="reass">Sign up with <b>${esc(S.f.email)}</b> and we'll know you already.
+      The code is here in case you use a different address, and it's in your inbox too.</div>
+
+    <!-- Their own answers, read back. Proves we listened, and costs nothing. -->
+    <div class="summary"><b>${esc(labelOf(ACTIVITIES,S.activity))}</b> &middot; ${esc(how)}${where?' &middot; '+esc(where):''}${when?' &middot; '+esc(when):''}</div>
+
+    <div class="card" style="margin-top:22px;">
+      <div class="sect" style="margin-top:0;">Invite someone</div>
+      <button class="btn row" data-act="share">${ic('share',2)}<span>Share my invite</span></button>
+      <button class="btn-link" id="copyBtn" data-act="copy-ref">Copy link instead</button>
+      <!-- The URL is not printed. Truncated in a box it looked broken, and
+           nobody types a 48-character token by hand anyway. -->
+      <input class="hp" type="text" readonly value="${esc(refUrl)}" id="refInput" tabindex="-1" aria-hidden="true">
+      <div class="reass">This is literally the whole idea. Someone showing up with you.</div>
+    </div>
+  </div>`;
+}
+
+/* ---------- render ---------- */
+const SCREENS = {
+  welcome:screenWelcome, t1:screenT1, goal:screenGoal, struggle:screenStruggle, agegender:screenAgeGender,
+  mode:screenMode, location:screenLocation, activity:screenActivity, confirm:screenConfirm,
+};
+function render(){
+  // The dark ground is the intro's alone, so it has to reach the body: a
+  // background on .welcome stops at the safe areas and leaves white bands.
+  document.body.classList.toggle('on-dark', S.cur === 'welcome');
+  document.getElementById('app').innerHTML = (SCREENS[S.cur] || screenWelcome)();
+}
+
+/* ---------- the server ---------- */
+async function submitRecord(){
+  const res = await fetch(ENDPOINT, {
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body: JSON.stringify({
+      full_name:S.f.name.trim(),
+      email:S.f.email.trim().toLowerCase(),
+      phone:normalisePhone(S.f.phone),
+      primary_goal:S.goal,
+      main_struggle:S.struggle,
+      age_range:S.age,
+      gender:S.gender,
+      mode:S.mode,
+      times_of_day:S.times,
+      location: S.locArea==='colombo' ? S.location : null,
+      district: S.locArea==='other'   ? S.location : null,
+      activity_key:S.activity,
+      exercises: S.activity==='home_workouts' ? S.exercises : [],
+      consent_contact:S.consentContact,
+      // Records that they reached the step carrying the matching notice, which
+      // only a completed form does. Not a consent: matching is the service
+      // they came for, so it runs on that basis, not on a tickbox.
+      consent_match:!!S.activity,
+      ref:S.ref,
+      source:S.src,
+      website:(document.getElementById('f-website')||{}).value || '',
+    }),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.ok) throw new Error(j.error === 'invalid_email'
+    ? "That email doesn't look right."
+    : "We couldn't save that. Check your connection and try again.");
+  S.accessCode = j.access_code;
+  S.claimToken = j.claim_token;
+}
+
+function copyLink(){
+  const inp = document.getElementById('refInput');
+  const btn = document.getElementById('copyBtn');
+  try {
+    if (navigator.clipboard) navigator.clipboard.writeText(inp.value);
+    else { inp.select(); inp.setSelectionRange(0, 9999); document.execCommand('copy'); }
+  } catch (e) { /* nothing useful to tell them; the sheet or a long-press still works */ }
+  btn.classList.add('done');
+  btn.textContent = 'Link copied';
+  setTimeout(() => { btn.classList.remove('done'); btn.textContent = 'Copy link instead'; }, 1800);
+}
+
+/* ---------- actions ---------- */
+async function act(name, v, field){
+  switch(name){
+    case 'pick': S[field] = v; break;
+
+    case 'pick-activity':
+      S.activity = v;
+      // Leaving Workouts must not strand exercises on a run.
+      if (v !== 'home_workouts') S.exercises = [];
+      break;
+
+    case 'ex': {
+      const i = S.exercises.indexOf(v);
+      if (i >= 0) S.exercises.splice(i, 1);
+      else if (S.exercises.length < MAX_EXERCISES) S.exercises.push(v);
+      break;
+    }
+
+    case 'time': {
+      const i = S.times.indexOf(v);
+      if (i >= 0) S.times.splice(i, 1); else S.times.push(v);
+      break;
+    }
+
+    case 'locarea': S.locArea = v; S.location = null; break;
+
+    case 'consent': S.consentContact = !S.consentContact; break;
+
+    // Save as soon as we have a name and an email. Someone who abandons at
+    // step 5 is otherwise lost completely, and that is the most expensive
+    // loss there is, because the outreach to get them here is already spent.
+    // Fire and forget: a save must never block the step.
+    case 'next-t1':
+      submitRecord().catch(() => {});
+      go('goal');
+      return;
+
+    case 'next-goal':      go('struggle'); return;
+    case 'next-struggle':  go('agegender'); return;
+    case 'next-agegender': go('mode'); return;
+    case 'next-mode':      go('location'); return;
+    case 'next-location':  go('activity'); return;
+
+    // The one place that must NOT navigate optimistically: a confirmation
+    // screen after a failed save tells someone they are on a list they are
+    // not on.
+    case 'finish':
+      S.busy = true; S.submitErr = null; render();
+      try { await submitRecord(); go('confirm'); }
+      catch (e) { S.busy = false; S.submitErr = e.message; render(); }
+      return;
+
+    // The OS share sheet: WhatsApp, Messages, email, and whatever else the
+    // phone has, with no list for us to guess at and keep up to date. Needs
+    // https and a real tap, which this is. Desktop Chrome, Edge and Safari
+    // have it too; anything without falls through to the clipboard.
+    case 'share': {
+      const url = document.getElementById('refInput').value;
+      // The line 200 people send to their friends, so it carries the loop.
+      // Deliberately echoes the intro's question back at the reader.
+      const text = 'What if you had someone to show up with?\nJoin The First 200';
+      if (navigator.share) {
+        try { await navigator.share({ title: 'Choner', text, url }); return; }
+        catch (e) { if (e && e.name === 'AbortError') return; }  // they closed the sheet
+      }
+      copyLink();
+      return;
+    }
+
+    case 'copy-ref': copyLink(); return;
+  }
+  render();
+}
+
+/* ---------- events ---------- */
+const app = document.getElementById('app');
+
+// Typing re-renders only when the Continue button's state would actually
+// change. Re-rendering on every keystroke steals the caret on some Android
+// keyboards, and restoring it is worse than not moving it.
+app.addEventListener('input', e => {
+  const id = e.target.id;
+  if (id === 'f-name')  S.f.name  = e.target.value;
+  else if (id === 'f-email'){ S.f.email = e.target.value; S.err.email = null; }
+  else if (id === 'f-phone') S.f.phone = e.target.value;
+  else return;
+
+  const cont = app.querySelector('.foot .btn');
+  if (!cont) return;
+  const shouldEnable = S.f.name.trim().length > 1 && validEmail(S.f.email);
+  if (cont.disabled === shouldEnable) cont.disabled = !shouldEnable;
+});
+
+app.addEventListener('change', e => {
+  if (e.target.id === 'f-loc'){ S.location = e.target.value; render(); }
+});
+
+app.addEventListener('blur', e => {
+  if (e.target.id === 'f-email' && e.target.value && !validEmail(e.target.value)){
+    S.err.email = "That doesn't look like a valid email."; render();
+  }
+}, true);
+
+app.addEventListener('click', e => {
+  const back = e.target.closest('[data-back]');
+  if (back){ const i = ORDER.indexOf(S.cur); if (i > 1) go(ORDER[i-1]); return; }
+  const t = e.target.closest('[data-go],[data-act]');
+  if (!t || t.disabled) return;
+  if (t.dataset.act){ act(t.dataset.act, t.dataset.v, t.dataset.field); return; }
+  go(t.dataset.go);
+});
+
+render();
+</script>
+</body>
+</html>
