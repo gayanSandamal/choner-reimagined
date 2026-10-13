@@ -2075,3 +2075,50 @@ doors margin and the radar at its specified 230, it is now ~614pt.
 `lineHeight: 22` and `resolveLineHeight` only ever raises it, costing ~25pt
 against the prototype's 16-19. Changing it reaches every screen in the app, and
 the four fixes above were enough without it.
+
+
+---
+
+## 2026-10-13 (production) — #132 proven and closed; First 200 schema live
+
+Run against the live project with the Supabase CLI, not hypothesised.
+
+**#132 — H1 confirmed exactly.** One account (the reporter's) held THREE live
+`user_challenges` rows with the **identical** `started_at`
+(`2026-09-18T12:41:49.100Z`): two Workouts, one Running, and one carrying
+`partner_state = 'invited'` that the app had never shown anyone. The old
+`order by started_at desc limit 1` resolved to the Running row — which is
+precisely what the Challenges card kept displaying while the save went
+elsewhere. 884 live rows across 882 users, so this account was the only one.
+
+**Resolved, reversibly.** Kept `c9bfb15e` (Workouts, the row holding the live
+invite); the other two were set to `status = 'abandoned'` with `completed_at`,
+not deleted, so the change can be undone. The full pre-change snapshot is in
+that session's transcript. Consequence to expect: the reporter's card now shows
+**Workouts**, not Running, and surfaces an invite they could not previously see.
+
+**`202610131200_one_live_challenge_per_user.sql` applied.** The partial unique
+index is live and verified by attempting a second live insert, which was
+rejected. `ensure_user_challenge` now carries `order by started_at desc, id
+desc`, matching the client tie-break — both sides had to change or they could
+still resolve to different rows.
+
+**First 200 schema is live.** `202610051200_add_mattegoda.sql` (written today —
+the SQL existed only inside the spec, and `202610061200:77` has a foreign key to
+`locations`, so every Mattegoda signup would have failed in production) and
+`202610061200_first_200_registrations.sql`.
+
+**RLS verified empirically, not from the privilege flags.** `has_table_privilege`
+reports `anon` holding SELECT and INSERT grants on `prelaunch_registrations`,
+which looks alarming and is misleading: tested as the `anon` role inside a
+transaction, SELECT returns **zero rows**, INSERT is **blocked**, UPDATE affects
+**zero rows**, and `register_prelaunch()` works and returns an access code. The
+table is sealed and the SECURITY DEFINER function is the only way in, as the
+spec intended. **Worth a follow-up:** revoke the residual table grants, so a
+future permissive policy cannot expose emails and phone numbers.
+
+**Still blocked, and not by anything in the repo.** Deploying the Edge Function
+needs a `sbp_...` personal access token — project API keys (`sb_publishable_`,
+`sb_secret_`) are the wrong credential and are rejected by the Management API.
+The function degrades gracefully without `RESEND_API_KEY`, so it can ship before
+Resend exists; only the confirmation email waits.
