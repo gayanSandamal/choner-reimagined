@@ -1,0 +1,9 @@
+# Upload this beside index.html in the join.choner.io document root.
+#
+# cPanel shared hosting often serves HTML with a long Cache-Control, so someone
+# who opened the form yesterday can be handed yesterday's copy today. On a form
+# we will edit daily before launch, that is a silent data problem: they would
+# submit against an old field list or an old endpoint and we would never know.
+<FilesMatch "\.html$">
+  Header set Cache-Control "no-cache, must-revalidate"
+</FilesMatch>
