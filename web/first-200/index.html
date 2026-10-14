@@ -667,8 +667,13 @@ function screenConfirm(){
       <div class="lbl">Your code</div>
       <div class="code">${esc(S.accessCode || '')}</div>
     </div>
+    <!-- Gmail files this mail under Promotions, confirmed on a real send. We
+         cannot reliably change that, so the copy stops promising "your inbox"
+         and says where to actually look. The code on screen is the primary
+         copy; the email is the backup, not the other way round. -->
     <div class="reass">Sign up with <b>${esc(S.f.email)}</b> and we'll know you already.
-      The code is here in case you use a different address, and it's in your inbox too.</div>
+      We've emailed the code too &mdash; if it's not in your inbox, check your
+      <b>Promotions</b> tab or spam.</div>
 
     <!-- Their own answers, read back. Proves we listened, and costs nothing. -->
     <div class="summary"><b>${esc(labelOf(ACTIVITIES,S.activity))}</b> &middot; ${esc(how)}${where?' &middot; '+esc(where):''}${when?' &middot; '+esc(when):''}</div>
