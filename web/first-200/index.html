@@ -339,10 +339,14 @@ const AGES = [['18-24','18 to 24'],['25-34','25 to 34'],['35-44','35 to 44'],['4
 const GENDERS = [['male','Male'],['female','Female'],['prefer_not_to_say','Prefer not to say']];
 
 /* mode: user_challenges.mode, plus 'either' for the pool preference. */
+/* Order matters: the two definite answers first, the compromise last. "Either
+   works" sitting in the middle read as the safe middle option and invited
+   people to pick it by default, which is the one answer that tells matching
+   least. */
 const MODES = [
   ['together','Together','Meet up in person for sessions','together'],
-  ['either','Either works','Open to either, whatever fits that day','community'],
   ['separate','Separately, together','Same commitment, your own place','separate'],
+  ['either','Either works','Open to either, whatever fits that day','community'],
 ];
 
 /* The SIX ACTIVE templates, in the app's sort_order. Keys are activity_key,
