@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { Icon, IconName } from '@/components/ui/Icon';
+import { activeTabIndex } from './tab-index';
 
 const LABELS: Record<string, string> = {
   home: 'Home',
@@ -103,10 +104,7 @@ export function CustomTabBar({ state, navigation }: TabBarProps) {
     const routeIndex = state.routes.findIndex((r) => r.name === name);
     return routeIndex === -1 ? [] : [{ name, key: state.routes[routeIndex].key, routeIndex }];
   });
-  const activeIndex = Math.max(
-    0,
-    visible.findIndex((v) => v.routeIndex === state.index)
-  );
+  const activeIndex = activeTabIndex(visible.map((v) => v.routeIndex), state.index);
 
   return (
     // box-none: the strip around the pill must not swallow touches meant for

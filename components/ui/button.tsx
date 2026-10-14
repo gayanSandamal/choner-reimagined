@@ -89,15 +89,19 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
         disabled={isDisabled}
         haptic={haptic}
         onPress={onPress}
-        style={[styles.gradientWrap, sizeStyle, pill && styles.pill, isDisabled && styles.disabled, style]}
+        style={[styles.gradientWrap, pill && styles.pill, isDisabled && styles.disabled, style]}
       >
+        {/* The gradient IS the surface, not an absoluteFill child the wrapper
+            has to clip. overflow:'hidden' with a 999 radius squares the
+            corners off on Android, which is what `pill` used to do (#120). */}
         <LinearGradient
           colors={theme.gradients[gradient] as unknown as readonly [string, string, ...string[]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        {inner}
+          style={[styles.gradientFill, sizeStyle, pill && styles.pill]}
+        >
+          {inner}
+        </LinearGradient>
       </PressableScale>
     );
   }
@@ -123,10 +127,12 @@ const styles = StyleSheet.create({
   },
   gradientWrap: {
     borderRadius: theme.radius.button,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
     ...theme.shadow.glow
+  },
+  gradientFill: {
+    borderRadius: theme.radius.button,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   content: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sizeSm: { paddingVertical: 10, paddingHorizontal: 14, minHeight: 40 },

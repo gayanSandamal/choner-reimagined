@@ -13,7 +13,6 @@ import { RepairCard } from '@/components/plans/RepairCard';
 import { StreakCircles } from '@/components/streak/StreakCircles';
 import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
 import { historyLine } from '@/features/challenges/history';
-import { useEndChallengeAction } from '@/features/challenges/end-action';
 import { useChallengeHistoryScores, useMyChallenge, useMyPartner } from '@/features/challenges/hooks';
 import { activityNoun } from '@/features/plans/activity';
 import { amountLine } from '@/features/plans/amounts';
@@ -62,7 +61,6 @@ export default function ChallengesScreen() {
   // no challenge at all.
   const partnerQ = useMyPartner(userId);
   const historyQ = useChallengeHistoryScores(userId);
-  const endAction = useEndChallengeAction();
 
   const challenge = challengeQ.data ?? null;
   const myPartner = partnerQ.data?.partnered ? partnerQ.data : null;
@@ -115,11 +113,6 @@ export default function ChallengesScreen() {
       notify('Could not start that', error.message);
     }
   };
-
-  // Ending a challenge is destructive to the STREAK and to nothing else, and
-  // says so before it happens. Shared with the session details screen.
-  const onEndChallenge = () =>
-    endAction.end({ challengeId: challenge?.id, streak, partnerName });
 
   const { refreshing, onRefresh } = usePullRefresh(() =>
     Promise.all([
@@ -250,14 +243,8 @@ export default function ChallengesScreen() {
               <Button label="Extend your streak" variant="ghost" onPress={() => openStreakTarget(challenge.id)} />
             ) : null}
 
-            {/* Challenges owns ending a challenge. It ends the streak and the
-                challenge; it never ends the match. */}
-            <Button
-              label="End this challenge"
-              variant="ghost"
-              loading={endAction.pending}
-              onPress={onEndChallenge}
-            />
+            {/* No "End this challenge" here (#123). Ending still exists, on
+                the challenge detail screen's menu, just not on the tab. */}
           </>
         )}
 
