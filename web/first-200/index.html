@@ -117,6 +117,8 @@
 
   /* ============ consent ============ */
   .chk{display:flex;gap:10px;align-items:flex-start;margin:10px 0 2px;cursor:pointer;background:none;border:none;text-align:left;font:inherit;color:var(--pmuted);font-size:12px;line-height:1.5;width:100%;}
+  .chklink{margin:0 0 2px 28px;}
+  .chklink a{font-size:12px;font-weight:500;color:var(--g2);text-decoration:underline;}
   .chk i{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--pline);flex:none;display:flex;align-items:center;justify-content:center;color:#fff;margin-top:1px;background:var(--card);}
   .chk.on i{background:linear-gradient(135deg,var(--g1),var(--g2));border-color:transparent;}
   .chk i svg{width:12px;height:12px;}
@@ -337,10 +339,14 @@ const AGES = [['18-24','18 to 24'],['25-34','25 to 34'],['35-44','35 to 44'],['4
 const GENDERS = [['male','Male'],['female','Female'],['prefer_not_to_say','Prefer not to say']];
 
 /* mode: user_challenges.mode, plus 'either' for the pool preference. */
+/* Order matters: the two definite answers first, the compromise last. "Either
+   works" sitting in the middle read as the safe middle option and invited
+   people to pick it by default, which is the one answer that tells matching
+   least. */
 const MODES = [
   ['together','Together','Meet up in person for sessions','together'],
-  ['either','Either works','Open to either, whatever fits that day','community'],
   ['separate','Separately, together','Same commitment, your own place','separate'],
+  ['either','Either works','Open to either, whatever fits that day','community'],
 ];
 
 /* The SIX ACTIVE templates, in the app's sort_order. Keys are activity_key,
@@ -627,7 +633,12 @@ function screenActivity(){
       compatible, and show them your first name and activity. Nothing else.</div>
     <button class="chk ${S.consentContact?'on':''}" data-act="consent" data-v="contact" type="button">
       <i>${S.consentContact?ic('check',3):''}</i>
-      <span>I agree to be contacted by Choner by email or phone, and to Choner's <u>Privacy policy</u>.</span></button>
+      <span>I agree to be contacted by Choner by email or phone, and to Choner's
+        privacy policy.</span></button>
+    <!-- The link sits OUTSIDE the button. An <a> inside a <button> is invalid
+         HTML and browsers disagree about which one a tap belongs to, so the
+         link could silently toggle the consent box instead of opening. -->
+    <div class="chklink"><a href="/privacy.html" target="_blank" rel="noopener">Read the privacy policy</a></div>
 
     <div class="foot">
       ${S.submitErr?`<div class="ferr">${esc(S.submitErr)}</div>`:''}
