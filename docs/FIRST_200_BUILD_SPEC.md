@@ -922,6 +922,55 @@ It is small, but it is *app* work competing with the Find landing rebuild, so
 **put it on the plan now.** If launch day cannot recognise these people, the
 initiative was an email list.
 
+## 7.1 ONE code field, not two — decided 14 October 2026
+
+There are two codes in this product and they are different lengths, which is a
+launch-day trap that was found a month early rather than on the day.
+
+| | Format | Length | What it does |
+|---|---|---|---|
+| **First 200 access code** | `F2-` + 6 | **9** | Proves you were one of the first 200 |
+| **App invite code** | activity prefix + 3 | **6** | Invites one friend to your challenge |
+
+`app/invite/code.tsx` today says *"Enter the **6-character** code from your
+friend's message"* with placeholder `e.g. RUN4K7`. Someone holding `F2-8ESUV5`
+would type it there, be rejected, and conclude their code was fake. Two hundred
+people, on the one day it matters most, with no obvious diagnosis.
+
+**DECIDED: one field that accepts both, routing on the `F2-` prefix.** Not two
+entry points, and not dropping the prefix to make the lengths match.
+
+The prefix exists precisely so the two can be told apart in code, which makes
+this safe: `F2-` cannot collide with an activity prefix, because the invite
+alphabet has no digits in that position. So the test is unambiguous:
+
+```ts
+const entered = raw.trim().toUpperCase();
+if (entered.startsWith('F2-')) {
+  // claim_prelaunch(entered)  -> sets is_first_200, no challenge joined
+} else {
+  // the existing invite path  -> /invite/<code>
+}
+```
+
+**Why not two separate screens.** It doubles the surface, and it asks the user
+to classify their own code before they can use it — which is the thing they
+cannot do, since both arrived by email and both are just "my code".
+
+**Why not drop the `F2-` prefix.** It would make both six characters and one
+field trivially handle them, but then the two namespaces collide: a First 200
+code could be a valid invite code, and the app could not tell which the person
+meant. The prefix is the cheapest possible discriminator and it is already
+printed on 200 codes-to-be.
+
+**Copy must change too.** "Enter the 6-character code" becomes something that
+does not contradict a 9-character code in the user's hand. "Enter your code"
+with a placeholder showing both shapes, or no length claim at all.
+
+**Done when:** `F2-8ESUV5` and `RUN4K7` both work in the same field, and the
+wrong-but-well-formed code of each type gives a clear message rather than
+"not found".
+
 ---
 
 # 8. Marketing, in one line
