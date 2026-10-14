@@ -227,16 +227,16 @@
   .welcome.instant .ring{display:none;}
   @keyframes hgRise{to{opacity:1;transform:translateY(0);}}
 
-  /* The hint only ever appears after the intro. iOS never sees it: the motion
-     prompt rides on the Count Me In tap instead, which is the only gesture
-     Safari will accept it from. */
+  /* The hint only ever appears after the intro. On iOS it is a real button:
+     Safari grants motion access only from a tap, and this is the only tap that
+     KEEPS you on the intro, so it has to be the one that asks. */
   .tilt-hint{
     position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);white-space:nowrap;
     border:none;background:none;font-family:inherit;font-size:11px;font-weight:500;
     letter-spacing:.3px;color:var(--pmuted);opacity:0;pointer-events:none;
     transition:opacity .6s ease;padding:4px 8px;
   }
-  .tilt-hint.show{opacity:.85;}
+  .tilt-hint.show{opacity:.85;pointer-events:auto;}
   .glass-wrap.tiltable{touch-action:none;cursor:grab;}
 
   @media (prefers-reduced-motion: reduce){
@@ -439,14 +439,7 @@ function normalisePhone(v){
   return d;
 }
 
-function go(id){
-  // iOS Safari only shows its motion prompt from inside a user gesture, and
-  // this is the one the intro has. Fired before anything else so no await can
-  // get between the tap and the prompt. Declining cannot block the signup:
-  // requestMotion resolves false and we carry on.
-  if (S.cur === 'welcome' && window.hourglass) { try { window.hourglass.requestMotion(); } catch (e) {} }
-  S.cur = id; S.submitErr = null; render(); window.scrollTo(0,0);
-}
+function go(id){ S.cur = id; S.submitErr = null; render(); window.scrollTo(0,0); }
 
 /* ---------- shared pieces ---------- */
 function stepbar(dotId){
@@ -881,6 +874,17 @@ const HG = (() => {
     } catch (e) { return Promise.resolve(false); }
   }
 
+  /* The iOS ask. Synchronous inside the tap, nothing awaited before it.
+     Declining just drops the hint: the signup is untouched either way. */
+  function onHintTap(e){
+    e.preventDefault(); e.stopPropagation();
+    requestMotion().then(ok => {
+      if (!el) return;
+      if (ok){ el.hint.textContent = 'Tilt your phone'; setTimeout(() => { if (el) el.hint.classList.remove('show'); }, 5000); }
+      else el.hint.classList.remove('show');
+    });
+  }
+
   function enableTilt(){
     if (tiltOn || reduce || !finished || !el) return;
     tiltOn = true;
@@ -888,10 +892,13 @@ const HG = (() => {
     const coarse = matchMedia('(pointer: coarse)').matches, hasSensor = 'DeviceOrientationEvent' in window;
     const needsAsk = hasSensor && typeof DeviceOrientationEvent.requestPermission === 'function';
     if (hasSensor && !needsAsk) startSensor();
-    // No "tap here" button. On iOS the prompt rides on Count Me In instead, so
-    // there is nothing useful to say until they have tapped it.
+    // iOS hands out motion access only from a tap, and Count Me In is the one
+    // tap that LEAVES the intro, so asking there granted a permission with
+    // nothing left to use it on. The hint asks instead: it keeps you here, and
+    // the hourglass is still on screen when the answer comes back.
     if (coarse && hasSensor){
-      if (!needsAsk){ el.hint.textContent = 'Tilt your phone'; setTimeout(() => { if (el) el.hint.classList.remove('show'); }, 5000); }
+      if (needsAsk){ el.hint.textContent = 'Tap to tilt'; el.hint.onclick = onHintTap; }
+      else { el.hint.textContent = 'Tilt your phone'; setTimeout(() => { if (el) el.hint.classList.remove('show'); }, 5000); }
     } else if (!coarse) el.hint.textContent = 'Drag to turn the hourglass';
     if (el.hint.textContent) requestAnimationFrame(() => { if (el) el.hint.classList.add('show'); });
     kick();
@@ -900,6 +907,7 @@ const HG = (() => {
   const angleAt = e => { const r = el.wrap.getBoundingClientRect();
     return Math.atan2(e.clientY - (r.top + r.height/2), e.clientX - (r.left + r.width/2)) / RAD; };
   const onDown = e => { if (!tiltOn || !el) return;
+    if (e.target.closest('.tilt-hint')) return;   // the ask button owns its own tap
     dragging = true; dragA0 = angleAt(e); dragBase = dragAng;
     el.wrap.setPointerCapture(e.pointerId); el.hint.classList.remove('show'); kick(); e.stopPropagation(); };
   const onMove = e => { if (!dragging || !el) return;
