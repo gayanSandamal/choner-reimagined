@@ -225,8 +225,7 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    ...theme.shadow.glow
+    overflow: 'hidden'
   },
   // choner-logo.png is 542 x 368.
   loadingMark: { width: 72, height: (72 * 368) / 542 }

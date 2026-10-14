@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { LoadingState } from '@/components/ui/StateViews';
 import { Radar } from '@/components/challenges/Radar';
+import { CommitmentCard } from '@/components/challenges/CommitmentCard';
+import { Icon } from '@/components/ui/Icon';
 import { MatchOffer } from '@/components/find/MatchOffer';
 import { MatchedCard } from '@/components/find/MatchedCard';
 import { challengeHabitTitle, partnerStateOf, setPartnerState } from '@/features/challenges/api';
@@ -168,6 +170,7 @@ export default function FindScreen() {
             isCustomHabit={isCustomHabit}
             hasChallenge={Boolean(challenge)}
             habit={habit}
+            exercises={((challenge as any)?.exercises as string[] | null) ?? []}
             onStart={onFind}
           />
         )}
@@ -176,25 +179,56 @@ export default function FindScreen() {
   );
 }
 
-// The doors that sit under the radar wherever a search has not started:
-// the directory, an invite going out, and an invite coming in.
+// The prototype's .orl: a word with a rule either side (app_a.html:259-260).
+function OrDivider() {
+  return (
+    <View style={styles.orl}>
+      <View style={styles.orlRule} />
+      <AppText style={styles.orlWord}>or</AppText>
+      <View style={styles.orlRule} />
+    </View>
+  );
+}
+
+// The prototype's .dlink (app_a.html:300-302): a quiet card-coloured row with
+// the icon left and a chevron right. NOT the orange outline Button this used
+// to be — the directory is the last and least of the doors, under everything
+// else, and an orange button made it read as the main thing to do (#125).
+function DirectoryRow() {
+  return (
+    <PressableScale
+      haptic="selection"
+      accessibilityRole="button"
+      accessibilityLabel="Already on the move"
+      onPress={() => router.push('/find/who-else')}
+      style={styles.dlink}
+    >
+      <Icon name="community" size={18} color={theme.colors.primary2} strokeWidth={1.8} />
+      {/* No count on it. There is no real number, and a made-up one is the
+          kind of thing nobody later remembers was made up. */}
+      <AppText style={styles.dlinkLabel}>Already on the move</AppText>
+      <Icon name="chev" size={16} color={theme.colors.dim} strokeWidth={2} />
+    </PressableScale>
+  );
+}
+
+// Everything below the radar, in the prototype's order (app_b.js:773-775):
+// the "or" divider, a full-width outline INVITE, then the small code link.
+// The directory is not here — it goes last, after all of it.
 function Doors({ invite = true }: { invite?: boolean }) {
   return (
     <View style={styles.doors}>
-      {/* No count on it. There is no real number, and a made-up one is the
-          kind of thing nobody later remembers was made up. */}
-      <Button label="Already on the move" variant="outline" onPress={() => router.push('/find/who-else')} />
-      <View style={styles.links}>
-        {invite ? (
-          <PressableScale
-            haptic="selection"
-            hitSlop={8}
-            accessibilityRole="button"
+      {invite ? (
+        <>
+          <OrDivider />
+          <Button
+            label="Invite someone you know"
+            variant="outline"
             onPress={() => router.push('/group/invite')}
-          >
-            <AppText style={styles.link}>Invite someone you know</AppText>
-          </PressableScale>
-        ) : null}
+          />
+        </>
+      ) : null}
+      <View style={styles.links}>
         <PressableScale
           haptic="selection"
           hitSlop={8}
@@ -214,11 +248,13 @@ function LandingState({
   isCustomHabit,
   hasChallenge,
   habit,
+  exercises,
   onStart
 }: {
   isCustomHabit: boolean;
   hasChallenge: boolean;
   habit: string | null;
+  exercises: string[];
   onStart: () => void;
 }) {
   if (!hasChallenge) {
@@ -227,6 +263,7 @@ function LandingState({
         <AppText style={styles.sub}>Pick what you want to do first, then we can look for someone.</AppText>
         <Button label="Create a commitment" onPress={() => router.push('/challenge/browse')} />
         <Doors invite={false} />
+        <DirectoryRow />
       </Animated.View>
     );
   }
@@ -240,26 +277,43 @@ function LandingState({
         </AppText>
         <Button label="Change your activity" onPress={() => router.push('/challenge/browse')} />
         <Doors />
+        <DirectoryRow />
       </Animated.View>
     );
   }
 
+  // The prototype's order (app_b.js:784) is
+  //   sub -> commitment card -> radar -> "Tap to find a match" -> or ->
+  //   invite -> code link -> "Already on the move"
+  // The directory used to be FIRST, as an orange outline button, which read
+  // as the main thing to do on the screen (#125).
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
       {/* Deliberately no area or amount: before a search has run, naming
           them is a claim about the pool the app can't back up. */}
       <AppText style={styles.sub}>Someone else is looking for you too.</AppText>
 
-      <Radar searching={false} onPress={onStart} />
+      {/* The same card as Challenges, activity only: how much and how often
+          are agreed with a partner at the first plan. No partner row, because
+          its handoff button points at this very screen. */}
+      <CommitmentCard
+        activity={habit ?? 'Your commitment'}
+        exercises={exercises}
+        amounts={null}
+        cadence={null}
+        partnerState="solo"
+        partnerFirstName={null}
+        agreed={false}
+        onChangeActivity={() => router.push('/challenge/browse')}
+        onOpenFind={() => undefined}
+        showPartnerRow={false}
+      />
 
-      {/* The activity and nothing else. How much and how often are agreed
-          with a partner at the first plan, so there is no amount or cadence to
-          show before a match. */}
-      <View style={styles.radarActivity}>
-        <AppText style={styles.radarName}>{habit ?? 'Your challenge'}</AppText>
-      </View>
+      <Radar searching={false} onPress={onStart} />
+      <AppText style={styles.tap}>Tap to find a match</AppText>
 
       <Doors />
+      <DirectoryRow />
     </Animated.View>
   );
 }
@@ -400,9 +454,40 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 6
   },
-  radarActivity: { alignItems: 'center', marginTop: 6 },
-  radarName: { fontSize: 15, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
-  doors: { marginTop: theme.spacing(3), gap: theme.spacing(2) },
+  // .tap: centred, --g2, 11.5 / 600 (choner-find-flow.html:184)
+  tap: {
+    textAlign: 'center',
+    marginTop: 2,
+    fontSize: 11.5,
+    fontFamily: theme.fonts.bodyBold,
+    color: theme.colors.primary2
+  },
+  // .orl: a word with a 1px rule either side (app_a.html:259-260)
+  orl: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 10 },
+  orlRule: { flex: 1, height: 1, backgroundColor: theme.colors.border },
+  orlWord: { fontSize: 12, color: theme.colors.muted },
+  // .dlink (app_a.html:300-302)
+  dlink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    width: '100%',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 16
+  },
+  dlinkLabel: {
+    flex: 1,
+    textAlign: 'left',
+    fontSize: 13.5,
+    fontFamily: theme.fonts.bodyMedium,
+    color: theme.colors.text
+  },
+  doors: { marginTop: theme.spacing(2) },
   links: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 22, rowGap: 10 },
   link: { color: theme.colors.primary2, fontSize: 13, fontFamily: theme.fonts.bodyMedium },
   searchStatus: { alignItems: 'center', marginTop: 6, marginBottom: 22 },
