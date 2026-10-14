@@ -1,14 +1,6 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, {
-  Defs,
-  LinearGradient,
-  Path,
-  RadialGradient,
-  Stop,
-  Circle,
-  Rect
-} from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Stop, Circle } from 'react-native-svg';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -64,9 +56,6 @@ export function Heart({ youCheckedIn, partnerCheckedIn, partnerState, width = 13
   const some = youCheckedIn || (partnered && partnerCheckedIn);
 
   const scale = both ? 1.05 : some ? 0.97 : 0.9;
-  // Never any glow while solo — including the invited and matched waits, which
-  // are still a half-empty heart.
-  const glow = !partnered && !finding ? 0 : both ? 0.28 : some ? 0.13 : 0;
 
   const height = (width / VB_W) * VB_H;
 
@@ -131,19 +120,10 @@ export function Heart({ youCheckedIn, partnerCheckedIn, partnerState, width = 13
 
   return (
     <View style={[styles.stage, { height: height * 1.4 }]} accessibilityRole="image">
-      {/* Glow sits behind everything and is purely atmospheric. */}
-      {glow > 0 ? (
-        <Svg width={width * 1.6} height={width * 1.6} style={StyleSheet.absoluteFill as any}>
-          <Defs>
-            <RadialGradient id="glow" cx="50%" cy="50%" r="50%">
-              <Stop offset="0%" stopColor={ORANGE} stopOpacity={glow} />
-              <Stop offset="68%" stopColor={ORANGE} stopOpacity={0} />
-            </RadialGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#glow)" />
-        </Svg>
-      ) : null}
-
+      {/* No glow (#133). Same technique as Home's heart and the same result:
+          an orange field 1.6x the heart's width, on a stage that does not clip,
+          washing over whatever sits below rather than haloing the heart. The
+          scale and heartbeat below carry the state on their own. */}
       <Animated.View style={heartStyle}>
         <Svg width={width} height={height} viewBox={`0 0 ${VB_W} ${VB_H}`}>
           <Defs>

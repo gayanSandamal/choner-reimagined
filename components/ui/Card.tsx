@@ -91,15 +91,13 @@ const styles = StyleSheet.create({
     ...theme.shadow.md
   },
   glow: {
-    borderColor: theme.colors.primary,
-    ...theme.shadow.glow
+    borderColor: theme.colors.primary
   },
   glass: {
     backgroundColor: theme.colors.glassTint,
     borderColor: theme.colors.glassBorder
   },
   gradient: {
-    borderColor: 'transparent',
-    ...theme.shadow.glow
+    borderColor: 'transparent'
   }
 });

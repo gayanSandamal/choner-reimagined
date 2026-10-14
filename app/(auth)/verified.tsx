@@ -68,6 +68,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing(1),
+    // The one place the retired glow is kept, and the only place it ever drew
+    // correctly: this circle has an opaque backgroundColor, so iOS builds a
+    // real rounded shadowPath from it instead of tracing a child rectangle.
+    // One screen, one moment. See DECISIONS_LOG 2026-10-12.
     ...theme.shadow.glow
   },
   title: {

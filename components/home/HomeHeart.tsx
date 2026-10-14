@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Path, RadialGradient, Stop, Circle } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { AppText } from '@/components/ui/AppText';
 import { Icon } from '@/components/ui/Icon';
 import { HEART_STAGES, heartCopy, heartStage } from '@/features/home/hero';
@@ -37,7 +37,6 @@ export function HomeHeart({
   const copy = heartCopy({ partnerName, partnerState, sessionsTogether });
   const partnered = Boolean(partnerName);
   const width = HEART_WIDTH * (STAGE_SCALE[stage] ?? 1);
-  const glow = stage >= 3 ? 230 : 190;
 
   return (
     <View
@@ -46,15 +45,11 @@ export function HomeHeart({
       accessibilityLabel={[copy.title, copy.count, copy.line].filter(Boolean).join('. ')}
     >
       <View style={styles.heartWrap}>
-        <Svg width={glow} height={glow} style={styles.glow}>
-          <Defs>
-            <RadialGradient id="hg" cx="50%" cy="50%" r="50%">
-              <Stop offset="0%" stopColor="#FD8302" stopOpacity={0.22} />
-              <Stop offset="100%" stopColor="#FD8302" stopOpacity={0} />
-            </RadialGradient>
-          </Defs>
-          <Circle cx={glow / 2} cy={glow / 2} r={glow / 2} fill="url(#hg)" />
-        </Svg>
+        {/* No glow (#133). It was a 190-230px radial-gradient circle inside a
+            132px-tall wrap on a card that does not clip, so it washed over the
+            title and count rows below and read as a smear rather than a halo —
+            and it was a perfect circle behind a heart that is wider than it is
+            tall. The rings below are the motion this card keeps. */}
         <Svg width={width} height={(width * 124) / 132} viewBox="0 0 132 124">
           <Defs>
             <LinearGradient id="gL" x1="0" y1="1" x2="0.5" y2="0">
@@ -73,7 +68,8 @@ export function HomeHeart({
             <Path d={RIGHT} fill="none" stroke={theme.colors.dim} strokeWidth={2.4} strokeDasharray="5 5" />
           )}
         </Svg>
-        {partnered ? null : <AppText style={styles.qmark}>?</AppText>}
+        {/* No "?" (#133). The dashed right half already says "no partner yet",
+            and the "You + ?" line below the heart says it in words. */}
       </View>
 
       <AppText style={styles.title}>{copy.title}</AppText>
@@ -109,18 +105,6 @@ const styles = StyleSheet.create({
   },
   // .hwrap
   heartWrap: { width: '100%', height: 132, alignItems: 'center', justifyContent: 'center' },
-  glow: { position: 'absolute' },
-  // .qmark: on the empty half, right of centre.
-  qmark: {
-    position: 'absolute',
-    top: 30,
-    left: '50%',
-    marginLeft: 30,
-    fontSize: 22,
-    lineHeight: 28,
-    fontFamily: theme.fonts.bodyBold,
-    color: theme.colors.dim
-  },
   // .rel-h
   title: { fontSize: 14, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
   // .rel-k

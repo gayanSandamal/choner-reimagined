@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { goBackOrWelcome } from '@/components/auth/AuthBackButton';
+import { TOP_BAR_HEIGHT } from '@/components/navigation/AppTopBar';
 import { theme } from '@/constants/theme';
 
 // The floating navy bar the sign-in and sign-up prototypes open with: back
@@ -38,7 +39,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 6,
     paddingHorizontal: 16,
-    minHeight: 64,
+    // The shared height, not its own 64 (#121). Same pill, same prototype
+    // geometry as the tabs' bar.
+    minHeight: TOP_BAR_HEIGHT,
     ...theme.shadow.lg
   },
   slot: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },

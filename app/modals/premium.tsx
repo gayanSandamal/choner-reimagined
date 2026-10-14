@@ -256,8 +256,7 @@ const styles = StyleSheet.create({
     paddingVertical: 36,
     paddingHorizontal: 24,
     alignItems: 'center',
-    overflow: 'hidden',
-    ...theme.shadow.glow
+    overflow: 'hidden'
   },
   shimmer: {
     position: 'absolute',
