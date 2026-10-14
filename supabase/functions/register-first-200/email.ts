@@ -6,8 +6,14 @@
 // text and not an image. On a phone nobody retypes a code they cannot copy.
 //
 // Kept deliberately short. Gmail clips at ~102KB and appends a "View entire
-// message" link that hides whatever follows; a six-line email never gets near
-// it, and never buries the code.
+// message" link that hides whatever follows; a short email never gets near it,
+// and never buries the code.
+//
+// NO PERMISSION FOOTER. This is transactional: the person asked for it seconds
+// earlier, so the "you're getting this because..." line was list-mail furniture
+// under a message that reads as personal. The opt-out is still there, drawn by
+// Gmail and Outlook from the List-Unsubscribe header the function sends. The
+// LAUNCH email to all 200 is genuinely bulk and should carry the full footer.
 
 export interface WelcomeEmail {
   firstName: string;
@@ -38,11 +44,14 @@ export function welcomeHtml({ firstName, accessCode, referralUrl, email }: Welco
      Hi ${esc(firstName)},</td></tr>
 
    <tr><td style="font-size:21px;font-weight:600;line-height:1.35;padding:10px 0 6px;">
-     You're in. You're one of The First 200.</td></tr>
+     You're one of The First 200.</td></tr>
+
+   <tr><td style="font-size:14.5px;line-height:1.6;color:#5A6B75;padding-bottom:18px;">
+     Choner isn't online yet. But when it is, you'll already have a place.</td></tr>
 
    <tr><td style="font-size:14.5px;line-height:1.6;color:#5A6B75;padding-bottom:22px;">
-     When Choner goes online, sign up with <strong style="color:#1C2B33;">${esc(email)}</strong>
-     and we'll know you already. Nothing to type.</td></tr>
+     Sign up with <strong style="color:#1C2B33;">${esc(email)}</strong> and we'll
+     recognize you. Nothing else to fill out. You're already in.</td></tr>
 
    <!-- Selectable text, never an image: they have to be able to copy it. -->
    <tr><td align="center" style="padding-bottom:8px;">
@@ -59,30 +68,26 @@ export function welcomeHtml({ firstName, accessCode, referralUrl, email }: Welco
    </td></tr>
 
    <tr><td style="font-size:12.5px;line-height:1.55;color:#7C8C96;padding:10px 0 0;">
-     The code is only needed if you sign up with a different address. Worth
-     keeping this email either way.
+     Keep it. You'll only need it if you use a different email address.
    </td></tr>
 
    <tr><td style="font-size:14.5px;line-height:1.6;color:#5A6B75;padding:22px 0 0;">
-     We're putting together the first group of people who want the same thing you
-     do: someone to show up with. We'll be in touch before Choner goes online.
+     We're bringing together the first 200 people who believe staying healthy
+     shouldn't have to be something you do alone. Someone to show up with.
    </td></tr>
 
-   <tr><td style="font-size:14.5px;line-height:1.6;padding:18px 0 0;">
-     Know someone who should be here too?<br>
-     <a href="${esc(referralUrl)}" style="color:#FD5B01;font-weight:600;">${esc(referralUrl)}</a>
+   <tr><td style="font-size:14.5px;line-height:1.6;color:#5A6B75;padding:14px 0 0;">
+     We'll be in touch before Choner goes live.
+   </td></tr>
+
+   <tr><td style="font-size:14.5px;line-height:1.6;padding:22px 0 0;">
+     Know someone who should be here?<br>
+     <a href="${esc(referralUrl)}" style="color:#FD5B01;font-weight:600;text-decoration:none;">Invite them &rarr;</a>
    </td></tr>
 
    <tr><td style="font-size:14.5px;line-height:1.6;padding:24px 0 0;">
-     Thanks for being early. It genuinely matters.<br><br>
-     Dinesh<br>
-     <span style="color:#7C8C96;">Co-founder, Choner</span>
-   </td></tr>
-
-   <tr><td style="font-size:11.5px;line-height:1.5;color:#9AA7AE;padding-top:26px;
-                  border-top:1px solid #EFEDEA;margin-top:10px;">
-     You're getting this because you joined The First 200 at choner.io.
-     Don't want these? Just reply and say so. A real person reads it.
+     Thanks for being early. It matters.<br><br>
+     The Choner team
    </td></tr>
 
   </table>
@@ -93,32 +98,34 @@ export function welcomeHtml({ firstName, accessCode, referralUrl, email }: Welco
 
 // Sent alongside the HTML. Some clients prefer it, some people read mail in
 // plain text, and spam filters treat an HTML-only message as a weak signal.
+//
+// The referral URL is written out in full here rather than hidden behind words:
+// plain text has no links, so "Invite them" alone would be a dead end.
 export function welcomeText({ firstName, accessCode, referralUrl, email }: WelcomeEmail): string {
   return `Hi ${firstName},
 
-You're in. You're one of The First 200.
+You're one of The First 200.
 
-When Choner goes online, sign up with ${email} and we'll know you already.
-Nothing to type.
+Choner isn't online yet. But when it is, you'll already have a place.
 
-YOUR BACKUP CODE: ${accessCode}
+Sign up with ${email} and we'll recognize you. Nothing else to fill out.
+You're already in.
 
-You only need this if you sign up with a different address.
+YOUR CODE: ${accessCode}
 
-We're putting together the first group of people who want the same thing you
-do: someone to show up with. We'll be in touch before Choner goes online.
+Keep it. You'll only need it if you use a different email address.
 
-Know someone who should be here too?
+We're bringing together the first 200 people who believe staying healthy
+shouldn't have to be something you do alone. Someone to show up with.
+
+We'll be in touch before Choner goes live.
+
+Know someone who should be here? Invite them:
 ${referralUrl}
 
-Thanks for being early. It genuinely matters.
+Thanks for being early. It matters.
 
-Dinesh
-Co-founder, Choner
-
----
-You're getting this because you joined The First 200 at choner.io.
-Don't want these? Just reply and say so. A real person reads it.`;
+The Choner team`;
 }
 
 export const WELCOME_SUBJECT = "You're one of The First 200";
