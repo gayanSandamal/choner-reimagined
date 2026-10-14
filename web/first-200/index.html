@@ -150,126 +150,105 @@
   .summary b{color:var(--ink);font-weight:600;}
   .btn.row{display:flex;align-items:center;justify-content:center;gap:9px;}
   .btn.row svg{width:18px;height:18px;}
-  .btn-link{width:100%;border:none;background:none;color:var(--pmuted);font-size:13px;font-weight:500;padding:12px 0 2px;cursor:pointer;}
-  .btn-link.done{color:var(--green);font-weight:600;}
   .reass{text-align:center;font-size:11.5px;color:var(--pmuted);margin-top:10px;line-height:1.5;}
   .reass b{color:var(--ink);font-weight:600;}
 
-  /* ============ the intro: one dark screen, as in the app ============
-     The app's onboarding opens on #001827 with warm radial glows. Matching it
-     here means the web app and the app open on the same image, and orange
-     only glows on navy. On paper it goes muddy. Step 1 returns to the paper. */
-  body.on-dark{background:var(--navy);}
-  .welcome.dark{
-    position:relative;overflow:hidden;color:#fff;
-    /* Painted once as a gradient rather than a blurred element: filter:blur()
-       on a looping layer is what actually drains a mid-range Android. */
-    background:
-      radial-gradient(58% 40% at 16% 76%, rgba(253,131,2,.22), transparent 70%),
-      radial-gradient(54% 38% at 88% 20%, rgba(253,91,1,.24), transparent 70%),
-      var(--navy);
+  /* ============ the intro: the hourglass ============
+     Replaces the dark "two signals" screen. Light paper ground now, so the
+     intro and step 1 are one surface rather than a dark screen that flips.
+
+     The glass outline and the fill maths share ONE profile (see HG_* in the
+     script). Change the curve in one place or the water stops matching the
+     glass. */
+  .welcome{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:0 28px 20px;position:relative;cursor:pointer;
+    user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
   }
-  .welcome.dark .brand{gap:14px;position:relative;z-index:1;}
-  /* A pool of the ground colour under the copy, so whatever passes behind the
-     words dims as it crosses them. .brand carries z-index:1, so this sits in
-     .brand's stacking context and therefore ABOVE .sig, which is what makes
-     it work, and why the opacity matters: much past .5 and it stops dimming
-     the line and starts deleting it. */
-  .welcome.dark .brand::before{
-    content:'';position:absolute;z-index:-1;inset:-24px -20px;
-    background:radial-gradient(58% 46% at 50% 50%, rgba(0,24,39,.5), transparent 62%);
+  .welcome .eyebrow{
+    font-size:11px;letter-spacing:2.4px;margin-bottom:12px;
+    opacity:0;animation:hgFadeIn .5s ease .1s forwards;
   }
-  .welcome.dark .acts{position:relative;z-index:1;}
-  .welcome.dark .wordmark{font-size:28px;color:#fff;}
-  .ask{font-size:26px;font-weight:300;line-height:1.3;letter-spacing:-.6px;max-width:320px;text-wrap:balance;margin-top:2px;}
-  .ask b{font-weight:600;background:linear-gradient(135deg,var(--g1),var(--g2));
+  .glass-wrap{position:relative;width:150px;height:195px;opacity:0;animation:hgFadeIn .5s ease .15s forwards;}
+  .glass-wrap svg{width:100%;height:100%;overflow:visible;display:block;will-change:transform;}
+  .ring{
+    position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;
+    border-radius:50%;border:2px solid rgba(253,131,2,.55);opacity:0;transform:scale(.6);pointer-events:none;
+  }
+  .glass-shadow{
+    position:absolute;left:50%;bottom:-12px;width:130px;height:20px;transform:translateX(-50%);
+    background:radial-gradient(ellipse at center, rgba(253,91,1,.22) 0%, transparent 70%);opacity:0;
+  }
+  .welcome.done .ring{animation:hgRipple 1.1s ease-out forwards;}
+  .welcome.done .glass-wrap{animation:hgBeat 1s ease-in-out 0s 1, hgIdle 3.4s ease-in-out 1.3s infinite;opacity:1;}
+  .welcome.done .glass-shadow{opacity:1;transition:opacity .6s ease;}
+  @keyframes hgRipple{0%{opacity:.9;transform:scale(.6);}100%{opacity:0;transform:scale(2.1);}}
+  @keyframes hgBeat{0%,100%{transform:scale(1);}18%{transform:scale(1.07);}34%{transform:scale(1);}50%{transform:scale(1.045);}68%{transform:scale(1);}}
+  @keyframes hgIdle{0%,100%{transform:scale(1);}50%{transform:scale(1.025);}}
+  @keyframes hgFadeIn{to{opacity:1;}}
+
+  .wave1{animation:hgDrift 2.6s linear infinite;}
+  .wave2{animation:hgDrift2 3.8s linear infinite;}
+  @keyframes hgDrift{from{transform:translateX(0);}to{transform:translateX(-100px);}}
+  @keyframes hgDrift2{from{transform:translateX(-100px);}to{transform:translateX(0);}}
+
+  #stream{stroke:#FD6A0A;stroke-width:3;stroke-linecap:round;transition:opacity .5s ease;opacity:0;}
+  #drop{fill:#FD8302;opacity:0;}
+  .welcome.done #drop{animation:hgDrip 3.4s ease-in 1.2s infinite;}
+  @keyframes hgDrip{
+    0%{transform:translateY(0) scale(.6);opacity:0;}
+    8%{opacity:1;transform:translateY(0) scale(1);}
+    38%{opacity:1;transform:translateY(var(--d,60px));}
+    40%,100%{opacity:0;transform:translateY(var(--d,60px));}
+  }
+
+  .reveal{text-align:center;margin-top:34px;width:100%;display:flex;flex-direction:column;align-items:center;}
+  .welcome .wordmark{font-size:34px;letter-spacing:-1px;line-height:1.1;opacity:0;transform:translateY(10px);}
+  .welcome .ask{
+    font-size:19px;font-weight:600;line-height:1.3;letter-spacing:-.2px;max-width:300px;
+    margin-top:14px;text-wrap:balance;opacity:0;transform:translateY(10px);
+  }
+  .ask b{font-weight:700;background:linear-gradient(135deg,var(--g1),var(--g2));
          -webkit-background-clip:text;background-clip:text;color:transparent;}
-  /* balance, so a short line does not strand one word on its own */
-  .welcome.dark .tag{font-size:13.5px;color:rgba(255,255,255,.72);max-width:320px;line-height:1.6;text-wrap:balance;}
-  .welcome.dark .tag.quiet{color:rgba(255,255,255,.52);}
-  .welcome.dark .btn{box-shadow:0 14px 30px rgba(253,91,1,.4);}
+  .welcome .tag{font-size:13px;line-height:1.6;max-width:290px;font-weight:300;margin-top:10px;opacity:0;transform:translateY(10px);}
+  /* The closer is the brief's orange semibold, not a dimmed line: it is the
+     ask, and it was reading as a footnote. */
+  .welcome .tag.quiet{font-size:13.5px;color:var(--g2);font-weight:600;line-height:1.45;}
+  .welcome .acts{margin-top:20px;max-width:290px;opacity:0;transform:translateY(10px);}
 
-  /* ---- "two signals finding each other" ----------------------------------
-     A 7s loop on ONE shared timeline: every element starts at delay 0 and
-     occupies its own slice of the cycle, so nothing drifts out of step and
-     no tail bleeds into the next pass.
+  .welcome.done .wordmark{animation:hgRise .5s ease 0s forwards;}
+  .welcome.done .ask{animation:hgRise .5s ease .14s forwards;}
+  .welcome.done .tag{animation:hgRise .5s ease .28s forwards;}
+  .welcome.done .tag.quiet{animation:hgRise .5s ease .40s forwards;}
+  .welcome.done .acts{animation:hgRise .5s ease .52s forwards;}
+  .welcome.instant .wordmark,.welcome.instant .ask,.welcome.instant .tag,
+  .welcome.instant .tag.quiet,.welcome.instant .acts{animation-duration:.01s;animation-delay:0s;}
+  .welcome.instant #drop{animation-delay:.4s;}
+  .welcome.instant .ring{display:none;}
+  @keyframes hgRise{to{opacity:1;transform:translateY(0);}}
 
-       0.0s  one dot pulses. alone.
-       1.2s  it pulses again. the repetition is the point
-       2.4s  a second dot arrives, deliberately out of sync
-       3.9s  a line draws between them
-       4.4s  both pulse together, full brightness. the payoff.
-       6.5s  fade back to one dot
+  /* The hint only ever appears after the intro. iOS never sees it: the motion
+     prompt rides on the Count Me In tap instead, which is the only gesture
+     Safari will accept it from. */
+  .tilt-hint{
+    position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);white-space:nowrap;
+    border:none;background:none;font-family:inherit;font-size:11px;font-weight:500;
+    letter-spacing:.3px;color:var(--pmuted);opacity:0;pointer-events:none;
+    transition:opacity .6s ease;padding:4px 8px;
+  }
+  .tilt-hint.show{opacity:.85;}
+  .glass-wrap.tiltable{touch-action:none;cursor:grab;}
 
-     Only transform and opacity animate. Both are composited, so the whole
-     loop costs no repaint. */
-  .sig{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;}
-  .sig circle{transform-box:fill-box;transform-origin:50% 50%;}
-  .sig .ring,.sig .halo{fill:none;stroke:var(--g1);stroke-width:1.1;opacity:0;}
-  .sig .halo{stroke-width:.9;}
-  .sig .dot{fill:var(--g1);opacity:.75;}
-  .sig .link{stroke:url(#linkGrad);stroke-width:1;stroke-dasharray:360;stroke-dashoffset:360;opacity:0;}
-
-  .sig .a1{animation:sigA1 7s linear infinite;}
-  .sig .a2{animation:sigA2 7s linear infinite;}
-  .sig .nb{animation:sigNodeB 7s linear infinite;}
-  .sig .b1{animation:sigB1 7s linear infinite;}
-  .sig .sync{animation:sigSync 7s linear infinite;}
-  .sig .dot{animation:sigFlash 7s linear infinite;}
-  .sig .halo{animation:sigHalo 7s linear infinite;}
-  .sig .link{animation:sigLink 7s linear infinite;}
-
-  @keyframes sigA1{
-    0%{transform:scale(.3);opacity:0} 3%{opacity:.45}
-    17%,100%{transform:scale(1);opacity:0}
-  }
-  @keyframes sigA2{
-    0%,17%{transform:scale(.3);opacity:0} 20%{opacity:.45}
-    34%,100%{transform:scale(1);opacity:0}
-  }
-  /* B holds back until A has pulsed twice: the loneliness has to register
-     before the relief does. */
-  @keyframes sigNodeB{
-    0%,34%{opacity:0} 41%{opacity:1} 90%{opacity:1} 100%{opacity:0}
-  }
-  @keyframes sigB1{
-    0%,34%{transform:scale(.3);opacity:0} 38%{opacity:.4}
-    55%,100%{transform:scale(1);opacity:0}
-  }
-  @keyframes sigLink{
-    0%,56%{stroke-dashoffset:360;opacity:0}
-    58%{opacity:.3} 66%{stroke-dashoffset:0}
-    72%{opacity:.42} 88%{stroke-dashoffset:0;opacity:.3} 96%,100%{opacity:0}
-  }
-  /* The only moment at full strength. One payoff per loop, or it is wallpaper. */
-  @keyframes sigSync{
-    0%,63%{transform:scale(.3);opacity:0} 67%{opacity:.8}
-    86%,100%{transform:scale(1.15);opacity:0}
-  }
-  @keyframes sigFlash{
-    0%,63%{transform:scale(1);opacity:.75}
-    68%{transform:scale(1.9);opacity:1}
-    78%,100%{transform:scale(1);opacity:.75}
-  }
-  @keyframes sigHalo{
-    0%,63%{transform:scale(.25);opacity:0} 71%{opacity:.2}
-    93%,100%{transform:scale(1);opacity:0}
-  }
-
-  /* The last frame, held still: two dots and the line between them. */
   @media (prefers-reduced-motion: reduce){
-    .sig *{animation:none !important;}
-    .sig .ring{opacity:.16;transform:scale(1);}
-    .sig .halo{opacity:.1;transform:scale(1);}
-    .sig .nb{opacity:1;}
-    .sig .dot{opacity:.9;transform:scale(1);}
-    .sig .link{stroke-dashoffset:0;opacity:.3;}
+    .wave1,.wave2{animation:none;}
+    .welcome.done #drop{animation:none;}
+    .welcome.done .glass-wrap{animation:none;}
+    .welcome.done .ring{display:none;}
   }
 
   @media (min-width:600px){
     body{padding-top:40px;padding-bottom:40px;}
     .shell{min-height:auto;border-radius:28px;box-shadow:0 30px 60px rgba(0,10,20,.12);overflow:hidden;background:var(--paper);}
-    body.on-dark .shell{background:var(--navy);}
   }
 </style>
 </head>
@@ -460,7 +439,14 @@ function normalisePhone(v){
   return d;
 }
 
-function go(id){ S.cur = id; S.submitErr = null; render(); window.scrollTo(0,0); }
+function go(id){
+  // iOS Safari only shows its motion prompt from inside a user gesture, and
+  // this is the one the intro has. Fired before anything else so no await can
+  // get between the tap and the prompt. Declining cannot block the signup:
+  // requestMotion resolves false and we carry on.
+  if (S.cur === 'welcome' && window.hourglass) { try { window.hourglass.requestMotion(); } catch (e) {} }
+  S.cur = id; S.submitErr = null; render(); window.scrollTo(0,0);
+}
 
 /* ---------- shared pieces ---------- */
 function stepbar(dotId){
@@ -483,38 +469,74 @@ const pills = (list, field, sel) => list.map(o =>
    diagonally BEHIND the question rather than above it. The copy is long
    enough that a block of animation would push the button off a small phone;
    as a background layer it reads as atmosphere instead of a widget. */
-const SIGNALS = `<svg class="sig" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-  <defs>
-    <linearGradient id="linkGrad" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#FD8302"/><stop offset="1" stop-color="#FD5B01"/>
-    </linearGradient>
-  </defs>
-  <circle class="halo" cx="200" cy="350" r="170"/>
-  <line class="link" x1="88" y1="486" x2="312" y2="214"/>
-  <circle class="ring a1"   cx="88" cy="486" r="70"/>
-  <circle class="ring a2"   cx="88" cy="486" r="70"/>
-  <circle class="ring sync" cx="88" cy="486" r="70"/>
-  <circle class="dot"       cx="88" cy="486" r="4.5"/>
-  <g class="nb">
-    <circle class="ring b1"   cx="312" cy="214" r="70"/>
-    <circle class="ring sync" cx="312" cy="214" r="70"/>
-    <circle class="dot"       cx="312" cy="214" r="4.5"/>
-  </g>
-</svg>`;
-
+/* The intro: an hourglass that fills, then stays alive and answers the tilt.
+   The fill is DECORATIVE. It is not a signup count and nothing here reads from
+   Supabase, so it can never be wrong. */
 function screenWelcome(){
-  return `<div class="welcome dark">
-    ${SIGNALS}
-    <div class="sp"></div>
-    <div class="brand">
-      <div class="eyebrow">The First 200</div>
+  return `<div class="welcome" id="introStage" role="button" aria-label="Skip intro">
+    <div class="eyebrow">The First 200</div>
+
+    <div class="glass-wrap" id="glassWrap">
+      <svg viewBox="0 0 200 260" aria-label="An hourglass filling">
+        <defs>
+          <linearGradient id="liq" gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="240">
+            <stop offset="0%" stop-color="#FD8302"/><stop offset="100%" stop-color="#FD5B01"/>
+          </linearGradient>
+          <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#FD8302"/><stop offset="100%" stop-color="#FD5B01"/>
+          </linearGradient>
+          <linearGradient id="liq2" gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="240">
+            <stop offset="0%" stop-color="#FFB870"/><stop offset="100%" stop-color="#FD8302"/>
+          </linearGradient>
+          <clipPath id="glassClip"><path id="glassClipPath"/></clipPath>
+          <clipPath id="topRegion"><rect x="0" y="0" width="200" height="130"/></clipPath>
+          <clipPath id="botRegion"><rect x="0" y="130" width="200" height="130"/></clipPath>
+        </defs>
+
+        <path id="glassFill" fill="rgba(253,131,2,.07)"/>
+
+        <g clip-path="url(#glassClip)">
+          <g clip-path="url(#topRegion)">
+            <g id="rotTop" transform="translate(100 130)">
+              <g id="liqTop" transform="translate(0 -50)">
+                <path class="wave2" fill="url(#liq2)" opacity=".75" d="M-300 0 Q-275 -4 -250 0 T-200 0 T-150 0 T-100 0 T-50 0 T0 0 T50 0 T100 0 T150 0 T200 0 T250 0 T300 0 V300 H-300 Z"/>
+                <path class="wave1" fill="url(#liq)" d="M-300 2 Q-275 0 -250 2 T-200 2 T-150 2 T-100 2 T-50 2 T0 2 T50 2 T100 2 T150 2 T200 2 T250 2 T300 2 V300 H-300 Z"/>
+              </g>
+            </g>
+          </g>
+          <g clip-path="url(#botRegion)">
+            <g id="rotBot" transform="translate(100 130)">
+              <g id="liqBot" transform="translate(0 108)">
+                <path class="wave2" fill="url(#liq2)" opacity=".75" d="M-300 0 Q-275 -5 -250 0 T-200 0 T-150 0 T-100 0 T-50 0 T0 0 T50 0 T100 0 T150 0 T200 0 T250 0 T300 0 V300 H-300 Z"/>
+                <path class="wave1" fill="url(#liq)" d="M-300 2 Q-275 -1 -250 2 T-200 2 T-150 2 T-100 2 T-50 2 T0 2 T50 2 T100 2 T150 2 T200 2 T250 2 T300 2 V300 H-300 Z"/>
+              </g>
+            </g>
+          </g>
+        </g>
+
+        <!-- Stream and drop live INSIDE the glass clip, so nothing can ever
+             appear outside the outline no matter how the phone is turned. -->
+        <g clip-path="url(#glassClip)">
+          <line id="stream" x1="100" y1="124" x2="100" y2="238"/>
+          <circle id="drop" cx="100" cy="140" r="2.2"/>
+        </g>
+
+        <path id="glassStroke" fill="none" stroke="url(#edge)" stroke-width="5" stroke-linejoin="round"/>
+        <rect x="46" y="15" width="108" height="7" rx="3.5" fill="url(#edge)"/>
+        <rect x="46" y="238" width="108" height="7" rx="3.5" fill="url(#edge)"/>
+      </svg>
+      <div class="glass-shadow"></div>
+      <div class="ring"></div>
+      <button class="tilt-hint" id="tiltHint" type="button"></button>
+    </div>
+
+    <div class="reveal">
       <div class="wordmark">choner<span>.</span></div>
       <div class="ask">What if someone was <b>counting on you</b> to show up?</div>
       <div class="tag">Choner helps you stay consistent with the healthy habits you want to build.</div>
       <div class="tag quiet">Be one of the first 200 to start something different.</div>
+      <div class="acts">${btn('Count Me In',{go:'t1'})}</div>
     </div>
-    <div class="sp"></div>
-    <div class="acts">${btn('Count Me In',{go:'t1'})}</div>
   </div>`;
 }
 
@@ -672,16 +694,19 @@ function screenConfirm(){
          and says where to actually look. The code on screen is the primary
          copy; the email is the backup, not the other way round. -->
     <div class="reass">Sign up with <b>${esc(S.f.email)}</b> and we'll know you already.
-      We've emailed the code too &mdash; if it's not in your inbox, check your
+      We've emailed the code too. If it's not in your inbox, check your
       <b>Promotions</b> tab or spam.</div>
 
     <!-- Their own answers, read back. Proves we listened, and costs nothing. -->
     <div class="summary"><b>${esc(labelOf(ACTIVITIES,S.activity))}</b> &middot; ${esc(how)}${where?' &middot; '+esc(where):''}${when?' &middot; '+esc(when):''}</div>
 
     <div class="card" style="margin-top:22px;">
-      <div class="sect" style="margin-top:0;">Invite someone</div>
-      <button class="btn row" data-act="share">${ic('share',2)}<span>Share my invite</span></button>
-      <button class="btn-link" id="copyBtn" data-act="copy-ref">Copy link instead</button>
+      <!-- One button. "Copy link instead" was removed: both the iOS and the
+           Android share sheet already contain a Copy action, and on desktop
+           navigator.share is absent so Share falls through to copying anyway,
+           which made the two buttons literally identical there. The fall-
+           through now reports itself on this button instead. -->
+      <button class="btn row" id="shareBtn" data-act="share">${ic('share',2)}<span id="shareLbl">Invite a friend</span></button>
       <!-- The URL is not printed. Truncated in a box it looked broken, and
            nobody types a 48-character token by hand anyway. -->
       <input class="hp" type="text" readonly value="${esc(refUrl)}" id="refInput" tabindex="-1" aria-hidden="true">
@@ -690,16 +715,250 @@ function screenConfirm(){
   </div>`;
 }
 
+/* ---------- the hourglass ----------------------------------------------
+   Lifted from the prototype, with one structural change: this page rebuilds
+   #app's innerHTML on every step, so element references and animation frames
+   CANNOT be captured once at load. mount() re-captures after each render of
+   the intro; unmount() cancels the frame and drops the sensor listener, or
+   the loop keeps running (and draining battery) on every screen after it. */
+const HG = (() => {
+  const FILL = 0.60;                                   // bottom bulb ends 60% full by height, top 40%
+  const Y_TOP = 22, Y_NECK = 130, Y_BOT = 238, CXC = 100;
+  const TOP_R = [[144,22],[144,62],[105,92],[105,130]];
+  const BOT_R = [[105,130],[105,168],[144,198],[144,238]];
+  const RAD = Math.PI / 180;
+  const bez = (P,t) => { const u = 1-t; return [
+    u*u*u*P[0][0]+3*u*u*t*P[1][0]+3*u*t*t*P[2][0]+t*t*t*P[3][0],
+    u*u*u*P[0][1]+3*u*u*t*P[1][1]+3*u*t*t*P[2][1]+t*t*t*P[3][1] ]; };
+  const mir = x => 2*CXC - x;
+  const glassD =
+    'M' + mir(144) + ' ' + Y_TOP + ' H144 C' + TOP_R[1].join(' ') + ' ' + TOP_R[2].join(' ') + ' ' + TOP_R[3].join(' ') +
+    ' C' + BOT_R[1].join(' ') + ' ' + BOT_R[2].join(' ') + ' ' + BOT_R[3].join(' ') + ' H' + mir(144) +
+    ' C' + mir(BOT_R[2][0]) + ' ' + BOT_R[2][1] + ' ' + mir(BOT_R[1][0]) + ' ' + BOT_R[1][1] + ' ' + mir(BOT_R[0][0]) + ' ' + BOT_R[0][1] +
+    ' C' + mir(TOP_R[2][0]) + ' ' + TOP_R[2][1] + ' ' + mir(TOP_R[1][0]) + ' ' + TOP_R[1][1] + ' ' + mir(TOP_R[0][0]) + ' ' + TOP_R[0][1] + ' Z';
+
+  // Half-width by y, sampled once. The glass outline and the fill maths read
+  // the same profile, so they cannot drift apart.
+  const STEP = .25, N = Math.round((Y_BOT - Y_TOP) / STEP) + 1, HW = new Float64Array(N);
+  (function build(){
+    const pts = [];
+    for (const P of [TOP_R, BOT_R]) for (let i=0;i<=400;i++){ const pt = bez(P,i/400); pts.push([pt[1], pt[0]-CXC]); }
+    pts.sort((a,b) => a[0]-b[0]);
+    let k = 0;
+    for (let i=0;i<N;i++){
+      const y = Y_TOP + i*STEP;
+      while (k < pts.length-2 && pts[k+1][0] < y) k++;
+      const y0 = pts[k][0], w0 = pts[k][1], y1 = pts[k+1][0], w1 = pts[k+1][1];
+      const t = y1===y0 ? 0 : (y-y0)/(y1-y0);
+      HW[i] = w0 + (w1-w0)*Math.max(0,Math.min(1,t));
+    }
+  })();
+  const idx = y => Math.round((y - Y_TOP) / STEP);
+  function areaBetween(ya, yb){ let a=0; for (let i=idx(ya); i<idx(yb); i++) a += (HW[i]+HW[i+1]) * STEP; return a; }
+  const H = Y_NECK - Y_TOP;
+
+  // Each bulb is a sealed container: a fixed volume settling on its gravity-low
+  // side, which is what keeps the water level with the real world as it turns.
+  function pileArea(ya, yb, dx, dy, c){
+    let a = 0;
+    for (let i = idx(ya); i < idx(yb); i++){
+      const y = Y_TOP + i*STEP + STEP/2, hw = (HW[i] + HW[i+1]) / 2, base = (y - Y_NECK) * dy;
+      let len;
+      if (Math.abs(dx) < 1e-6) len = base >= c ? 2*hw : 0;
+      else { const xb = (c - base) / dx;
+             len = dx > 0 ? Math.max(0, hw - Math.max(xb, -hw)) : Math.max(0, Math.min(xb, hw) + hw); }
+      a += Math.min(2*hw, len) * STEP;
+    }
+    return a;
+  }
+  function pileC(ya, yb, V, dx, dy){
+    let lo = 1e9, hi = -1e9;
+    for (let i = idx(ya); i <= idx(yb); i++){
+      const y = Y_TOP + i*STEP, base = (y - Y_NECK) * dy;
+      const xs = [-HW[i], HW[i]];
+      for (const x of xs){ const sv = x*dx + base; if (sv < lo) lo = sv; if (sv > hi) hi = sv; }
+    }
+    if (V <= 0.5) return hi + 4;
+    if (V >= pileArea(ya, yb, dx, dy, lo - 1) - 0.5) return lo - 4;
+    let a = lo, b = hi;
+    for (let n = 0; n < 26; n++){ const m = (a + b) / 2; if (pileArea(ya, yb, dx, dy, m) > V) a = m; else b = m; }
+    return (a + b) / 2;
+  }
+  const volsAt = f => [areaBetween(Y_NECK - (1 - f) * H, Y_NECK), areaBetween(Y_BOT - f * H, Y_BOT)];
+  const VTB = volsAt(FILL), VT = VTB[0], VB = VTB[1], TOT = VT + VB;
+
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ease = p => 1 - Math.pow(1 - p, 3);
+  const DUR = 1600, START_DELAY = 250;
+
+  let el = null, raf = 0, tiltRaf = 0, t0 = 0, finished = false, tiltOn = false, mounted = false;
+  let tVol = 0, bVol = 0, th = 0, w = 0, tiltLast = 0;
+  let sensorDeg = 0, sensorRaw = null, dragAng = 0, dragTarget = 0, dragging = false;
+  let flipped = false, moved = false, sensorOn = false;
+  let dragA0 = 0, dragBase = 0;
+
+  function draw(dx, dy, streamOn){
+    if (!el) return;
+    const deg = Math.atan2(dx, dy) / RAD;
+    const ct = pileC(Y_TOP, Y_NECK, tVol, dx, dy), cb = pileC(Y_NECK, Y_BOT, bVol, dx, dy);
+    el.rotTop.setAttribute('transform', 'translate(100 ' + Y_NECK + ') rotate(' + (-deg) + ')');
+    el.rotBot.setAttribute('transform', 'translate(100 ' + Y_NECK + ') rotate(' + (-deg) + ')');
+    el.liqTop.setAttribute('transform', 'translate(0 ' + ct + ')');
+    el.liqBot.setAttribute('transform', 'translate(0 ' + cb + ')');
+    const cl = dy >= 0 ? cb : ct, len = Math.max(0, cl);
+    el.stream.setAttribute('x1', 100 - dx*6); el.stream.setAttribute('y1', Y_NECK - dy*6);
+    el.stream.setAttribute('x2', 100 + dx*len); el.stream.setAttribute('y2', Y_NECK + dy*len);
+    el.stream.style.opacity = streamOn ? 1 : 0;
+    const upright = Math.abs(deg) < 2 && dy > 0;
+    el.drop.style.visibility = upright ? 'visible' : 'hidden';
+    if (upright) el.drop.style.setProperty('--d', Math.max(8, cb - 12) + 'px');
+  }
+  function renderIntro(p, running){ const v = volsAt(FILL * p); tVol = v[0]; bVol = v[1]; draw(0, 1, running && p > 0 && p < 1); }
+
+  function finish(instant){
+    if (finished || !el) return;
+    finished = true;
+    cancelAnimationFrame(raf); raf = 0;
+    renderIntro(1, false);
+    if (instant) el.stage.classList.add('instant');
+    el.stage.classList.add('done');
+    setTimeout(enableTilt, instant ? 300 : 1400);
+  }
+  function tick(now){
+    if (!el) return;
+    const p = Math.min(1, Math.max(0, (now - t0 - START_DELAY) / DUR));
+    renderIntro(ease(p), true);
+    if (p < 1) raf = requestAnimationFrame(tick); else finish(false);
+  }
+
+  /* ---- tilt: a bonus AFTER the intro, never part of it ---- */
+  function kick(){ if (tiltOn && !tiltRaf){ tiltLast = performance.now(); tiltRaf = requestAnimationFrame(tiltFrame); } }
+  function tiltFrame(now){
+    tiltRaf = 0;
+    if (!el) return;
+    const dt = Math.min(.05, (now - tiltLast) / 1000); tiltLast = now;
+    if (!dragging) dragAng += (dragTarget - dragAng) * Math.min(1, dt * 8);
+    const thT = sensorDeg + dragAng;
+    w += (90 * (thT - th) - 9.5 * w) * dt; th += w * dt;      // under-damped on purpose: a little slosh
+    const c = Math.cos(th * RAD);
+    if (c < -.35) flipped = true; else if (c > .35) flipped = false;
+    const target = flipped ? VB : VT, diff = target - tVol, rate = Math.abs(VB - VT) / 1.8;
+    tVol += Math.sign(diff) * Math.min(Math.abs(diff), rate * dt); bVol = TOT - tVol;
+    el.svg.style.transform = dragAng ? 'rotate(' + dragAng + 'deg)' : '';
+    draw(Math.sin(th * RAD), c, Math.abs(diff) > .5);
+    const settled = Math.abs(thT - th) < .05 && Math.abs(w) < .05 && Math.abs(diff) <= .5
+                 && !dragging && Math.abs(dragAng - dragTarget) < .05;
+    if (!settled) tiltRaf = requestAnimationFrame(tiltFrame);
+  }
+  function onOrient(e){
+    if (!el || e.beta == null || e.gamma == null) return;
+    const b = e.beta * RAD, g = e.gamma * RAD;
+    const ux = -Math.cos(b) * Math.sin(g), uy = Math.sin(b);
+    const a = ((screen.orientation && screen.orientation.angle != null) ? screen.orientation.angle : (window.orientation || 0)) * RAD;
+    const mx = -ux, my = -uy;
+    const sx = mx * Math.cos(a) - my * Math.sin(a), sy = mx * Math.sin(a) + my * Math.cos(a);
+    const dx = sx, dy = -sy;
+    const m = Math.hypot(dx, dy), k = Math.min(1, Math.max(0, (m - .2) / .3));   // lying flat: ignore
+    const raw = Math.atan2(dx * k, dy * k + (1 - k)) / RAD;
+    if (sensorRaw == null) sensorDeg = raw;
+    else { let df = raw - sensorRaw; if (df > 180) df -= 360; if (df < -180) df += 360; sensorDeg += df; }
+    sensorRaw = raw;
+    if (Math.abs(sensorDeg) > 8 && !moved){ moved = true; setTimeout(() => { if (el) el.hint.classList.remove('show'); }, 1800); }
+    kick();
+  }
+  function startSensor(){ if (!sensorOn){ sensorOn = true; window.addEventListener('deviceorientation', onOrient); } }
+
+  /* Must be called SYNCHRONOUSLY inside a tap, before any await: iOS Safari
+     only shows its motion prompt from a user gesture. No-op elsewhere, safe to
+     call repeatedly, and declining must never block the signup. */
+  function requestMotion(){
+    if (reduce || !('DeviceOrientationEvent' in window)) return Promise.resolve(false);
+    if (typeof DeviceOrientationEvent.requestPermission !== 'function'){ startSensor(); return Promise.resolve(true); }
+    try {
+      return DeviceOrientationEvent.requestPermission()
+        .then(r => { if (r === 'granted'){ startSensor(); return true; } return false; })
+        .catch(() => false);
+    } catch (e) { return Promise.resolve(false); }
+  }
+
+  function enableTilt(){
+    if (tiltOn || reduce || !finished || !el) return;
+    tiltOn = true;
+    el.wrap.classList.add('tiltable');
+    const coarse = matchMedia('(pointer: coarse)').matches, hasSensor = 'DeviceOrientationEvent' in window;
+    const needsAsk = hasSensor && typeof DeviceOrientationEvent.requestPermission === 'function';
+    if (hasSensor && !needsAsk) startSensor();
+    // No "tap here" button. On iOS the prompt rides on Count Me In instead, so
+    // there is nothing useful to say until they have tapped it.
+    if (coarse && hasSensor){
+      if (!needsAsk){ el.hint.textContent = 'Tilt your phone'; setTimeout(() => { if (el) el.hint.classList.remove('show'); }, 5000); }
+    } else if (!coarse) el.hint.textContent = 'Drag to turn the hourglass';
+    if (el.hint.textContent) requestAnimationFrame(() => { if (el) el.hint.classList.add('show'); });
+    kick();
+  }
+
+  const angleAt = e => { const r = el.wrap.getBoundingClientRect();
+    return Math.atan2(e.clientY - (r.top + r.height/2), e.clientX - (r.left + r.width/2)) / RAD; };
+  const onDown = e => { if (!tiltOn || !el) return;
+    dragging = true; dragA0 = angleAt(e); dragBase = dragAng;
+    el.wrap.setPointerCapture(e.pointerId); el.hint.classList.remove('show'); kick(); e.stopPropagation(); };
+  const onMove = e => { if (!dragging || !el) return;
+    let d = angleAt(e) - dragA0; if (d > 180) d -= 360; if (d < -180) d += 360;
+    dragAng = dragBase + d; dragTarget = dragAng; kick(); };
+  const endDrag = () => { if (!dragging) return; dragging = false; dragTarget = Math.round(dragAng / 180) * 180; kick(); };
+  // Tap anywhere to skip, except on a real control: the CTA and the hint must
+  // still do their own job on the first tap rather than only skipping.
+  const onStageClick = e => { if (!finished && !e.target.closest('[data-go],[data-act],.tilt-hint')) finish(true); };
+
+  function unmount(){
+    if (!mounted) return;
+    mounted = false;
+    cancelAnimationFrame(raf); cancelAnimationFrame(tiltRaf); raf = tiltRaf = 0;
+    window.removeEventListener('deviceorientation', onOrient); sensorOn = false;
+    el = null;
+  }
+
+  function mount(){
+    unmount();
+    const stage = document.getElementById('introStage');
+    if (!stage) return;
+    const wrap = document.getElementById('glassWrap');
+    el = { stage: stage, wrap: wrap, svg: wrap.querySelector('svg'), hint: document.getElementById('tiltHint'),
+           rotTop: document.getElementById('rotTop'), liqTop: document.getElementById('liqTop'),
+           rotBot: document.getElementById('rotBot'), liqBot: document.getElementById('liqBot'),
+           stream: document.getElementById('stream'), drop: document.getElementById('drop') };
+    ['glassClipPath','glassFill','glassStroke'].forEach(id => document.getElementById(id).setAttribute('d', glassD));
+    mounted = true;
+    finished = false; tiltOn = false; moved = false; dragging = false;
+    th = 0; w = 0; sensorDeg = 0; dragAng = 0; dragTarget = 0; sensorRaw = null; flipped = false;
+    stage.addEventListener('click', onStageClick);
+    wrap.addEventListener('pointerdown', onDown);
+    wrap.addEventListener('pointermove', onMove);
+    wrap.addEventListener('pointerup', endDrag);
+    wrap.addEventListener('pointercancel', endDrag);
+    renderIntro(0, false);
+    if (reduce){ finish(true); return; }
+    t0 = performance.now();
+    raf = requestAnimationFrame(tick);
+  }
+
+  return { mount: mount, unmount: unmount, requestMotion: requestMotion };
+})();
+window.hourglass = HG;
+
 /* ---------- render ---------- */
 const SCREENS = {
   welcome:screenWelcome, t1:screenT1, goal:screenGoal, struggle:screenStruggle, agegender:screenAgeGender,
   mode:screenMode, location:screenLocation, activity:screenActivity, confirm:screenConfirm,
 };
 function render(){
-  // The dark ground is the intro's alone, so it has to reach the body: a
-  // background on .welcome stops at the safe areas and leaves white bands.
-  document.body.classList.toggle('on-dark', S.cur === 'welcome');
+  // This assignment throws the intro's DOM away, so the hourglass has to let go
+  // of its element references and its animation frame BEFORE it happens, and
+  // take fresh ones after. Without the unmount the loop keeps running on every
+  // later screen, against nodes that no longer exist.
+  HG.unmount();
   document.getElementById('app').innerHTML = (SCREENS[S.cur] || screenWelcome)();
+  if (S.cur === 'welcome') HG.mount();
 }
 
 /* ---------- the server ---------- */
@@ -739,16 +998,19 @@ async function submitRecord(){
   S.claimToken = j.claim_token;
 }
 
+// The share button is the only button now, so the copied-confirmation has to
+// land on it. Without this the desktop path (no share sheet, falls through to
+// copying) would do its work in total silence and read as a dead button.
 function copyLink(){
   const inp = document.getElementById('refInput');
-  const btn = document.getElementById('copyBtn');
+  const lbl = document.getElementById('shareLbl');
   try {
     if (navigator.clipboard) navigator.clipboard.writeText(inp.value);
     else { inp.select(); inp.setSelectionRange(0, 9999); document.execCommand('copy'); }
   } catch (e) { /* nothing useful to tell them; the sheet or a long-press still works */ }
-  btn.classList.add('done');
-  btn.textContent = 'Link copied';
-  setTimeout(() => { btn.classList.remove('done'); btn.textContent = 'Copy link instead'; }, 1800);
+  if (!lbl) return;
+  lbl.textContent = 'Link copied';
+  setTimeout(() => { const l = document.getElementById('shareLbl'); if (l) l.textContent = 'Invite a friend'; }, 1800);
 }
 
 /* ---------- actions ---------- */
@@ -820,7 +1082,6 @@ async function act(name, v, field){
       return;
     }
 
-    case 'copy-ref': copyLink(); return;
   }
   render();
 }
