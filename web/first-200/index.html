@@ -172,7 +172,7 @@
      glass. */
   .welcome{
     flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
-    padding:min(7vh,52px) 26px max(22px,env(safe-area-inset-bottom,0px));
+    padding:min(6vh,56px) 26px max(20px,env(safe-area-inset-bottom,0px));
     position:relative;cursor:pointer;
     user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
   }
@@ -184,7 +184,7 @@
   .sound-wrap{display:flex;flex-direction:column;align-items:center;gap:13px;}
   /* On the intro the control is part of the opening statement, so it arrives
      with the name rather than waiting for the copy. */
-  .welcome .sound-wrap{opacity:0;animation:hgFadeIn .5s ease .34s forwards;margin-top:min(3.4vh,24px);}
+  .welcome .sound-wrap{opacity:0;animation:hgFadeIn .5s ease .34s forwards;margin-top:min(3.9vh,38px);}
   .content.done .sound-wrap{margin:6px 0 18px;}
   .content.done .sound{width:84px;height:84px;}
   .sound{
@@ -256,7 +256,7 @@
   }
   .welcome .ask{
     font-size:21px;font-weight:600;line-height:1.32;letter-spacing:-.2px;max-width:320px;
-    margin-top:auto;padding-top:18px;text-wrap:balance;opacity:0;transform:translateY(10px);
+    margin-top:min(6.9vh,66px);text-wrap:balance;opacity:0;transform:translateY(10px);
   }
   .ask b{font-weight:700;background:linear-gradient(135deg,var(--g1),var(--g2));
          -webkit-background-clip:text;background-clip:text;color:transparent;}
@@ -264,7 +264,7 @@
   /* The closer is the brief's orange semibold, not a dimmed line: it is the
      ask, and it was reading as a footnote. */
   .welcome .tag.quiet{font-size:15px;color:var(--g2);font-weight:600;line-height:1.45;}
-  .welcome .acts{margin-top:auto;padding-top:28px;max-width:300px;width:100%;opacity:0;transform:translateY(10px);}
+  .welcome .acts{margin-top:auto;padding-top:32px;max-width:300px;width:100%;opacity:0;transform:translateY(10px);}
 
   .welcome.done .ask{animation:hgRise .5s ease 0s forwards;}
   .welcome.done .tag{animation:hgRise .5s ease .14s forwards;}
