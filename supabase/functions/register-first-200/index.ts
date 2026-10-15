@@ -186,6 +186,10 @@ Deno.serve(async (req) => {
           subject: WELCOME_SUBJECT,
           html: welcomeHtml(view),
           text: welcomeText(view),
+          // Makes "hit reply" actually work and gives Gmail a real address to
+          // associate with the sender. Same mailbox as From, so nothing about
+          // who this comes from changes.
+          reply_to: 'hello@choner.io',
           // NO List-Unsubscribe. It is one of the strongest bulk-mail markers
           // Gmail reads, and it was filing this under Promotions. The header
           // exists for mail people did not individually ask for; this one was
