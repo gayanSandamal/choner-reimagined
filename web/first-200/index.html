@@ -91,6 +91,13 @@
   input.txt:focus,select.txt:focus{border-color:var(--g2);}
   input.txt.bad{border-color:var(--red);}
   .ferr{font-size:12px;color:var(--red);}
+  /* A question in the page's own voice, not a red error. It is a suggestion
+     and the form stays usable whether or not anyone takes it. */
+  .didyoumean{
+    display:block;width:100%;text-align:left;border:none;background:none;padding:2px 0 0;
+    font-family:inherit;font-size:12.5px;line-height:1.5;color:var(--pmuted);cursor:pointer;
+  }
+  .didyoumean b{color:var(--g2);font-weight:600;}
   select.txt{appearance:none;-webkit-appearance:none;padding-right:44px;}
   .sel-wrap{position:relative;}
   .sel-wrap::after{content:'';position:absolute;right:18px;top:50%;width:7px;height:7px;border-right:1.6px solid var(--pmuted);border-bottom:1.6px solid var(--pmuted);transform:translateY(-70%) rotate(45deg);pointer-events:none;}
@@ -508,7 +515,7 @@ const DOTS  = ['t1','goal','struggle','agegender','mode','location','activity'];
 const params = new URLSearchParams(location.search);
 let S = {
   cur:'welcome',
-  f:{ name:'', email:'', phone:'' }, err:{},
+  f:{ name:'', email:'', phone:'' }, err:{}, fix:{},
   goal:null, struggle:null, age:null, gender:null,
   mode:null, times:[],
   locArea:'colombo', location:null,
@@ -522,6 +529,56 @@ let S = {
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function validEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim()); }
+
+/* A real registration was lost to "gmail.con" on 15 October. It passes every
+   format check there is, ours and the browser's, because nothing about it is
+   malformed: it is simply the wrong domain. The only thing that catches it is
+   comparing against domains that actually exist.
+   This SUGGESTS and never blocks. Someone on a genuinely unusual domain must
+   still be able to sign up, and a false positive that stops them is worse than
+   the typo it was trying to catch. */
+const MAIL_DOMAINS = [
+  'gmail.com','googlemail.com','yahoo.com','ymail.com','hotmail.com','outlook.com',
+  'live.com','msn.com','icloud.com','me.com','mac.com','aol.com','proton.me',
+  'protonmail.com','mail.com','zoho.com','gmx.com','yandex.com',
+  // Sri Lankan providers, so a real local address is never "corrected".
+  'sltnet.lk','slt.lk','sltidc.lk','eureka.lk','dialog.lk','mobitel.lk'
+];
+
+// Levenshtein, capped: we only care whether it is 1 or 2 edits away.
+function editDistance(a, b){
+  if (Math.abs(a.length - b.length) > 2) return 9;
+  const prev = new Array(b.length + 1);
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++){
+    let diag = prev[0];
+    prev[0] = i;
+    for (let j = 1; j <= b.length; j++){
+      const tmp = prev[j];
+      prev[j] = Math.min(
+        prev[j] + 1,
+        prev[j - 1] + 1,
+        diag + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1)
+      );
+      diag = tmp;
+    }
+  }
+  return prev[b.length];
+}
+
+/* Returns the corrected address, or null when there is nothing to say.
+   A domain already on the list is correct by definition and returns null, so
+   mail.com is never "corrected" to gmail.com despite being one edit away. */
+function suggestEmail(v){
+  const at = String(v || '').lastIndexOf('@');
+  if (at < 1) return null;
+  const local = v.slice(0, at), domain = v.slice(at + 1).toLowerCase().trim();
+  if (!domain || MAIL_DOMAINS.indexOf(domain) > -1) return null;
+  for (const known of MAIL_DOMAINS){
+    if (editDistance(domain, known) <= 2) return local + '@' + known;
+  }
+  return null;
+}
 
 /* Lenient: 07X XXX XXXX, +947..., 947... all arrive. A number we cannot parse
    is kept as typed rather than dropped: a human will read it. */
@@ -666,7 +723,8 @@ function screenT1(){
       <input class="txt" id="f-name" type="text" placeholder="Your full name" value="${esc(S.f.name)}" autocomplete="name"></div>
     <div class="fld"><label for="f-email">Email</label>
       <input class="txt ${S.err.email?'bad':''}" id="f-email" type="email" placeholder="you@email.com" value="${esc(S.f.email)}" autocomplete="email" inputmode="email">
-      ${S.err.email?`<div class="ferr">${S.err.email}</div>`:''}</div>
+      ${S.err.email?`<div class="ferr">${S.err.email}</div>`:''}
+      ${S.fix.email?`<button type="button" class="didyoumean" data-act="accept-email">Did you mean <b>${esc(S.fix.email)}</b>?</button>`:''}</div>
     <div class="fld"><label for="f-phone">Phone <span>optional</span></label>
       <input class="txt" id="f-phone" type="tel" placeholder="07X XXX XXXX" value="${esc(S.f.phone)}" autocomplete="tel" inputmode="tel"></div>
 
@@ -1258,6 +1316,11 @@ async function act(name, v, field){
   switch(name){
     case 'pick': S[field] = v; break;
 
+    // One tap accepts the correction. Nothing is changed without it.
+    case 'accept-email':
+      if (S.fix.email){ S.f.email = S.fix.email; S.fix.email = null; S.err.email = null; }
+      break;
+
     case 'pick-activity':
       S.activity = v;
       // Leaving Workouts must not strand exercises on a run.
@@ -1335,7 +1398,7 @@ const app = document.getElementById('app');
 app.addEventListener('input', e => {
   const id = e.target.id;
   if (id === 'f-name')  S.f.name  = e.target.value;
-  else if (id === 'f-email'){ S.f.email = e.target.value; S.err.email = null; }
+  else if (id === 'f-email'){ S.f.email = e.target.value; S.err.email = null; S.fix.email = null; }
   else if (id === 'f-phone') S.f.phone = e.target.value;
   else return;
 
@@ -1350,9 +1413,14 @@ app.addEventListener('change', e => {
 });
 
 app.addEventListener('blur', e => {
-  if (e.target.id === 'f-email' && e.target.value && !validEmail(e.target.value)){
-    S.err.email = "That doesn't look like a valid email."; render();
+  if (e.target.id !== 'f-email' || !e.target.value) return;
+  if (!validEmail(e.target.value)){
+    S.err.email = "That doesn't look like a valid email."; S.fix.email = null; render(); return;
   }
+  // The address is well formed. It can still be the wrong domain, which is
+  // exactly how a real registration was lost on 15 October.
+  const fix = suggestEmail(e.target.value.trim());
+  if (fix){ S.fix.email = fix; render(); }
 }, true);
 
 app.addEventListener('click', e => {
