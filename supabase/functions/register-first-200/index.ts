@@ -186,11 +186,13 @@ Deno.serve(async (req) => {
           subject: WELCOME_SUBJECT,
           html: welcomeHtml(view),
           text: welcomeText(view),
-          // One-click unsubscribe without an unsubscribe page to build. Gmail
-          // and Outlook surface it as their own button, which is what keeps
-          // people from reaching for "report spam" instead - and a spam report
-          // on this domain would start costing us the app's own auth mail.
-          headers: { 'List-Unsubscribe': '<mailto:unsubscribe@choner.io?subject=unsubscribe>' },
+          // NO List-Unsubscribe. It is one of the strongest bulk-mail markers
+          // Gmail reads, and it was filing this under Promotions. The header
+          // exists for mail people did not individually ask for; this one was
+          // asked for seconds earlier and is transactional.
+          // THE LAUNCH EMAIL TO ALL 200 IS GENUINELY BULK. It must carry
+          // List-Unsubscribe, or a spam report there starts costing us the
+          // app's own auth mail. Whoever builds that broadcast: put it back.
         }),
       });
       if (!res.ok) throw new Error(`resend ${res.status}: ${await res.text()}`);
