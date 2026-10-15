@@ -2180,3 +2180,61 @@ as nothing selected until they pick again.
 **Timing.** Done now, while the only First 200 registrations are Dinesh's own
 tests, because the cost of this change rises with the row count and with nothing
 else.
+
+---
+
+## 15 October 2026 — the intro says the name out loud
+
+**Choner is said "Connor".** People hear a name from a friend before they type
+it, so the wrong sound is also a wrong search, and no logo can fix a sound. The
+intro's hourglass gave up its place to an audio button; the hourglass moved to
+the ending screen, where tilting it is a reward rather than a secret.
+
+**Order on the intro:** THE FIRST 200, choner., the button, then the copy. The
+top three settle at once as one opening statement.
+
+**The spoken line was removed.** A caption under a five second clip read as a
+subtitle and told the joke before the clip could land.
+
+**The ending screen's orange tick** gave up its circle to the same button and
+survives as a 19px mark on the end of "You're in.", which is already doing the
+confirming.
+
+### Three things the brief asked for that could not be built as written
+
+**1. The iOS silent-switch check does not exist.** iOS gives JavaScript no way
+to read the switch, and audio plays silently rather than failing when it is on,
+so there is nothing to detect. The label carries "(sound on)" on iOS instead of
+pretending to test for it. Confirmed working on a real iPhone, 15 October.
+
+**2. The two-format selection was a liability, not a safety net.** The brief had
+the page choose between `.m4a` and `.mp3` by codec support, which means the
+browser picks the m4a first. The recording is an mp3, so that branch asked for a
+file that does not exist and the whole control vanished. One filename now. MP3
+plays everywhere that matters.
+
+**3. The intro's reveal clock belonged to the hourglass** — the fill ended and
+the words followed. With the glass gone the intro keeps its own timer, so Count
+Me In still arrives at about 2.5s. The audio never gates the signup, and a
+missing recording hides the control rather than showing a dead button, which is
+why the page can ship before a final take exists.
+
+### The viewport bug worth remembering
+
+**`100vh` lies on iOS Safari.** It is the LARGE viewport: the height the page
+would have if the address bar and the toolbar were hidden. Both are visible on
+first load, so a shell sized to `100vh` is about 190px taller than what the
+person can see, and anything anchored to its bottom lands under the toolbar.
+That is why Count Me In needed a scroll on an iPhone 12. `100svh` is the
+always-visible area and is now declared after the `vh` line as the fallback.
+
+Below about 600px of visible height the fixed parts already fill the screen, so
+the audio button, the wordmark and the copy take their size from the viewport
+too, capped at the design value. A tall phone is unchanged; a short one shrinks
+rather than pushing the button off. Verified at 320x568, 360x500, 360x560,
+360x640, 390x654 and 390x844.
+
+**The spacing lesson:** splitting leftover height evenly above and below a block
+puts a void on each side of it and makes three elements read as adrift. The copy
+follows the button at a fixed distance and all the slack collects in one place,
+above the call to action.
