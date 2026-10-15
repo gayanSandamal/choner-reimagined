@@ -141,6 +141,14 @@
 
   /* ============ confirmation ============ */
   .center{text-align:center;}
+  /* The tick kept its job and lost its pedestal: small, on the end of the
+     sentence, where "You're in." is already doing the confirming. */
+  .tick{
+    display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;
+    width:19px;height:19px;border-radius:50%;margin:0 0 4px 7px;color:#fff;
+    background:linear-gradient(135deg,var(--g1),var(--g2));
+  }
+  .tick svg{width:11px;height:11px;}
   .big-ok{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;margin:12px auto 18px;color:#fff;box-shadow:var(--shadow-btn);}
   .big-ok svg{width:36px;height:36px;}
   .codebox{border:1.5px dashed var(--dim);border-radius:18px;padding:18px;text-align:center;background:var(--paper);}
@@ -169,14 +177,16 @@
     user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
   }
   .welcome .eyebrow{
-    font-size:14px;letter-spacing:3px;margin-bottom:min(4vh,26px);
+    font-size:14px;letter-spacing:3px;margin-bottom:min(2.4vh,16px);
     opacity:0;animation:hgFadeIn .5s ease .1s forwards;
   }
   /* ---- the intro's audio button ---- */
-  .sound-wrap{
-    display:flex;flex-direction:column;align-items:center;gap:13px;
-    opacity:0;animation:hgFadeIn .5s ease .15s forwards;
-  }
+  .sound-wrap{display:flex;flex-direction:column;align-items:center;gap:13px;}
+  /* On the intro the control is part of the opening statement, so it arrives
+     with the name rather than waiting for the copy. */
+  .welcome .sound-wrap{opacity:0;animation:hgFadeIn .5s ease .34s forwards;margin-top:min(3.4vh,24px);}
+  .content.done .sound-wrap{margin:6px 0 18px;}
+  .content.done .sound{width:84px;height:84px;}
   .sound{
     position:relative;width:104px;height:104px;border:0;border-radius:50%;padding:0;
     background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;
@@ -199,13 +209,6 @@
   .sound.playing svg{animation:sndThump .9s ease-in-out infinite;}
   @keyframes sndThump{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
   .sound-label{font-size:13.5px;font-weight:500;color:var(--pmuted);min-height:20px;text-align:center;}
-  /* The caption holds its space at all times. Appearing on play would shove
-     the wordmark and the button down mid-sentence. */
-  .sound-caption{
-    font-size:12.5px;line-height:1.5;color:#55656F;max-width:280px;text-align:center;
-    opacity:0;transition:opacity .4s ease;
-  }
-  .sound-wrap.show-caption .sound-caption{opacity:1;}
   /* display:flex beats the plain [hidden] attribute, so say it explicitly. A
      missing recording has to take the whole control with it. */
   .sound-wrap[hidden]{display:none;}
@@ -247,10 +250,13 @@
     text-align:center;margin-top:min(5vh,38px);width:100%;flex:1;
     display:flex;flex-direction:column;align-items:center;
   }
-  .welcome .wordmark{margin-top:auto;font-size:38px;letter-spacing:-1px;line-height:1.1;opacity:0;transform:translateY(10px);}
+  .welcome .wordmark{
+    font-size:38px;letter-spacing:-1px;line-height:1.1;text-align:center;
+    opacity:0;animation:hgFadeIn .5s ease .22s forwards;
+  }
   .welcome .ask{
     font-size:21px;font-weight:600;line-height:1.32;letter-spacing:-.2px;max-width:320px;
-    margin-top:18px;text-wrap:balance;opacity:0;transform:translateY(10px);
+    margin-top:auto;padding-top:18px;text-wrap:balance;opacity:0;transform:translateY(10px);
   }
   .ask b{font-weight:700;background:linear-gradient(135deg,var(--g1),var(--g2));
          -webkit-background-clip:text;background-clip:text;color:transparent;}
@@ -260,12 +266,11 @@
   .welcome .tag.quiet{font-size:15px;color:var(--g2);font-weight:600;line-height:1.45;}
   .welcome .acts{margin-top:auto;padding-top:28px;max-width:300px;width:100%;opacity:0;transform:translateY(10px);}
 
-  .welcome.done .wordmark{animation:hgRise .5s ease 0s forwards;}
-  .welcome.done .ask{animation:hgRise .5s ease .14s forwards;}
-  .welcome.done .tag{animation:hgRise .5s ease .28s forwards;}
-  .welcome.done .tag.quiet{animation:hgRise .5s ease .40s forwards;}
-  .welcome.done .acts{animation:hgRise .5s ease .52s forwards;}
-  .welcome.instant .wordmark,.welcome.instant .ask,.welcome.instant .tag,
+  .welcome.done .ask{animation:hgRise .5s ease 0s forwards;}
+  .welcome.done .tag{animation:hgRise .5s ease .14s forwards;}
+  .welcome.done .tag.quiet{animation:hgRise .5s ease .26s forwards;}
+  .welcome.done .acts{animation:hgRise .5s ease .38s forwards;}
+  .welcome.instant .ask,.welcome.instant .tag,
   .welcome.instant .tag.quiet,.welcome.instant .acts{animation-duration:.01s;animation-delay:0s;}
   .hg-stage.instant #drop{animation-delay:.4s;}
   .hg-stage.instant .ring{display:none;}
@@ -283,8 +288,9 @@
   .tilt-hint.show{opacity:.85;pointer-events:auto;}
   /* The reward. Same engine as the intro, smaller, and here it is meant to be
      touched: this is the one screen with nothing left to do. */
-  .playbox{display:flex;flex-direction:column;align-items:center;margin:30px 0 0;padding-bottom:46px;position:relative;}
-  .playbox .glass-wrap{width:104px;height:135px;animation:none;opacity:1;}
+  .playbox{display:flex;flex-direction:column;align-items:center;margin:22px 0 0;padding-bottom:42px;position:relative;}
+  .playbox .glass-wrap{width:94px;height:121px;animation:none;opacity:1;}
+  .playbox .glass-shadow{width:80px;height:14px;bottom:-8px;}
   .glass-wrap.tiltable{touch-action:none;cursor:grab;}
 
   @media (prefers-reduced-motion: reduce){
@@ -575,11 +581,11 @@ function glassMarkup(){
    wrong sound is also a wrong search.
    The button never gates the signup. The words and Count Me In arrive on their
    own schedule whether or not anyone taps it. */
-function screenWelcome(){
-  return `<div class="welcome" id="introStage">
-    <div class="eyebrow">The First 200</div>
-
-    <div class="sound-wrap" id="soundWrap">
+/* One control, two homes: the intro offers it under the wordmark, and the
+   ending screen puts it where the tick used to be. Only one is in the DOM at
+   a time, so the ids stay unique. */
+function soundMarkup(){
+  return `<div class="sound-wrap" id="soundWrap">
       <button id="soundBtn" class="sound idle" type="button" aria-label="Hear how Choner is said">
         <svg viewBox="0 0 120 120" aria-hidden="true">
           <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
@@ -593,11 +599,17 @@ function screenWelcome(){
         </svg>
       </button>
       <div class="sound-label" id="soundLabel" aria-live="polite"></div>
-      <div class="sound-caption">&ldquo;Yes, there's an H. No, you don't say it. Welcome to Choner.&rdquo;</div>
-    </div>
+    </div>`;
+}
+
+function screenWelcome(){
+  return `<div class="welcome" id="introStage">
+    <div class="eyebrow">The First 200</div>
+    <div class="wordmark">choner<span>.</span></div>
+
+    ${soundMarkup()}
 
     <div class="reveal">
-      <div class="wordmark">choner<span>.</span></div>
       <div class="ask">What if someone was <b>counting on you</b> to show up?</div>
       <div class="tag">Choner helps you stay consistent with the healthy habits you want to build.</div>
       <div class="tag quiet">Be one of the first 200 to start something different.</div>
@@ -746,8 +758,8 @@ function screenConfirm(){
 
   return `<div class="content done">
     <div class="center">
-      <div class="big-ok">${ic('check',2.6)}</div>
-      <div class="p-h1">You're <b>in.</b></div>
+      ${soundMarkup()}
+      <div class="p-h1">You're <b>in.</b><i class="tick">${ic('check',3.4)}</i></div>
       <div class="p-sub">You're one of The First 200. We'll be in touch before Choner goes online.</div>
     </div>
 
@@ -766,7 +778,14 @@ function screenConfirm(){
     <!-- Their own answers, read back. Proves we listened, and costs nothing. -->
     <div class="summary"><b>${esc(labelOf(ACTIVITIES,S.activity))}</b> &middot; ${esc(how)}${where?' &middot; '+esc(where):''}${when?' &middot; '+esc(when):''}</div>
 
-    <div class="card" style="margin-top:22px;">
+    <!-- Nothing left to do by this point, so the hourglass comes back as
+         something to turn. On iOS the hint under it is the tap that buys
+         motion access: it is the only one left, and it stays on this screen. -->
+    <div class="playbox hg-stage" id="introStage">
+      ${glassMarkup()}
+    </div>
+
+    <div class="card" style="margin-top:10px;">
       <!-- One button. "Copy link instead" was removed: both the iOS and the
            Android share sheet already contain a Copy action, and on desktop
            navigator.share is absent so Share falls through to copying anyway,
@@ -779,12 +798,6 @@ function screenConfirm(){
       <div class="reass">This is literally the whole idea. Someone showing up with you.</div>
     </div>
 
-    <!-- Nothing left to do on this screen, so the hourglass comes back as
-         something to turn. On iOS the hint under it is the tap that buys
-         motion access: it is the only one left, and it stays on this screen. -->
-    <div class="playbox hg-stage" id="introStage">
-      ${glassMarkup()}
-    </div>
   </div>`;
 }
 
@@ -799,10 +812,11 @@ const INTRO = (() => {
   // button is ready at about 2.5s, as before.
   const REVEAL_AT = 1500;
 
-  // Two files, one recording. canPlayType picks; if the chosen one is missing
-  // the error handler hides the control rather than showing a dead button.
-  const SRC_M4A = 'choner-welcome.m4a';
-  const SRC_MP3 = 'choner-welcome.mp3';
+  // One file. MP3 plays everywhere that matters, so the two-format dance the
+  // brief described would only add a filename that can 404. If the recording
+  // is missing the error handler hides the control rather than showing a dead
+  // button.
+  const SRC = 'choner-welcome.mp3';
 
   // iOS gives JavaScript NO way to read the silent switch, and audio plays
   // silently rather than failing when it is on, so the page cannot detect it.
@@ -811,9 +825,9 @@ const INTRO = (() => {
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   const TEXT = {
-    idle: 'Tap to hear how we say it' + (IOS ? ' (sound on)' : ''),
+    idle: 'Tap to play' + (IOS ? ' (sound on)' : ''),
     playing: 'Playing…',
-    done: 'Tap to hear it again'
+    done: 'Tap to play again'
   };
 
   let audio = null, broken = false, el = null, timer = 0;
@@ -821,7 +835,7 @@ const INTRO = (() => {
   function makeAudio(){
     const a = new Audio();
     a.preload = 'auto';
-    a.src = a.canPlayType('audio/mp4; codecs="mp4a.40.2"') ? SRC_M4A : SRC_MP3;
+    a.src = SRC;
     a.addEventListener('ended', () => set('done'));
     a.addEventListener('error', () => { broken = true; if (el) el.wrap.hidden = true; });
     return a;
@@ -831,8 +845,6 @@ const INTRO = (() => {
     if (!el) return;
     el.btn.className = 'sound ' + (state === 'playing' ? 'playing' : 'idle');
     el.label.textContent = TEXT[state];
-    // The caption stays up after it ends: the joke is worth reading twice.
-    el.wrap.classList.toggle('show-caption', state !== 'idle');
   }
 
   // Plays once. No loop, no autoplay (browsers block it anyway), and a tap
@@ -850,19 +862,24 @@ const INTRO = (() => {
     el = null;
   }
 
-  function mount(){
+  // mode 'intro' also owns the reveal clock; 'plain' is the ending screen,
+  // where there is nothing to wait for.
+  function mount(mode){
     unmount();
     const wrap = document.getElementById('soundWrap');
-    const stage = document.getElementById('introStage');
-    if (!wrap || !stage) return;
-    el = { wrap, stage, btn: document.getElementById('soundBtn'), label: document.getElementById('soundLabel') };
+    if (!wrap) return;
+    el = { wrap, btn: document.getElementById('soundBtn'), label: document.getElementById('soundLabel') };
 
     if (!audio) audio = makeAudio();
     if (broken) el.wrap.hidden = true;
     else { set('idle'); el.btn.addEventListener('click', onTap); }
 
+    if (mode !== 'intro') return;
+    const stage = document.getElementById('introStage');
+    if (!stage) return;
+    el.stage = stage;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) stage.classList.add('instant', 'done');
-    else timer = setTimeout(() => { if (el) el.stage.classList.add('done'); }, REVEAL_AT);
+    else timer = setTimeout(() => { if (el && el.stage) el.stage.classList.add('done'); }, REVEAL_AT);
   }
 
   return { mount: mount, unmount: unmount };
@@ -1140,8 +1157,8 @@ function render(){
   HG.unmount();
   INTRO.unmount();
   document.getElementById('app').innerHTML = (SCREENS[S.cur] || screenWelcome)();
-  if (S.cur === 'welcome') INTRO.mount();
-  else if (S.cur === 'confirm') HG.mount('play');
+  if (S.cur === 'welcome') INTRO.mount('intro');
+  else if (S.cur === 'confirm'){ INTRO.mount('plain'); HG.mount('play'); }
 }
 
 /* ---------- the server ---------- */
