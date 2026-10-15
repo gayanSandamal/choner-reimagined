@@ -172,6 +172,44 @@
     font-size:14px;letter-spacing:3px;margin-bottom:min(4vh,26px);
     opacity:0;animation:hgFadeIn .5s ease .1s forwards;
   }
+  /* ---- the intro's audio button ---- */
+  .sound-wrap{
+    display:flex;flex-direction:column;align-items:center;gap:13px;
+    opacity:0;animation:hgFadeIn .5s ease .15s forwards;
+  }
+  .sound{
+    position:relative;width:104px;height:104px;border:0;border-radius:50%;padding:0;
+    background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  }
+  .sound svg{width:100%;height:100%;display:block;position:relative;z-index:1;}
+  /* Two rings, half a cycle apart, so the idle state reads as "tap me" without
+     a label having to say it twice. */
+  .sound::before,.sound::after{
+    content:'';position:absolute;inset:0;border-radius:50%;
+    border:2px solid rgba(253,131,2,.5);opacity:0;
+  }
+  .sound.idle::before{animation:sndPing 2.4s ease-out infinite;}
+  .sound.idle::after{animation:sndPing 2.4s ease-out 1.2s infinite;}
+  @keyframes sndPing{0%{opacity:.8;transform:scale(1);}100%{opacity:0;transform:scale(1.7);}}
+  .sound .w{fill:none;stroke:#fff;stroke-width:5;stroke-linecap:round;opacity:.9;}
+  .sound.playing .w{animation:sndWave 1s ease-in-out infinite;}
+  .sound.playing .w2{animation-delay:.18s;}
+  .sound.playing .w3{animation-delay:.36s;}
+  @keyframes sndWave{0%,100%{opacity:.25;}50%{opacity:1;}}
+  .sound.playing svg{animation:sndThump .9s ease-in-out infinite;}
+  @keyframes sndThump{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+  .sound-label{font-size:13.5px;font-weight:500;color:var(--pmuted);min-height:20px;text-align:center;}
+  /* The caption holds its space at all times. Appearing on play would shove
+     the wordmark and the button down mid-sentence. */
+  .sound-caption{
+    font-size:12.5px;line-height:1.5;color:#55656F;max-width:280px;text-align:center;
+    opacity:0;transition:opacity .4s ease;
+  }
+  .sound-wrap.show-caption .sound-caption{opacity:1;}
+  /* display:flex beats the plain [hidden] attribute, so say it explicitly. A
+     missing recording has to take the whole control with it. */
+  .sound-wrap[hidden]{display:none;}
+
   .glass-wrap{position:relative;width:135px;height:176px;opacity:0;animation:hgFadeIn .5s ease .15s forwards;}
   .glass-wrap svg{width:100%;height:100%;overflow:visible;display:block;will-change:transform;}
   .ring{
@@ -254,6 +292,7 @@
     .hg-stage.done #drop{animation:none;}
     .hg-stage.done .glass-wrap{animation:none;}
     .hg-stage.done .ring{display:none;}
+    .sound::before,.sound::after,.sound.playing .w,.sound.playing svg{animation:none;}
   }
 
   @media (min-width:600px){
@@ -530,16 +569,32 @@ function glassMarkup(){
     </div>`;
 }
 
-/* The intro: an hourglass that fills. Nothing more. The tilt used to live
-   here, where it was unreachable on iOS and unknown everywhere else; it is the
-   ending screen's now, as a reward rather than a secret.
-   The fill is DECORATIVE. It is not a signup count and nothing here reads from
-   Supabase, so it can never be wrong. */
+/* The intro. The hourglass used to stand here; it is the ending screen's now,
+   and this is the one thing the page can say that a logo cannot: the name is
+   said "Connor". Most people hear it from a friend before they type it, so a
+   wrong sound is also a wrong search.
+   The button never gates the signup. The words and Count Me In arrive on their
+   own schedule whether or not anyone taps it. */
 function screenWelcome(){
-  return `<div class="welcome hg-stage" id="introStage" role="button" aria-label="Skip intro">
+  return `<div class="welcome" id="introStage">
     <div class="eyebrow">The First 200</div>
 
-    ${glassMarkup()}
+    <div class="sound-wrap" id="soundWrap">
+      <button id="soundBtn" class="sound idle" type="button" aria-label="Hear how Choner is said">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#FD8302"/><stop offset="1" stop-color="#FD5B01"/>
+          </linearGradient></defs>
+          <circle cx="60" cy="60" r="56" fill="url(#sg)"/>
+          <path d="M36 51h11l16-13v44L47 69H36z" fill="#fff"/>
+          <path class="w w1" d="M72 50c4 4 4 16 0 20"/>
+          <path class="w w2" d="M79 43c8 8 8 26 0 34"/>
+          <path class="w w3" d="M86 36c12 12 12 36 0 48"/>
+        </svg>
+      </button>
+      <div class="sound-label" id="soundLabel" aria-live="polite"></div>
+      <div class="sound-caption">&ldquo;Yes, there's an H. No, you don't say it. Welcome to Choner.&rdquo;</div>
+    </div>
 
     <div class="reveal">
       <div class="wordmark">choner<span>.</span></div>
@@ -732,6 +787,86 @@ function screenConfirm(){
     </div>
   </div>`;
 }
+
+/* ---------- the intro: the audio button and the reveal ------------------
+   Choner is said "Connor". People hear the name from a friend before they
+   type it, so the wrong sound is also a wrong search, and no logo can fix a
+   sound. One tap, one play. */
+const INTRO = (() => {
+  // When the words and the button arrive. The hourglass used to own this clock
+  // (its fill ended and the reveal followed); with the glass gone to the ending
+  // screen the intro keeps its own. The cascade in CSS adds ~1s on top, so the
+  // button is ready at about 2.5s, as before.
+  const REVEAL_AT = 1500;
+
+  // Two files, one recording. canPlayType picks; if the chosen one is missing
+  // the error handler hides the control rather than showing a dead button.
+  const SRC_M4A = 'choner-welcome.m4a';
+  const SRC_MP3 = 'choner-welcome.mp3';
+
+  // iOS gives JavaScript NO way to read the silent switch, and audio plays
+  // silently rather than failing when it is on, so the page cannot detect it.
+  // The label carries the warning instead of pretending to check.
+  const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  const TEXT = {
+    idle: 'Tap to hear how we say it' + (IOS ? ' (sound on)' : ''),
+    playing: 'Playing…',
+    done: 'Tap to hear it again'
+  };
+
+  let audio = null, broken = false, el = null, timer = 0;
+
+  function makeAudio(){
+    const a = new Audio();
+    a.preload = 'auto';
+    a.src = a.canPlayType('audio/mp4; codecs="mp4a.40.2"') ? SRC_M4A : SRC_MP3;
+    a.addEventListener('ended', () => set('done'));
+    a.addEventListener('error', () => { broken = true; if (el) el.wrap.hidden = true; });
+    return a;
+  }
+
+  function set(state){
+    if (!el) return;
+    el.btn.className = 'sound ' + (state === 'playing' ? 'playing' : 'idle');
+    el.label.textContent = TEXT[state];
+    // The caption stays up after it ends: the joke is worth reading twice.
+    el.wrap.classList.toggle('show-caption', state !== 'idle');
+  }
+
+  // Plays once. No loop, no autoplay (browsers block it anyway), and a tap
+  // while playing stops it. play() must be called inside the tap itself.
+  function onTap(){
+    if (!audio) return;
+    if (!audio.paused){ audio.pause(); audio.currentTime = 0; set('idle'); return; }
+    audio.currentTime = 0;
+    audio.play().then(() => set('playing')).catch(() => set('idle'));
+  }
+
+  function unmount(){
+    clearTimeout(timer); timer = 0;
+    if (audio && !audio.paused){ audio.pause(); audio.currentTime = 0; }
+    el = null;
+  }
+
+  function mount(){
+    unmount();
+    const wrap = document.getElementById('soundWrap');
+    const stage = document.getElementById('introStage');
+    if (!wrap || !stage) return;
+    el = { wrap, stage, btn: document.getElementById('soundBtn'), label: document.getElementById('soundLabel') };
+
+    if (!audio) audio = makeAudio();
+    if (broken) el.wrap.hidden = true;
+    else { set('idle'); el.btn.addEventListener('click', onTap); }
+
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) stage.classList.add('instant', 'done');
+    else timer = setTimeout(() => { if (el) el.stage.classList.add('done'); }, REVEAL_AT);
+  }
+
+  return { mount: mount, unmount: unmount };
+})();
 
 /* ---------- the hourglass ----------------------------------------------
    Lifted from the prototype, with one structural change: this page rebuilds
@@ -1003,8 +1138,9 @@ function render(){
   // take fresh ones after. Without the unmount the loop keeps running on every
   // later screen, against nodes that no longer exist.
   HG.unmount();
+  INTRO.unmount();
   document.getElementById('app').innerHTML = (SCREENS[S.cur] || screenWelcome)();
-  if (S.cur === 'welcome') HG.mount('intro');
+  if (S.cur === 'welcome') INTRO.mount();
   else if (S.cur === 'confirm') HG.mount('play');
 }
 
