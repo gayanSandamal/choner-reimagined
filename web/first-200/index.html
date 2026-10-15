@@ -767,10 +767,10 @@ function screenMode(){
   return `${stepbar('mode')}<div class="content">
     ${ttl(5,'How do you want to ','show up?','This decides who you could be matched with.')}
     ${rows(MODES,'mode',S.mode)}
-    <div class="sect">When do you usually go?</div>
+    <div class="sect">What times work for you?</div>
     <div class="prow wrap">${TIMES.map(([v,l]) =>
       `<button class="pillcard ${S.times.includes(v)?'on':''}" data-act="time" data-v="${v}"><div class="t">${l}</div></button>`).join('')}</div>
-    <div class="hint">Pick as many as work for you. More options means more people we can pair you with.</div>
+    <div class="hint">Pick all that work. More options mean more people we can match you with.</div>
     <div class="foot">${btn('Continue',{act:'next-mode', dis:!(S.mode && S.times.length)})}</div>
   </div>`;
 }
@@ -893,7 +893,7 @@ function screenConfirm(){
       <!-- The URL is not printed. Truncated in a box it looked broken, and
            nobody types a 48-character token by hand anyway. -->
       <input class="hp" type="text" readonly value="${esc(refUrl)}" id="refInput" tabindex="-1" aria-hidden="true">
-      <div class="reass">This is literally the whole idea. Someone showing up with you.</div>
+      <div class="reass">Invite a friend to be a part of the first 200</div>
     </div>
 
   </div>`;
