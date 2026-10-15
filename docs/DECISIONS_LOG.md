@@ -2122,3 +2122,61 @@ needs a `sbp_...` personal access token — project API keys (`sb_publishable_`,
 `sb_secret_`) are the wrong credential and are rejected by the Management API.
 The function degrades gracefully without `RESEND_API_KEY`, so it can ship before
 Resend exists; only the confirmation email waits.
+
+---
+
+## 15 October 2026 — "Sleep better" retires, "Get stronger" takes its place
+
+**The test the goal question has to pass.** Step 1 is not a wellness survey. Its
+only job is to point at an activity two people can do together, because that is
+what the next screen asks them to pick. Measured against that, **Sleep better**
+failed twice: it is the one goal a person can fully pursue alone, and it mapped
+to Walking and Yoga, which Reduce stress already owns. **Get stronger** answers
+to Workouts, which previously had one weak claimant.
+
+The new set: Move more, **Get stronger**, Reduce stress, Improve energy.
+
+**"Improve energy" was also challenged and deliberately kept.** The proposal was
+to replace it with "Build a routine / Make healthy habits stick". Rejected for
+two structural reasons, not editorial ones:
+
+1. It duplicates step 2, whose first option is already *"I start but stop /
+   Good intentions, hard to stay consistent."* Asking consistency twice in two
+   screens, the second time with better options, is worse than asking it once.
+2. It fails the same test that retired Sleep better. "Build a routine" is
+   activity neutral by definition, so the mapping has nothing to work with. It
+   also collides with option 1, which is literally *"Build an active routine."*
+
+Consistency is what the whole product is for, so it does not need to be one of
+four motivations. If Improve energy is replaced later, the candidate should be a
+body goal (Get back in shape, Lose weight), which maps cleanly and duplicates
+nothing.
+
+**It does not touch matching.** Verified rather than assumed: the scorer
+(`features/challenges/matching.ts`) weighs commitment, accountability style, age
+proximity, stretch ratio, experience, location and time of day. There is no goal
+field on `Candidate` and no goal weight in `WEIGHTS`. `get_match_pool` never
+selects `primary_goal`. Across `supabase/` the column appears only in the
+profiles DDL, the First 200 registrations table, the registration function and
+the AI coach prompt. Two people with different goals who both chose Running are
+matched exactly as before.
+
+**Where the goal actually matters:** `GOAL_FIRST_SLUGS` orders the challenge
+picker and decides which activity carries the recommended badge, and which one a
+new account is provisioned with. Get stronger leads with Workouts, then Cycling.
+Improve energy still leads with Workouts too; the goal is a motivation, not a
+filter, and both lists offer all six activities.
+
+**The old value stays legal, on purpose.** The CHECK constraint on
+`prelaunch_registrations.primary_goal` was widened, not swapped
+(`202610151200_goal_get_stronger.sql`), and the Edge Function still accepts
+`sleep_better`. join.choner.io is live: a browser holding the old page in cache
+would otherwise have a real signup rejected outright. `profiles.primary_goal` is
+untyped text and needed no migration. Stored retired values are dead weight, not
+a bug: the mapping is only ever called during onboarding, which runs once, so a
+legacy value never reaches `GOAL_FIRST_SLUGS`. On Edit profile it simply shows
+as nothing selected until they pick again.
+
+**Timing.** Done now, while the only First 200 registrations are Dinesh's own
+tests, because the cost of this change rises with the row count and with nothing
+else.

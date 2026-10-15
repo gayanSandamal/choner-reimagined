@@ -15,7 +15,11 @@ export interface QuizOption<V extends string = string> {
   icon?: IconName;
 }
 
-export type GoalValue = 'move_more' | 'sleep_better' | 'reduce_stress' | 'improve_energy';
+// 'sleep_better' was retired on 15 October and replaced by 'get_stronger'.
+// It is the one goal a person can pursue entirely alone, and it pointed at
+// Walking and Yoga, which Reduce stress already owns. Stored values survive
+// in profiles, which is untyped text; see DECISIONS_LOG.
+export type GoalValue = 'move_more' | 'get_stronger' | 'reduce_stress' | 'improve_energy';
 export type StruggleValue = 'start_but_stop' | 'lack_accountability' | 'too_busy' | 'overwhelmed';
 export type ToneValue = 'competitive' | 'momentum' | 'encouraging' | 'team';
 export type EnergyValue = 'low' | 'medium' | 'high';
@@ -24,7 +28,7 @@ export type GenderValue = 'male' | 'female' | 'prefer_not_to_say';
 
 export const GOALS: QuizOption<GoalValue>[] = [
   { value: 'move_more', label: 'Move more', description: 'Build an active routine', icon: 'run' },
-  { value: 'sleep_better', label: 'Sleep better', description: 'Rest and recover well', icon: 'sleep' },
+  { value: 'get_stronger', label: 'Get stronger', description: 'Build strength and feel stronger', icon: 'dumb' },
   { value: 'reduce_stress', label: 'Reduce stress', description: 'Feel calmer day to day', icon: 'leaf' },
   { value: 'improve_energy', label: 'Improve energy', description: 'Stay sharp and focused', icon: 'bolt' }
 ];

@@ -15,7 +15,7 @@ import { ENERGY_LEVELS, GOALS, STRUGGLES, TONES } from './constants';
 describe('goalToTemplateSlug', () => {
   it('maps every goal to its recommended activity', () => {
     expect(goalToTemplateSlug('move_more')).toBe('activity-running');
-    expect(goalToTemplateSlug('sleep_better')).toBe('activity-walking');
+    expect(goalToTemplateSlug('get_stronger')).toBe('activity-workouts');
     expect(goalToTemplateSlug('reduce_stress')).toBe('activity-yoga');
     expect(goalToTemplateSlug('improve_energy')).toBe('activity-workouts');
   });
@@ -45,6 +45,10 @@ describe('challengeOptionSlugs', () => {
       'activity-workouts',
       'activity-running'
     ]);
+    expect(challengeOptionSlugs('get_stronger').slice(0, 2)).toEqual([
+      'activity-workouts',
+      'activity-cycling'
+    ]);
   });
 
   it('puts its own recommendation first, so the badge never orphans', () => {
@@ -65,6 +69,7 @@ describe('suggestedHabitTitle', () => {
   it('names the recommended activity, defaulting to walking', () => {
     expect(suggestedHabitTitle('move_more')).toBe('Running');
     expect(suggestedHabitTitle('improve_energy')).toBe('Workouts');
+    expect(suggestedHabitTitle('get_stronger')).toBe('Workouts');
     expect(suggestedHabitTitle(null)).toBe('Walking');
   });
 });

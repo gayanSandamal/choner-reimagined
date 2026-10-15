@@ -95,7 +95,7 @@ declare
   ];
 
   tones constant text[] := array['competitive','momentum','encouraging','team'];
-  goals constant text[] := array['move_more','sleep_better','reduce_stress','improve_energy'];
+  goals constant text[] := array['move_more','get_stronger','reduce_stress','improve_energy'];
   struggles constant text[] := array['start_but_stop','lack_accountability','too_busy','overwhelmed'];
   stress constant text[] := array['low','medium','high'];
 

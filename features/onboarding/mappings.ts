@@ -33,11 +33,12 @@ export const DEFAULT_TEMPLATE_SLUG = 'activity-walking';
 // the motivation, not a filter: every list below is completed with the rest of
 // the six, so nobody is shown fewer than six because of what they answered.
 //
-// "Stretching routine" was in the Sleep better list. It is an exercise inside
-// Workouts now, not an activity of its own, so it is not here.
+// Get stronger leads with Workouts, which is the only activity that answers
+// it directly. Improve energy keeps Workouts first too: it is a motivation,
+// not a filter, and both lists still offer all six.
 const GOAL_FIRST_SLUGS: Record<GoalValue, string[]> = {
   move_more: ['activity-running', 'activity-jogging', 'activity-cycling', 'activity-walking'],
-  sleep_better: ['activity-walking', 'activity-yoga'],
+  get_stronger: ['activity-workouts', 'activity-cycling'],
   reduce_stress: ['activity-yoga', 'activity-walking'],
   improve_energy: ['activity-workouts', 'activity-running']
 };

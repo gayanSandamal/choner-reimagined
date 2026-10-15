@@ -44,7 +44,11 @@ const ALLOWED_ORIGINS = new Set([
 // Mirrors the table's check constraints. Validated here as well as in Postgres
 // because a rejected constraint is a 500 with a Postgres message in it, and a
 // bad value should be a clean 400 instead.
-const GOALS = ['move_more', 'sleep_better', 'reduce_stress', 'improve_energy'];
+// 'sleep_better' is retired (15 October) but still accepted: join.choner.io is
+// live and a browser holding the old page cached would otherwise have its
+// signup rejected outright. Dropping it costs a real registration; keeping it
+// costs nothing, since nothing reads the value yet.
+const GOALS = ['move_more', 'get_stronger', 'reduce_stress', 'improve_energy', 'sleep_better'];
 const STRUGGLES = ['start_but_stop', 'lack_accountability', 'too_busy', 'overwhelmed'];
 const AGES = ['18-24', '25-34', '35-44', '45-54', '55+'];
 const GENDERS = ['male', 'female', 'prefer_not_to_say'];
