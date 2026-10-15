@@ -3,7 +3,7 @@
     "name": "Choner",
     "slug": "choner-mobile",
     "scheme": "choner",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "web": {
       "bundler": "metro",
       "output": "single"
@@ -28,6 +28,10 @@
     "android": {
       "package": "com.choner.app",
       "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#001827"
+      },
       "permissions": [
         "NOTIFICATIONS"
       ],
