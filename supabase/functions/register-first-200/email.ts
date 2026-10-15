@@ -1,47 +1,47 @@
 // The one email a First 200 registrant gets before launch.
 //
-// WHY IT DOES EXACTLY ONE THING
+// WHAT COSTS YOU THE INBOX, MEASURED RATHER THAN GUESSED (15 October 2026)
 //
-// 15 October, a natural experiment nobody designed. The Supabase auth
-// verification mail and this one went from the SAME address, the same domain,
-// the same Amazon SES IP, to the SAME fresh Gmail account on the same day.
-// "Confirm your Choner account" landed in the inbox. This one landed in
-// Promotions. That rules out the sender, the domain, the IP, SPF, DKIM, DMARC,
-// reputation, List-Unsubscribe and the recipient's history, because both mails
-// shared all of them.
+// This mail sat in Promotions for days. The thing that cracked it was a
+// natural experiment nobody designed: the Supabase auth verification mail and
+// this one went from the SAME address, the same domain, the same Amazon SES
+// IP, to the SAME fresh Gmail account on the same day. "Confirm your Choner
+// account" landed in the inbox. This one did not.
 //
-// IT ALSO CLEARS THE DESIGN. The verification mail is a card too: dark header
-// bar, rounded white panel, a big orange button, a footer. It sits in the
-// inbox anyway. A stripped, link-free, table-free version of THIS mail was
-// tried first and still went to Promotions, which says the same thing from the
-// other side. Layout is not the variable. Do not strip this email again.
+// That single comparison rules out the sender, the domain, the IP, SPF, DKIM,
+// DMARC, reputation, List-Unsubscribe and the recipient's history, because
+// both mails shared every one of them. It also clears the design: the
+// verification mail is a card too, dark header bar, orange button, footer, and
+// it reaches the inbox anyway.
 //
-// What actually differed was PURPOSE. The verification mail does one job and
-// says so. This one used to do four: hand over a code, explain the mission,
-// ask for a referral, and ask for a reply. A referral call to action is about
-// as promotional as a signal gets, and a mission statement is marketing copy
-// however sincerely it is meant.
+// What was left was PURPOSE and the conventions that go with it. Four variants
+// were then sent to one fresh account, changing one thing at a time:
 //
-// So this email now does one job: it hands over the code. The conventions of
-// transactional mail come with it, copied from the message that works:
-//   * a preheader line that states the single purpose
-//   * one destination, or none
-//   * a footer that says who it was sent to and what to do if it was not you
+//   1. one job only, zero links, preheader, "sent to you because" footer
+//                                                               -> INBOX
+//   2. + the mission copy, "we'll be in touch", a reply invitation
+//                                                               -> INBOX
+//   3. + the referral link, minus the reply invitation           -> INBOX
 //
-// WHAT WAS REMOVED, AND WHERE IT WENT:
-//   "We're bringing together the first 200 people..."  -> the page says this
-//   "Know someone who should be here? Invite them"     -> the ending screen
-//                                                         has a share button
-//   "We'll be in touch before Choner goes live."       -> it is a promise of
-//                                                         future mail, which
-//                                                         is a bulk signal
-//   "Hit reply and tell us what you're trying to start" -> worth re-adding
-//                                                          LATER, one change
-//                                                          at a time, once
-//                                                          the inbox is proven
+// So the brand copy is fine. The referral link is fine. What was never fine
+// was an email with no preheader, no "sent to you because" footer, and no
+// clear single subject line: it read as a mailshot because it was shaped like
+// one, not because of anything it said.
 //
-// NO PERMISSION FOOTER AND NO List-Unsubscribe. This is transactional. THE
-// LAUNCH EMAIL TO ALL 200 IS GENUINELY BULK and must carry both.
+// KEEP THESE THREE OR IT GOES BACK TO PROMOTIONS:
+//   * the preheader, stating the one thing this email is for
+//   * the "This email was sent to X because..." footer
+//   * a subject that names the contents and promises nothing
+//     ("Your Choner access code", in the shape of "Confirm your Choner
+//     account", which is the mail that always reached the inbox)
+//
+// If this ever lands in Promotions again, change ONE thing, send to an address
+// that has never seen this domain, and read the result. Four tests settled
+// what a week of theorising did not.
+//
+// NO PERMISSION FOOTER AND NO List-Unsubscribe. This mail is transactional,
+// asked for seconds earlier. THE LAUNCH EMAIL TO ALL 200 IS GENUINELY BULK and
+// must carry both.
 //
 // Gmail clips at ~102KB and hides whatever follows, which would hide the code.
 // Keeping this short is not only taste.
@@ -55,14 +55,14 @@ export interface WelcomeEmail {
 
 // Inline styles only: Gmail strips <style> blocks. Tables rather than flexbox,
 // because Outlook's renderer is Word's.
-export function welcomeHtml({ firstName, accessCode, email }: WelcomeEmail): string {
+export function welcomeHtml({ firstName, accessCode, referralUrl, email }: WelcomeEmail): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Your Choner access code</title></head>
 <body style="margin:0;padding:0;background:#FDFCFB;">
-<!-- The preheader: the line Gmail shows next to the subject in the list. It
-     states the single purpose before anyone opens anything. -->
+<!-- The preheader: the line Gmail shows next to the subject in the list, and
+     one of the three things that keep this out of Promotions. -->
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Your access code for The First 200.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FDFCFB;">
  <tr><td align="center" style="padding:32px 16px;">
@@ -98,14 +98,34 @@ export function welcomeHtml({ firstName, accessCode, email }: WelcomeEmail): str
    </td></tr>
 
    <tr><td style="font-size:14.5px;line-height:1.6;color:#5A6B75;padding:22px 0 0;">
-     When Choner opens, sign up with <strong style="color:#1C2B33;">${esc(email)}</strong>
+     When Choner goes live, sign up with <strong style="color:#1C2B33;">${esc(email)}</strong>
      and we'll recognize you. You'll only need the code if you use a different
      address, so keep this email.
    </td></tr>
 
-   <!-- The convention the verification mail uses, and this one did not. -->
+   <tr><td style="font-size:14.5px;line-height:1.6;color:#5A6B75;padding:22px 0 0;">
+     We're bringing together the first 200 people who believe staying healthy
+     shouldn't have to be something you do alone. Someone to show up with.
+   </td></tr>
+
+   <tr><td style="font-size:14.5px;line-height:1.6;color:#5A6B75;padding:14px 0 0;">
+     We'll be in touch before then.
+   </td></tr>
+
+   <tr><td style="font-size:14.5px;line-height:1.6;padding:22px 0 0;">
+     Know someone who should be here?<br>
+     <a href="${esc(referralUrl)}" style="color:#FD5B01;font-weight:600;text-decoration:none;">Invite them &rarr;</a>
+   </td></tr>
+
+   <tr><td style="font-size:14.5px;line-height:1.6;padding:24px 0 0;">
+     Thanks for being early. It matters.<br><br>
+     The Choner team
+   </td></tr>
+
+   <!-- The second of the three. The verification mail has this and this one
+        did not, which is part of why it read as a mailshot. -->
    <tr><td style="font-size:12.5px;line-height:1.6;color:#7C8C96;padding:26px 0 0;
-                  border-top:1px solid #EFEDEA;margin-top:10px;">
+                  border-top:1px solid #EFEDEA;">
      This email was sent to ${esc(email)} because you joined The First 200.
      If that wasn't you, you can safely ignore it.
    </td></tr>
@@ -118,7 +138,10 @@ export function welcomeHtml({ firstName, accessCode, email }: WelcomeEmail): str
 
 // Sent alongside the HTML. Some clients prefer it, some people read mail in
 // plain text, and an HTML-only message is a weak signal to spam filters.
-export function welcomeText({ firstName, accessCode, email }: WelcomeEmail): string {
+//
+// The referral URL is written out in full: plain text has no links, so
+// "Invite them" on its own would be a dead end.
+export function welcomeText({ firstName, accessCode, referralUrl, email }: WelcomeEmail): string {
   return `Hi ${firstName},
 
 You're one of The First 200.
@@ -127,16 +150,29 @@ Here's your access code.
 
 YOUR CODE: ${accessCode}
 
-When Choner opens, sign up with ${email} and we'll recognize you. You'll
+When Choner goes live, sign up with ${email} and we'll recognize you. You'll
 only need the code if you use a different address, so keep this email.
+
+We're bringing together the first 200 people who believe staying healthy
+shouldn't have to be something you do alone. Someone to show up with.
+
+We'll be in touch before then.
+
+Know someone who should be here? Invite them:
+${referralUrl}
+
+Thanks for being early. It matters.
+
+The Choner team
 
 This email was sent to ${email} because you joined The First 200.
 If that wasn't you, you can safely ignore it.`;
 }
 
-// Utilitarian, in the shape of the subject that works ("Confirm your Choner
-// account"): it names the thing inside and promises nothing else. "Choner" and
-// "code" are also the words someone would search for in two weeks.
+// Utilitarian, in the shape of the subject that always reached the inbox
+// ("Confirm your Choner account"): it names the thing inside and promises
+// nothing else. "Choner" and "code" are also the words someone would search
+// for in two weeks. Changing this is changing a tested variable.
 export const WELCOME_SUBJECT = 'Your Choner access code';
 
 function esc(s: string): string {

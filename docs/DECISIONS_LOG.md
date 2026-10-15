@@ -2238,3 +2238,61 @@ rather than pushing the button off. Verified at 320x568, 360x500, 360x560,
 puts a void on each side of it and makes three elements read as adrift. The copy
 follows the button at a fixed distance and all the slack collects in one place,
 above the call to action.
+
+---
+
+## 15 October 2026 — why the welcome email sat in Promotions, settled by test
+
+It was never the design, and it was never the sender. I spent most of a day
+blaming both.
+
+**The experiment that cracked it was an accident.** Supabase's own auth
+verification mail and the First 200 welcome went from the **same address**,
+the same domain, the same Amazon SES IP, to the **same fresh Gmail account**,
+on the same day. "Confirm your Choner account" landed in the inbox. The
+welcome did not.
+
+One comparison, and it eliminates the sender, the domain, the IP, SPF, DKIM,
+DMARC, reputation, `List-Unsubscribe` and the recipient's history, because both
+messages shared every one of them.
+
+**It also clears the design.** The verification mail is a card too: dark header
+bar, rounded panel, big orange button, footer. Inbox anyway. From the other
+direction, a stripped version of the welcome with no table, no colour and no
+links at all still went to Promotions, which says the same thing.
+
+### What four tests actually showed
+
+Each sent to an address that had never seen this domain, one variable at a time:
+
+| # | Variant | Result |
+|---|---|---|
+| 1 | One job only. Zero links, a preheader, a "sent to you because" footer, subject "Your Choner access code" | **Inbox** |
+| 2 | Plus the mission copy, "we'll be in touch", a reply invitation | **Inbox** |
+| 3 | Plus the referral link, minus the reply invitation | **Inbox** |
+
+So the brand copy is fine. **The referral link is fine.** The thing that was
+never fine was the shape: an email with no preheader, no "sent to you because"
+footer, and a subject that announced membership rather than naming its
+contents. It read as a mailshot because it was built like one.
+
+### The three that have to stay
+
+1. **A preheader** stating the one thing the email is for.
+2. **The "This email was sent to X because..." footer.**
+3. **A subject that names the contents and promises nothing.** "Your Choner
+   access code", shaped after "Confirm your Choner account", the mail that
+   always reached the inbox.
+
+`List-Unsubscribe` is gone, and that is correct for a single transactional
+mail. **The launch email to all 200 is genuinely bulk and must carry it.** Both
+source files say so where whoever writes that broadcast will see it.
+
+### The method, which is the real lesson
+
+A week of reasoning about Gmail's classifier produced three confident wrong
+answers from me: the header, then the layout, then the sender. Four sends to a
+clean address, one variable each, produced the right one in an hour. **There is
+no cache and no waiting period**: Gmail classifies each message at delivery
+from its own content. If this regresses, change one thing, send to an address
+that has never seen the domain, and read the result.
