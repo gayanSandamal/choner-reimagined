@@ -27,6 +27,7 @@
     background:var(--paper); color:var(--ink);
     font-family:'Poppins',-apple-system,system-ui,sans-serif;
     min-height:100vh;
+    min-height:100svh;
     padding-top:env(safe-area-inset-top,0px);
     padding-bottom:env(safe-area-inset-bottom,0px);
   }
@@ -35,6 +36,7 @@
   img{max-width:100%;}
 
   .shell{max-width:460px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+  .shell{min-height:100svh;}
 
   /* ============ floating stepbar (the app's onboarding pattern) ============ */
   .stepbar{
@@ -173,22 +175,31 @@
   .welcome{
     flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
     padding:min(6vh,56px) 26px max(20px,env(safe-area-inset-bottom,0px));
+    padding:min(6svh,56px) 26px max(20px,env(safe-area-inset-bottom,0px));
     position:relative;cursor:pointer;
     user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
   }
   .welcome .eyebrow{
-    font-size:14px;letter-spacing:3px;margin-bottom:min(2.4vh,16px);
+    font-size:14px;font-size:min(14px,2.2svh);letter-spacing:3px;
+    margin-bottom:min(2.4vh,16px);margin-bottom:min(2.4svh,16px);
     opacity:0;animation:hgFadeIn .5s ease .1s forwards;
   }
   /* ---- the intro's audio button ---- */
   .sound-wrap{display:flex;flex-direction:column;align-items:center;gap:13px;}
   /* On the intro the control is part of the opening statement, so it arrives
      with the name rather than waiting for the copy. */
-  .welcome .sound-wrap{opacity:0;animation:hgFadeIn .5s ease .34s forwards;margin-top:min(3.9vh,38px);}
+  .welcome .sound-wrap{opacity:0;animation:hgFadeIn .5s ease .34s forwards;margin-top:min(3.9vh,38px);margin-top:min(3.9svh,38px);}
   .content.done .sound-wrap{margin:6px 0 18px;}
   .content.done .sound{width:84px;height:84px;}
   .sound{
-    position:relative;width:104px;height:104px;border:0;border-radius:50%;padding:0;
+    /* Gaps alone cannot save a short screen: below about 600px of visible
+       height the fixed parts already fill it. The big items take their size
+       from the viewport as well, capped at the design value, so a tall phone
+       is unchanged and a short one shrinks instead of pushing the call to
+       action under the fold. */
+    position:relative;width:104px;height:104px;
+    width:min(104px,15.5svh);height:min(104px,15.5svh);
+    border:0;border-radius:50%;padding:0;
     background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;
   }
   .sound svg{width:100%;height:100%;display:block;position:relative;z-index:1;}
@@ -247,24 +258,30 @@
   }
 
   .reveal{
-    text-align:center;margin-top:min(2.5vh,19px);width:100%;flex:1;
+    text-align:center;margin-top:min(2.5vh,19px);margin-top:min(2.5svh,19px);
+    width:100%;flex:1;
     display:flex;flex-direction:column;align-items:center;
   }
   .welcome .wordmark{
-    font-size:38px;letter-spacing:-1px;line-height:1.1;text-align:center;
+    font-size:38px;font-size:min(38px,5.8svh);
+    letter-spacing:-1px;line-height:1.1;text-align:center;
     opacity:0;animation:hgFadeIn .5s ease .22s forwards;
   }
   .welcome .ask{
-    font-size:21px;font-weight:600;line-height:1.32;letter-spacing:-.2px;max-width:320px;
-    margin-top:min(3.45vh,33px);text-wrap:balance;opacity:0;transform:translateY(10px);
+    font-size:21px;font-size:min(21px,3.3svh);
+    font-weight:600;line-height:1.32;letter-spacing:-.2px;max-width:320px;
+    margin-top:min(3.45vh,33px);margin-top:min(3.45svh,33px);text-wrap:balance;opacity:0;transform:translateY(10px);
   }
   .ask b{font-weight:700;background:linear-gradient(135deg,var(--g1),var(--g2));
          -webkit-background-clip:text;background-clip:text;color:transparent;}
-  .welcome .tag{font-size:14.5px;line-height:1.6;max-width:310px;font-weight:300;margin-top:15px;opacity:0;transform:translateY(10px);}
+  .welcome .tag{
+    font-size:14.5px;font-size:min(14.5px,2.3svh);line-height:1.6;max-width:310px;
+    font-weight:300;margin-top:min(15px,2.3svh);opacity:0;transform:translateY(10px);
+  }
   /* The closer is the brief's orange semibold, not a dimmed line: it is the
      ask, and it was reading as a footnote. */
-  .welcome .tag.quiet{font-size:15px;color:var(--g2);font-weight:600;line-height:1.45;}
-  .welcome .acts{margin-top:auto;padding-top:32px;max-width:300px;width:100%;opacity:0;transform:translateY(10px);}
+  .welcome .tag.quiet{font-size:15px;font-size:min(15px,2.4svh);color:var(--g2);font-weight:600;line-height:1.45;}
+  .welcome .acts{margin-top:auto;padding-top:min(32px,4.6svh);max-width:300px;width:100%;opacity:0;transform:translateY(10px);}
 
   .welcome.done .ask{animation:hgRise .5s ease 0s forwards;}
   .welcome.done .tag{animation:hgRise .5s ease .14s forwards;}
