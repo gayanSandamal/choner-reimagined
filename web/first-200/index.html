@@ -163,12 +163,13 @@
      script). Change the curve in one place or the water stops matching the
      glass. */
   .welcome{
-    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:24px 26px 28px;position:relative;cursor:pointer;
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    padding:min(7vh,52px) 26px max(22px,env(safe-area-inset-bottom,0px));
+    position:relative;cursor:pointer;
     user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
   }
   .welcome .eyebrow{
-    font-size:12.5px;letter-spacing:2.6px;margin-bottom:18px;
+    font-size:14px;letter-spacing:3px;margin-bottom:min(4vh,26px);
     opacity:0;animation:hgFadeIn .5s ease .1s forwards;
   }
   .glass-wrap{position:relative;width:135px;height:176px;opacity:0;animation:hgFadeIn .5s ease .15s forwards;}
@@ -181,9 +182,9 @@
     position:absolute;left:50%;bottom:-12px;width:117px;height:18px;transform:translateX(-50%);
     background:radial-gradient(ellipse at center, rgba(253,91,1,.22) 0%, transparent 70%);opacity:0;
   }
-  .welcome.done .ring{animation:hgRipple 1.1s ease-out forwards;}
-  .welcome.done .glass-wrap{animation:hgBeat 1s ease-in-out 0s 1, hgIdle 3.4s ease-in-out 1.3s infinite;opacity:1;}
-  .welcome.done .glass-shadow{opacity:1;transition:opacity .6s ease;}
+  .hg-stage.done .ring{animation:hgRipple 1.1s ease-out forwards;}
+  .hg-stage.done .glass-wrap{animation:hgBeat 1s ease-in-out 0s 1, hgIdle 3.4s ease-in-out 1.3s infinite;opacity:1;}
+  .hg-stage.done .glass-shadow{opacity:1;transition:opacity .6s ease;}
   @keyframes hgRipple{0%{opacity:.9;transform:scale(.6);}100%{opacity:0;transform:scale(2.1);}}
   @keyframes hgBeat{0%,100%{transform:scale(1);}18%{transform:scale(1.07);}34%{transform:scale(1);}50%{transform:scale(1.045);}68%{transform:scale(1);}}
   @keyframes hgIdle{0%,100%{transform:scale(1);}50%{transform:scale(1.025);}}
@@ -196,7 +197,7 @@
 
   #stream{stroke:#FD6A0A;stroke-width:3;stroke-linecap:round;transition:opacity .5s ease;opacity:0;}
   #drop{fill:#FD8302;opacity:0;}
-  .welcome.done #drop{animation:hgDrip 3.4s ease-in 1.2s infinite;}
+  .hg-stage.done #drop{animation:hgDrip 3.4s ease-in 1.2s infinite;}
   @keyframes hgDrip{
     0%{transform:translateY(0) scale(.6);opacity:0;}
     8%{opacity:1;transform:translateY(0) scale(1);}
@@ -204,8 +205,11 @@
     40%,100%{opacity:0;transform:translateY(var(--d,60px));}
   }
 
-  .reveal{text-align:center;margin-top:42px;width:100%;display:flex;flex-direction:column;align-items:center;}
-  .welcome .wordmark{font-size:38px;letter-spacing:-1px;line-height:1.1;opacity:0;transform:translateY(10px);}
+  .reveal{
+    text-align:center;margin-top:min(5vh,38px);width:100%;flex:1;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .welcome .wordmark{margin-top:auto;font-size:38px;letter-spacing:-1px;line-height:1.1;opacity:0;transform:translateY(10px);}
   .welcome .ask{
     font-size:21px;font-weight:600;line-height:1.32;letter-spacing:-.2px;max-width:320px;
     margin-top:18px;text-wrap:balance;opacity:0;transform:translateY(10px);
@@ -216,7 +220,7 @@
   /* The closer is the brief's orange semibold, not a dimmed line: it is the
      ask, and it was reading as a footnote. */
   .welcome .tag.quiet{font-size:15px;color:var(--g2);font-weight:600;line-height:1.45;}
-  .welcome .acts{margin-top:28px;max-width:300px;opacity:0;transform:translateY(10px);}
+  .welcome .acts{margin-top:auto;padding-top:28px;max-width:300px;width:100%;opacity:0;transform:translateY(10px);}
 
   .welcome.done .wordmark{animation:hgRise .5s ease 0s forwards;}
   .welcome.done .ask{animation:hgRise .5s ease .14s forwards;}
@@ -225,8 +229,8 @@
   .welcome.done .acts{animation:hgRise .5s ease .52s forwards;}
   .welcome.instant .wordmark,.welcome.instant .ask,.welcome.instant .tag,
   .welcome.instant .tag.quiet,.welcome.instant .acts{animation-duration:.01s;animation-delay:0s;}
-  .welcome.instant #drop{animation-delay:.4s;}
-  .welcome.instant .ring{display:none;}
+  .hg-stage.instant #drop{animation-delay:.4s;}
+  .hg-stage.instant .ring{display:none;}
   @keyframes hgRise{to{opacity:1;transform:translateY(0);}}
 
   /* The hint only ever appears after the intro. On iOS it is a real button:
@@ -239,13 +243,17 @@
     transition:opacity .6s ease;padding:4px 8px;
   }
   .tilt-hint.show{opacity:.85;pointer-events:auto;}
+  /* The reward. Same engine as the intro, smaller, and here it is meant to be
+     touched: this is the one screen with nothing left to do. */
+  .playbox{display:flex;flex-direction:column;align-items:center;margin:30px 0 0;padding-bottom:46px;position:relative;}
+  .playbox .glass-wrap{width:104px;height:135px;animation:none;opacity:1;}
   .glass-wrap.tiltable{touch-action:none;cursor:grab;}
 
   @media (prefers-reduced-motion: reduce){
     .wave1,.wave2{animation:none;}
-    .welcome.done #drop{animation:none;}
-    .welcome.done .glass-wrap{animation:none;}
-    .welcome.done .ring{display:none;}
+    .hg-stage.done #drop{animation:none;}
+    .hg-stage.done .glass-wrap{animation:none;}
+    .hg-stage.done .ring{display:none;}
   }
 
   @media (min-width:600px){
@@ -464,14 +472,10 @@ const pills = (list, field, sel) => list.map(o =>
    diagonally BEHIND the question rather than above it. The copy is long
    enough that a block of animation would push the button off a small phone;
    as a background layer it reads as atmosphere instead of a widget. */
-/* The intro: an hourglass that fills, then stays alive and answers the tilt.
-   The fill is DECORATIVE. It is not a signup count and nothing here reads from
-   Supabase, so it can never be wrong. */
-function screenWelcome(){
-  return `<div class="welcome" id="introStage" role="button" aria-label="Skip intro">
-    <div class="eyebrow">The First 200</div>
-
-    <div class="glass-wrap" id="glassWrap">
+/* One hourglass, two homes: the intro plays it, the ending screen hands it
+   over to be turned. Only one is ever in the DOM, so the ids stay unique. */
+function glassMarkup(){
+  return `    <div class="glass-wrap" id="glassWrap">
       <svg viewBox="0 0 200 260" aria-label="An hourglass filling">
         <defs>
           <linearGradient id="liq" gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="240">
@@ -523,7 +527,19 @@ function screenWelcome(){
       <div class="glass-shadow"></div>
       <div class="ring"></div>
       <button class="tilt-hint" id="tiltHint" type="button"></button>
-    </div>
+    </div>`;
+}
+
+/* The intro: an hourglass that fills. Nothing more. The tilt used to live
+   here, where it was unreachable on iOS and unknown everywhere else; it is the
+   ending screen's now, as a reward rather than a secret.
+   The fill is DECORATIVE. It is not a signup count and nothing here reads from
+   Supabase, so it can never be wrong. */
+function screenWelcome(){
+  return `<div class="welcome hg-stage" id="introStage" role="button" aria-label="Skip intro">
+    <div class="eyebrow">The First 200</div>
+
+    ${glassMarkup()}
 
     <div class="reveal">
       <div class="wordmark">choner<span>.</span></div>
@@ -707,6 +723,13 @@ function screenConfirm(){
       <input class="hp" type="text" readonly value="${esc(refUrl)}" id="refInput" tabindex="-1" aria-hidden="true">
       <div class="reass">This is literally the whole idea. Someone showing up with you.</div>
     </div>
+
+    <!-- Nothing left to do on this screen, so the hourglass comes back as
+         something to turn. On iOS the hint under it is the tap that buys
+         motion access: it is the only one left, and it stays on this screen. -->
+    <div class="playbox hg-stage" id="introStage">
+      ${glassMarkup()}
+    </div>
   </div>`;
 }
 
@@ -722,6 +745,7 @@ const HG = (() => {
   const TOP_R = [[144,22],[144,62],[105,92],[105,130]];
   const BOT_R = [[105,130],[105,168],[144,198],[144,238]];
   const RAD = Math.PI / 180;
+  const TILT_LINE = 'Turn your phone over.';   // the standing invitation, once motion is allowed
   const bez = (P,t) => { const u = 1-t; return [
     u*u*u*P[0][0]+3*u*u*t*P[1][0]+3*u*t*t*P[2][0]+t*t*t*P[3][0],
     u*u*u*P[0][1]+3*u*u*t*P[1][1]+3*u*t*t*P[2][1]+t*t*t*P[3][1] ]; };
@@ -817,7 +841,6 @@ const HG = (() => {
     renderIntro(1, false);
     if (instant) el.stage.classList.add('instant');
     el.stage.classList.add('done');
-    setTimeout(enableTilt, instant ? 300 : 1400);
   }
   function tick(now){
     if (!el) return;
@@ -882,8 +905,8 @@ const HG = (() => {
     e.preventDefault(); e.stopPropagation();
     requestMotion().then(ok => {
       if (!el) return;
-      if (ok){ el.hint.textContent = 'Tilt your phone'; setTimeout(() => { if (el) el.hint.classList.remove('show'); }, 5000); }
-      else el.hint.classList.remove('show');
+      if (ok) el.hint.textContent = TILT_LINE;
+      else el.hint.classList.remove('show');   // declined: the line just goes
     });
   }
 
@@ -898,10 +921,13 @@ const HG = (() => {
     // tap that LEAVES the intro, so asking there granted a permission with
     // nothing left to use it on. The hint asks instead: it keeps you here, and
     // the hourglass is still on screen when the answer comes back.
+    // One line, and only on a phone. Dragging still works with a mouse, but it
+    // is a phone flourish and the desktop label was clutter. On iOS the line is
+    // the tap that buys motion access; everywhere else it is the invitation.
     if (coarse && hasSensor){
       if (needsAsk){ el.hint.textContent = 'Tap to tilt'; el.hint.onclick = onHintTap; }
-      else { el.hint.textContent = 'Tilt your phone'; setTimeout(() => { if (el) el.hint.classList.remove('show'); }, 5000); }
-    } else if (!coarse) el.hint.textContent = 'Drag to turn the hourglass';
+      else el.hint.textContent = TILT_LINE;
+    }
     if (el.hint.textContent) requestAnimationFrame(() => { if (el) el.hint.classList.add('show'); });
     kick();
   }
@@ -928,7 +954,10 @@ const HG = (() => {
     el = null;
   }
 
-  function mount(){
+  /* mode 'intro' fills the glass and stops; 'play' starts it full and hands it
+     straight over to be turned. Same engine, same markup, same ids: only one
+     of the two screens is ever in the DOM. */
+  function mount(mode){
     unmount();
     const stage = document.getElementById('introStage');
     if (!stage) return;
@@ -946,6 +975,13 @@ const HG = (() => {
     wrap.addEventListener('pointermove', onMove);
     wrap.addEventListener('pointerup', endDrag);
     wrap.addEventListener('pointercancel', endDrag);
+    if (mode === 'play'){
+      renderIntro(1, false);
+      stage.classList.add('instant', 'done');
+      finished = true;
+      enableTilt();
+      return;
+    }
     renderIntro(0, false);
     if (reduce){ finish(true); return; }
     t0 = performance.now();
@@ -968,7 +1004,8 @@ function render(){
   // later screen, against nodes that no longer exist.
   HG.unmount();
   document.getElementById('app').innerHTML = (SCREENS[S.cur] || screenWelcome)();
-  if (S.cur === 'welcome') HG.mount();
+  if (S.cur === 'welcome') HG.mount('intro');
+  else if (S.cur === 'confirm') HG.mount('play');
 }
 
 /* ---------- the server ---------- */
