@@ -91,7 +91,23 @@
 
      NOT LEGALLY REVIEWED. Accurate and complete to the best of our reading of
      our own system, but someone qualified should check it against Sri Lanka's
-     PDPA before launch. -->
+     PDPA before launch.
+
+     BUILT BUT NOT SWITCHED ON, and therefore deliberately absent from the list
+     of processors below. Each one starts handling real user data the moment it
+     is enabled, and THIS PAGE MUST BE UPDATED IN THE SAME CHANGE:
+
+       * OpenAI. supabase/functions/ai-coach/ exists and app/modals/ai-coach.tsx
+         exists, but the function is NOT DEPLOYED (production has six functions
+         and that is not one) and no screen navigates to the modal. There is no
+         AI coach in the product. An earlier draft of this page said there was,
+         which was wrong: presence in the repository was mistaken for being
+         live.
+       * Sentry and PostHog. lib/observability.ts guards every call behind
+         EXPO_PUBLIC_SENTRY_DSN and EXPO_PUBLIC_POSTHOG_KEY, and neither is set,
+         so no crash report and no analytics event leaves the device.
+       * RevenueCat. No API keys set, so there are no subscriptions to process.
+-->
 </head>
 <body>
 <div class="shell">
@@ -144,9 +160,8 @@
       <li><b>Check-in photos</b>, if you send one to your partner.</li>
       <li><b>Safety records.</b> If you report someone, the category and anything you write. If
         you block someone, that you did.</li>
-      <li><b>Your device.</b> A push notification token, your platform and app version.</li>
-      <li><b>Crashes and usage.</b> Diagnostic reports and anonymised events, so we can find out
-        what is broken.</li>
+      <li><b>Your device.</b> A push notification token and your platform, so a notification
+        can reach the right phone.</li>
     </ul>
 
     <h2>What your partner sees</h2>
@@ -170,20 +185,17 @@
     <p>Choner is a small team. These companies handle data on our behalf, and nobody else does:</p>
     <ul>
       <li><b>Supabase.</b> Stores your account, profile and activity. Hosted in Singapore.</li>
-      <li><b>OpenAI.</b> Powers the in-app coach. When you use it we send your first name, your
-        goal, what has stopped you before, your accountability style, your stress level, your
-        current challenge and how many check-ins you have made recently, so the reply is about
-        you rather than generic. We do not send your email address, your photos, your messages
-        to your partner, or anything you have reported.</li>
       <li><b>Resend.</b> Sends the emails: verification, invitations and notices.</li>
-      <li><b>Sentry.</b> Receives crash reports so we can fix what breaks.</li>
-      <li><b>PostHog.</b> Receives anonymised usage events so we can see which parts of the app
-        are used.</li>
-      <li><b>RevenueCat.</b> Handles subscriptions, if you buy one. Card details go to Apple or
-        Google and never reach us.</li>
+      <li><b>Apple and Google.</b> Deliver push notifications to your device, if you turn them
+        on.</li>
       <li><b>Cloudflare.</b> Counts visits to our web pages. No cookies, nothing that identifies
         you.</li>
     </ul>
+    <p>
+      That is the complete list. <strong>There is no AI in Choner</strong> and nothing you write
+      is sent to an AI company. If that ever changes we will say so here first, and tell you in
+      the app.
+    </p>
 
     <h2>How long we keep it</h2>
     <ul>
@@ -194,7 +206,8 @@
         and your past challenges still mean something.</li>
       <li><b>Safety records</b> are kept after a match ends, so a pattern of behaviour stays
         visible to us and so you are never matched with a blocked person again.</li>
-      <li><b>Crash and usage data</b> is kept for up to 12 months.</li>
+      <li><b>Push tokens</b> are replaced each time you reinstall and removed with your
+        account.</li>
     </ul>
 
     <h2>Deleting everything</h2>
