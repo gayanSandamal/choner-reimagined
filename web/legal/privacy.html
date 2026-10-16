@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Privacy policy | Choner</title>
+<meta name="description" content="What Choner collects when you join The First 200, why, and what you can ask us to do with it.">
+<meta name="robots" content="index,follow">
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="apple-touch-icon" href="/logo.png">
+<meta property="og:site_name" content="Choner">
+<meta property="og:title" content="Privacy policy | Choner">
+<meta property="og:description" content="What Choner collects, who processes it, how long it is kept, and how to get it deleted.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://choner.io/privacy.html">
+<meta property="og:image" content="https://choner.io/og-cover.jpg">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="840">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap">
+<style>
+  /* Tokens copied from index.html so the two pages are one thing. */
+  :root{
+    --paper:#FDFCFB; --card:#FFFFFF; --ink:#1C2B33; --pmuted:#7C8C96; --dim:#D8D2CC; --pline:#EFEDEA;
+    --g1:#FD8302; --g2:#FD5B01; --navy:#001827;
+    --shadow-soft:0 2px 10px rgba(28,43,51,.06);
+    --shadow-float:0 10px 24px rgba(0,24,39,.28);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'Poppins',-apple-system,system-ui,sans-serif;
+    min-height:100vh;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  :focus-visible{outline:2px solid var(--g2);outline-offset:2px;}
+  .shell{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+  /* The same floating navy bar the form opens with. */
+  .bar{
+    background:var(--navy);display:flex;align-items:center;gap:12px;flex:none;
+    padding:16px 20px;margin:16px 16px 0;border-radius:24px;box-shadow:var(--shadow-float);
+  }
+  .bar .mark{font-size:17px;font-weight:600;color:#fff;letter-spacing:-.3px;}
+  .bar .mark span{color:var(--g1);}
+  .bar .t{margin-left:auto;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.72);}
+
+  .content{padding:26px 22px 48px;}
+  h1{font-size:26px;font-weight:300;letter-spacing:-.5px;line-height:1.25;margin-bottom:6px;}
+  h1 b{font-weight:600;}
+  .updated{font-size:12.5px;color:var(--pmuted);margin-bottom:22px;}
+  .lede{font-size:14.5px;line-height:1.65;color:var(--ink);margin-bottom:10px;}
+  h2{font-size:15px;font-weight:600;letter-spacing:-.2px;margin:28px 0 10px;}
+  p{font-size:13.5px;line-height:1.7;color:var(--pmuted);margin-bottom:10px;}
+  p strong{color:var(--ink);font-weight:500;}
+  ul{margin:0 0 10px 0;padding:0;list-style:none;}
+  li{
+    font-size:13.5px;line-height:1.6;color:var(--pmuted);
+    padding-left:18px;position:relative;margin-bottom:7px;
+  }
+  li::before{content:'';position:absolute;left:4px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--dim);}
+  li b{color:var(--ink);font-weight:500;}
+  a{color:var(--g2);}
+
+  .card{
+    background:var(--card);border:1px solid var(--pline);border-radius:18px;
+    padding:16px 18px;box-shadow:var(--shadow-soft);margin:18px 0;
+  }
+  .card p:last-child{margin-bottom:0;}
+
+  .back{
+    display:inline-flex;align-items:center;gap:8px;margin-top:30px;
+    font-size:13.5px;font-weight:500;color:var(--g2);text-decoration:none;
+  }
+  .foot{
+    margin-top:34px;padding-top:18px;border-top:1px solid var(--pline);
+    font-size:12px;line-height:1.7;color:var(--pmuted);
+  }
+</style>
+
+<!-- The App Store and Play Store both require a reachable privacy policy URL,
+     which an in-app screen cannot satisfy. This is that URL.
+
+     Written from what the CODE actually does, not from a template: every
+     processor named below appears in the repository, and the retention periods
+     are the ones the cleanup jobs really use. If a feature changes, this page
+     changes with it.
+
+     NOT LEGALLY REVIEWED. Accurate and complete to the best of our reading of
+     our own system, but someone qualified should check it against Sri Lanka's
+     PDPA before launch. -->
+</head>
+<body>
+<div class="shell">
+
+  <div class="bar">
+    <span class="mark">choner<span>.</span></span>
+    <span class="t">Privacy</span>
+  </div>
+
+  <div class="content">
+    <h1>Privacy <b>policy</b></h1>
+    <div class="updated">Last updated 16 October 2026</div>
+
+    <p class="lede">
+      Choner pairs you with another person so neither of you has to keep a habit alone.
+      That only works if we hold some information about you. This page says exactly what,
+      why, who else sees it, and how to make us delete it.
+    </p>
+
+    <p class="lede">
+      We do not sell your data. We never have, and the business does not depend on selling it.
+    </p>
+
+    <h2>Who we are</h2>
+    <p>
+      Choner is operated from Sri Lanka. For anything on this page, including a request to see or
+      delete your data, write to <a href="mailto:hello@choner.io">hello@choner.io</a> and a person
+      will answer.
+    </p>
+
+    <h2>What we collect</h2>
+    <p><strong>Because you gave it to us</strong></p>
+    <ul>
+      <li><b>Your account.</b> Name and email address.</li>
+      <li><b>Your profile.</b> Age range, gender, your main goal, what has stopped you before,
+        the kind of accountability you respond to, and your stress level. You can change or clear
+        any of these in Edit profile.</li>
+      <li><b>Your photo</b>, if you add one.</li>
+      <li><b>Your area.</b> The neighbourhood you pick so we can match you with someone nearby.
+        A neighbourhood, never your exact position: the app does not ask for or read device
+        location.</li>
+      <li><b>What you write.</b> Your reasons for starting, messages to your partner, community
+        posts and comments.</li>
+    </ul>
+
+    <p><strong>Because you used the app</strong></p>
+    <ul>
+      <li><b>Your activity.</b> Challenges you start, sessions you plan, what you complete and
+        what you miss.</li>
+      <li><b>Check-in photos</b>, if you send one to your partner.</li>
+      <li><b>Safety records.</b> If you report someone, the category and anything you write. If
+        you block someone, that you did.</li>
+      <li><b>Your device.</b> A push notification token, your platform and app version.</li>
+      <li><b>Crashes and usage.</b> Diagnostic reports and anonymised events, so we can find out
+        what is broken.</li>
+    </ul>
+
+    <h2>What your partner sees</h2>
+    <p>
+      Your first name, your photo if you added one, the activity you both agreed, the area you
+      chose, and whether you showed up. That is the point of the product: showing up only means
+      something if someone can see it.
+    </p>
+    <p>
+      <strong>They do not see</strong> your email address, your full name unless you use it as
+      your name, your stress level, your reasons for starting, or anything you have reported.
+    </p>
+
+    <div class="card">
+      <p><strong>Reports and blocks are private.</strong> A report is read by a person on our
+      team and ends the match. The person you reported or blocked is never told who did it or
+      why. They see only that the match has ended.</p>
+    </div>
+
+    <h2>Who else processes it</h2>
+    <p>Choner is a small team. These companies handle data on our behalf, and nobody else does:</p>
+    <ul>
+      <li><b>Supabase.</b> Stores your account, profile and activity. Hosted in Singapore.</li>
+      <li><b>OpenAI.</b> Powers the in-app coach. When you use it we send your first name, your
+        goal, what has stopped you before, your accountability style, your stress level, your
+        current challenge and how many check-ins you have made recently, so the reply is about
+        you rather than generic. We do not send your email address, your photos, your messages
+        to your partner, or anything you have reported.</li>
+      <li><b>Resend.</b> Sends the emails: verification, invitations and notices.</li>
+      <li><b>Sentry.</b> Receives crash reports so we can fix what breaks.</li>
+      <li><b>PostHog.</b> Receives anonymised usage events so we can see which parts of the app
+        are used.</li>
+      <li><b>RevenueCat.</b> Handles subscriptions, if you buy one. Card details go to Apple or
+        Google and never reach us.</li>
+      <li><b>Cloudflare.</b> Counts visits to our web pages. No cookies, nothing that identifies
+        you.</li>
+    </ul>
+
+    <h2>How long we keep it</h2>
+    <ul>
+      <li><b>Check-in photos are deleted as soon as your partner has seen them</b>, and in every
+        case within 7 days. They are not an archive.</li>
+      <li><b>Match offers</b> expire after 24 hours. <b>Invitations</b> expire after 48.</li>
+      <li><b>Your account and its history</b> are kept while the account exists, so your streak
+        and your past challenges still mean something.</li>
+      <li><b>Safety records</b> are kept after a match ends, so a pattern of behaviour stays
+        visible to us and so you are never matched with a blocked person again.</li>
+      <li><b>Crash and usage data</b> is kept for up to 12 months.</li>
+    </ul>
+
+    <h2>Deleting everything</h2>
+    <p>
+      <strong>Settings, then Delete account.</strong> It is in the app, it does not require
+      emailing us, and it removes your profile, your challenges, your photos and your messages.
+      Records of reports made <em>about</em> you are kept, because deleting an account is not a
+      way to erase a complaint.
+    </p>
+    <p>
+      You can also ask us for a copy of what we hold, ask us to correct it, or ask us to stop
+      using it. Email <a href="mailto:hello@choner.io">hello@choner.io</a>. We will not make you
+      explain why.
+    </p>
+
+    <h2>Your rights under Sri Lankan law</h2>
+    <p>
+      The Personal Data Protection Act No. 9 of 2022 gives you the right to access your data,
+      correct it, have it erased, object to how it is used, and complain to the Data Protection
+      Authority. Everything above is how we meet those rights in practice rather than in theory.
+    </p>
+
+    <h2>Children</h2>
+    <p>
+      Choner is for people aged 18 and over. We do not knowingly collect data from children. If
+      you believe a child has created an account, email us and we will remove it.
+    </p>
+
+    <h2>Security</h2>
+    <p>
+      Data is encrypted in transit and at rest. Access to the production database is limited to
+      the people who build Choner. Your partner can only ever see the fields listed above, and
+      that is enforced by the database itself rather than by the app remembering to be careful.
+    </p>
+
+    <h2>Changes</h2>
+    <p>
+      If this policy changes in a way that affects you, we will tell you in the app rather than
+      quietly editing this page and moving the date.
+    </p>
+
+    <div class="foot">
+      Choner &middot; <a href="mailto:hello@choner.io">hello@choner.io</a><br>
+      <a href="https://choner.io/terms.html">Terms of service</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

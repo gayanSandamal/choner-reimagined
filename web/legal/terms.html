@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Terms of service | Choner</title>
+<meta name="description" content="What Choner collects when you join The First 200, why, and what you can ask us to do with it.">
+<meta name="robots" content="index,follow">
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="apple-touch-icon" href="/logo.png">
+<meta property="og:site_name" content="Choner">
+<meta property="og:title" content="Terms of service | Choner">
+<meta property="og:description" content="The agreement between you and Choner: what we owe you, what you owe your partner, and how either side ends it.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://choner.io/terms.html">
+<meta property="og:image" content="https://choner.io/og-cover.jpg">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="840">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap">
+<style>
+  /* Tokens copied from index.html so the two pages are one thing. */
+  :root{
+    --paper:#FDFCFB; --card:#FFFFFF; --ink:#1C2B33; --pmuted:#7C8C96; --dim:#D8D2CC; --pline:#EFEDEA;
+    --g1:#FD8302; --g2:#FD5B01; --navy:#001827;
+    --shadow-soft:0 2px 10px rgba(28,43,51,.06);
+    --shadow-float:0 10px 24px rgba(0,24,39,.28);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'Poppins',-apple-system,system-ui,sans-serif;
+    min-height:100vh;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  :focus-visible{outline:2px solid var(--g2);outline-offset:2px;}
+  .shell{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+  /* The same floating navy bar the form opens with. */
+  .bar{
+    background:var(--navy);display:flex;align-items:center;gap:12px;flex:none;
+    padding:16px 20px;margin:16px 16px 0;border-radius:24px;box-shadow:var(--shadow-float);
+  }
+  .bar .mark{font-size:17px;font-weight:600;color:#fff;letter-spacing:-.3px;}
+  .bar .mark span{color:var(--g1);}
+  .bar .t{margin-left:auto;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.72);}
+
+  .content{padding:26px 22px 48px;}
+  h1{font-size:26px;font-weight:300;letter-spacing:-.5px;line-height:1.25;margin-bottom:6px;}
+  h1 b{font-weight:600;}
+  .updated{font-size:12.5px;color:var(--pmuted);margin-bottom:22px;}
+  .lede{font-size:14.5px;line-height:1.65;color:var(--ink);margin-bottom:10px;}
+  h2{font-size:15px;font-weight:600;letter-spacing:-.2px;margin:28px 0 10px;}
+  p{font-size:13.5px;line-height:1.7;color:var(--pmuted);margin-bottom:10px;}
+  p strong{color:var(--ink);font-weight:500;}
+  ul{margin:0 0 10px 0;padding:0;list-style:none;}
+  li{
+    font-size:13.5px;line-height:1.6;color:var(--pmuted);
+    padding-left:18px;position:relative;margin-bottom:7px;
+  }
+  li::before{content:'';position:absolute;left:4px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--dim);}
+  li b{color:var(--ink);font-weight:500;}
+  a{color:var(--g2);}
+
+  .card{
+    background:var(--card);border:1px solid var(--pline);border-radius:18px;
+    padding:16px 18px;box-shadow:var(--shadow-soft);margin:18px 0;
+  }
+  .card p:last-child{margin-bottom:0;}
+
+  .back{
+    display:inline-flex;align-items:center;gap:8px;margin-top:30px;
+    font-size:13.5px;font-weight:500;color:var(--g2);text-decoration:none;
+  }
+  .foot{
+    margin-top:34px;padding-top:18px;border-top:1px solid var(--pline);
+    font-size:12px;line-height:1.7;color:var(--pmuted);
+  }
+</style>
+
+<!-- The second URL the App Store asks for. Same source of truth as the in-app
+     screens (app/legal/terms.tsx, app/legal/health-disclaimer.tsx), expanded
+     to cover what those are too short to say: the health disclaimer, what a
+     partner is owed, and what gets an account suspended.
+     NOT LEGALLY REVIEWED. -->
+</head>
+<body>
+<div class="shell">
+
+  <div class="bar">
+    <span class="mark">choner<span>.</span></span>
+    <span class="t">Terms</span>
+  </div>
+
+  <div class="content">
+    <h1>Terms of <b>service</b></h1>
+    <div class="updated">Last updated 16 October 2026</div>
+
+    <p class="lede">
+      Choner pairs you with another person so neither of you has to keep a habit alone.
+      Using it means agreeing to what follows. We have tried to write it in words you can
+      actually read.
+    </p>
+
+    <div class="card">
+      <p><strong>Choner is not a medical service.</strong> It is not a medical device, it does
+      not give medical advice, and it cannot diagnose or treat anything. Before you start a new
+      exercise, sleep or eating routine, talk to a qualified healthcare provider, particularly
+      if you have an existing condition, are pregnant, or take medication. If something hurts,
+      stop.</p>
+    </div>
+
+    <h2>Who can use it</h2>
+    <p>
+      You need to be 18 or over, and the details you give us need to be true. We match people on
+      what they tell us, so an inaccurate profile wastes somebody else's time as well as yours.
+    </p>
+
+    <h2>Your account</h2>
+    <p>
+      Keep your password to yourself. Anything done from your account is treated as done by you.
+      If you think someone else has got in, email
+      <a href="mailto:hello@choner.io">hello@choner.io</a> and we will help.
+    </p>
+
+    <h2>What you owe your partner</h2>
+    <p>
+      This is the part that matters most, because there is a real person on the other side.
+    </p>
+    <ul>
+      <li><b>Show up, or say you cannot.</b> Missing a session is human. Vanishing without a
+        word is the one thing the whole product is built to prevent.</li>
+      <li><b>Be decent.</b> No harassment, no abuse, no sexual advances, no pressure of any
+        kind. A partner is not a date.</li>
+      <li><b>Meet safely.</b> If you choose to meet in person, that is between the two of you.
+        Pick a public place, tell someone where you are going, and use your judgement. Choner
+        does not vet, interview or background-check anyone, and we are not present when you
+        meet.</li>
+      <li><b>Keep what is shared, shared.</b> Someone's photos, messages and reasons for
+        starting are theirs. Do not post them anywhere else.</li>
+    </ul>
+
+    <h2>What you can post</h2>
+    <p>
+      Nothing illegal, nothing that harasses or threatens, nothing sexual, no spam, no
+      advertising, and nothing that impersonates another person. You keep ownership of what you
+      write and upload; you give us permission to show it to the people it was meant for.
+    </p>
+
+    <h2>Reporting someone</h2>
+    <p>
+      Every match has a report button. A report is read by a person on our team and it ends the
+      match immediately. The person you report is never told who reported them or why. We would
+      much rather you reported something small than talked yourself out of it.
+    </p>
+
+    <h2>When we suspend an account</h2>
+    <p>
+      We will suspend or remove an account that harasses people, repeatedly abandons partners
+      without a word, posts content that breaks the rules above, or is used to break the law.
+      Where we reasonably can, we will tell you why.
+    </p>
+
+    <h2>Payments</h2>
+    <p>
+      If Choner offers a paid subscription, it is billed by Apple or Google under their terms,
+      not by us. Cancel it in your App Store or Play Store account. Refunds are theirs to give,
+      and their rules apply.
+    </p>
+
+    <h2>Leaving</h2>
+    <p>
+      <strong>Settings, then Delete account.</strong> No email required and no retention
+      conversation. What happens to your data is set out in the
+      <a href="https://choner.io/privacy.html">privacy policy</a>.
+    </p>
+
+    <h2>What we promise, and what we do not</h2>
+    <p>
+      We will try to keep Choner working and your data safe. We cannot promise it is always
+      available, that you will be matched, that a match will suit you, or that your partner will
+      show up. They are a person, not a feature.
+    </p>
+    <p>
+      To the extent the law allows, Choner is provided as it is, and we are not liable for
+      injury, loss or damage arising from exercise you chose to do, from meeting someone, or
+      from anything another person on Choner does. Nothing here removes a right you have under
+      Sri Lankan law that cannot be signed away.
+    </p>
+
+    <h2>Changes</h2>
+    <p>
+      If these terms change in a way that affects you, we will tell you in the app rather than
+      quietly editing this page and moving the date.
+    </p>
+
+    <h2>Law</h2>
+    <p>
+      These terms are governed by the laws of Sri Lanka.
+    </p>
+
+    <div class="foot">
+      Choner &middot; <a href="mailto:hello@choner.io">hello@choner.io</a><br>
+      <a href="https://choner.io/privacy.html">Privacy policy</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

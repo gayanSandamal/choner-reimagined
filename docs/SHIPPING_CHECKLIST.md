@@ -36,7 +36,7 @@ Status legend: ✅ done in code · 🔑 needs a real key/secret · 🎨 needs an
 - ✅ In-app terms of service
 - ✅ Health disclaimer (in app + injected into AI coach system prompt)
 - ✅ Consent checkbox on sign-up (terms + privacy + health disclaimer)
-- 👤 Hosted privacy policy + terms at choner.app (App Store metadata requires public URLs)
+- ✅ Hosted privacy policy + terms (`web/legal/privacy.html`, `web/legal/terms.html`) — upload to choner.io and paste both URLs into App Store Connect and Play Console. NOT legally reviewed; have someone check them against PDPA before launch.
 - 👤 Data retention written policy
 
 ## Launch Ops
