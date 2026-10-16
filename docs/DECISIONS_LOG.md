@@ -2391,3 +2391,39 @@ everyone eventually hits, so it says what to do next: sign in with the other
 account. No attempt counter and no lockout, because needing an account is
 already the rate limit, which is why `claim_prelaunch` is granted to
 `authenticated` only.
+
+---
+
+## 16 October 2026 — a typo checker now, social sign-in later
+
+**The failure, measured.** The First 200 waitlist is 87% Gmail, and **one
+registration in eight so far has been lost to `gmail.con`**. That address
+passes every format check there is, ours, zod's and the browser's own
+`type="email"`, because nothing about it is malformed: the format is perfect
+and the domain is wrong.
+
+**In the app a typo costs more than an undelivered email.** The verification
+link never arrives, so the account can never be used, and `link_first_200()`
+matches on the *verified* address, so their place silently fails to attach and
+they arrive as a stranger. If the typo lands on a real person's address, that
+stranger gets a confirmation email for an account they never made, and a spam
+complaint there would cost us the inbox placement we just won.
+
+**Shipped:** `features/auth/email-typo.ts`, the same checker that runs on
+join.choner.io. Suggests on blur, never blocks, one tap to accept, withdrawn
+the moment they type again. 30 tests. The two lists must be kept in step; both
+files say so.
+
+**Social sign-in was considered properly and parked**, not dismissed. One-tap
+sign-in removes typos completely and arrives pre-verified, which is strictly
+better. It needs `eas credentials` finished first for the Android SHA-1, so it
+sits *behind* the release plumbing rather than beside it, and it moves all auth
+testing off Expo Go onto development builds. Two to three days against a date
+with no slack.
+
+**It is scheduled for the App Store review window**, where there is genuine
+dead time and a slip costs 1.1 rather than the launch. Full plan, including the
+four things that will bite, in `docs/SOCIAL_SIGN_IN_PLAN.md`. The sharpest:
+Apple hands over the full name **exactly once**, and Hide My Email gives an
+address that can never match a First 200 registration, so the code screen stays
+necessary either way.

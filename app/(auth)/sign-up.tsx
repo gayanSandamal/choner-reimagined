@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { AuthTopBar } from '@/components/auth/AuthTopBar';
 import { AuthHeading, AuthSwitchLink, FieldLabel, authInputBox } from '@/components/auth/AuthFormParts';
 import { signUp, authErrorMessage } from '@/features/auth/api';
+import { suggestEmail } from '@/features/auth/email-typo';
 import { SignUpInput, signUpSchema } from '@/features/auth/schema';
 import { theme } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
@@ -35,6 +36,11 @@ function LegalLink({ to, children }: { to: LegalRoute; children: string }) {
 
 export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
+  // "Did you mean gmail.com?" A typo here costs more than an undelivered
+  // email: the account can never be verified, and link_first_200() matches on
+  // the verified address, so their place in The First 200 silently fails to
+  // attach and they arrive as a stranger.
+  const [emailFix, setEmailFix] = useState<string | null>(null);
   const {
     control,
     handleSubmit,
@@ -103,17 +109,46 @@ export default function SignUpScreen() {
             <Controller
               control={control}
               name="email"
-              render={({ field: { onChange, value } }) => (
-                <Input
-                  placeholder="you@email.com"
-                  boxStyle={authInputBox}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  autoComplete="email"
-                  value={value}
-                  onChangeText={onChange}
-                  error={errors.email?.message}
-                />
+              render={({ field: { onChange, onBlur, value } }) => (
+                <>
+                  <Input
+                    placeholder="you@email.com"
+                    boxStyle={authInputBox}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    autoComplete="email"
+                    value={value}
+                    onChangeText={(v) => {
+                      onChange(v);
+                      // Typing again withdraws the question rather than
+                      // arguing with someone mid-word.
+                      if (emailFix) setEmailFix(null);
+                    }}
+                    // Asked on blur, like the format check, so nobody is
+                    // corrected while they are still typing the domain.
+                    onBlur={() => {
+                      onBlur();
+                      setEmailFix(suggestEmail(value));
+                    }}
+                    error={errors.email?.message}
+                  />
+                  {emailFix ? (
+                    <Pressable
+                      onPress={() => {
+                        onChange(emailFix);
+                        setEmailFix(null);
+                        haptics.selection();
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use ${emailFix} instead`}
+                      style={styles.didYouMean}
+                    >
+                      <AppText variant="caption" style={styles.didYouMeanText}>
+                        Did you mean <AppText style={styles.didYouMeanFix}>{emailFix}</AppText>?
+                      </AppText>
+                    </Pressable>
+                  ) : null}
+                </>
               )}
             />
           </Animated.View>
@@ -221,6 +256,11 @@ type LegalRoute = '/legal/terms' | '/legal/privacy' | '/legal/health-disclaimer'
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
   legalLink: { color: theme.colors.link, textDecorationLine: 'underline' },
+  // A question in the page's own voice, not a red error: it is a suggestion
+  // and the form stays usable whether or not anyone takes it.
+  didYouMean: { paddingTop: 2, paddingBottom: 2 },
+  didYouMeanText: { color: theme.colors.muted },
+  didYouMeanFix: { color: theme.colors.primary2, fontFamily: theme.fonts.bodyBold },
   content: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, gap: 12 },
   field: { gap: 10 },
   termsRow: {
