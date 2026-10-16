@@ -2296,3 +2296,60 @@ clean address, one variable each, produced the right one in an hour. **There is
 no cache and no waiting period**: Gmail classifies each message at delivery
 from its own content. If this regresses, change one thing, send to an address
 that has never seen the domain, and read the result.
+
+---
+
+## 16 October 2026 — an expired invite stopped being invisible
+
+**The defect.** Invite expiry was enforced in exactly one place: a BEFORE
+UPDATE trigger (`202609291300`) that raises an exception when someone tries to
+accept past `expires_at`. Nothing ever wrote the row off, so an invite nobody
+accepted stayed `pending` for ever. Three consequences, each worse than the
+last:
+
+1. `listMyPendingInvites` filtered on `status = 'pending'` alone, so a dead
+   invite came back looking exactly like a live one.
+2. Find printed its code under the words **GOOD FOR 48 HOURS**. One real
+   account's screen said that for over a day about a code that had stopped
+   working.
+3. The inviter stayed at `partner_state = 'invited'`, which `get_match_pool`
+   excludes. **A dead invite quietly took them out of the match pool with no
+   way of knowing.** Someone whose friend never joined would wait for ever,
+   see a code that fails, and never be offered a match.
+
+Found by Dinesh on his own account, 15 October. Blast radius at the time:
+exactly one user, zero genuinely live invites, which is the cheapest moment
+this could possibly have surfaced.
+
+**The decision: tell them, do not move them.** The screen now says "That invite
+expired", drops the dead code, and offers three doors: *Search for a match*,
+*Invite someone*, and *Already on the move*, the same directory link the Find
+landing carries. The state is not changed on their behalf.
+
+The alternative was to return them to the pool automatically. Rejected: it acts
+for someone without asking, and it hides the thing that went wrong instead of
+explaining it. Staying out of the pool is fine as long as it is a choice
+somebody made knowingly.
+
+**`expire_stale_invites()`** marks run-out rows hourly via pg_cron, so the data
+is honest for anyone reading the table rather than the app. It deliberately
+does **not** touch `partner_state`, for the same reason. The client also
+compares `expires_at` itself, so the screen is correct with or without the
+sweeper having run.
+
+### While we were here: two different things are called "solo"
+
+This caused a real misunderstanding, so it is worth writing down.
+
+- **Solo *mode*** — the product idea of doing a challenge with no partner. It
+  was **removed** on 25 September (see that entry, and the "not a reachable UI
+  state" note). No solo panel, no "Half a heart is still a start", no
+  "Continue solo, for now".
+- **`partner_state = 'solo'`** — an internal challenge state meaning *no
+  partner yet, available to be matched*. It is **alive and load-bearing**. It
+  is the default from `partnerStateOf`, what "Search for a match instead"
+  sets, and one of the two states `get_match_pool` will consider. Remove it
+  and nobody can ever be matched.
+
+The names collide and the meanings do not. If `partner_state` is ever
+renamed, `available` would say what it means.

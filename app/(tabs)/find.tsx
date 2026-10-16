@@ -445,6 +445,12 @@ function InvitedState({
   const invitesQ = usePendingInvites(userId);
   const [busy, setBusy] = useState(false);
   const invite: any = (invitesQ.data ?? []).find((i: any) => i.user_challenge_id === challengeId) ?? invitesQ.data?.[0];
+  // An invite that has run out is NOT quietly hidden and the state is NOT
+  // changed on the person's behalf. The screen says what happened and leaves
+  // the next move to them: look for a match, invite someone else, or see who
+  // is already on the move. Until they choose, they stay out of the match pool
+  // by their own decision rather than by an accident nobody told them about.
+  const expired: boolean = !!invite?.expired;
 
   const onShare = async () => {
     if (!invite?.token) return;
@@ -469,20 +475,34 @@ function InvitedState({
 
   return (
     <Animated.View entering={FadeInDown.duration(360)} style={styles.block}>
-      <AppText style={styles.heading}>Your invite is out.</AppText>
-      <AppText style={styles.sub}>
-        {invite?.email ? `Waiting for ${invite.email} to join.` : 'Waiting for them to join.'} You'll be
-        paired the moment they do.
+      <AppText style={styles.heading}>
+        {expired ? 'That invite expired.' : 'Your invite is out.'}
       </AppText>
-      {invite?.code ? (
+      <AppText style={styles.sub}>
+        {expired
+          ? `${invite?.email ? `${invite.email} didn't join in time.` : 'Nobody joined in time.'} Invites last 48 hours. You can send another, or look for a match.`
+          : `${invite?.email ? `Waiting for ${invite.email} to join.` : 'Waiting for them to join.'} You'll be paired the moment they do.`}
+      </AppText>
+      {/* The code is gone once it is dead. Showing it under GOOD FOR 48 HOURS
+          is what made this screen lie for a day. */}
+      {invite?.code && !expired ? (
         <View style={styles.codeBox}>
           <AppText style={styles.codeLabel}>THEIR CODE · GOOD FOR 48 HOURS</AppText>
           <AppText style={styles.code} selectable>{invite.code}</AppText>
         </View>
       ) : null}
-      {invite?.token ? <Button label="Share the invite link" onPress={onShare} /> : null}
-      <Button label="Invite someone else" variant="ghost" onPress={() => router.push('/group/invite')} />
-      <Button label="Search for a match instead" variant="ghost" loading={busy} onPress={onSearchInstead} />
+      {invite?.token && !expired ? <Button label="Share the invite link" onPress={onShare} /> : null}
+      {expired ? <Button label="Search for a match" loading={busy} onPress={onSearchInstead} /> : null}
+      <Button
+        label={expired ? 'Invite someone' : 'Invite someone else'}
+        variant="ghost"
+        onPress={() => router.push('/group/invite')}
+      />
+      {expired ? null : (
+        <Button label="Search for a match instead" variant="ghost" loading={busy} onPress={onSearchInstead} />
+      )}
+      {/* The third door, exactly as the landing offers it. */}
+      <DirectoryRow />
     </Animated.View>
   );
 }

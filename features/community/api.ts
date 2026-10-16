@@ -250,6 +250,15 @@ export async function createInvite(input: {
   return { ...invite, emailed, emailError };
 }
 
+// 'pending' alone was not enough. Nothing ever flips an expired invite's
+// status: expiry is enforced at the moment of acceptance by a trigger, so the
+// row sits at 'pending' for ever. Find therefore kept offering a code that
+// stopped working, under the words GOOD FOR 48 HOURS, and the inviter stayed
+// in partner_state 'invited' where get_match_pool cannot see them. One real
+// account sat like that for a day (15 October).
+//
+// Expired invites are still RETURNED, because the screen has to be able to say
+// "that one expired" rather than silently emptying. They are marked instead.
 export async function listMyPendingInvites(userId: string) {
   const { data, error } = await supabase
     .from('challenge_invites')
@@ -258,7 +267,13 @@ export async function listMyPendingInvites(userId: string) {
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  const now = Date.now();
+  return (data ?? []).map((invite: any) => ({
+    ...invite,
+    // No expires_at at all means a row older than 202609291300. Treat it as
+    // live rather than killing an invite we cannot date.
+    expired: invite.expires_at ? new Date(invite.expires_at).getTime() <= now : false
+  }));
 }
 
 // Re-fires the invite email for an existing pending invite. No new row:
