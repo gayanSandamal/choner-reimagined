@@ -167,7 +167,7 @@
            background-clip:text;color:transparent;}
   /* Darker than the muted grey the forms use: on the intro this line is read,
      not skimmed past, so it carries more ink. */
-  .welcome .tag{font-size:14.5px;color:#55656F;line-height:1.6;max-width:300px;font-weight:300;}
+  .welcome .tag{font-size:14.5px;color:#3D4B55;line-height:1.6;max-width:300px;font-weight:300;}
   .welcome .tag b{color:var(--ink);font-weight:500;}
   .acts{display:flex;flex-direction:column;gap:14px;width:100%;}
 
@@ -708,7 +708,7 @@ function screenWelcome(){
 
     <div class="reveal">
       <div class="ask">What if someone was <b>counting on you</b> to show up?</div>
-      <div class="tag">Choner helps you stay consistent with the healthy habits you want to build.</div>
+      <div class="tag">Be one of the first 200.<br>Help us build a better way to stay consistent.</div>
       <div class="tag quiet">Be one of the first 200 to start something different.</div>
       <div class="acts">${btn('Count Me In',{go:'t1'})}</div>
     </div>
@@ -865,13 +865,13 @@ function screenConfirm(){
       <div class="lbl">Your code</div>
       <div class="code">${esc(S.accessCode || '')}</div>
     </div>
-    <!-- Gmail files this mail under Promotions, confirmed on a real send. We
-         cannot reliably change that, so the copy stops promising "your inbox"
-         and says where to actually look. The code on screen is the primary
-         copy; the email is the backup, not the other way round. -->
+    <!-- The "check your Promotions tab" hedge is gone: the welcome mail
+         reaches the inbox as of 15 October, proved on fresh Gmail accounts.
+         See DECISIONS_LOG. If that ever regresses, the hedge comes back
+         rather than the promise quietly becoming false. The code on screen
+         is still the primary copy; the email is the backup. -->
     <div class="reass">Sign up with <b>${esc(S.f.email)}</b> and we'll know you already.
-      We've emailed the code too. If it's not in your inbox, check your
-      <b>Promotions</b> tab or spam.</div>
+      We've emailed the code too.</div>
 
     <!-- Their own answers, read back. Proves we listened, and costs nothing. -->
     <div class="summary"><b>${esc(labelOf(ACTIVITIES,S.activity))}</b> &middot; ${esc(how)}${where?' &middot; '+esc(where):''}${when?' &middot; '+esc(when):''}</div>
