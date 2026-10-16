@@ -1441,5 +1441,15 @@ app.addEventListener('click', e => {
 
 render();
 </script>
+
+<!-- Cloudflare Web Analytics. Last thing before </body> so it can never delay
+     anything that matters: the form, the audio and the hourglass are all
+     running by the time this loads, and if it fails to load nothing on the
+     page notices.
+     No cookies and no personal data, which is why there is no consent banner
+     and why privacy.html can describe it in one line. The token is public by
+     design, visible in the page source to anyone who looks; it identifies the
+     site, it does not grant access to anything. -->
+<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "82bfa193401748e9a16a8d84379a200f"}'></script>
 </body>
 </html>
