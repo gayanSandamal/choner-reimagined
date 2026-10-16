@@ -86,3 +86,53 @@ export async function deleteAccount() {
   await supabase.auth.signOut();
 }
 
+
+/* The First 200 handshake, from the app's side.
+ *
+ * Most of the 200 never call this. link_first_200() is a trigger on email
+ * VERIFICATION: if the address someone signs up with matches the one they
+ * registered with, profiles.is_first_200 is already true before they reach
+ * any screen, and the code screen hides itself.
+ *
+ * This is the fallback for someone who signed up with a different address.
+ * claim_prelaunch is SECURITY DEFINER and granted to `authenticated` only:
+ * needing an account IS the rate limit, because brute-forcing six characters
+ * then costs a signup per attempt.
+ */
+export type ClaimResult =
+  | { ok: true; firstName: string | null }
+  | { ok: false; reason: 'not_found' | 'already_claimed' | 'not_signed_in' | 'unknown'; message: string };
+
+export async function claimFirstTwoHundred(code: string): Promise<ClaimResult> {
+  const trimmed = code.trim();
+  if (!trimmed) return { ok: false, reason: 'not_found', message: 'Enter your code first.' };
+
+  const { data, error } = await supabase.rpc('claim_prelaunch' as never, { p_code: trimmed } as never);
+
+  if (!error) {
+    const row = data as { ok?: boolean; first_name?: string | null } | null;
+    return { ok: true, firstName: row?.first_name ?? null };
+  }
+
+  // The function raises named exceptions; Postgres hands them back in the
+  // message. Each one gets a sentence that blames the code, never the person.
+  const raw = (error.message ?? '').toLowerCase();
+  if (raw.includes('code_not_found')) {
+    return {
+      ok: false,
+      reason: 'not_found',
+      message: "We don't recognise that code. Check it against the email we sent."
+    };
+  }
+  if (raw.includes('already_claimed')) {
+    return {
+      ok: false,
+      reason: 'already_claimed',
+      message: 'That code has already been used. If that was you on another account, sign in with it instead.'
+    };
+  }
+  if (raw.includes('not_authenticated')) {
+    return { ok: false, reason: 'not_signed_in', message: 'Sign in first, then try your code again.' };
+  }
+  return { ok: false, reason: 'unknown', message: "That didn't work. Check your connection and try again." };
+}

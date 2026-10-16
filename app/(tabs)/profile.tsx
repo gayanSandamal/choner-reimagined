@@ -64,6 +64,15 @@ export default function ProfileScreen() {
               />
               <AppText style={styles.name}>{profileQ.data?.full_name ?? 'Your profile'}</AppText>
               <AppText style={styles.email}>{session?.user.email}</AppText>
+              {/* The whole First 200 campaign, paid off in one line. Quiet on
+                  purpose: it says they are known, not that they won something.
+                  No number, because there is no honest one to show. */}
+              {profileQ.data?.is_first_200 ? (
+                <View style={styles.f200}>
+                  <Icon name="check" size={13} color={theme.colors.primary2} strokeWidth={3} />
+                  <AppText style={styles.f200Label}>One of The First 200</AppText>
+                </View>
+              ) : null}
               <AppText style={[styles.photoState, photoConfirmed && styles.photoOk]}>
                 {photoConfirmed ? 'Photo confirmed' : 'No photo yet'}
               </AppText>
@@ -103,6 +112,20 @@ export default function ProfileScreen() {
               value={prefs.accountability_alerts ?? true}
               onChange={(v) => setPref('accountability_alerts', v)}
             />
+            {/* The fallback, and it removes itself once it is spent. Anyone
+                who signed up with the address they registered with was linked
+                on email verification and never sees this at all. */}
+            {profileQ.data && !profileQ.data.is_first_200 ? (
+              <Row
+                icon="doc"
+                label="Have a code?"
+                sub="Claim your place in The First 200"
+                // `as never`, as on the photo route above: expo-router's
+                // generated route union only refreshes when the dev server
+                // reruns, and a fresh file is not in it yet.
+                onPress={() => router.push('/profile/code' as never)}
+              />
+            ) : null}
             {/* Settings keeps Delete account, so it stays reachable. */}
             <Row
               icon="doc"
@@ -192,6 +215,23 @@ const styles = StyleSheet.create({
   name: { marginTop: theme.spacing(1), fontSize: 18, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
   email: { fontSize: 12.5, color: theme.colors.muted },
   photoState: { fontSize: 12, color: theme.colors.muted, marginTop: 4 },
+  // A tint, not a badge. No gradient fill and no shadow: the glow is retired
+  // everywhere but the verified-email checkmark (DECISIONS_LOG, 12 October).
+  f200: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#FFF4EA',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    marginTop: 10
+  },
+  f200Label: {
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 12.5,
+    color: theme.colors.primary2
+  },
   photoOk: { color: theme.colors.success },
   // One white card per row, standing apart, as in the prototype.
   row: {

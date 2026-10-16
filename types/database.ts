@@ -19,6 +19,10 @@ export interface Database {
           id: string;
           full_name: string | null;
           avatar_url: string | null;
+          // Set by link_first_200() on EMAIL VERIFICATION, or by
+          // claim_prelaunch() for someone who signed up with a different
+          // address than they registered with (202610061200).
+          is_first_200: boolean;
           primary_goal: string | null;
           main_struggle: string | null;
           // DROPPED on the live database by 202609291110. Kept in the Row type
@@ -55,6 +59,7 @@ export interface Database {
           id: string;
           full_name?: string | null;
           avatar_url?: string | null;
+          is_first_200?: boolean;
           primary_goal?: string | null;
           main_struggle?: string | null;
           accountability_style?: string | null;
@@ -72,6 +77,7 @@ export interface Database {
           id?: string;
           full_name?: string | null;
           avatar_url?: string | null;
+          is_first_200?: boolean;
           primary_goal?: string | null;
           main_struggle?: string | null;
           accountability_style?: string | null;

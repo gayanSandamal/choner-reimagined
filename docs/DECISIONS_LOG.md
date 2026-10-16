@@ -2353,3 +2353,41 @@ This caused a real misunderstanding, so it is worth writing down.
 
 The names collide and the meanings do not. If `partner_state` is ever
 renamed, `available` would say what it means.
+
+---
+
+## 16 October 2026 — The First 200, made visible in the app
+
+The campaign dead-ended. `link_first_200()` sets `profiles.is_first_200` on
+email verification, and **nothing in the app read it**: `grep -rn is_first_200
+app/ features/` returned nothing at all. 200 people were about to be told "when
+Choner opens, we'll recognise you", wait two weeks, open the app, and see
+exactly what a stranger sees.
+
+**Where the recognition went: Profile.** Three placements were drawn up (a line
+on Home, a one-time first-launch welcome, a row on Profile) and Dinesh chose
+Profile, the quietest. It is a tinted pill under the name, "One of The First
+200", with no gradient fill and no shadow, because the glow is retired
+everywhere but the verified-email checkmark.
+
+**No number.** Not "you're #47". The data cannot honestly support it: codes are
+not issued in arrival order and a row can be claimed long after it was created.
+A made-up number is the kind of thing nobody later remembers was made up.
+
+**The code screen hides itself.** "Have a code?" appears on Profile only while
+`is_first_200` is false, and disappears the moment it is true. Most of the 200
+never see it, because verifying the address they registered with links them
+automatically. It exists for someone who signed up with a different address.
+
+**One field, not two** (FIRST_200_BUILD_SPEC 7.1, 14 October). `claim_prelaunch`
+already matches either an `access_code` or a `claim_token`, so the same box
+takes both and can take whatever comes later. Asking "what kind of code is
+this?" before someone has typed it is a question only we care about.
+
+**Every refusal blames the code, never the person.** The RPC raises
+`code_not_found`, `code_already_claimed` and `not_authenticated`, and each gets
+its own sentence. "Already claimed" is the state everyone forgets to design and
+everyone eventually hits, so it says what to do next: sign in with the other
+account. No attempt counter and no lockout, because needing an account is
+already the rate limit, which is why `claim_prelaunch` is granted to
+`authenticated` only.
