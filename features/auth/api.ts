@@ -35,6 +35,48 @@ export async function signIn(values: SignInInput) {
   if (error) throw error;
 }
 
+/* The password, held in memory only, so "Check your email" can finish the job
+   itself when the deep link does not come back.
+   
+   WHY THIS EXISTS: a confirmation-required signUp returns NO session, so there
+   is nothing to poll. The only way to learn that someone has verified, without
+   the link reopening the app, is to try signing in: it fails with "Email not
+   confirmed" until they do, and succeeds the moment they have.
+   
+   It is never written to disk, never logged, never put in a route param, and
+   it is cleared the moment it is used or the screen is left. An app restart
+   loses it, which is correct: the screen then sends them to sign in instead. */
+let pendingPassword: { email: string; password: string } | null = null;
+
+export function rememberPendingPassword(email: string, password: string) {
+  pendingPassword = { email, password };
+}
+export function takePendingPassword(email: string): string | null {
+  if (!pendingPassword || pendingPassword.email !== email) return null;
+  return pendingPassword.password;
+}
+export function forgetPendingPassword() {
+  pendingPassword = null;
+}
+
+/* Has this person verified yet? Signing in is the probe.
+   Returns 'verified' once the session exists (the caller is now logged in),
+   'waiting' while the address is still unconfirmed, and 'unknown' when we
+   cannot tell, which includes having no password to try. */
+export async function checkVerified(email: string): Promise<'verified' | 'waiting' | 'unknown'> {
+  const password = takePendingPassword(email);
+  if (!password) return 'unknown';
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (data?.session) {
+    forgetPendingPassword();
+    return 'verified';
+  }
+  const m = (error?.message ?? '').toLowerCase();
+  if (m.includes('not confirmed') || m.includes('email not confirmed')) return 'waiting';
+  // Wrong password, rate limit, offline: say so by saying nothing.
+  return 'unknown';
+}
+
 export async function signUp(values: SignUpInput) {
   const redirectTo = Linking.createURL('/verify-email');
   const { data, error } = await supabase.auth.signUp({
@@ -54,7 +96,10 @@ export async function signUp(values: SignUpInput) {
     throw new Error('User already registered');
   }
   if (outcome === 'needs_verification') {
-    // Email confirmation required — sign in will fail until verified.
+    // Email confirmation required — sign in will fail until verified. Keep the
+    // password in memory so the next screen can poll for the confirmation
+    // instead of depending on the deep link coming back.
+    rememberPendingPassword(values.email, values.password);
     return { needsVerification: true } as const;
   }
 
