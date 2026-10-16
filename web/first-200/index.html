@@ -167,7 +167,9 @@
            background-clip:text;color:transparent;}
   /* Darker than the muted grey the forms use: on the intro this line is read,
      not skimmed past, so it carries more ink. */
-  .welcome .tag{font-size:14.5px;color:#3D4B55;line-height:1.6;max-width:300px;font-weight:300;}
+  /* Not Light 300. At 14.5px on paper that weight reads as furniture, and
+     this is the one sentence that says what Choner actually does. */
+  .welcome .tag{font-size:14.5px;color:#3D4B55;line-height:1.6;max-width:300px;font-weight:500;}
   .welcome .tag b{color:var(--ink);font-weight:500;}
   .acts{display:flex;flex-direction:column;gap:14px;width:100%;}
 
@@ -304,9 +306,14 @@
   }
   .ask b{font-weight:700;background:linear-gradient(135deg,var(--g1),var(--g2));
          -webkit-background-clip:text;background-clip:text;color:transparent;}
+  /* CAREFUL: this is the SECOND .welcome .tag rule in the file and it wins.
+     The first one, up with the base type, sets the colour; anything declared
+     in both is decided here. Changing the weight up there alone does nothing,
+     which is exactly the trap that made this line look thin through two
+     rounds of "make it darker". */
   .welcome .tag{
     font-size:14.5px;font-size:min(14.5px,2.3svh);line-height:1.6;max-width:310px;
-    font-weight:300;margin-top:min(15px,2.3svh);opacity:0;transform:translateY(10px);
+    font-weight:500;margin-top:min(15px,2.3svh);opacity:0;transform:translateY(10px);
   }
   /* The closer is the brief's orange semibold, not a dimmed line: it is the
      ask, and it was reading as a footnote. */
