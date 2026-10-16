@@ -2427,3 +2427,55 @@ four things that will bite, in `docs/SOCIAL_SIGN_IN_PLAN.md`. The sharpest:
 Apple hands over the full name **exactly once**, and Hide My Email gives an
 address that can never match a First 200 registration, so the code screen stays
 necessary either way.
+
+---
+
+## 16 October 2026 — two areas, and the untagged location it uncovered
+
+**#140, and I was wrong about the cost.** I first called it a schema question
+for Gayan and suggested parking it until after launch. Having actually traced
+it, the surface was far smaller than that implied:
+
+| | |
+|---|---|
+| `matching.ts` | **nothing** |
+| `get_match_pool` | one line: `=` becomes `in` |
+| `join_match_pool` | one parameter |
+| schema | one column |
+| the form | the chip picker takes a second |
+
+**The scorer needing no change is the point.** `locationProximity` already
+compares `locationTags` as sets and scores by overlap. The data model was
+always shaped for a set of corridor tags; only the input was narrowed to one
+area. Widening it feeds more tags into machinery that already handled them.
+
+**A second column, not an array.** The product rule is exactly two, not "many".
+Two columns say that in the schema, need no length check, no data migration and
+no change to readers that only want the first. Two check constraints keep the
+pair honest: the second area must differ from the first, and cannot exist
+without it.
+
+**`p_clear_location_2` exists because `coalesce` cannot tell "leave it alone"
+from "they removed it".** Without the flag, nobody could ever go back to one
+area once they had two. That is the kind of thing that ships and is reported
+three weeks later as "it won't let me change my area".
+
+### The real find: Mattegoda was unmatchable
+
+Proving that a second area widens the tag set needed a one-area control, and
+Mattegoda's came back **null**. It was the only one of the 68 locations with no
+corridor tags, because the migration that added it on 14 October added the
+location and not its tags. That migration was mine.
+
+`get_match_pool`'s own comment says an empty tag set "blocks in-person pairs at
+the hard filter". So **anyone whose only area was Mattegoda could not be matched
+in person at all**, silently, with no error and nothing in the UI to suggest
+why. Two of the First 200 registrations had picked it.
+
+Fixed in `202610161300`, with the same tags as Piliyandala. Zero untagged
+locations now.
+
+**The lesson worth keeping:** adding a row to `locations` is never the whole
+job. A location without corridor tags is worse than a missing location, because
+a missing one cannot be chosen and an untagged one can be chosen and then
+quietly fails.

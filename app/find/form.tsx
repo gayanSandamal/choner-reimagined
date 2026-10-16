@@ -28,6 +28,10 @@ type Mode = 'together' | 'separate' | 'either';
 // already know — everything about WHAT the challenge is was captured in
 // onboarding and the Home prompt, and asking again reads as the app not
 // listening.
+// Maximum areas per challenge. Two columns on user_challenges enforce the
+// same number server-side, so this constant and the schema have to agree.
+const MAX_AREAS = 2;
+
 export default function FindFormScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
@@ -47,7 +51,14 @@ export default function FindFormScreen() {
   const [mode, setMode] = useState<Mode>(forcedMode ?? 'separate');
   const [genderPreference, setGenderPreference] =
     useState<'no_preference' | 'same_gender_only'>('no_preference');
-  const [location, setLocation] = useState<string | null>(challenge?.preferred_location ?? null);
+  // Up to TWO areas (#140). An ordered list rather than two variables,
+  // because the chips, the suggestion filter and the submit all want to treat
+  // it as a set, and the cap then lives in exactly one place.
+  const [picked, setPicked] = useState<string[]>(
+    [challenge?.preferred_location, (challenge as any)?.preferred_location_2].filter(
+      Boolean
+    ) as string[]
+  );
   const [locationQuery, setLocationQuery] = useState('');
   const [skill, setSkill] = useState<'beginner' | 'casual' | 'intermediate' | 'advanced' | null>(null);
   const [courtAccess, setCourtAccess] = useState<string | null>(null);
@@ -65,7 +76,11 @@ export default function FindFormScreen() {
       setMode(challenge.mode);
     }
     if (challenge.gender_preference) setGenderPreference(challenge.gender_preference);
-    if (challenge.preferred_location) setLocation(challenge.preferred_location);
+    const stored = [
+      challenge.preferred_location,
+      (challenge as any).preferred_location_2
+    ].filter(Boolean) as string[];
+    if (stored.length) setPicked(stored);
     if (challenge.skill_level) setSkill(challenge.skill_level);
     if (challenge.court_access) setCourtAccess(challenge.court_access);
     if (challenge.bike_access) setBikeAccess(challenge.bike_access);
@@ -81,22 +96,28 @@ export default function FindFormScreen() {
   const suggestions = useMemo(() => {
     const q = locationQuery.trim().toLowerCase();
     if (!q) return [];
-    return locations.filter((l) => l.label.toLowerCase().includes(q)).slice(0, 6);
-  }, [locations, locationQuery]);
+    // An area already chosen is not a suggestion. Offering it again only
+    // leads to picking the same place twice, which the database now refuses.
+    return locations
+      .filter((l) => l.label.toLowerCase().includes(q) && !picked.includes(l.value))
+      .slice(0, 6);
+  }, [locations, locationQuery, picked]);
 
-  const selectedLabel = locations.find((l) => l.value === location)?.label ?? null;
+  const labelFor = (value: string) =>
+    locations.find((l) => l.value === value)?.label ?? value;
+  const canAddArea = picked.length < MAX_AREAS;
 
   const showBadminton = activityKey === 'badminton';
   const showBike = activityKey === 'cycling';
 
-  const canSubmit = Boolean(challenge?.id) && (!inPerson || Boolean(location));
+  const canSubmit = Boolean(challenge?.id) && (!inPerson || picked.length > 0);
 
   const join = async () => {
     if (!challenge?.id) return;
     await joinPool.mutateAsync({
       userChallengeId: challenge.id,
       mode: effectiveMode,
-      preferredLocation: inPerson ? location : null,
+      preferredLocations: inPerson ? picked : [],
       genderPreference,
       // No pace question any more (#106): it is agreed with the partner after
       // matching. null leaves whatever an older search saved untouched.
@@ -219,36 +240,45 @@ export default function FindFormScreen() {
         {/* Location only matters when actually meeting up. */}
         {inPerson ? (
           <>
-            {/* The prototype's location picker (#105): the chosen area is a
-                gradient chip you can close; typing shows a few suggestions.
-                The old version listed every area as a pill. One area, because
-                the match pool keeps one preferred location per challenge. */}
-            <AppText style={styles.fieldLabel}>Your area</AppText>
-            {location && selectedLabel ? (
+            {/* The prototype's location picker (#105), now holding up to TWO
+                areas (#140), which is what was agreed on 28 September and
+                never built: the app shipped one because the column was
+                singular. Each choice is a gradient chip you can close, and
+                typing shows a few suggestions.
+                The input disappears at two rather than being disabled, so
+                nobody types into a box that will refuse them. */}
+            <AppText style={styles.fieldLabel}>
+              {picked.length > 1 ? 'Your areas' : 'Your area'}
+            </AppText>
+            {picked.length ? (
               <View style={styles.pillRow}>
-                <LinearGradient
-                  colors={theme.gradients.warm as unknown as readonly [string, string]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.areaChip}
-                >
-                  <AppText style={styles.areaChipLabel}>{selectedLabel}</AppText>
-                  <PressableScale
-                    onPress={() => setLocation(null)}
-                    haptic="selection"
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remove ${selectedLabel}`}
-                    style={styles.areaChipX}
+                {picked.map((value) => (
+                  <LinearGradient
+                    key={value}
+                    colors={theme.gradients.warm as unknown as readonly [string, string]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.areaChip}
                   >
-                    <Icon name="x" size={12} color="#FFFFFF" strokeWidth={2.4} />
-                  </PressableScale>
-                </LinearGradient>
+                    <AppText style={styles.areaChipLabel}>{labelFor(value)}</AppText>
+                    <PressableScale
+                      onPress={() => setPicked((prev) => prev.filter((v) => v !== value))}
+                      haptic="selection"
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${labelFor(value)}`}
+                      style={styles.areaChipX}
+                    >
+                      <Icon name="x" size={12} color="#FFFFFF" strokeWidth={2.4} />
+                    </PressableScale>
+                  </LinearGradient>
+                ))}
               </View>
-            ) : (
+            ) : null}
+            {canAddArea ? (
               <>
                 <Input
-                  placeholder="Type an area"
+                  placeholder={picked.length ? 'Add another area' : 'Type an area'}
                   value={locationQuery}
                   onChangeText={setLocationQuery}
                   autoCorrect={false}
@@ -259,8 +289,13 @@ export default function FindFormScreen() {
                       <PressableScale
                         key={l.value}
                         onPress={() => {
-                          setLocation(l.value);
+                          setPicked((prev) =>
+                            prev.includes(l.value) ? prev : [...prev, l.value].slice(0, MAX_AREAS)
+                          );
                           setLocationQuery('');
+                          // The keyboard goes on add, as the prototype does,
+                          // so the chip that just appeared is not hidden
+                          // behind it.
                           Keyboard.dismiss();
                         }}
                         haptic="selection"
@@ -275,9 +310,13 @@ export default function FindFormScreen() {
                   <AppText variant="caption" muted>
                     No area matches “{locationQuery.trim()}”.
                   </AppText>
+                ) : picked.length ? (
+                  <AppText variant="caption" muted>
+                    A second area widens who you can be matched with. Optional.
+                  </AppText>
                 ) : null}
               </>
-            )}
+            ) : null}
           </>
         ) : null}
 

@@ -461,7 +461,10 @@ export async function setPartnerState(userChallengeId: string, state: PartnerSta
 
 export interface FindPreferences {
   mode?: 'together' | 'separate' | 'either';
-  preferredLocation?: string | null;
+  /** The areas they are willing to meet in, in order, MAXIMUM TWO (#140).
+   *  [] or undefined leaves whatever is already stored alone; an explicit
+   *  array replaces it, and a one-item array clears the second. */
+  preferredLocations?: string[];
   genderPreference?: 'no_preference' | 'same_gender_only';
   pace?: 'slow' | 'moderate' | 'fast' | null;
   skillLevel?: 'beginner' | 'casual' | 'intermediate' | 'advanced' | null;
@@ -479,7 +482,13 @@ export async function joinMatchPool(
     p_timezone:
       payload.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? null,
     p_mode: payload.mode ?? null,
-    p_preferred_location: payload.preferredLocation ?? null,
+    // The RPC keeps two columns rather than an array, so the pair is sent as
+    // two parameters. p_clear_location_2 exists because coalesce on the server
+    // cannot tell "leave it alone" from "they removed it": without the flag,
+    // nobody could ever go back to a single area.
+    p_preferred_location: payload.preferredLocations?.[0] ?? null,
+    p_preferred_location_2: payload.preferredLocations?.[1] ?? null,
+    p_clear_location_2: Array.isArray(payload.preferredLocations) && payload.preferredLocations.length < 2,
     p_gender_preference: payload.genderPreference ?? null,
     p_pace: payload.pace ?? null,
     p_skill_level: payload.skillLevel ?? null,
