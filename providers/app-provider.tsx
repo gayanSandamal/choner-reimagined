@@ -2,7 +2,7 @@ import { PropsWithChildren, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from '@/providers/session-provider';
 import { ToastProvider, useToast } from '@/providers/toast-provider';
 import { ConfirmProvider } from '@/providers/confirm-provider';
@@ -262,7 +262,14 @@ export function AppProvider({ children }: PropsWithChildren) {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
+        {/* initialWindowMetrics, or useSafeAreaInsets() returns a top of 0 on
+            the FIRST render and the real value a frame later (#128).
+            useTopBar() builds its iOS contentOffset from that inset, and
+            contentOffset only applies at mount, so a tab that mounted during
+            that first frame kept an offset short by the status bar height and
+            sat over the floating pill with no way to scroll back. Passing the
+            metrics synchronously means the first render already has them. */}
+        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
           <QueryClientProvider client={queryClient}>
             <ReduceMotionContext.Provider value={reduceMotion}>
               <SessionProvider>
