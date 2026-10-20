@@ -140,6 +140,14 @@ at `sort_order 47`. **The prototype is the stale one; the app is correct.**
 app's 68. The nearest real entries are `koswatte`, `pelawatte`,
 `thalawathugoda` and `welikada`. Drop it.
 
+> **Superseded, 20 October 2026.** The prototype was right and the app's list
+> was wrong. Battaramulla is a real and sizeable part of the belt, and leaving
+> it out meant anyone there had to pick a neighbouring area or give up.
+> `202610201200_add_battaramulla.sql` adds it with the `kotte_belt` tag, so the
+> form now offers it and `verify.js` asserts its presence rather than its
+> absence. The instruction above was still correct when written: the form must
+> mirror the app, and the fix belonged in the app's table, not in the form.
+
 **It stores labels, not slugs.** `<option value="${esc(o)}">` puts the display
 string in the value, and the label format differs from the app's
 (`Colombo 1 - Fort` vs `Fort (Colombo 1)`). Every value must be the slug, or
