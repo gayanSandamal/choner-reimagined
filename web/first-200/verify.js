@@ -32,8 +32,11 @@ const locSql = fs.readFileSync(path.join(ROOT, 'supabase/migrations/202609181900
 const dbLocs = [...locSql.matchAll(/\('([a-z_]+)', '([^']+)', '(colombo_city|greater_colombo)', \d+\)/g)];
 const dbCity = dbLocs.filter(m => m[3] === 'colombo_city').map(m => m[1]).sort();
 const dbGreater = dbLocs.filter(m => m[3] === 'greater_colombo').map(m => m[1]).sort();
-// Mattegoda is added by our own migration, not the original seed.
-dbGreater.push('mattegoda');
+// Added by our own later migrations, not the original seed. Every new
+// location has to be listed here too, or this check reports it as "extra" on
+// the page when the page is in fact correct.
+dbGreater.push('mattegoda');          // 202610051200_add_mattegoda.sql
+dbGreater.push('battaramulla');       // 202610201200_add_battaramulla.sql
 dbGreater.sort();
 
 const pageCity = sandbox.COLOMBO_CITY.map(x => x[0]).sort();
@@ -46,7 +49,7 @@ ok('Greater Colombo slugs match (' + dbGreater.length + ')', same(dbGreater, pag
    'missing: ' + dbGreater.filter(s => !pageGreater.includes(s)) + ' | extra: ' + pageGreater.filter(s => !dbGreater.includes(s)));
 ok('kottawa present', pageGreater.includes('kottawa'));
 ok('mattegoda present', pageGreater.includes('mattegoda'));
-ok('battaramulla gone (never existed in the app)', !pageGreater.includes('battaramulla'));
+ok('battaramulla present', pageGreater.includes('battaramulla'));
 ok('labels match the app exactly', sandbox.COLOMBO_CITY.every(([v, l]) => {
   const row = dbLocs.find(m => m[1] === v); return row && row[2] === l;
 }));
@@ -117,7 +120,22 @@ const fnList = (name) => fn.match(new RegExp('const ' + name + ' = \\[([^\\]]+)\
 ok('ACTIVITIES', same(fnList('ACTIVITIES'), sandbox.ACTIVITIES.map(a => a[0]).sort()));
 ok('TIMES', same(fnList('TIMES'), sandbox.TIMES.map(t => t[0]).sort()));
 ok('MODES', same(fnList('MODES'), sandbox.MODES.map(m => m[0]).sort()));
-ok('GOALS', same(fnList('GOALS'), sandbox.GOALS.map(g => g[0]).sort()));
+// GOALS is the one list where the function is deliberately WIDER than the
+// page. 'sleep_better' was retired on 15 October but the Edge Function still
+// accepts it, because a cached copy of join.choner.io can still post it. So
+// assert containment plus exactly that one known extra, rather than equality:
+// a permanently red check is worse than no check, and this one would hide the
+// next real drift.
+(() => {
+  const fnGoals = fnList('GOALS');
+  const pageGoals = sandbox.GOALS.map(g => g[0]).sort();
+  const missing = pageGoals.filter(g => !fnGoals.includes(g));
+  const extra = fnGoals.filter(g => !pageGoals.includes(g));
+  ok('GOALS (function accepts every page goal)', missing.length === 0,
+     'missing: ' + missing);
+  ok('GOALS (only the retired goal is extra)', same(extra, ['sleep_better']),
+     'unexpected extra: ' + extra);
+})();
 ok('STRUGGLES', same(fnList('STRUGGLES'), sandbox.STRUGGLES.map(g => g[0]).sort()));
 ok('AGES', same(fnList('AGES'), sandbox.AGES.map(a => a[0]).sort()));
 ok('GENDERS', same(fnList('GENDERS'), sandbox.GENDERS.map(g => g[0]).sort()));

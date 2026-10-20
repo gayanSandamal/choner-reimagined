@@ -196,6 +196,10 @@
   .btn.row svg{width:18px;height:18px;}
   .reass{text-align:center;font-size:11.5px;color:var(--pmuted);margin-top:10px;line-height:1.5;}
   .reass b{color:var(--ink);font-weight:600;}
+  /* Quiet on purpose. This is for the few people who hit a problem, so it
+     must not compete with the invite directly above it. */
+  .reass.contact{margin-top:18px;}
+  .reass.contact a{color:var(--g2);font-weight:600;text-decoration:none;}
 
   /* ============ the intro: the hourglass ============
      Replaces the dark "two signals" screen. Light paper ground now, so the
@@ -484,7 +488,8 @@ const COLOMBO_CITY = [
   ['madampitiya','Madampitiya (Colombo 15)'],
 ];
 const GREATER_COLOMBO = [
-  ['ambatale','Ambatale'],['athurugiriya','Athurugiriya'],['batuwatta','Batuwatta'],
+  ['ambatale','Ambatale'],['athurugiriya','Athurugiriya'],
+  ['battaramulla','Battaramulla'],['batuwatta','Batuwatta'],
   ['boralesgamuwa','Boralesgamuwa'],['dalugama','Dalugama'],['dehiwala','Dehiwala'],
   ['hokandara','Hokandara'],['homagama','Homagama'],['ja_ela','Ja-Ela'],
   ['kadawatha','Kadawatha'],['kaduwela','Kaduwela'],['kalubowila','Kalubowila'],
@@ -843,7 +848,8 @@ function screenActivity(){
     <!-- The link sits OUTSIDE the button. An <a> inside a <button> is invalid
          HTML and browsers disagree about which one a tap belongs to, so the
          link could silently toggle the consent box instead of opening. -->
-    <div class="chklink"><a href="/privacy.html" target="_blank" rel="noopener">Read the privacy policy</a></div>
+    <div class="chklink"><a href="/privacy.html" target="_blank" rel="noopener">Read the privacy policy</a>
+      &middot; <a href="https://choner.io/terms.html" target="_blank" rel="noopener">Terms</a></div>
 
     <div class="foot">
       ${S.submitErr?`<div class="ferr">${esc(S.submitErr)}</div>`:''}
@@ -902,6 +908,14 @@ function screenConfirm(){
       <input class="hp" type="text" readonly value="${esc(refUrl)}" id="refInput" tabindex="-1" aria-hidden="true">
       <div class="reass">Invite a friend to be a part of the first 200</div>
     </div>
+
+    <!-- The only route back to us from this page. Everything else on the
+         confirmation is one-way: the code, their answers, the share sheet.
+         Someone whose code does not work, or who mistyped their address, had
+         nowhere to go at all. reply_to on the welcome mail is the same
+         mailbox, so both routes land in one place. -->
+    <div class="reass contact">Have something to tell us? contact:
+      <a href="mailto:hello@choner.io">hello@choner.io</a></div>
 
   </div>`;
 }

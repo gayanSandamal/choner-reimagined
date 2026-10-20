@@ -2479,3 +2479,357 @@ locations now.
 job. A location without corridor tags is worse than a missing location, because
 a missing one cannot be chosen and an untagged one can be chosen and then
 quietly fails.
+
+
+---
+
+## 19 October 2026 — "Separately, together" has no verification, and it is probably the majority mode
+
+**Context:** The two session flows are not symmetrical, and the gap is structural.
+
+Together (6A) ends in a QR scan: one partner issues the code, the other scans
+it, and `planStep` only opens that step once **both** have tapped "I'm here".
+It cannot be completed alone. Separately, together (6B) ends in
+`p.me.checkin === 'done'`, a single self-reported tap.
+`components/plans/steps/SessionSteps.tsx:276` states the choice plainly:
+"Partner visibility, not verification: their check-in is the nudge."
+
+**Why this matters more than it looks:** separate is probably not the minority
+case. `judgePair` hard-filters an in-person pair on same gym, a shared location
+corridor, the same time of day, and overlapping days. Four filters, any one of
+which rejects the pair outright rather than scoring it low. A separate pair
+clears none of them. In a city where traffic decides everything, most pairs
+will land in the half of the product with the weaker loop.
+
+**Options considered:**
+
+1. **Mutual proof, now called Show Me.** The photo moment already exists, is camera-only, and is
+   "only visible to your partner, once". Make it a trade: you see theirs once
+   you have sent yours. Fixes the first-mover problem (today, checking in first
+   earns you nothing), turns a self-report into an exchange, and makes the photo
+   worth taking. Cheap, because capture, storage and the partner link all exist.
+   Collides with open decision D7, which would be settled in the same change.
+2. **A shared moment.** `starts_at` is agreed and then nothing marks it. Push
+   both at the agreed time saying the other is starting too, and show their
+   state live while the window is open. Converts a solo tap into a two-person
+   event without either person going anywhere. Uses `notify_user` and plan state
+   that already exist.
+3. **A shared consequence.** A streak belonging to the pair rather than to each
+   person. Powerful, but shared consequences are exactly what makes people lie
+   to protect a partner.
+4. **Real verification.** Live-camera-only inside the session window, or step
+   data. Gives separate mode what together mode has.
+
+**Decided:** build 1, then 2.
+
+Option 3 is not ruled out, but the existing recovery flow is the gentler path
+and gets tried first. **Option 4 is rejected**: it is heavier than it sounds,
+privacy-awkward, and policing people is at odds with the warmth of the rest of
+the app. Recorded as rejected rather than omitted so it is a decision with
+reasons rather than a gap.
+
+**Decided by:** user, 19 October 2026.
+
+---
+
+## 19 October 2026 — Live video: recorded clips are the proof, live is for company
+
+**Context:** User proposed live video as the anti-faking mechanism for separate
+sessions, with an option to share publicly.
+
+**What was already true.** The anti-fake property was built months ago.
+`features/challenges/capture.ts:24` is camera-only on purpose, with no gallery
+fallback: "The whole point of photo proof is that it was taken now, and a
+library picker would let an old or staged shot through."
+
+**The separation that settled it:** the property being asked for comes from
+**recorded now**, not from **live**. Live streaming adds enormous cost for
+something capture-now already delivers.
+
+**Decided:**
+
+- **Proof becomes a short video clip, called Show Me**, not a photo.
+  Camera-only rule unchanged,
+  recorded inside the session window. The real work is that video cannot ride
+  through as base64 the way the photo does, so it needs a file upload to
+  Storage, a size cap and a retention rule. Days, not a rewrite.
+- **The clip is a trade**, per the entry above: you see theirs once you send
+  yours.
+- **Public sharing is out of v1 entirely.** Partner-only carries no moderation
+  burden.
+- **Live video stays in the product, as co-presence rather than verification.**
+  A third mode beside `together` and `separate`, called **Same Room**: both on
+  camera at the agreed time, phone propped against a wall. This is the one case where the camera can
+  point at you for a whole session, and it is what makes home workouts and yoga
+  work properly, which are the weakest matches the app can currently make.
+
+**Considered and rejected for now: live streaming as proof.**
+
+- You cannot film yourself mid-exercise outdoors. Running, lifting and swimming
+  put the phone in a pocket. The filmable moments are before and after, which is
+  a clip, not a stream. (User's correction accepted: indoors, propped against a
+  wall, the objection does not hold. Hence co-presence above.)
+- It needs a media vendor Supabase does not provide, billed per
+  participant-minute, plus a custom dev client. Roughly 36,000
+  participant-minutes a month at 200 users, three sessions a week, thirty
+  minutes. Tens of dollars, not the expensive part.
+- It lands on the user's mobile data while they exercise. Tens of megabytes for
+  a session against two or three for a clip.
+- **Public live video cannot be pre-moderated**, and Apple's Guideline 1.2 wants
+  filtering, reporting, blocking and a published abuse contact. `report_and_block`
+  covers part of that. Two founders cannot watch a live feed. This is the kind of
+  thing that stalls a review, and the Android clock is the tight one.
+- Filming in a gym films people who did not agree to be filmed. In Colombo, and
+  particularly for women, that is not hypothetical. One incident would cost more
+  than the feature could earn.
+
+**Also noted:** slide 8 of the October 2026 pitch deck ("Beyond one city")
+already describes live co-presence, down to the timer starting only when both
+are in. The idea was already written down before this conversation.
+
+**Decided by:** user, 19 October 2026.
+
+---
+
+## 19-20 October 2026 — Instant matching: Who's In now, Flare much later
+
+**Context:** User proposed two instant-matching features. An instant online
+session (post that you want to work out now, people with notifications on for
+that activity get a "join in 5 or 10 minutes" push, possibly as a group), and a
+live search at a location (go to a park, find runners near you, pair on the
+spot).
+
+**Who's In is the stronger of the two**, for one specific reason: online has no
+geography, so it has no density problem. All 200 users are in the same room.
+That is the liquidity instant matching needs and almost never has. Most of the
+non-video plumbing exists already: `notify_user`, live push, and activity
+preferences on the profile. The joiner's button is **"I'm in"**, which the
+signup confirmation's "You're in." already set up.
+
+**Flare: the Uber reframe, and what it changed.** This was first logged as a
+time-boxed broadcast over corridor tags with no map and no GPS, which was a way
+of dodging a safety problem rather than solving it. User's framing on 20 October
+was a live search, "just like we search for an Uber cab live", and that is a
+better object than either version:
+
+**Uber is not a browsable map of drivers.** You never see who they are, where
+they are, or that they exist, until you request and the system matches you.
+Identity is exchanged after the match, location goes to one person, and the
+whole thing expires. Request and match, never browse.
+
+That answers the stranger-locator objection properly, which has two consequences:
+
+- **GPS comes back.** The tags-only version existed to avoid real location. The
+  Uber model makes real location safe to use, so Flare needs `expo-location`
+  and a background-location justification at review. Neither exists today: there
+  is no location dependency in the project and no coordinates stored anywhere.
+- **Density is now the only blocker, and it is unchanged.** Uber works because
+  there are thousands of drivers. With 200 users across 68 Colombo locations a
+  live search returns nobody almost every time, and a feature that answers
+  "nobody" makes the app feel dead.
+
+**Decided:**
+
+- **Who's In first**, two people, opt-in per activity. Not groups: ten people on
+  live video is ten times the minutes, needs a different class of server, and
+  puts us in charge of moderating a live room of strangers.
+- **Flare is a later release**, explicitly deferred on density rather than on
+  safety. It is request-and-match, never a browsable map, and it will need real
+  location when it is built.
+- **Groups and live maps are gated** on Who's In and Flare showing real demand.
+- A "join in 5 minutes" push is the most interruptive message the app can send.
+  It must be opt-in per activity and trivially switched off, or people will mute
+  Choner entirely and the daily reminder goes with it.
+
+**The strategic tension, recorded deliberately:** both of these are drop-in
+features. Find someone now, do a thing, move on. The product being launched is
+the opposite: one person, matched carefully, committed to over weeks. Drop-in
+sells convenience; pairing sells commitment, and commitment is what makes Choner
+different from a WhatsApp group. They are close to a second product in the same
+app, and if they arrive before the pairing loop has proved itself there will be
+no way to tell which one people came for. The First 200 is the one clean read on
+that question.
+
+**Decided by:** user, 19 and 20 October 2026.
+
+---
+
+## 19 October 2026 — The build sequence after launch
+
+**Decided**, in order:
+
+1. Ship the current MVP and learn whether paired commitment holds.
+2. **Same Room**: live co-presence for home sessions, pairs only, private.
+3. **Who's In**: instant online sessions, two people, opt-in per activity.
+4. **Flare**: live search for someone near you now. Request and match, never
+   a browsable map. A later release, held on density.
+5. Groups and live maps only if Who's In and Flare show real demand.
+
+Nothing in 2 to 5 is before launch. The ordering is deliberate: 2 is the safest
+place to learn live video, because both people already matched, already
+committed, and already know each other's name. If video is going to be miserable
+on local mobile data at 6am, that is discovered with two consenting users rather
+than in front of a crowd. 3 then reuses that foundation, and 4 needs no video at
+all.
+
+**Decided by:** user, 19 October 2026.
+
+---
+
+## 19 October 2026 — A contact route on The First 200, and a 404 caught on the way
+
+**Context:** The form had no way to contact us at all. The only outbound link on
+the entire page was `/privacy.html`. With three registrations, one person who
+hits a problem and cannot reach anyone is a third of the waitlist.
+
+The welcome email was better than it looked: `register-first-200/index.ts:192`
+already sets `reply_to: hello@choner.io`, so a reply lands somewhere. The email
+just never said so, because the "hit reply" line was removed. Worth noting that
+the deliverability experiment logged at the top of `email.ts` shows variant 2,
+*with* a reply invitation, reaching the Inbox. Removing it was preference, not
+necessity, and a contact line costs nothing in placement.
+
+**Shipped:**
+
+- `Have something to tell us? contact: hello@choner.io` as the last line of the
+  confirmation screen, a real `mailto:`, in the muted reassurance style so it
+  does not compete with the invite above it.
+- A **Terms** link beside the privacy link on the last step. `terms.html` had
+  been live since the legal pages went up and was reachable from nowhere.
+- The consent sentence itself was left untouched. It is what people agreed to,
+  and the link is a reference rather than a new condition.
+
+**The bug this caught, which was mine.** The terms link was first written as
+`/terms.html`, relative to join.choner.io. It 404s there: `terms.html` is served
+from choner.io, not the join subdomain. Verified
+(`join.choner.io/privacy.html` 200, `join.choner.io/terms.html` 404,
+`choner.io/terms.html` 200) and changed to the absolute URL before the file was
+handed over.
+
+**Two things worth remembering:**
+
+- **There are two different privacy policies and that is correct.**
+  `web/first-200/privacy.html` is the short one scoped to what the waitlist form
+  collects, and it is what the form links.
+  `web/legal/privacy.html` is the longer app policy for the store listings. A
+  change to one does not reach the other.
+- **Opening `web/first-200/index.html` directly hides the speaker button.** The
+  file renders as a `data:` URL snapshot, which has no base address, so
+  `choner-welcome.mp3` cannot resolve, the audio element errors with code 4, and
+  the handler hides the control rather than leaving a dead button. Served over
+  HTTP from the same folder it is present and working. This is correct
+  behaviour, not a bug, and it cost a round of confusion once already.
+
+**Decided by:** user, 19 October 2026.
+
+---
+
+## 19 October 2026 — Distribution is the bottleneck, not the form
+
+**Context:** Three registrations, all on 16 October, none since. Cloudflare Web
+Analytics was checked to find out whether nobody was visiting, or people were
+visiting and not finishing. The beacon was verified live first
+(`beacon.min.js` loads, `__cfBeacon` present, posts to
+`cloudflareinsights.com/cdn-cgi/rum`).
+
+**The numbers, 30 days:**
+
+| | |
+|---|---|
+| Visits | 20 |
+| Page views | 20 |
+| Interactions on `#f-name`, the form's first field | 10 |
+| Registrations | 3 |
+
+**20 visits, about 10 form starts, 3 completions.**
+
+**Conclusion:** the page works. Half of everyone who lands starts the form and
+nearly a third completes a seven-step signup. Those are good rates for a form
+this long. **Nothing about the product needs fixing; everything about
+distribution does.**
+
+The Uber cards had produced nothing at that point, but they had also not been
+handed to anyone yet, which the registrations confirm: no row carries a `source`
+value. The channel is untested, not failed.
+
+**Also noted:** the three registrations are in Mattegoda, Thalawathugoda and
+Gampaha. None of them can be paired with each other, which is the dispersion
+problem in miniature.
+
+---
+
+## 19 October 2026 — 200 pairs is 400 people, and the funnel needs roughly 700 to 800
+
+**Context:** User's own point, and it is the right frame: The First 200 does not
+mean 200 people on the platform, it means 200 working pairs.
+
+**The funnel loses people at four stages, not one:**
+
+1. Sign-up to install.
+2. Install to matchable. Onboarding has to be finished: activity, areas, times.
+   Anyone who stops halfway is in the database and invisible to the matcher.
+3. **Matchable to matched.** The harshest stage, and the one the code decides.
+   An in-person pair must clear a shared corridor, the same time of day,
+   overlapping days, and the same gym where that applies.
+4. Matched to working. Both show up, more than once.
+
+At roughly two thirds per stage, 500 sign-ups yields something near 100 working
+pairs. **Plan for 700 to 800 to land 200.**
+
+**Stage 3 is the cheap one to move**, and three things move it more than extra
+sign-ups: how the mode question is framed (anything nudging people toward
+`together` narrows the pool on the way in), asking for a second area rather than
+treating it as optional, and multi-select times, which the form already does.
+
+**Concentration beats volume.** 200 pairs spread evenly over 68 locations will
+not pair. 300 people in six corridors will out-pair 600 scattered across the
+city. Distribution effort should be aimed at a handful of areas rather than all
+of Colombo.
+
+**The metric worth watching** is not the registration count but pair capacity:
+of the people registered, how many share a corridor, a time of day and a day
+with at least one other person.
+
+---
+
+## 20 October 2026 — What the four new features are called
+
+Named before any of them is built, so the log, the deck and the product use one
+vocabulary rather than three.
+
+| Feature | Name |
+|---|---|
+| Both on camera for a whole home session, a third mode beside Together and Separately, together | **Same Room** |
+| The short video proof, traded both ways | **Show Me** |
+| Post that you want to train now, others join | **Who's In** |
+| Live search for someone near you right now | **Flare** |
+
+**Same Room** says the thing the feature delivers rather than describing the
+mechanism. Two people in different places, one room. "Together, on video" was
+the alternative and it only described.
+
+**Show Me** is a request rather than a label, and it is already the rule: you
+show, then you see. The trade itself stays unnamed. It is one sentence in the
+UI, **"Send yours to see theirs."**, not a feature with a page.
+
+**Who's In** is literally the question being asked when someone posts. The
+joiner's button is **"I'm in"**, and the signup confirmation already says
+**"You're in."** The same two words in three places, each a different moment in
+the same relationship: you joined, you're joining, who's joining.
+
+**Flare** is one-shot, urgent and expiring, and it does not suggest a map, which
+matters because Flare is request-and-match rather than browse. "Ping" was the
+safer alternative.
+
+**Two things left deliberately unnamed.** The mutual trade is a rule about how
+Show Me works, not a feature. The shared moment (both pushed at the agreed time,
+partner state visible while the window is open) is internally the **session
+window**; to a user it is a notification, and a notification carrying a brand
+name is worse than one without.
+
+**Rejected on a collision:** "Out now" and "I'm here" for Flare.
+`features/plans/copy.ts:41` already uses `imHere: "I'm here"` for the
+together-mode day-of tap, and two different things sharing a label in one
+product is how support tickets start.
+
+**Decided by:** user, 20 October 2026.
