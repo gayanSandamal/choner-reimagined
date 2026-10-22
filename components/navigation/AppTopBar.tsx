@@ -1,5 +1,6 @@
+import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { AppText } from '@/components/ui/AppText';
@@ -42,12 +43,35 @@ export function useTopBar() {
   const insets = useSafeAreaInsets();
   const clearance = insets.top + BAR_HEIGHT + GAP_BELOW;
 
+  // #128. contentInset keeps updating; contentOffset is applied ONCE, at
+  // mount. So a tab that mounts while insets.top is still 0 gets an offset
+  // short by the status bar and never corrects: the content ends up sitting
+  // over the floating pill and will not scroll back down.
+  //
+  // initialWindowMetrics in app-provider.tsx is the real fix and means this
+  // should never fire. It stays because those metrics are null on web and in
+  // tests, where the zero-inset first render comes back.
+  const ref = useRef<ScrollView>(null);
+  const previousTop = useRef(insets.top);
+  useEffect(() => {
+    const was = previousTop.current;
+    previousTop.current = insets.top;
+    if (Platform.OS !== 'ios') return;
+    // Only the startup race: the inset was unknown and has just arrived. A
+    // later change is a rotation, and by then the scroll position is the
+    // user's, not ours.
+    if (was === 0 && insets.top > 0) {
+      ref.current?.scrollTo({ y: -(insets.top + BAR_HEIGHT + GAP_BELOW), animated: false });
+    }
+  }, [insets.top]);
+
   if (Platform.OS === 'ios') {
     return {
       clearance,
       contentTop: 0,
       progressViewOffset: undefined,
       scrollProps: {
+        ref,
         contentInset: { top: clearance },
         contentOffset: { x: 0, y: -clearance },
         scrollIndicatorInsets: { top: clearance - GAP_BELOW },
