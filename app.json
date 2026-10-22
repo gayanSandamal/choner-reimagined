@@ -22,7 +22,7 @@
       },
       "usesAppleSignIn": true,
       "associatedDomains": [
-        "applinks:choner.app"
+        "applinks:app.choner.io"
       ]
     },
     "android": {
@@ -33,7 +33,10 @@
         "backgroundColor": "#001827"
       },
       "permissions": [
-        "NOTIFICATIONS"
+        "POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ],
       "intentFilters": [
         {
@@ -45,7 +48,8 @@
           "data": [
             {
               "scheme": "https",
-              "host": "choner.app"
+              "host": "app.choner.io",
+              "pathPrefix": "/invite"
             }
           ],
           "autoVerify": true
@@ -58,6 +62,7 @@
       [
         "expo-notifications",
         {
+          "icon": "./assets/notification-icon.png",
           "color": "#FE8C00",
           "mode": "production"
         }
@@ -66,7 +71,8 @@
         "expo-image-picker",
         {
           "photosPermission": "Choner needs access to your photo library to set your profile picture.",
-          "cameraPermission": "Choner uses the camera for your check-in photos, scanning your partner's code when you meet, and your profile photo."
+          "cameraPermission": "Choner uses the camera for your check-in photos, scanning your partner's code when you meet, and your profile photo.",
+          "microphonePermission": false
         }
       ],
       "@sentry/react-native",
