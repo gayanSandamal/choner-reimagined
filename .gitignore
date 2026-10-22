@@ -15,6 +15,9 @@ web-build
 expo-env.d.ts
 # @end expo-cli
 
+# Play Console service account used by `eas submit` (see eas.json). A live key.
+android-play-service-account.json
+
 # BMAD-METHOD: personal install answers, regenerated per machine
 _bmad/config.user.toml
 
