@@ -36,6 +36,10 @@ jest.mock('@/lib/haptics', () => ({
 jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 
+// Keyboard handling is native: the library's own mock swaps its scroll views
+// for plain ones.
+jest.mock('react-native-keyboard-controller', () => require('react-native-keyboard-controller/jest'));
+
 // Push is a device concern. The real module registers a token listener the
 // moment it is imported, which keeps a test worker alive after the tests end.
 jest.mock('expo-notifications', () => ({

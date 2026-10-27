@@ -19,6 +19,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SplashView } from '@/components/SplashView';
 import { AuthLinkHandler } from '@/components/auth/AuthLinkHandler';
 import { useSplashHoldElapsed } from '@/lib/splash-hold';
@@ -229,12 +230,14 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1, backgroundColor: theme.colors.bg }} onLayout={onLayoutRootView}>
-        <AppProvider>
-          <StatusBar style="light" />
-          <RootLayoutNav />
-        </AppProvider>
-      </View>
+      <KeyboardProvider>
+        <View style={{ flex: 1, backgroundColor: theme.colors.bg }} onLayout={onLayoutRootView}>
+          <AppProvider>
+            <StatusBar style="light" />
+            <RootLayoutNav />
+          </AppProvider>
+        </View>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

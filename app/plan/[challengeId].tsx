@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { KeyboardScroll } from '@/components/ui/keyboard';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { PairSafetyMenu } from '@/components/safety/PairSafetyMenu';
@@ -56,9 +57,9 @@ export default function PlanScreen() {
           ) : null
         }
       />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <KeyboardScroll contentContainerStyle={styles.content}>
         {body}
-      </ScrollView>
+      </KeyboardScroll>
     </Screen>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopBarPill, useTopBarClearance } from '@/components/navigation/AppTopBar';
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Icon } from '@/components/ui/Icon';
 import { LoadingState } from '@/components/ui/StateViews';
+import { KeyboardFooterScroll } from '@/components/ui/keyboard';
 import {
   useJoinMatchPool,
   useLocations,
@@ -173,9 +174,17 @@ export default function FindFormScreen() {
         }
       />
 
-      <ScrollView
+      <KeyboardFooterScroll
         contentContainerStyle={[styles.content, { paddingTop: clearance }]}
-        keyboardShouldPersistTaps="handled"
+        footerStyle={styles.footer}
+        footer={
+          <Button
+            label="Start looking"
+            disabled={!canSubmit}
+            loading={joinPool.isPending}
+            onPress={onSubmit}
+          />
+        }
       >
         <AppText variant="label" muted style={styles.eyebrow}>
           Find a partner{template?.title ? `, ${template.title}` : ''}
@@ -377,16 +386,7 @@ export default function FindFormScreen() {
             </View>
           </>
         ) : null}
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Button
-          label="Start looking"
-          disabled={!canSubmit}
-          loading={joinPool.isPending}
-          onPress={onSubmit}
-        />
-      </View>
+      </KeyboardFooterScroll>
 
     </SafeAreaView>
   );

@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet
-} from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -12,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { KeyboardScroll } from '@/components/ui/keyboard';
 import { AuthBackButton } from '@/components/auth/AuthBackButton';
 import {
   AuthCenteredHeader,
@@ -45,56 +41,48 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Animated.View entering={FadeInDown.duration(360)}>
-            <AuthBackButton />
-          </Animated.View>
+      <KeyboardScroll contentContainerStyle={styles.content}>
+        <Animated.View entering={FadeInDown.duration(360)}>
+          <AuthBackButton />
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(80).duration(360)}>
-            <AuthCenteredHeader
-              title="Forgot password"
-              helper="Enter your email and we'll send a link to set a new password."
-            />
-          </Animated.View>
+        <Animated.View entering={FadeInDown.delay(80).duration(360)}>
+          <AuthCenteredHeader
+            title="Forgot password"
+            helper="Enter your email and we'll send a link to set a new password."
+          />
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(180).duration(360)} style={styles.field}>
-            <FieldLabel>Email</FieldLabel>
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, value } }) => (
-                <Input
-                  placeholder="you@email.com"
-                  boxStyle={authInputBox}
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  value={value}
-                  onChangeText={onChange}
-                  error={errors.email?.message}
-                />
-              )}
-            />
-          </Animated.View>
+        <Animated.View entering={FadeInDown.delay(180).duration(360)} style={styles.field}>
+          <FieldLabel>Email</FieldLabel>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, value } }) => (
+              <Input
+                placeholder="you@email.com"
+                boxStyle={authInputBox}
+                autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
+                value={value}
+                onChangeText={onChange}
+                error={errors.email?.message}
+              />
+            )}
+          />
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(260).duration(360)}>
-            <Button
-              label={loading ? 'Sending…' : 'Send reset link'}
-              variant="gradient"
-              size="lg"
-              loading={loading}
-              onPress={onSubmit}
-            />
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <Animated.View entering={FadeInDown.delay(260).duration(360)}>
+          <Button
+            label={loading ? 'Sending…' : 'Send reset link'}
+            variant="gradient"
+            size="lg"
+            loading={loading}
+            onPress={onSubmit}
+          />
+        </Animated.View>
+      </KeyboardScroll>
     </SafeAreaView>
   );
 }

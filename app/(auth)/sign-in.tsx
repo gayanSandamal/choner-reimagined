@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -8,6 +8,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { KeyboardScroll } from '@/components/ui/keyboard';
 import { AuthTopBar } from '@/components/auth/AuthTopBar';
 import { AuthHeading, AuthSwitchLink, FieldLabel, authInputBox } from '@/components/auth/AuthFormParts';
 import { authErrorMessage, signIn } from '@/features/auth/api';
@@ -53,87 +54,82 @@ export default function SignInScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <AuthTopBar title="Log in" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Animated.View entering={FadeInDown.duration(360)}>
-            <AuthHeading lead="Welcome " emphasis="back" sub="Someone's been waiting for you." />
-          </Animated.View>
+      <KeyboardScroll contentContainerStyle={styles.content}>
+        <Animated.View entering={FadeInDown.duration(360)}>
+          <AuthHeading lead="Welcome " emphasis="back" sub="Someone's been waiting for you." />
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.field}>
-            <FieldLabel>Email</FieldLabel>
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, value } }) => (
-                <Input
-                  placeholder="you@email.com"
-                  boxStyle={authInputBox}
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  value={value}
-                  onChangeText={onChange}
-                  error={errors.email?.message}
-                />
-              )}
-            />
-          </Animated.View>
+        <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.field}>
+          <FieldLabel>Email</FieldLabel>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, value } }) => (
+              <Input
+                placeholder="you@email.com"
+                boxStyle={authInputBox}
+                autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
+                value={value}
+                onChangeText={onChange}
+                error={errors.email?.message}
+              />
+            )}
+          />
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(140).duration(360)} style={styles.field}>
-            <FieldLabel>Password</FieldLabel>
-            <Controller
-              control={control}
-              name="password"
-              render={({ field: { onChange, value } }) => (
-                <Input
-                  placeholder="••••••••"
-                  boxStyle={authInputBox}
-                  secureToggle
-                  autoComplete="password"
-                  value={value}
-                  onChangeText={onChange}
-                  error={errors.password?.message}
-                />
-              )}
-            />
-          </Animated.View>
+        <Animated.View entering={FadeInDown.delay(140).duration(360)} style={styles.field}>
+          <FieldLabel>Password</FieldLabel>
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, value } }) => (
+              <Input
+                placeholder="••••••••"
+                boxStyle={authInputBox}
+                secureToggle
+                autoComplete="password"
+                value={value}
+                onChangeText={onChange}
+                error={errors.password?.message}
+              />
+            )}
+          />
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(180).duration(360)} style={styles.forgotRow}>
-            <Pressable
-              hitSlop={8}
-              onPress={() => router.push('/(auth)/forgot-password')}
-              accessibilityRole="link"
-            >
-              <AppText style={styles.forgot}>Forgot password?</AppText>
-            </Pressable>
-          </Animated.View>
+        <Animated.View entering={FadeInDown.delay(180).duration(360)} style={styles.forgotRow}>
+          <Pressable
+            hitSlop={8}
+            onPress={() => router.push('/(auth)/forgot-password')}
+            accessibilityRole="link"
+          >
+            <AppText style={styles.forgot}>Forgot password?</AppText>
+          </Pressable>
+        </Animated.View>
 
-          {formError ? (
-            <Animated.View entering={FadeInDown.duration(240)}>
-              <AppText style={styles.formError}>{formError}</AppText>
-            </Animated.View>
-          ) : null}
-
-          <Animated.View entering={FadeInDown.delay(240).duration(360)} style={styles.bottom}>
-            <Button
-              label={loading ? 'Logging in…' : 'Log in'}
-              variant="gradient"
-              size="lg"
-              loading={loading}
-              style={styles.button}
-              onPress={onSubmit}
-            />
-            <AuthSwitchLink
-              prompt="New here?"
-              action="Create an account"
-              onPress={() => router.replace('/(auth)/sign-up')}
-            />
+        {formError ? (
+          <Animated.View entering={FadeInDown.duration(240)}>
+            <AppText style={styles.formError}>{formError}</AppText>
           </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        ) : null}
+
+        <Animated.View entering={FadeInDown.delay(240).duration(360)} style={styles.bottom}>
+          <Button
+            label={loading ? 'Logging in…' : 'Log in'}
+            variant="gradient"
+            size="lg"
+            loading={loading}
+            style={styles.button}
+            onPress={onSubmit}
+          />
+          <AuthSwitchLink
+            prompt="New here?"
+            action="Create an account"
+            onPress={() => router.replace('/(auth)/sign-up')}
+          />
+        </Animated.View>
+      </KeyboardScroll>
     </SafeAreaView>
   );
 }

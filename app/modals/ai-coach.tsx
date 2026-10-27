@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -70,8 +71,10 @@ export default function AiCoachModal() {
       <ScreenHeader title="AI Coach" onClose={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={80}
+        behavior="padding"
+        // Measures where it sits under the header itself, on both platforms,
+        // in place of a hand-tuned offset that only ever matched one phone.
+        automaticOffset
       >
         {convQ.isLoading ? (
           <LoadingState />

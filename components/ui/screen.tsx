@@ -1,6 +1,7 @@
 import { PropsWithChildren } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { KeyboardScroll } from '@/components/ui/keyboard';
 import { theme } from '@/constants/theme';
 
 interface ScreenProps extends PropsWithChildren {
@@ -10,7 +11,7 @@ interface ScreenProps extends PropsWithChildren {
 
 export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
   const content = scroll ? (
-    <ScrollView contentContainerStyle={[styles.content, contentStyle]}>{children}</ScrollView>
+    <KeyboardScroll contentContainerStyle={[styles.content, contentStyle]}>{children}</KeyboardScroll>
   ) : (
     <View style={[styles.content, contentStyle]}>{children}</View>
   );

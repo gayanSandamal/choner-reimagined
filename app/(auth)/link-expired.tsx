@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -9,6 +9,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Icon } from '@/components/ui/Icon';
+import { KeyboardScroll } from '@/components/ui/keyboard';
 import { FieldLabel, authInputBox } from '@/components/auth/AuthFormParts';
 import { requestPasswordReset, resendVerification } from '@/features/auth/api';
 import { ForgotPasswordInput, forgotPasswordSchema } from '@/features/auth/schema';
@@ -54,61 +55,56 @@ export default function LinkExpiredScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Animated.View entering={FadeInDown.duration(360)} style={styles.hero}>
-            <View style={styles.mark}>
-              <Icon name="clock" size={30} color={theme.colors.danger} />
-            </View>
-            <AppText style={styles.title}>
-              This link has <AppText style={[styles.title, styles.titleBold]}>expired.</AppText>
-            </AppText>
-            <AppText variant="caption" muted style={styles.helper}>
-              Links work once and only for a while. We'll send you a fresh one.
-            </AppText>
-          </Animated.View>
+      <KeyboardScroll contentContainerStyle={styles.content}>
+        <Animated.View entering={FadeInDown.duration(360)} style={styles.hero}>
+          <View style={styles.mark}>
+            <Icon name="clock" size={30} color={theme.colors.danger} />
+          </View>
+          <AppText style={styles.title}>
+            This link has <AppText style={[styles.title, styles.titleBold]}>expired.</AppText>
+          </AppText>
+          <AppText variant="caption" muted style={styles.helper}>
+            Links work once and only for a while. We'll send you a fresh one.
+          </AppText>
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(120).duration(360)} style={styles.field}>
-            <FieldLabel>Your email</FieldLabel>
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, value } }) => (
-                <Input
-                  placeholder="you@email.com"
-                  boxStyle={authInputBox}
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  value={value}
-                  onChangeText={onChange}
-                  error={errors.email?.message}
-                />
-              )}
-            />
-          </Animated.View>
+        <Animated.View entering={FadeInDown.delay(120).duration(360)} style={styles.field}>
+          <FieldLabel>Your email</FieldLabel>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, value } }) => (
+              <Input
+                placeholder="you@email.com"
+                boxStyle={authInputBox}
+                autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
+                value={value}
+                onChangeText={onChange}
+                error={errors.email?.message}
+              />
+            )}
+          />
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(200).duration(360)} style={styles.actions}>
-            <Button
-              label={loading ? 'Sending…' : isReset ? 'Send a new reset link' : 'Send a new link'}
-              variant="gradient"
-              size="lg"
-              loading={loading}
-              onPress={onSubmit}
-            />
-            {/* Always available: a link that expired after the account was
-                already verified means they can simply log in. */}
-            <Button
-              label="Back to sign in"
-              variant="ghost"
-              onPress={() => router.replace('/(auth)/sign-in')}
-            />
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <Animated.View entering={FadeInDown.delay(200).duration(360)} style={styles.actions}>
+          <Button
+            label={loading ? 'Sending…' : isReset ? 'Send a new reset link' : 'Send a new link'}
+            variant="gradient"
+            size="lg"
+            loading={loading}
+            onPress={onSubmit}
+          />
+          {/* Always available: a link that expired after the account was
+              already verified means they can simply log in. */}
+          <Button
+            label="Back to sign in"
+            variant="ghost"
+            onPress={() => router.replace('/(auth)/sign-in')}
+          />
+        </Animated.View>
+      </KeyboardScroll>
     </SafeAreaView>
   );
 }

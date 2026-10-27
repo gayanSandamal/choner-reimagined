@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
+import { KeyboardScroll } from '@/components/ui/keyboard';
 import { TopBarPill, useTopBarClearance } from '@/components/navigation/AppTopBar';
 import { useSession } from '@/providers/session-provider';
 import { claimFirstTwoHundred } from '@/features/profile/api';
@@ -77,53 +78,50 @@ export default function FirstTwoHundredCodeScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['bottom', 'left', 'right']}>
       <TopBarPill title="Have a code?" />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={[styles.content, { paddingTop: clearance }]} keyboardShouldPersistTaps="handled">
-          <AppText style={styles.eyebrow}>THE FIRST 200</AppText>
-          <AppText style={styles.title}>
-            Enter your <AppText style={styles.emphasis}>code</AppText>
-          </AppText>
-          <AppText style={styles.sub}>
-            If you joined The First 200 with a different email address, this is how we find you.
-          </AppText>
+      <KeyboardScroll contentContainerStyle={[styles.content, { paddingTop: clearance }]}>
+        <AppText style={styles.eyebrow}>THE FIRST 200</AppText>
+        <AppText style={styles.title}>
+          Enter your <AppText style={styles.emphasis}>code</AppText>
+        </AppText>
+        <AppText style={styles.sub}>
+          If you joined The First 200 with a different email address, this is how we find you.
+        </AppText>
 
-          <AppText style={styles.label}>Your code</AppText>
-          <TextInput
-            value={code}
-            onChangeText={(v) => {
-              setCode(v.toUpperCase());
-              if (error) setError(null);
-            }}
-            placeholder="F2-ABC123"
-            placeholderTextColor={theme.colors.dim}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            spellCheck={false}
-            returnKeyType="go"
-            onSubmitEditing={() => void onClaim()}
-            editable={!busy}
-            style={[styles.input, error ? styles.inputBad : null]}
-            accessibilityLabel="Your First 200 code"
-          />
-          {error ? <AppText style={styles.error}>{error}</AppText> : (
-            <AppText style={styles.hint}>
-              It's on the screen you saw after joining, and in the email we sent.
-            </AppText>
-          )}
+        <AppText style={styles.label}>Your code</AppText>
+        <TextInput
+          value={code}
+          onChangeText={(v) => {
+            setCode(v.toUpperCase());
+            if (error) setError(null);
+          }}
+          placeholder="F2-ABC123"
+          placeholderTextColor={theme.colors.dim}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          spellCheck={false}
+          returnKeyType="go"
+          onSubmitEditing={() => void onClaim()}
+          editable={!busy}
+          style={[styles.input, error ? styles.inputBad : null]}
+          accessibilityLabel="Your First 200 code"
+        />
+        {error ? <AppText style={styles.error}>{error}</AppText> : (
+          <AppText style={styles.hint}>
+            It's on the screen you saw after joining, and in the email we sent.
+          </AppText>
+        )}
 
-          <View style={styles.foot}>
-            <Button label="Claim my place" loading={busy} disabled={busy || code.trim().length < 3} onPress={onClaim} />
-            <Button label="I don't have one" variant="ghost" onPress={() => router.back()} />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <View style={styles.foot}>
+          <Button label="Claim my place" loading={busy} disabled={busy || code.trim().length < 3} onPress={onClaim} />
+          <Button label="I don't have one" variant="ghost" onPress={() => router.back()} />
+        </View>
+      </KeyboardScroll>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
-  flex: { flex: 1 },
   content: { paddingHorizontal: 22, paddingBottom: theme.spacing(4), flexGrow: 1 },
   eyebrow: {
     fontFamily: theme.fonts.bodyBold,
