@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/AppText';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/Icon';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
+import { KeyboardFooterScroll } from '@/components/ui/keyboard';
 import { ReflectionQuestionList } from '@/components/challenges/ReflectionQuestionList';
 import {
   ReflectionDraft,
@@ -84,10 +85,18 @@ export default function EditWhyModal() {
         />
       ) : (
         <>
-          <ScrollView
+          <KeyboardFooterScroll
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+            footerStyle={styles.footer}
+            footer={
+              <Button
+                label="Save"
+                loading={saveReflections.isPending}
+                disabled={!draft}
+                onPress={onSave}
+              />
+            }
           >
             <AppText style={styles.sub}>Change these any time. They stay private to you.</AppText>
             <ReflectionQuestionList
@@ -95,15 +104,7 @@ export default function EditWhyModal() {
               onChange={setDraft}
               animate={false}
             />
-          </ScrollView>
-          <View style={styles.footer}>
-            <Button
-              label="Save"
-              loading={saveReflections.isPending}
-              disabled={!draft}
-              onPress={onSave}
-            />
-          </View>
+          </KeyboardFooterScroll>
         </>
       )}
     </Screen>

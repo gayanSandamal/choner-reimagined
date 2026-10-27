@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
+import { KeyboardFooterScroll } from '@/components/ui/keyboard';
 import { ReflectionQuestionList } from '@/components/challenges/ReflectionQuestionList';
 import { useOnboarding } from '@/features/onboarding/context';
 import { useIsInvitee } from '@/features/onboarding/invitee';
@@ -87,10 +88,23 @@ export default function WhyScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView
+      <KeyboardFooterScroll
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+        footerStyle={styles.footer}
+        footer={
+          <>
+            <Button
+              label="Continue"
+              loading={saveReflections.isPending}
+              disabled={filledIn === 0}
+              onPress={onContinue}
+            />
+            {/* Skippable as a set: this adds real value but must never stand
+                between someone eager and their first day. */}
+            <Button label="Skip for now" variant="ghost" onPress={goNext} />
+          </>
+        }
       >
         <Animated.View entering={FadeInDown.duration(360)} style={styles.header}>
           <AppText variant="label" muted style={styles.eyebrow}>
@@ -123,19 +137,7 @@ export default function WhyScreen() {
         ) : null}
 
         <ReflectionQuestionList draft={value} onChange={setDraft} />
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Button
-          label="Continue"
-          loading={saveReflections.isPending}
-          disabled={filledIn === 0}
-          onPress={onContinue}
-        />
-        {/* Skippable as a set: this adds real value but must never stand
-            between someone eager and their first day. */}
-        <Button label="Skip for now" variant="ghost" onPress={goNext} />
-      </View>
+      </KeyboardFooterScroll>
     </SafeAreaView>
   );
 }

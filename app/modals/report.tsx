@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/AppText';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { LoadingState } from '@/components/ui/StateViews';
+import { KeyboardFooterScroll } from '@/components/ui/keyboard';
 import { usePairingMet, useReportMatch, useReportPartner } from '@/features/safety/hooks';
 import {
   ReportCategory,
@@ -63,10 +64,19 @@ export default function ReportModal() {
         <LoadingState />
       ) : (
         <>
-          <ScrollView
+          <KeyboardFooterScroll
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+            footerStyle={styles.footer}
+            footer={
+              <Button
+                label="Send report"
+                variant="danger"
+                loading={submitting}
+                disabled={!category || !id}
+                onPress={onSubmit}
+              />
+            }
           >
             {/* Said up front: nobody should discover afterwards that sending a
                 report also ended the match. */}
@@ -104,16 +114,7 @@ export default function ReportModal() {
               textAlignVertical="top"
               boxStyle={styles.details}
             />
-          </ScrollView>
-          <View style={styles.footer}>
-            <Button
-              label="Send report"
-              variant="danger"
-              loading={submitting}
-              disabled={!category || !id}
-              onPress={onSubmit}
-            />
-          </View>
+          </KeyboardFooterScroll>
         </>
       )}
     </Screen>

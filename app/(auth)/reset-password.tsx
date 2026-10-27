@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet
-} from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -12,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { KeyboardScroll } from '@/components/ui/keyboard';
 import {
   AuthCenteredHeader,
   FieldLabel,
@@ -47,70 +43,62 @@ export default function ResetPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Animated.View entering={FadeInDown.delay(80).duration(360)}>
-            <AuthCenteredHeader
-              title="Set new password"
-              helper="Pick something memorable, at least 8 characters."
-            />
-          </Animated.View>
+      <KeyboardScroll contentContainerStyle={styles.content}>
+        <Animated.View entering={FadeInDown.delay(80).duration(360)}>
+          <AuthCenteredHeader
+            title="Set new password"
+            helper="Pick something memorable, at least 8 characters."
+          />
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(180).duration(360)} style={styles.field}>
-            <FieldLabel>New password</FieldLabel>
-            <Controller
-              control={control}
-              name="password"
-              render={({ field: { onChange, value } }) => (
-                <Input
-                  placeholder="••••••••"
-                  boxStyle={authInputBox}
-                  secureToggle
-                  autoComplete="new-password"
-                  value={value}
-                  onChangeText={onChange}
-                  error={errors.password?.message}
-                />
-              )}
-            />
-          </Animated.View>
+        <Animated.View entering={FadeInDown.delay(180).duration(360)} style={styles.field}>
+          <FieldLabel>New password</FieldLabel>
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, value } }) => (
+              <Input
+                placeholder="••••••••"
+                boxStyle={authInputBox}
+                secureToggle
+                autoComplete="new-password"
+                value={value}
+                onChangeText={onChange}
+                error={errors.password?.message}
+              />
+            )}
+          />
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(240).duration(360)} style={styles.field}>
-            <FieldLabel>Confirm new password</FieldLabel>
-            <Controller
-              control={control}
-              name="confirmPassword"
-              render={({ field: { onChange, value } }) => (
-                <Input
-                  placeholder="••••••••"
-                  boxStyle={authInputBox}
-                  secureToggle
-                  autoComplete="new-password"
-                  value={value}
-                  onChangeText={onChange}
-                  error={errors.confirmPassword?.message}
-                />
-              )}
-            />
-          </Animated.View>
+        <Animated.View entering={FadeInDown.delay(240).duration(360)} style={styles.field}>
+          <FieldLabel>Confirm new password</FieldLabel>
+          <Controller
+            control={control}
+            name="confirmPassword"
+            render={({ field: { onChange, value } }) => (
+              <Input
+                placeholder="••••••••"
+                boxStyle={authInputBox}
+                secureToggle
+                autoComplete="new-password"
+                value={value}
+                onChangeText={onChange}
+                error={errors.confirmPassword?.message}
+              />
+            )}
+          />
+        </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(320).duration(360)}>
-            <Button
-              label={loading ? 'Saving…' : 'Save password'}
-              variant="gradient"
-              size="lg"
-              loading={loading}
-              onPress={onSubmit}
-            />
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <Animated.View entering={FadeInDown.delay(320).duration(360)}>
+          <Button
+            label={loading ? 'Saving…' : 'Save password'}
+            variant="gradient"
+            size="lg"
+            loading={loading}
+            onPress={onSubmit}
+          />
+        </Animated.View>
+      </KeyboardScroll>
     </SafeAreaView>
   );
 }

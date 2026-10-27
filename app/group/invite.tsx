@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { AppText } from '@/components/ui/AppText';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Icon } from '@/components/ui/Icon';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { KeyboardFooterScroll } from '@/components/ui/keyboard';
 import { useSession } from '@/providers/session-provider';
 import { useCreateInvite, usePendingInvites } from '@/features/community/hooks';
 import { setPartnerState } from '@/features/challenges/api';
@@ -150,61 +151,11 @@ export default function InviteScreen() {
         <AppText style={styles.title}>Invite someone you know</AppText>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <AppText style={styles.label}>Your message</AppText>
-          <TextInput
-            value={message ?? ''}
-            onChangeText={setMessage}
-            multiline
-            style={styles.message}
-            placeholderTextColor={theme.colors.muted}
-            accessibilityLabel="Invite message"
-          />
-
-          <View style={styles.linkBox}>
-            {invite ? (
-              <>
-                <AppText style={styles.linkText} selectable>
-                  {buildInviteLink(invite.token)}
-                </AppText>
-                {invite.code ? (
-                  <AppText style={styles.linkText} selectable>
-                    Code: <AppText style={styles.code}>{invite.code}</AppText>
-                  </AppText>
-                ) : null}
-              </>
-            ) : (
-              <AppText style={styles.linkText}>Making your link and code…</AppText>
-            )}
-          </View>
-          <AppText style={styles.hint}>
-            The link and the code go with your message. The code is for a friend who installs the app
-            first. <AppText style={styles.hintBold}>It expires in 48 hours.</AppText>
-            {'\n'}How far and how often is not in the invite: you will agree that together once they join.
-          </AppText>
-
-          {byEmail ? (
-            <Input
-              label="Their email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              placeholder="name@example.com"
-            />
-          ) : (
-            <AppText style={styles.or}>
-              or{' '}
-              <AppText style={styles.orLink} onPress={() => setByEmail(true)} accessibilityRole="button">
-                send it by email
-              </AppText>
-            </AppText>
-          )}
-        </ScrollView>
-
-        <View style={styles.footer}>
-          {byEmail ? (
+      <KeyboardFooterScroll
+        contentContainerStyle={styles.content}
+        footerStyle={styles.footer}
+        footer={
+          byEmail ? (
             <>
               <Button label="Send by email" loading={busy} disabled={!email.trim()} onPress={onEmail} />
               <Button label="Share a link instead" variant="ghost" onPress={() => setByEmail(false)} />
@@ -217,9 +168,59 @@ export default function InviteScreen() {
               disabled={!invite}
               onPress={onShare}
             />
+          )
+        }
+      >
+        <AppText style={styles.label}>Your message</AppText>
+        <TextInput
+          value={message ?? ''}
+          onChangeText={setMessage}
+          multiline
+          style={styles.message}
+          placeholderTextColor={theme.colors.muted}
+          accessibilityLabel="Invite message"
+        />
+
+        <View style={styles.linkBox}>
+          {invite ? (
+            <>
+              <AppText style={styles.linkText} selectable>
+                {buildInviteLink(invite.token)}
+              </AppText>
+              {invite.code ? (
+                <AppText style={styles.linkText} selectable>
+                  Code: <AppText style={styles.code}>{invite.code}</AppText>
+                </AppText>
+              ) : null}
+            </>
+          ) : (
+            <AppText style={styles.linkText}>Making your link and code…</AppText>
           )}
         </View>
-      </KeyboardAvoidingView>
+        <AppText style={styles.hint}>
+          The link and the code go with your message. The code is for a friend who installs the app
+          first. <AppText style={styles.hintBold}>It expires in 48 hours.</AppText>
+          {'\n'}How far and how often is not in the invite: you will agree that together once they join.
+        </AppText>
+
+        {byEmail ? (
+          <Input
+            label="Their email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="name@example.com"
+          />
+        ) : (
+          <AppText style={styles.or}>
+            or{' '}
+            <AppText style={styles.orLink} onPress={() => setByEmail(true)} accessibilityRole="button">
+              send it by email
+            </AppText>
+          </AppText>
+        )}
+      </KeyboardFooterScroll>
     </SafeAreaView>
   );
 }
