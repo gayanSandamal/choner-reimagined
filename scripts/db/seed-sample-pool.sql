@@ -131,9 +131,31 @@ declare
   gain_keys    constant text[] := array['more_energy','better_health','confidence'];
   lose_keys    constant text[] := array['another_failed_attempt','lost_progress','lost_proof'];
 
+  -- How they want to do it. Every earlier seed left this at the column default,
+  -- 'separate', and 'together' vs 'separate' is a hard block in the matcher --
+  -- so anyone who tapped Find wanting to meet up could never be matched with a
+  -- single sample user. Weighted 4 together : 3 either : 3 separate.
+  modes constant text[] := array[
+    'together','together','together','together','either','either','either',
+    'separate','separate','separate'
+  ];
+  -- matching.ts SLOT_ORDER. Null (no preference) is a real answer too, and the
+  -- hard filter only applies when both people gave one.
+  slots constant text[] := array['early_morning','morning','afternoon','evening','night'];
+  -- The Find form's options, minus 'none_yet': that one blocks every pairing.
+  bikes constant text[] := array['own_bike','own_bike','rental','stationary'];
+
+  locations text[];
+  n_locations int;
+  v_mode text;
+  v_loc1 text;
+  v_loc2 text;
+  v_slot text;
+
   templates uuid[];
   durations int[];
   titles text[];
+  slugs text[];
   n_templates int;
 
   i int;
@@ -147,6 +169,7 @@ declare
   v_template uuid;
   v_duration int;
   v_title text;
+  v_slug text;
   v_challenge uuid;
   v_task uuid;
   v_joined timestamptz;
@@ -155,14 +178,22 @@ declare
 begin
   select array_agg(id order by sort_order, created_at),
          array_agg(duration_days order by sort_order, created_at),
-         array_agg(title order by sort_order, created_at)
-    into templates, durations, titles
+         array_agg(title order by sort_order, created_at),
+         array_agg(slug order by sort_order, created_at)
+    into templates, durations, titles, slugs
   from public.challenge_templates where is_active;
 
   n_templates := array_length(templates, 1);
   if n_templates is null or n_templates = 0 then
     raise exception 'no active challenge_templates to seed against';
   end if;
+
+  -- The areas the Find form offers. Only areas with a corridor tag can ever
+  -- match in person, and location_tags is exactly that list.
+  select array_agg(distinct location_value order by location_value)
+    into locations
+  from public.location_tags;
+  n_locations := coalesce(array_length(locations, 1), 0);
 
   -- Carry on from the highest sampleNNN already present, so a top-up cannot
   -- collide with an existing account and the emails stay readable.
@@ -172,7 +203,9 @@ begin
 
   for i in (v_offset + 1)..(v_offset + c_count) loop
     v_uid := gen_random_uuid();
-    v_email := 'sample' || lpad(i::text, 3, '0') || '@choner.test';
+    -- lpad truncates as well as pads: lpad('1000', 3, '0') is '100', which
+    -- collided with an existing account on the first top-up past 999.
+    v_email := 'sample' || lpad(i::text, greatest(3, length(i::text)), '0') || '@choner.test';
     v_name := first_names[1 + (i * 7) % array_length(first_names, 1)]
               || ' ' ||
               last_names[1 + (i * 13) % array_length(last_names, 1)];
@@ -190,11 +223,42 @@ begin
     v_tz := places[v_place][1];
     v_city := places[v_place][2];
 
+    -- Meeting up only makes sense where the areas are: everyone abroad does it
+    -- separately. In Sri Lanka the mix applies, and anyone who might meet in
+    -- person ('together' or 'either') lives in Colombo with one or two areas,
+    -- as the Find form requires.
+    if v_place <= 6 and n_locations > 0 then
+      v_mode := modes[1 + abs(hashtext('mode' || i::text)) % 10];
+    else
+      v_mode := 'separate';
+    end if;
+
+    v_loc1 := null;
+    v_loc2 := null;
+    v_slot := null;
+    if v_mode <> 'separate' then
+      v_city := 'Colombo';
+      v_loc1 := locations[1 + abs(hashtext('loc1' || i::text)) % n_locations];
+      -- About half name a second area, like people who live in one place and
+      -- work in another.
+      if abs(hashtext('loc2?' || i::text)) % 2 = 0 then
+        v_loc2 := locations[1 + abs(hashtext('loc2' || i::text)) % n_locations];
+        if v_loc2 = v_loc1 then
+          v_loc2 := null;
+        end if;
+      end if;
+      -- Two in five leave the time open.
+      if abs(hashtext('slot?' || i::text)) % 5 >= 2 then
+        v_slot := slots[1 + abs(hashtext('slot' || i::text)) % 5];
+      end if;
+    end if;
+
     -- Round-robin so every active template carries a usable cohort; the hard
     -- rule requires an identical template, so a thin one is an unmatchable one.
     v_template := templates[1 + (i % n_templates)];
     v_duration := durations[1 + (i % n_templates)];
     v_title := titles[1 + (i % n_templates)];
+    v_slug := slugs[1 + (i % n_templates)];
 
     -- Spread over the last five days so the fairness weighting (which kicks in
     -- after 48h in the pool) has something real to rank on.
@@ -233,7 +297,7 @@ begin
       timezone = v_tz,
       city = v_city,
       daily_deadline = v_deadline,
-      accountability_mode = tones[1 + abs(hashtext('tone' || i::text)) % 4],
+      accountability_style = tones[1 + abs(hashtext('tone' || i::text)) % 4],
       primary_goal = goals[1 + (i % 4)],
       main_struggle = struggles[1 + (i % 4)],
       stress_level = stress[1 + (i % 3)],
@@ -243,10 +307,13 @@ begin
 
     insert into public.user_challenges (
       user_id, challenge_template_id, accountability_mode, status,
-      started_at, ends_at, partner_state
+      started_at, ends_at, partner_state,
+      mode, preferred_location, preferred_location_2, time_of_day, gender_preference, bike_access
     ) values (
       v_uid, v_template, 'solo', 'active',
-      v_joined, v_joined + make_interval(days => v_duration), 'finding'
+      v_joined, v_joined + make_interval(days => v_duration), 'finding',
+      v_mode, v_loc1, v_loc2, v_slot, 'no_preference',
+      case when v_slug = 'activity-cycling' then bikes[1 + abs(hashtext('bike' || i::text)) % 4] end
     ) returning id into v_challenge;
 
     insert into public.challenge_tasks (user_challenge_id, title, sort_order, due_window)
@@ -335,8 +402,8 @@ begin
   end loop;
 
   raise notice 'seeded % sample users (sample% .. sample%), password %',
-    c_count, lpad((v_offset + 1)::text, 3, '0'),
-    lpad((v_offset + c_count)::text, 3, '0'), c_password;
+    c_count, lpad((v_offset + 1)::text, greatest(3, length((v_offset + 1)::text)), '0'),
+    lpad((v_offset + c_count)::text, greatest(3, length((v_offset + c_count)::text)), '0'), c_password;
 end $$;
 
 commit;
