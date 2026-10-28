@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
+import { FeedSafetyMenu } from '@/components/community/FeedSafetyMenu';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { milestoneLine } from '@/features/community/milestone-copy';
 import type { FeedItem } from '@/features/community/milestones';
@@ -22,6 +23,9 @@ export function MilestoneRow({
 }) {
   const names = item.partner_name ? `${item.sharer_name} and ${item.partner_name}` : item.sharer_name;
   const line = milestoneLine(item);
+  // A session post has two people and no single sharer the server can resolve,
+  // and there is nothing to do about your own card.
+  const canBlock = item.kind !== 'session_together' && !item.is_mine;
 
   return (
     <View style={styles.row}>
@@ -49,6 +53,10 @@ export function MilestoneRow({
           ) : null}
         </PressableScale>
       )}
+
+      {canBlock ? (
+        <FeedSafetyMenu milestoneId={item.id} sharerFirstName={item.sharer_name} />
+      ) : null}
     </View>
   );
 }

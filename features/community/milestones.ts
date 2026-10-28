@@ -21,6 +21,10 @@ export interface FeedItem {
   partner_avatar: string | null;
   reactions: number;
   i_reacted: boolean;
+  // Your own shared milestones appear in your own city feed. Optional because
+  // get_city_feed only started returning it in 202610282000, and a cached
+  // response from before that has no such key.
+  is_mine?: boolean;
 }
 
 export interface CityFeed {
