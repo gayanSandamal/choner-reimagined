@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { blockPartner, endMyMatch, getPairingMet, reportMatch, reportPartner } from './api';
+import {
+  blockMilestoneSharer,
+  blockPartner,
+  endMyMatch,
+  getPairingMet,
+  reportMatch,
+  reportPartner
+} from './api';
 
 // Ending a pairing changes nearly everything the pair screens read: the
 // challenge drops to solo, the partner and their timeline disappear, and a
@@ -24,6 +31,22 @@ function useInvalidatePairing() {
 export function useBlockPartner() {
   const invalidate = useInvalidatePairing();
   return useMutation({ mutationFn: blockPartner, onSuccess: invalidate });
+}
+
+// Blocking from Community drops the person out of the feed and the directory,
+// and ends the pairing if there was one — so the feed has to be refetched on
+// top of everything a pairing change touches.
+export function useBlockMilestoneSharer() {
+  const queryClient = useQueryClient();
+  const invalidatePairing = useInvalidatePairing();
+  return useMutation({
+    mutationFn: blockMilestoneSharer,
+    onSuccess: () => {
+      invalidatePairing();
+      queryClient.invalidateQueries({ queryKey: ['city-feed'] });
+      queryClient.invalidateQueries({ queryKey: ['active-directory'] });
+    }
+  });
 }
 
 export function useReportPartner() {

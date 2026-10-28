@@ -5,8 +5,10 @@ import {
   PRE_MEETING_CATEGORIES,
   REPORT_CATEGORIES,
   blockConfirmCopy,
+  blockSharerConfirmCopy,
   matchEndedLine,
-  reportCategoriesFor
+  reportCategoriesFor,
+  safetyRefusalMessage
 } from './rules';
 
 // The migration is the enforcement; this file is what the app shows. They are
@@ -14,6 +16,11 @@ import {
 // same thing.
 const migration = readFileSync(
   join(__dirname, '../../supabase/migrations/202609231000_report_and_block.sql'),
+  'utf8'
+);
+
+const feedMigration = readFileSync(
+  join(__dirname, '../../supabase/migrations/202610282000_blocking_reaches_the_city_feed.sql'),
   'utf8'
 );
 
@@ -75,6 +82,40 @@ describe('ended copy', () => {
       message:
         "This ends your match right away. Gayan won't be told you blocked them. They'll just see the match has ended."
     });
+  });
+});
+
+describe('blocking from Community', () => {
+  it('says the block is permanent, because user_blocks has no delete path', () => {
+    const { message } = blockSharerConfirmCopy('Nuwan');
+    expect(message).toContain("can't be undone");
+    expect(message).toContain("won't be told");
+    expect(feedMigration).not.toMatch(/delete\s+from\s+public\.user_blocks/i);
+  });
+
+  it('does not talk about matches, since the sharer is usually a stranger', () => {
+    expect(safetyRefusalMessage('not_blockable').toLowerCase()).not.toContain('match');
+    // The pairing refusals must keep their own wording.
+    expect(safetyRefusalMessage('no_partner')).toBe('This match has already ended.');
+  });
+
+  it('filters the feed in both directions, for the sharer and their partner', () => {
+    expect(feedMigration).toContain('not public.blocked_between(v_uid, m.shared_by)');
+    expect(feedMigration).toContain('not public.blocked_between(v_uid, m.partner_user_id)');
+    // Both directions live inside the helper, so one call covers blocker and
+    // blocked. If that ever becomes one-way, this is the test that should fail.
+    expect(feedMigration).toContain('b.blocker_id = p_b and b.blocked_id = p_a');
+  });
+
+  it('keeps the helper away from clients, so nobody can ask who blocked them', () => {
+    expect(feedMigration).toMatch(
+      /revoke all on function public\.blocked_between\(uuid, uuid\) from public, anon, authenticated;/
+    );
+  });
+
+  it('never takes a user id from the client', () => {
+    expect(feedMigration).toContain('block_milestone_sharer(p_milestone_id uuid)');
+    expect(feedMigration).not.toMatch(/block_milestone_sharer\(p_user_id/);
   });
 });
 

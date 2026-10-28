@@ -64,15 +64,39 @@ export function blockConfirmCopy(partnerFirstName: string) {
   };
 }
 
+// Blocking from Community, where the person is usually a stranger whose post
+// you read. Says what actually happens — they leave the feed both ways and can
+// never be matched to you — without promising it is reversible, because it is
+// not: user_blocks has no delete path.
+export function blockSharerConfirmCopy(sharerFirstName: string) {
+  return {
+    title: `Block ${sharerFirstName}?`,
+    message: `You won't see each other in Community again, and you won't be matched. ${sharerFirstName} won't be told. This can't be undone.`
+  };
+}
+
 // The server answers refusals as values, not exceptions. Both "no partner" and
 // "match not found" mean the pairing ended before this tap landed — most often
 // because the other person ended it first — so they read the same.
-export type SafetyRefusal = 'no_partner' | 'match_not_found' | 'category_unavailable' | 'bad_reason';
+export type SafetyRefusal =
+  | 'no_partner'
+  | 'match_not_found'
+  | 'category_unavailable'
+  | 'bad_reason'
+  | 'not_blockable';
 
 export function safetyRefusalMessage(reason: SafetyRefusal): string {
-  return reason === 'category_unavailable'
-    ? "That option isn't available for this match. Pick another."
-    : 'This match has already ended.';
+  switch (reason) {
+    case 'category_unavailable':
+      return "That option isn't available for this match. Pick another.";
+    // Reached from Community, where there may be no match at all — so the
+    // pairing wording would be nonsense. The card has usually been deleted or
+    // unshared since the feed loaded.
+    case 'not_blockable':
+      return 'This post is no longer available.';
+    default:
+      return 'This match has already ended.';
+  }
 }
 
 // Ending a match, the neutral way. Six reasons, and they are NOT report

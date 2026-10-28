@@ -15,6 +15,17 @@ export async function blockPartner(userChallengeId: string): Promise<SafetyResul
   return data as SafetyResult;
 }
 
+// From Community. Names the milestone the card was drawn from, never the
+// person — the server resolves who shared it, so the feed payload stays free
+// of user ids. Ends a pairing too if this turns out to be your partner.
+export async function blockMilestoneSharer(milestoneId: string): Promise<SafetyResult> {
+  const { data, error } = await (supabase.rpc as any)('block_milestone_sharer', {
+    p_milestone_id: milestoneId
+  });
+  if (error) throw error;
+  return data as SafetyResult;
+}
+
 export async function reportPartner(input: {
   userChallengeId: string;
   category: ReportCategory;
