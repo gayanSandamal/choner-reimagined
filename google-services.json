@@ -33,6 +33,35 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483948063727:android:f15360aa84e968bd5aa41a",
+        "android_client_info": {
+          "package_name": "io.choner.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "483948063727-bmcv61gb21bq5qp5tbohhfdko731ku3p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQgct4OLYB2QpGxtpYNjThHz9uzPq08fo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "483948063727-bmcv61gb21bq5qp5tbohhfdko731ku3p.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"
