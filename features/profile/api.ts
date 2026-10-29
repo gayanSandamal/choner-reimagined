@@ -80,8 +80,19 @@ export async function changePassword(newPassword: string) {
   if (error) throw error;
 }
 
+/**
+ * Goes through the `delete-account` edge function rather than calling the
+ * `delete_account` RPC directly. The RPC is still the whole of the database
+ * side, but it cannot touch storage: objects have no foreign key to
+ * auth.users, and only the Storage API removes the bytes. The function does
+ * the files first and then calls that same RPC.
+ *
+ * Deliberately no fallback to the RPC on failure — falling back would delete
+ * the account and silently leave the photos, and `avatars` is public, so the
+ * URL would keep working. Better to fail and be retried.
+ */
 export async function deleteAccount() {
-  const { error } = await supabase.rpc('delete_account');
+  const { error } = await supabase.functions.invoke('delete-account', { body: {} });
   if (error) throw error;
   await supabase.auth.signOut();
 }
