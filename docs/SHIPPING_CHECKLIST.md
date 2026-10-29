@@ -44,7 +44,15 @@ Status legend: ✅ done in code · 🔑 needs a real key/secret · 🎨 needs an
 - ✅ `eas.json` submit section populated with placeholders to fill in
 - ✅ `app.json` plugins for notifications, image-picker, secure-store, Sentry
 - 🎨 Replace placeholder asset paths in `app.json` with real icons + splash + notification icon
-- 🔑 ASC API key + Apple Team ID; Play service account JSON
+- 🔑 ASC API key + Apple Team ID; Play service account JSON (needs a verified Play account + a created app first)
+- 👤 **Google Play developer account** (personal account "Choner.io", created, as of 2026-10-25):
+  - ✅ Account created, identity documents uploaded
+  - ⏳ Google is verifying identity ("may take a few days"; the account owner gets an email when done). Nothing to do but wait
+  - 👤 **Action required:** verify the contact phone number (account owner only: Play Console home → "Verify your contact phone number" → View details)
+  - 👤 Complete the physical Android device check if Play Console asks for it
+  - 👤 Once verified: Create app → `com.choner.app`
+  - 👤 Personal account → **closed test with ≥12 testers opted in for 14 continuous days** before production access can be requested. Recruit testers early; the 14-day clock is the long pole
+  - 👤 Store listing, Data safety form, content rating, target audience, account-deletion URL (see Trust / Legal)
 - 👤 App Store + Play Store listings (screenshots, descriptions, age rating)
 - 👤 Support email + marketing site
 - 👤 Admin dashboards (Supabase Studio + Sentry + PostHog suffice for v1)
