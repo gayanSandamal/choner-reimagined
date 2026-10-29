@@ -1,5 +1,6 @@
 import { forwardRef, useMemo } from 'react';
 import { Pressable, PressableProps, View } from 'react-native';
+import type { PressableInstance } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -40,7 +41,7 @@ function fireHaptic(intensity: HapticIntensity) {
 // PressableScale: drop-in replacement for <Pressable> that scales down on
 // press-in with a spring and fires a haptic. Honors the "Reduce Motion"
 // system setting by falling back to a quick opacity tween.
-export const PressableScale = forwardRef<View, Props>(function PressableScale(
+export const PressableScale = forwardRef<PressableInstance, Props>(function PressableScale(
   {
     children,
     onPressIn,

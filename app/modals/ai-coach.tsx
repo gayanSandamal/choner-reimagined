@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
@@ -35,7 +36,7 @@ export default function AiCoachModal() {
   const { isPremium } = useIsPremium();
 
   const [input, setInput] = useState('');
-  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollRef = useRef<ScrollViewInstance | null>(null);
 
   useEffect(() => {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));

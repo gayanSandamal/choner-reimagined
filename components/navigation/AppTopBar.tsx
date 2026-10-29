@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { AppText } from '@/components/ui/AppText';
@@ -51,7 +52,7 @@ export function useTopBar() {
   // initialWindowMetrics in app-provider.tsx is the real fix and means this
   // should never fire. It stays because those metrics are null on web and in
   // tests, where the zero-inset first render comes back.
-  const ref = useRef<ScrollView>(null);
+  const ref = useRef<ScrollViewInstance>(null);
   const previousTop = useRef(insets.top);
   useEffect(() => {
     const was = previousTop.current;

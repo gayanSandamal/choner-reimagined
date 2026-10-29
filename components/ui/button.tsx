@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import { ActivityIndicator, StyleProp, StyleSheet, TextStyle, View, ViewStyle } from 'react-native';
+import type { PressableInstance } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { AppText } from './text';
@@ -23,7 +24,7 @@ interface ButtonProps {
   pill?: boolean;
 }
 
-export const Button = forwardRef<View, ButtonProps>(function Button(
+export const Button = forwardRef<PressableInstance, ButtonProps>(function Button(
   {
     label,
     variant = 'primary',
