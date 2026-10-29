@@ -1,8 +1,7 @@
-import { PropsWithChildren } from 'react';
 import { Text as RNText, StyleSheet, TextProps } from 'react-native';
 import { theme } from '@/constants/theme';
 
-interface AppTextProps extends TextProps, PropsWithChildren {
+interface AppTextProps extends TextProps {
   variant?: 'display' | 'title' | 'subtitle' | 'body' | 'muted' | 'caption';
 }
 

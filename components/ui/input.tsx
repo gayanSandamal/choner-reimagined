@@ -1,5 +1,6 @@
 import { ForwardedRef, forwardRef, useEffect, useState } from 'react';
 import { Pressable, StyleProp, StyleSheet, TextInput, TextInputProps, TextStyle, ViewStyle } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -41,7 +42,7 @@ export const Input = forwardRef(function Input(
     secureTextEntry,
     ...props
   }: InputProps,
-  ref: ForwardedRef<TextInput>
+  ref: ForwardedRef<TextInputInstance>
 ) {
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(true);

@@ -32,6 +32,7 @@ module.exports = {
       testMatch: ['<rootDir>/**/*.test.tsx'],
       testPathIgnorePatterns: ignore,
       setupFiles: ['<rootDir>/test/render-setup.ts'],
+      resolver: '<rootDir>/test/jest-resolver.js',
       moduleNameMapper: alias
     }
   ]

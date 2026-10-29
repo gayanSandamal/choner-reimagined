@@ -43,6 +43,20 @@ jest.mock('@/lib/haptics', () => ({
   haptics: new Proxy({}, { get: () => jest.fn() })
 }));
 
+// SDK 58's expo-font resolves each font through Asset.fromModule() while the
+// component renders, and jest has no asset registry for it to look in, so any
+// screen with an @expo/vector-icons glyph died with `Module "1" is missing
+// from the asset registry`. Fonts are a native concern; the icons render as
+// their text content either way.
+jest.mock('expo-font', () => ({
+  useFonts: () => [true, null],
+  loadAsync: jest.fn().mockResolvedValue(undefined),
+  isLoaded: () => true,
+  isLoading: () => false,
+  unloadAllAsync: jest.fn(),
+  unloadAsync: jest.fn()
+}));
+
 // Reanimated 4 runs its worklets through react-native-worklets, which reaches
 // for a native module on import. Its own mock has to be in place first.
 jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));
