@@ -1,9 +1,17 @@
 import { Image, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppText } from './AppText';
+import { useAvatarUri } from '@/lib/avatars';
 import { theme } from '@/constants/theme';
 
 interface Props {
+  /**
+   * What `profiles.avatar_url` holds: a storage path in the private `avatars`
+   * bucket, not a URL (202610291400). Signing happens here so the eleven
+   * screens that show a face don't each have to remember to — see
+   * lib/avatars.ts. A full URL is still accepted, for a row or a build that
+   * predates the switch.
+   */
   uri?: string | null;
   name?: string | null;
   size?: number;
@@ -39,9 +47,12 @@ function initials(name?: string | null) {
 export function Avatar({ uri, name, size = 48, ring = false }: Props) {
   const radius = size / 2;
   const palette = PALETTES[hashHue(name ?? '') % PALETTES.length]!;
+  // Null until the signature lands, and null when there is no photo — the
+  // initials gradient covers both, so there is no separate loading state.
+  const signed = useAvatarUri(uri);
 
-  const inner = uri ? (
-    <Image source={{ uri }} style={{ width: size, height: size, borderRadius: radius }} />
+  const inner = signed ? (
+    <Image source={{ uri: signed }} style={{ width: size, height: size, borderRadius: radius }} />
   ) : (
     <LinearGradient
       colors={palette}

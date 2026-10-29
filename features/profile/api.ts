@@ -31,7 +31,12 @@ export async function updateProfile(userId: string, payload: Partial<ProfileRow>
 
 /**
  * Upload an image (provided as a base64 string from expo-image-picker) to the
- * `avatars` Supabase Storage bucket and return the public URL.
+ * `avatars` Supabase Storage bucket and return its storage path.
+ *
+ * The path, not a URL: the bucket is private since 202610291400, so
+ * avatar_url holds `<uid>/<file>` and whoever renders it signs it. The
+ * leading folder has to be the uploader's own id — that is what
+ * avatars_owner_write reads.
  */
 export async function uploadAvatar(input: {
   userId: string;
@@ -49,9 +54,8 @@ export async function uploadAvatar(input: {
     });
   if (uploadErr) throw uploadErr;
 
-  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-  await updateProfile(input.userId, { avatar_url: data.publicUrl });
-  return data.publicUrl;
+  await updateProfile(input.userId, { avatar_url: path });
+  return path;
 }
 
 /**
@@ -69,8 +73,7 @@ export async function uploadLivePhoto(input: { userId: string; base64: string })
     .upload(path, decodeBase64(input.base64), { contentType: 'image/jpeg', upsert: true });
   if (uploadErr) throw uploadErr;
 
-  const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
-  const { data, error } = await supabase.rpc('set_live_photo', { p_url: pub.publicUrl });
+  const { data, error } = await supabase.rpc('set_live_photo', { p_path: path } as never);
   if (error) throw error;
   return data;
 }
@@ -88,8 +91,8 @@ export async function changePassword(newPassword: string) {
  * the files first and then calls that same RPC.
  *
  * Deliberately no fallback to the RPC on failure — falling back would delete
- * the account and silently leave the photos, and `avatars` is public, so the
- * URL would keep working. Better to fail and be retried.
+ * the account and silently leave the photos behind, reachable by anyone still
+ * holding a signature for them. Better to fail and be retried.
  */
 export async function deleteAccount() {
   const { error } = await supabase.functions.invoke('delete-account', { body: {} });

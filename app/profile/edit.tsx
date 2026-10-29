@@ -22,6 +22,7 @@ import {
   TONES
 } from '@/features/onboarding/constants';
 import { theme } from '@/constants/theme';
+import { useAvatarUri } from '@/lib/avatars';
 import { notify } from '@/lib/alert';
 
 // Rows written before the onboarding rewrite store display labels
@@ -38,6 +39,9 @@ export default function EditProfileScreen() {
   const profileQ = useProfile(userId);
   const updateMut = useUpdateProfile();
   const uploadMut = useUploadAvatar();
+  // avatar_url is a storage path in a private bucket, so this is the one
+  // place outside <Avatar> that has to sign it itself.
+  const avatarUri = useAvatarUri(profileQ.data?.avatar_url);
 
   const [fullName, setFullName] = useState('');
   const [goal, setGoal] = useState<string>('');
@@ -123,9 +127,9 @@ export default function EditProfileScreen() {
 
       <Card style={{ alignItems: 'center', gap: theme.spacing(1) }}>
         <Pressable onPress={onPickAvatar}>
-          {profileQ.data?.avatar_url ? (
+          {avatarUri ? (
             <Image
-              source={{ uri: profileQ.data.avatar_url }}
+              source={{ uri: avatarUri }}
               style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: theme.colors.surface2 }}
             />
           ) : (
