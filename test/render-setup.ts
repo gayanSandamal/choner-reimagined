@@ -9,7 +9,19 @@ jest.mock('@/lib/supabase', () => ({
     rpc: jest.fn(async () => ({ data: null, error: null })),
     from: jest.fn(() => ({ select: jest.fn(), insert: jest.fn(), update: jest.fn(), delete: jest.fn() })),
     functions: { invoke: jest.fn(async () => ({ data: null, error: null })) },
-    auth: { getSession: jest.fn(async () => ({ data: { session: null } })) }
+    auth: { getSession: jest.fn(async () => ({ data: { session: null } })) },
+    // Avatar signs its path on render (lib/avatars.ts). Answering with no
+    // rows is the "could not sign" case, which renders initials — the same
+    // thing every one of these tests saw when avatars were public URLs and
+    // the fixtures passed null.
+    storage: {
+      from: jest.fn(() => ({
+        createSignedUrl: jest.fn(async () => ({ data: null, error: null })),
+        createSignedUrls: jest.fn(async () => ({ data: [], error: null })),
+        upload: jest.fn(async () => ({ data: null, error: null })),
+        remove: jest.fn(async () => ({ data: null, error: null }))
+      }))
+    }
   }
 }));
 

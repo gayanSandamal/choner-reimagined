@@ -18,6 +18,8 @@ export interface Database {
         Row: {
           id: string;
           full_name: string | null;
+          // Storage path in the private `avatars` bucket (`<uid>/<file>`),
+          // never a URL — 202610291400. Sign it to display: lib/avatars.ts.
           avatar_url: string | null;
           // Set by link_first_200() on EMAIL VERIFICATION, or by
           // claim_prelaunch() for someone who signed up with a different
@@ -908,7 +910,7 @@ export interface Database {
         Returns: string;
       };
       set_live_photo: {
-        Args: { p_url: string };
+        Args: { p_path: string };
         Returns: Database['public']['Tables']['profiles']['Row'];
       };
       clear_live_photo: {

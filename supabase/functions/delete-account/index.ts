@@ -4,8 +4,9 @@
 // storage objects have no foreign key to auth.users. Deleting the
 // storage.objects row via SQL would not remove the bytes either — only the
 // Storage API does that, which is why cleanup-checkin-photos exists at all. So
-// an account deleted through the RPC alone left its files behind, and `avatars`
-// is a public bucket: the avatar URL kept resolving after the account was gone.
+// an account deleted through the RPC alone left its files behind, and at the
+// time `avatars` was a public bucket: the avatar URL kept resolving after the
+// account was gone.
 //
 // Required secrets (all provided by the platform):
 //   SUPABASE_URL
@@ -28,20 +29,20 @@
 // a harmless no-op on already-missing objects. It is the same reasoning
 // undoTaskCheckin() uses when it removes the photo before the row.
 //
-// WHAT THIS DOES NOT DO: BEAT THE CDN
+// THE CDN, AND WHY IT IS NO LONGER AN OPEN GAP
 //
-// `avatars` is a public bucket served through a CDN. Measured after a verified
-// delete: the object is gone from the bucket and a fresh path returns 400, but
-// a URL that had already been fetched kept answering 200 with
-// cf-cache-status: HIT. So an avatar someone had loaded before the deletion can
-// still be served from the edge until that entry expires. The bytes are gone
-// from storage; the cached copy is not ours to purge from here.
+// `avatars` used to be a public bucket served through a CDN, and that beat
+// this function. Measured after a verified delete: the object was gone and a
+// fresh fetch returned 400, while a URL that had already been fetched kept
+// answering 200 with cf-cache-status: HIT — indefinitely, to anyone, because
+// the URL was the whole of the grant.
 //
-// The real fix for that is to stop `avatars` being public and serve it with
-// signed URLs, the way checkin-photos already works. That is a change to every
-// screen that renders an avatar, so it is not bundled in here — but until it
-// happens, "deleted immediately" is true of storage and not quite true of the
-// CDN, and the privacy policy should not promise more than that.
+// 202610291400 made the bucket private and moved every screen onto signed
+// URLs, which closed it. Measured on a signed avatar response afterwards:
+// `cache-control: private, no-cache` and `cf-cache-status: DYNAMIC`. The edge
+// keeps no copy of a signed object, so once remove() returns there is nothing
+// left anywhere to serve — the same as has always been true of
+// checkin-photos. "Deleted immediately" is now true of both buckets.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
