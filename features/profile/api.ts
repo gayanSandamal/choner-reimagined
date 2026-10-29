@@ -59,21 +59,26 @@ export async function uploadAvatar(input: {
 }
 
 /**
- * Upload a photo taken live with the camera and mark it confirmed.
+ * Send a photo taken live with the camera to the server, which stores it and
+ * marks it confirmed.
  *
- * Same `avatars` bucket as a gallery upload, but the write goes through
- * set_live_photo(): that RPC is the only thing that can set
- * photo_status = 'photo_confirmed' (202609291200). A plain avatar_url update
- * resets the badge, which is what uploadAvatar() above does on purpose.
+ * The client does NOT write this one. Uploading here and then claiming the
+ * badge was the hole (202610291600): anything you can put in your own folder,
+ * you could then pass to set_live_photo(), so a gallery photo earned the
+ * badge in two REST calls. Live photos now go to `<uid>/live/`, a prefix no
+ * client can insert into, and only the edge function — holding the service
+ * role — can write it and award the badge.
+ *
+ * So the badge means the bytes came through our server. It still does not
+ * prove a live human; nothing in the copy claims it does.
+ *
+ * Unlike uploadAvatar() above, which writes straight to the bucket and
+ * therefore resets the badge on purpose.
  */
 export async function uploadLivePhoto(input: { userId: string; base64: string }) {
-  const path = `${input.userId}/live-${Date.now()}.jpg`;
-  const { error: uploadErr } = await supabase.storage
-    .from('avatars')
-    .upload(path, decodeBase64(input.base64), { contentType: 'image/jpeg', upsert: true });
-  if (uploadErr) throw uploadErr;
-
-  const { data, error } = await supabase.rpc('set_live_photo', { p_path: path } as never);
+  const { data, error } = await supabase.functions.invoke('submit-live-photo', {
+    body: { base64: input.base64 },
+  });
   if (error) throw error;
   return data;
 }
