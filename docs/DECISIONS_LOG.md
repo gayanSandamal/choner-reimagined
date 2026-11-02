@@ -2833,3 +2833,119 @@ together-mode day-of tap, and two different things sharing a label in one
 product is how support tickets start.
 
 **Decided by:** user, 20 October 2026.
+
+---
+
+## Apple: enrolled, and Sign in with Apple held back to v1.1
+
+**Apple Developer Program paid 27 October 2026**, US$98.99/year, Individual
+rather than Organization. Organization needs a D-U-N-S number and weeks of
+verification; Individual usually clears in a day or two. It **auto-renews**
+27 October 2027 and must be cancelled at least a day ahead to avoid the charge,
+which is the one difference from Google's one-off $25.
+
+Apple became the faster route to being live the moment Play's testing gate
+appeared. Play wants 12 testers for 14 continuous days; TestFlight wants
+nothing, and App Store review is usually a day or two. Android is late November,
+iOS can be a fortnight.
+
+### `usesAppleSignIn` turned off
+
+`app.json:23` declared `usesAppleSignIn: true` with **no feature behind it**.
+`expo-apple-authentication` is not in `package.json` and never has been.
+
+What exists is two thirds of the work, which is what made it look finished:
+
+- `components/auth/SocialButton.tsx` renders an Apple tile, and **nothing
+  renders `SocialButton`**. It was built and never placed on a screen.
+- `features/auth/api.ts:152` `signInWithAppleIdentityToken()` exchanges the
+  token for a session, and its own comment says "the actual native call lives
+  in the screen" — a screen that does not exist.
+
+So the app was asking Apple for a capability it cannot use. Harmless most days;
+on a first submission it is a mismatch a reviewer can see and ask about, and a
+question costs a review cycle. Set to `false`. It flips back when the feature
+ships.
+
+### The First 200 collision, found before building rather than after
+
+**Apple's "Hide My Email" breaks the automatic First 200 claim.**
+
+`202610061200_first_200_registrations.sql:296` claims a registration by matching
+the signup address against the registered one:
+
+```sql
+where email = new.email::citext and claimed_by is null
+```
+
+Tap Hide My Email and Apple hands back `…@privaterelay.appleid.com` instead of
+the real address. No match, no claim. The registrant lands in the app as a
+stranger holding a First 200 email that appears to be worthless — the worst
+possible first contact with the 200 people who matter most.
+
+It degrades rather than breaks: `claim_prelaunch(p_code)` still works and
+`app/profile/code.tsx` already exists. But the silent path is the one people
+actually get, and it is the one that fails.
+
+**Decided: Sign in with Apple is not in v1.** When it ships it carries a
+`privaterelay` check that asks "what email did you register with?" and matches
+on that, rather than leaning on the manual code as the primary path.
+
+Two Apple facts to carry into that work:
+
+1. **Apple gives the user's name exactly once**, on the very first sign-in ever.
+   Drop it and that account has no name permanently.
+2. **Adding Google sign-in makes Apple sign-in mandatory.** Apple requires it
+   alongside any other social provider, so the parked social work is both or
+   neither, never Google alone.
+
+**Decided by:** user, 2 November 2026.
+
+---
+
+## Email verification sends people to choner.io, and why it is not a code bug
+
+Reported again on 2 November: the verification link from the real app lands on
+the marketing site instead of opening the app.
+
+**The app is correct.** `features/auth/api.ts:81` passes
+`Linking.createURL('/verify-email')` as `emailRedirectTo` on every signup, which
+in an installed build resolves to `choner:///verify-email`. Every destination
+exists: `app/(auth)/verify-email.tsx`, `verified.tsx`, `link-expired.tsx`.
+
+**The fault is Supabase's redirect allow-list.** `choner://` is not on it, and
+when Supabase rejects a `redirect_to` it silently substitutes the **Site URL**,
+which is `https://choner.io`. That substitution is the whole bug.
+
+**Why it survived three weeks:** it cannot be reproduced in development. In
+Expo Go the generated URL is an `exp://…` address that is handled differently,
+so the flow looks correct every time a developer tests it. Only an installed
+build shows it, and until the APK there were no installed builds.
+
+**The fix is two dashboard fields, no code and no deploy.** Authentication →
+URL Configuration: add `choner://**` to Redirect URLs, and point Site URL at
+`choner://verify-email` so the fallback lands somewhere sensible. Owned by
+Gayan or Dinesh; the dashboard needs a sign-in, which I do not do.
+
+### Related, and worse in the long run
+
+**`app.choner.io` does not resolve.** No DNS at all:
+
+```
+app.choner.io/verify-email                        → could not connect
+app.choner.io/.well-known/apple-app-site-association → could not connect
+```
+
+`app.json:25` declares `applinks:app.choner.io` and
+`android/intentFilters` claims the same host, so every universal link the app
+claims to handle points at nothing.
+
+Not a submission blocker, and the allow-list fix above makes the custom scheme
+work. But a `https://app.choner.io/verify-email` link is the better answer
+eventually, because some email clients strip custom schemes like `choner://`
+entirely and a real HTTPS link never gets stripped. Parked until after the store
+submission, deliberately: it needs DNS, a host and a signed
+apple-app-site-association file, and none of that is worth doing in the week of
+a launch.
+
+**Decided by:** user, 2 November 2026.
