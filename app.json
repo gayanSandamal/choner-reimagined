@@ -20,7 +20,7 @@
         "NSCameraUsageDescription": "Choner uses the camera for your check-in photos, scanning your partner's code when you meet, and your profile photo.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "usesAppleSignIn": true,
+      "usesAppleSignIn": false,
       "associatedDomains": [
         "applinks:app.choner.io"
       ]
