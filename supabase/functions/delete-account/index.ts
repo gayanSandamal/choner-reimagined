@@ -29,7 +29,7 @@
 // a harmless no-op on already-missing objects. It is the same reasoning
 // undoTaskCheckin() uses when it removes the photo before the row.
 //
-// THE CDN, AND WHY IT IS NO LONGER AN OPEN GAP
+// THE CDN, AND THE WINDOW THAT IS LEFT
 //
 // `avatars` used to be a public bucket served through a CDN, and that beat
 // this function. Measured after a verified delete: the object was gone and a
@@ -38,11 +38,22 @@
 // the URL was the whole of the grant.
 //
 // 202610291400 made the bucket private and moved every screen onto signed
-// URLs, which closed it. Measured on a signed avatar response afterwards:
-// `cache-control: private, no-cache` and `cf-cache-status: DYNAMIC`. The edge
-// keeps no copy of a signed object, so once remove() returns there is nothing
-// left anywhere to serve — the same as has always been true of
-// checkin-photos. "Deleted immediately" is now true of both buckets.
+// URLs. That bounds the window; it does not remove it. Re-measured against
+// production on 2026-11-02 as an ordinary signed-in user: a signed avatar
+// response carries NO cache-control header, and cf-cache-status went MISS on
+// a fresh signature's first fetch and HIT on the next two. The edge does keep
+// a copy of a signed object, so a signed URL somebody already loaded can
+// still be served after remove() returns.
+//
+// What changed is the bound: a public URL never expired, a signature does, so
+// the exposure is at most one TTL (TTL_SECONDS in lib/avatars.ts — 10
+// minutes) rather than forever, and it reaches only someone who already
+// holds that signature rather than anyone with the URL.
+//
+// So the accurate claim, for a privacy policy or a Data safety answer, is
+// that files are deleted on request and any cached copy stops being servable
+// within minutes — NOT that nothing is served the instant remove() returns.
+// Shortening TTL_SECONDS shrinks the window if that is ever worth it.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 

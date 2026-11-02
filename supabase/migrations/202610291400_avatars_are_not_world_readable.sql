@@ -27,11 +27,22 @@
 -- migration — same bucket shape, same 10-minute expiry, same re-sign-on-view
 -- habit in the client (lib/avatars.ts mirrors getCheckinPhotoUrl).
 --
--- That closes the CDN gap outright rather than narrowing it. Measured on a
--- signed avatar response after this migration: `cache-control: private,
--- no-cache` and `cf-cache-status: DYNAMIC`. The edge does not keep a copy of
--- a signed object at all, so there is nothing left to serve once the bytes
--- are deleted — not even to someone holding a signature that has not expired.
+-- That BOUNDS the CDN gap rather than closing it. Re-measured against
+-- production on 2026-11-02, as an ordinary signed-in user: a signed avatar
+-- response carries NO cache-control header, and the edge does cache it —
+-- cf-cache-status was MISS on a fresh signature's first fetch and HIT on the
+-- next two. So a signed URL somebody has already loaded can still be served
+-- from the edge after the bytes are deleted.
+--
+-- The win over a public bucket is the bound, and it is a real one: a public
+-- URL never expired, a signature does, so the window is one TTL
+-- (TTL_SECONDS in lib/avatars.ts — 10 minutes) instead of unbounded. The
+-- "Done when" line at the foot of this file says exactly that and is
+-- correct. An earlier version of this paragraph claimed the edge keeps no
+-- copy of a signed object and cited `cache-control: private, no-cache` with
+-- `cf-cache-status: DYNAMIC`; the headers do not show that, and the claim is
+-- the kind that ends up in a privacy policy, so it is corrected here rather
+-- than left to be rediscovered.
 --
 -- WHY THE READ POLICY IS NOT OWNER-ONLY
 --
