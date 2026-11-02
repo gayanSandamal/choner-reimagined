@@ -2949,3 +2949,106 @@ apple-app-site-association file, and none of that is worth doing in the week of
 a launch.
 
 **Decided by:** user, 2 November 2026.
+
+---
+
+## "Check your email": the button goes, and the exits start telling the truth
+
+Two issues reported 2 November, #159 and #160. They sit on the same screen and
+look related. They are not: one is a cleanup, the other is a consequence of how
+verification polling has to work.
+
+### #159 — "I've tapped the link" removed, the poll kept
+
+The button existed so the onboarding flow could be tested without a working
+verification email. It has done its job and is gone.
+
+**The silent poll stays, deliberately.** `app/(auth)/verify-email.tsx:36-44`
+exists because this screen used to be a dead end: the only way out was the
+verification link reopening the app, and in Expo Go, or after verifying on a
+laptop, it often does not. Removing the poll along with the button would have
+reintroduced exactly that trap, and it matters more than usual right now, with
+the Supabase redirect allow-list still unfixed and every link landing on
+choner.io.
+
+### #160 — the button was not the problem
+
+**"Back to sign in" navigated correctly and was overridden a frame later.**
+
+`checkVerified()` is not a read. `features/auth/api.ts:67` is
+`signInWithPassword`, and it has to be: a confirmation-required `signUp`
+returns **no session**, so there is nothing to poll, and trying to log in is
+the only way to learn that an address has been confirmed. It fails with "Email
+not confirmed" until they tap the link and succeeds the moment they have.
+
+Which means a poll landing on a confirmed address **signs the person in,
+silently**. Once that has happened the root gate takes over:
+
+```ts
+// app/_layout.tsx:125
+if (needsOnboarding && !inOnboarding && !inLegalGroup) router.replace('/onboarding');
+```
+
+The gate is right. A signed-in person has no business on a sign-in screen, and
+`onAuthLanding` exempts only `verified` and `reset-password` — correctly, since
+those are the two screens an email link lands on *with* a session. It simply
+could not tell that this particular destination had been asked for on purpose.
+
+Every detail of the report follows from that:
+
+| Reported | Cause |
+|---|---|
+| landed on the post-verification screen | the gate's `/onboarding` replace |
+| `ROUTE_NAMES_CHANGED` naming the onboarding routes | two navigations overlapping, not a missing route |
+| only sometimes | depends on a poll landing in the same window |
+| the email was already confirmed | the link works, it just redirects to choner.io first |
+
+**The fix:** both exits sign out before leaving, so the destination stays true.
+`done.current` is set **before** the await, not after, because a check already
+in flight can hand back a session once the screen has gone — the same bug by a
+different route, and the one that would have made this look intermittently
+fixed.
+
+**The back arrow was fixed alongside the button.** #160 names only "Back to
+sign in"; the arrow goes to sign-up with the identical defect. Flagged rather
+than done silently, on the same reasoning as the Challenges heart glow in #133:
+leaving a known twin in place guarantees the same report again.
+
+### What this says about the pattern, for later
+
+The screen signs people in as a side effect of asking a question. That is
+forced by Supabase's API today and the comment at `features/auth/api.ts:38-48`
+is honest about it, but it is worth naming as a design smell: **any screen that
+can create a session behind the user's back will fight the root gate.** If a
+"has this address been confirmed" probe ever becomes available that does not
+create a session, this whole class of bug disappears and the sign-out dance can
+come out.
+
+### Verification
+
+Run against a **fresh SDK 58 install**. `node_modules` still held 57 after
+`f6188b8 chore(deps): upgrade to Expo SDK 58`, and checks against stale
+dependencies prove nothing either way — a pass would be meaningless and a
+failure would send someone chasing a phantom.
+
+- `npm run typecheck` clean
+- `npm run lint` clean, which is what confirms nothing was orphaned by deleting
+  the button
+- `npm test` — 32 suites, 313 passed, 2 skipped
+
+**Not verified on a device.** Reproducing the original needs a confirmed
+address and a poll landing in the same second, which is hard to stage and
+therefore hard to prove gone. **#160 stays open** until someone signs up with a
+fresh address, clicks the link, returns to the app and taps both exits. #159
+closes on merge.
+
+PR [#163](https://github.com/gayanSandamal/choner-reimagined/pull/163).
+
+### Noted in passing
+
+**A commit hook in this repo rewrites commit messages.** The message that
+landed on `e543105` is shorter than the one passed to `git commit` and changed
+`Closes` to `Fixes`. Harmless here, and the content stayed accurate, but worth
+knowing before anyone relies on a commit message being exactly what they wrote.
+
+**Decided by:** user, 2 November 2026.
