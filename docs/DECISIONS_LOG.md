@@ -3002,3 +3002,114 @@ app** produces a `choner://` link, so only that one can open the mobile app.
    domain away, not an app rewrite.
 
 **Measured by:** Claude, 2 November 2026.
+
+---
+
+## Bellanwila Park, 3 November: the channel works, the pairs do not
+
+First field distribution. Dinesh and the team handed out leaflets and talked to
+people at Bellanwila Park on a rainy afternoon. **Five conversations, three
+registrations.**
+
+Everyone reached was male. Two cyclists and one person working out in the
+18-24 range, one runner late 20s to early 30s, one swimmer in the lower range.
+
+### The conversion rate is the finding
+
+| Channel | Reached | Registered | Rate |
+|---|---|---|---|
+| Website, 30 days to 20 October | ~20 visits | 3 | ~15% |
+| Bellanwila, one wet hour | 5 conversations | 3 | **60%** |
+
+Four times better, in the rain, on a first attempt, against a channel that had
+produced nothing for five weeks. **The QR ride cards, handed out since mid
+October, have produced zero registrations carrying a source.** The leaflets
+produced two in an hour.
+
+Face to face is the channel. Everything before this was noise.
+
+### Three registrations, zero possible pairs
+
+```
+18:53  cycling   together  Kohuwala        every time slot   source: park
+18:55  running   separate  Havelock Town   early morning     source: park
+20:27  running   together  Boralesgamuwa   evening, night    source: null
+```
+
+Kohuwala and Boralesgamuwa share **both** `high_level` and `horana_road`, so
+the corridor filter would pass them happily. They are split by activity. The
+two runners are split twice over: opposite modes, and dawn against night.
+
+So three people from one park, none of whom can be matched to another.
+
+**The two cyclists were standing together when they were approached, and only
+one registered.** They already train together. They are exactly the thing the
+product is trying to manufacture, and the process let one of them walk away.
+
+### The process change this buys
+
+**Do not leave a group until every person in it has registered, and tell them
+to pick the same mode and the same time slots.**
+
+A pair signed up together is worth more than six scattered individuals. The
+First 200 is 100 pairs, not 200 people, and pairs are cheapest to collect when
+they are already standing next to each other. This is the same density finding
+as the 16-registration audit on 20 October, where 120 combinations produced
+**zero** who could meet in person; the difference is that in a park the pair is
+physically present and the problem is solvable on the spot.
+
+### The 14-day plan: yes, but the park is the floor
+
+Dinesh proposes 14 days of this before a launch at the end of November.
+
+The arithmetic: a rainy day gives 5 conversations and 3 signups; a good
+two-hour day might give 20 conversations and 12 signups. Fourteen good days is
+168, which with the existing 21 reaches 190.
+
+**It will not run that way.** Fourteen consecutive good days in Colombo in
+November is not a thing, and two hours of approaching strangers every day is
+more tiring than it looks on day one. Halve it. **100 to 120 by the end of
+November** is the honest expectation, and that is six times the current total.
+
+### The running club is the multiplier
+
+A cyclist volunteered the Instagram page **`lightningbyneesh`**, which organises
+running events said to draw around 50 people, weekly or monthly.
+
+Fifty runners, one place, one time, with the organiser's implicit endorsement,
+pre-sorted by activity and containing people who already run together. At the
+observed rate that is **~30 registrations in one evening**, worth three park
+days in two hours.
+
+**Ask for the next three event dates rather than one**, and ask the cyclist who
+gave the page for an introduction. A warm intro from a member converts better
+than a stranger with leaflets.
+
+Two club events a week plus park days is what actually reaches 200. The park
+alone does not.
+
+### Two flags
+
+**The database is 10 male to 5 female.** Every person reached at the park was
+male. That skews the matching pool, weakens the pitch, and leaves half the
+market untested. Two men approaching women in a park is a poor channel and is
+not the fix. **Mixed running clubs are**, because the group setting supplies the
+trust the park cannot.
+
+**Tag each park separately** — `source=bellanwila`, not `source=park` — or in
+two weeks there is no way to tell which locations convert and no basis for
+choosing where to spend the sixth day.
+
+### Correction, recorded because it nearly became a finding
+
+The 20:27 registration carries **no source tag** while the other two carry
+`park`. I asserted this meant someone took a leaflet home and registered that
+evening. **I did not know that and had no basis for it.**
+
+It matters which it is. A delayed conversion from a leaflet is good news about
+leaflets. A registration made at the park that lost its tag means **the source
+tracking is leaky**, two in three at best, and the per-park tagging recommended
+above cannot be trusted until that is understood. Unresolved, pending Dinesh
+confirming whether they were still at the park at 20:27.
+
+**Decided by:** user, 3 November 2026.
