@@ -3100,16 +3100,31 @@ trust the park cannot.
 two weeks there is no way to tell which locations convert and no basis for
 choosing where to spend the sixth day.
 
-### Correction, recorded because it nearly became a finding
+### The untagged registration: a delayed conversion, and a leak worth closing
 
 The 20:27 registration carries **no source tag** while the other two carry
 `park`. I asserted this meant someone took a leaflet home and registered that
-evening. **I did not know that and had no basis for it.**
+evening, which I had no basis for at the time. Dinesh confirms the team left
+around 19:30, so the registration did come an hour after they had gone.
 
-It matters which it is. A delayed conversion from a leaflet is good news about
-leaflets. A registration made at the park that lost its tag means **the source
-tracking is leaky**, two in three at best, and the per-park tagging recommended
-above cannot be trusted until that is understood. Unresolved, pending Dinesh
-confirming whether they were still at the park at 20:27.
+**Leaflets convert on a delay.** That is the good half, and it means a day's
+real yield is not countable on the day.
+
+The other half is a leak. `web/first-200/index.html:539` reads the tag from the
+query string:
+
+```js
+src: params.get('src') || null,
+```
+
+So the tag survives a **scanned QR** and is lost by anyone who reads the
+printed address and types it. One in three today. Any per-park comparison built
+on `src` will therefore undercount the leaflet's slower, higher-intent half,
+which is exactly the half worth measuring.
+
+**Two ways to close it, neither done yet.** Print the tagged address so a typed
+URL carries it, which costs legibility; or make the QR unmistakably the primary
+call to action and treat untagged registrations on a park day as that park's.
+Worth deciding before the next batch is printed.
 
 **Decided by:** user, 3 November 2026.
