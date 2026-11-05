@@ -2952,6 +2952,59 @@ a launch.
 
 ---
 
+## The allow-list fix is live, measured without a device
+
+The section above left the Supabase allow-list as an open dashboard task. It is
+done. Measured against production on 2 November 2026, and the measurement is
+worth keeping because it needs no build, no device and no inbox.
+
+`/auth/v1/verify` validates `redirect_to` **before** it looks at the token, so a
+deliberately invalid token still reveals the decision in the `Location` header:
+an allow-listed address is echoed back, a rejected one is replaced by Site URL.
+
+```
+redirect_to=choner:///verify-email        -> choner:///verify-email#error=...
+redirect_to=choner:///reset-password      -> choner:///reset-password#error=...
+redirect_to=https://choner.io/verify-email -> https://choner.io/verify-email#error=...
+redirect_to=https://not-allowed-xyz.com/x  -> https://choner.io#error=...        <- rejected
+```
+
+The last line is the control: without it, an echo proves nothing, because every
+answer would look like a pass.
+
+So every address the app actually sends is accepted — the three-slash form
+`Linking.createURL()` produces included, which is the spelling a `choner://**`
+pattern could plausibly have missed.
+
+### The reported failure came from the web app, not the APK
+
+The confirmation email sent at 11:54 UTC still carried
+`redirect_to=https://choner.io`, and that is not a leftover of the allow-list:
+the `/signup` request behind it logged `"referer": "https://choner.io"`. A
+React Native client sends no referer. That signup happened in the **web** build,
+where `Linking.createURL()` resolves to an `https://choner.io/...` address and
+the right destination is the website.
+
+Worth saying plainly, because it is the trap in testing this: verifying from the
+web app is supposed to land on the web app. Only a signup made **in the mobile
+app** produces a `choner://` link, so only that one can open the mobile app.
+
+### What is still true
+
+1. **Resend still goes to the website** until #162 is merged and in a build.
+   The allow-list cannot fix that one: the old build sends no redirect at all.
+2. **The browser still opens first**, always. The token is checked server-side
+   at `/auth/v1/verify`, so the email is confirmed at that moment and the app
+   is only where the 303 lands. There is no configuration that skips the hop —
+   skipping it needs a `{{ .TokenHash }}` template pointing at a link the OS
+   hands straight to the app, which is the parked `app.choner.io` work.
+   `parseAuthLink()` already handles that shape, so it is a template and a
+   domain away, not an app rewrite.
+
+**Measured by:** Claude, 2 November 2026.
+
+---
+
 ## "Check your email": the button goes, and the exits start telling the truth
 
 Two issues reported 2 November, #159 and #160. They sit on the same screen and

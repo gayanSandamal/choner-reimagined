@@ -77,8 +77,21 @@ export async function checkVerified(email: string): Promise<'verified' | 'waitin
   return 'unknown';
 }
 
+// Where a confirmation link has to come back to. The destination is baked
+// into the email when it is sent, so every path that sends one has to agree:
+// resendVerification() used to omit it entirely, and Supabase then fell back
+// to Site URL (https://choner.io), dropping the person on the website with no
+// way into the app. One source for both, so they cannot drift again.
+//
+// The scheme has to be allow-listed in Supabase (Authentication → URL
+// Configuration → Redirect URLs) as `choner://**`, or an address that is not
+// on the list is ignored and the same Site URL fallback happens.
+function verifyEmailRedirect() {
+  return Linking.createURL('/verify-email');
+}
+
 export async function signUp(values: SignUpInput) {
-  const redirectTo = Linking.createURL('/verify-email');
+  const redirectTo = verifyEmailRedirect();
   const { data, error } = await supabase.auth.signUp({
     email: values.email,
     password: values.password,
@@ -141,7 +154,11 @@ export async function updatePassword(password: string) {
 }
 
 export async function resendVerification(email: string) {
-  const { error } = await supabase.auth.resend({ type: 'signup', email });
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: verifyEmailRedirect() },
+  });
   if (error) throw error;
 }
 
