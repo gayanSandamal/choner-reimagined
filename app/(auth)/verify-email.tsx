@@ -6,7 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button } from '@/components/ui/button';
 import { AuthTopBar } from '@/components/auth/AuthTopBar';
 import { AuthCenteredHeader } from '@/components/auth/AuthFormParts';
-import { checkVerified, forgetPendingPassword, resendVerification } from '@/features/auth/api';
+import { checkVerified, forgetPendingPassword, resendVerification, signOut } from '@/features/auth/api';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
 
@@ -18,7 +18,6 @@ const POLL_MS = 6000;
 export default function VerifyEmailScreen() {
   const { email } = useLocalSearchParams<{ email?: string }>();
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(false);
   const done = useRef(false);
 
   const onResend = async () => {
@@ -43,40 +42,47 @@ export default function VerifyEmailScreen() {
      timer, whether the address has been confirmed yet, and lets itself in the
      moment it has. The deep link still works and is still faster. This is what
      happens when it does not. */
-  const look = useCallback(
-    async (announce: boolean) => {
-      if (!email || done.current) return;
-      if (announce) setChecking(true);
-      try {
-        const state = await checkVerified(email);
-        if (state === 'verified') {
-          done.current = true;
-          // The session now exists, so the root layout sends them onward.
-          router.replace('/onboarding');
-          return;
-        }
-        if (announce && state === 'waiting') {
-          notify('Not yet', "We can't see it confirmed yet. Tap the link in the email, then try again.");
-        }
-        if (announce && state === 'unknown') {
-          // No password in memory (an app restart) or something we cannot
-          // read. Sending them to sign in is honest and always works.
-          notify('Almost there', 'Tap the link in the email, then sign in.');
-          router.replace({ pathname: '/(auth)/sign-in', params: { email } });
-        }
-      } finally {
-        if (announce) setChecking(false);
-      }
-    },
-    [email]
-  );
+  const look = useCallback(async () => {
+    if (!email || done.current) return;
+    const state = await checkVerified(email);
+    if (state === 'verified') {
+      done.current = true;
+      // The session now exists, so the root layout sends them onward.
+      router.replace('/onboarding');
+    }
+  }, [email]);
+
+  /* Leaving by a button, not by verifying.
+
+     checkVerified() is not a read: it is signInWithPassword, so a poll that
+     lands on a confirmed address SIGNS THIS PERSON IN. Once that has happened
+     the root gate (app/_layout.tsx:125) sends any signed-in account with
+     onboarding still to do straight to /onboarding, from anywhere outside it.
+
+     That is #160. "Back to sign in" navigated correctly and was then overridden
+     a frame later, which read as the button going to the wrong screen. So both
+     exits sign out first, and both stop the poll before they do anything, since
+     a check already in flight can hand back a session after we have gone. */
+  const [leaving, setLeaving] = useState(false);
+  const leave = async (to: '/(auth)/sign-in' | '/(auth)/sign-up') => {
+    if (leaving) return;
+    setLeaving(true);
+    done.current = true;
+    try {
+      await signOut();
+    } catch {
+      // Already signed out, or offline with nothing to revoke. Either way the
+      // destination is still right and trapping them here would be worse.
+    }
+    router.replace(to);
+  };
 
   useEffect(() => {
-    const timer = setInterval(() => void look(false), POLL_MS);
+    const timer = setInterval(() => void look(), POLL_MS);
     // Coming back from the mail app is the likeliest moment for this to have
     // just become true, so check then rather than waiting out the interval.
     const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') void look(false);
+      if (s === 'active') void look();
     });
     return () => {
       clearInterval(timer);
@@ -97,7 +103,7 @@ export default function VerifyEmailScreen() {
       {/* "Create account", not "Check your email": the bar names the flow and
           the page heading names the step, as on sign-up, and this is still
           step two of creating an account. */}
-      <AuthTopBar title="Create account" onBack={() => router.replace('/(auth)/sign-up')} />
+      <AuthTopBar title="Create account" onBack={() => void leave('/(auth)/sign-up')} />
       <ScrollView contentContainerStyle={styles.content}>
         <Animated.View entering={FadeInDown.delay(80).duration(360)}>
           <AuthCenteredHeader
@@ -108,17 +114,6 @@ export default function VerifyEmailScreen() {
 
         <Animated.View entering={FadeInDown.delay(180).duration(360)}>
           <Button
-            label={checking ? 'Checking…' : "I've tapped the link"}
-            variant="gradient"
-            size="lg"
-            loading={checking}
-            disabled={checking || !email}
-            onPress={() => void look(true)}
-          />
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(260).duration(360)}>
-          <Button
             label={loading ? 'Sending…' : 'Resend email'}
             variant="outline"
             size="lg"
@@ -128,12 +123,13 @@ export default function VerifyEmailScreen() {
           />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(320).duration(360)}>
+        <Animated.View entering={FadeInDown.delay(260).duration(360)}>
           <Button
             label="Back to sign in"
             variant="ghost"
             size="lg"
-            onPress={() => router.replace('/(auth)/sign-in')}
+            disabled={leaving}
+            onPress={() => void leave('/(auth)/sign-in')}
           />
         </Animated.View>
       </ScrollView>
