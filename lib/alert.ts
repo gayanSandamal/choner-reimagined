@@ -15,6 +15,49 @@ import { Alert, Platform } from 'react-native';
 // a message somehow fires before the provider has mounted — a clumsy dialog
 // beats losing the message entirely.
 
+// ---------------------------------------------------------------------------
+// One system dialog at a time.
+//
+// iOS presents a single view controller at a time. An alert raised while
+// another alert, an RN <Modal>, or a share sheet is still animating is dropped
+// by UIKit, and can leave a presented-but-empty window above the app: the
+// screen still renders and no longer accepts a touch, which reads as a freeze
+// with no error anywhere. The promise below never settles either, because
+// neither onPress ever fires, so whatever asked the question hangs with it.
+//
+// FeedSafetyMenu and PairSafetyMenu already work around one case with a 300ms
+// sleep before confirmAction. Eleven other call sites do not, and
+// handleDeleteAccount in app/settings/index.tsx raises two alerts back to back
+// with no gap at all — the second presented from inside the first's onPress.
+// Queueing here covers every call site, including ones added later.
+//
+// Android has no presentation conflict, but queueing there costs nothing and
+// keeps one code path to reason about.
+const SETTLE_MS = 350;
+// A dialog that is never answered must not wedge the queue for the rest of the
+// session, so every wait has a ceiling. Long enough that a real person reading
+// a destructive warning is never cut off.
+const WATCHDOG_MS = 30_000;
+
+let chain: Promise<unknown> = Promise.resolve();
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+
+function present<T>(run: () => Promise<T>): Promise<T> {
+  // Both handlers, so one rejection cannot stop the queue forever.
+  const next = chain.then(run, run);
+  chain = next.then(settle, settle);
+  return next;
+}
+
+// Identical alerts already queued are dropped rather than shown twice.
+//
+// Before queueing, a burst of notify() calls on iOS collapsed to one dialog
+// because UIKit discarded the rest. Now they would all appear in turn, so a
+// path that reports the same failure twice would make the user dismiss it
+// twice — worse than what it replaces. Different messages still queue.
+const queuedKeys = new Set<string>();
+
 type ToastFn = (t: { title: string; body?: string | null }) => void;
 
 let toastHandler: ToastFn | null = null;
@@ -27,7 +70,33 @@ export function registerToastHandler(fn: ToastFn | null) {
 
 export function notify(title: string, message?: string) {
   if (Platform.OS !== 'web') {
-    Alert.alert(title, message);
+    const key = `${title}\u0000${message ?? ''}`;
+    if (queuedKeys.has(key)) return;
+    queuedKeys.add(key);
+
+    void present(
+      () =>
+        new Promise<void>((resolve) => {
+          let closed = false;
+          let watchdog: ReturnType<typeof setTimeout>;
+          const done = () => {
+            if (closed) return;
+            closed = true;
+            clearTimeout(watchdog);
+            queuedKeys.delete(key);
+            resolve();
+          };
+          watchdog = setTimeout(done, WATCHDOG_MS);
+          // An explicit button, where this used to pass none. iOS draws the
+          // same single "OK" either way, but a default button reports no
+          // press, so the queue would have had nothing to wait on.
+          Alert.alert(title, message, [{ text: 'OK', onPress: done }], {
+            // Android dismisses on back or an outside tap, firing no onPress.
+            cancelable: true,
+            onDismiss: done
+          });
+        })
+    );
     return;
   }
   if (toastHandler) {
@@ -70,16 +139,38 @@ export async function confirmAction(options: ConfirmOptions): Promise<boolean> {
   const { title, message, confirmLabel = 'OK', cancelLabel = 'Cancel', destructive } = options;
 
   if (Platform.OS !== 'web') {
-    return new Promise<boolean>((resolve) => {
-      Alert.alert(title, message, [
-        { text: cancelLabel, style: 'cancel', onPress: () => resolve(false) },
-        {
-          text: confirmLabel,
-          style: destructive ? 'destructive' : 'default',
-          onPress: () => resolve(true)
-        }
-      ]);
-    });
+    return present(
+      () =>
+        new Promise<boolean>((resolve) => {
+          let settled = false;
+          let watchdog: ReturnType<typeof setTimeout>;
+          const answer = (value: boolean) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(watchdog);
+            resolve(value);
+          };
+          // If the dialog is dropped despite the queue, fail closed. Every
+          // caller here guards something destructive, and a question nobody
+          // saw must never come back as a yes.
+          watchdog = setTimeout(() => answer(false), WATCHDOG_MS);
+          Alert.alert(
+            title,
+            message,
+            [
+              { text: cancelLabel, style: 'cancel', onPress: () => answer(false) },
+              {
+                text: confirmLabel,
+                style: destructive ? 'destructive' : 'default',
+                onPress: () => answer(true)
+              }
+            ],
+            // Android's back button and outside tap close the dialog without
+            // pressing anything; that is a cancel, not a hang.
+            { cancelable: true, onDismiss: () => answer(false) }
+          );
+        })
+    );
   }
 
   if (confirmHandler) return confirmHandler(options);
