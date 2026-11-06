@@ -25,8 +25,9 @@ import { Alert, Platform } from 'react-native';
 // with no error anywhere. The promise below never settles either, because
 // neither onPress ever fires, so whatever asked the question hangs with it.
 //
-// FeedSafetyMenu and PairSafetyMenu already work around one case with a 300ms
-// sleep before confirmAction. Eleven other call sites do not, and
+// Three call sites already work around one case with a 300ms sleep before
+// confirmAction, each with a comment saying why: FeedSafetyMenu,
+// PairSafetyMenu and app/challenge/[id].tsx. Ten others do not, and
 // handleDeleteAccount in app/settings/index.tsx raises two alerts back to back
 // with no gap at all — the second presented from inside the first's onPress.
 // Queueing here covers every call site, including ones added later.
