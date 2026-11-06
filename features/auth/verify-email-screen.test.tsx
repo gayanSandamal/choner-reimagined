@@ -1,7 +1,7 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { AppState } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import VerifyEmailScreen from './verify-email';
+import VerifyEmailScreen from '@/app/(auth)/verify-email';
 import * as auth from '@/features/auth/api';
 import { renderWithProviders } from '@/test/render';
 
