@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, StyleSheet, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopBarPill, useTopBarClearance } from '@/components/navigation/AppTopBar';
@@ -7,7 +8,6 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Icon } from '@/components/ui/Icon';
 import { LoadingState } from '@/components/ui/StateViews';
@@ -18,6 +18,7 @@ import {
   useMyChallenge,
   useChallengeTemplate
 } from '@/features/challenges/hooks';
+import type { LocationRow } from '@/features/challenges/locations';
 import { isDailySearchLimit } from '@/features/challenges/api';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
@@ -32,6 +33,14 @@ type Mode = 'together' | 'separate' | 'either';
 // Maximum areas per challenge. Two columns on user_challenges enforce the
 // same number server-side, so this constant and the schema have to agree.
 const MAX_AREAS = 2;
+
+// The two headings the picker is split under, as the prototype writes them
+// (docs/prototypes/src/app_b.js:186). The table stores the key; only the
+// display name lives here.
+const GROUP_TITLES: Record<LocationRow['location_group'], string> = {
+  colombo_city: 'Colombo city',
+  greater_colombo: 'Greater Colombo'
+};
 
 export default function FindFormScreen() {
   const { session } = useSession();
@@ -53,14 +62,14 @@ export default function FindFormScreen() {
   const [genderPreference, setGenderPreference] =
     useState<'no_preference' | 'same_gender_only'>('no_preference');
   // Up to TWO areas (#140). An ordered list rather than two variables,
-  // because the chips, the suggestion filter and the submit all want to treat
+  // because the chips, the picker's own list and the submit all want to treat
   // it as a set, and the cap then lives in exactly one place.
   const [picked, setPicked] = useState<string[]>(
     [challenge?.preferred_location, (challenge as any)?.preferred_location_2].filter(
       Boolean
     ) as string[]
   );
-  const [locationQuery, setLocationQuery] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [skill, setSkill] = useState<'beginner' | 'casual' | 'intermediate' | 'advanced' | null>(null);
   const [courtAccess, setCourtAccess] = useState<string | null>(null);
   const [bikeAccess, setBikeAccess] = useState<string | null>(null);
@@ -92,17 +101,22 @@ export default function FindFormScreen() {
   const inPerson = effectiveMode !== 'separate';
 
   const locations = locationsQ.data ?? [];
-  // Suggestions only once they start typing, as in the prototype; an empty
-  // query shows none rather than the whole list of areas.
-  const suggestions = useMemo(() => {
-    const q = locationQuery.trim().toLowerCase();
-    if (!q) return [];
-    // An area already chosen is not a suggestion. Offering it again only
-    // leads to picking the same place twice, which the database now refuses.
-    return locations
-      .filter((l) => l.label.toLowerCase().includes(q) && !picked.includes(l.value))
-      .slice(0, 6);
-  }, [locations, locationQuery, picked]);
+  // The prototype's picker is a grouped list, not a search box
+  // (docs/prototypes/src/app_b.js:193). Groups come from the table's own
+  // location_group so a new area appears here by being inserted, exactly as
+  // Battaramulla did, with no list to keep in step.
+  const groups = useMemo(() => {
+    const order: LocationRow['location_group'][] = ['colombo_city', 'greater_colombo'];
+    return order
+      .map((key) => ({
+        key,
+        title: GROUP_TITLES[key],
+        // An area already chosen is not on offer. Offering it again only
+        // produces a tap that does nothing.
+        rows: locations.filter((l) => l.location_group === key && !picked.includes(l.value))
+      }))
+      .filter((g) => g.rows.length > 0);
+  }, [locations, picked]);
 
   const labelFor = (value: string) =>
     locations.find((l) => l.value === value)?.label ?? value;
@@ -179,7 +193,7 @@ export default function FindFormScreen() {
         footerStyle={styles.footer}
         footer={
           <Button
-            label="Start looking"
+            label="Find my partner"
             disabled={!canSubmit}
             loading={joinPool.isPending}
             onPress={onSubmit}
@@ -190,9 +204,9 @@ export default function FindFormScreen() {
           Find a partner{template?.title ? `, ${template.title}` : ''}
         </AppText>
         <AppText variant="title">
-          A few last{' '}
+          A few quick{' '}
           <AppText variant="title" style={styles.emphasis}>
-            details
+            questions
           </AppText>
         </AppText>
         <AppText muted style={styles.sub}>
@@ -212,20 +226,26 @@ export default function FindFormScreen() {
         ) : (
           <>
             <Choice
-              title="Together"
-              detail="Meet in person"
+              icon="together"
+              title="In person"
+              detail="Meet up and do it side by side."
               active={mode === 'together'}
               onPress={() => setMode('together')}
             />
+            {/* "Separately, together" in full. The app shortened it to
+                "Separately", which drops the half that is the point: the
+                commitment is shared even when the session is not. */}
             <Choice
-              title="Separately"
-              detail="Own session, check in after"
+              icon="separate"
+              title="Separately, together"
+              detail="Same commitment, your own place, your own time."
               active={mode === 'separate'}
               onPress={() => setMode('separate')}
             />
             <Choice
+              icon="community"
               title="Either works"
-              detail="Decide together once you're matched"
+              detail="Show me both. You'll decide together."
               active={mode === 'either'}
               onPress={() => setMode('either')}
             />
@@ -249,16 +269,19 @@ export default function FindFormScreen() {
         {/* Location only matters when actually meeting up. */}
         {inPerson ? (
           <>
-            {/* The prototype's location picker (#105), now holding up to TWO
-                areas (#140), which is what was agreed on 28 September and
-                never built: the app shipped one because the column was
-                singular. Each choice is a gradient chip you can close, and
-                typing shows a few suggestions.
-                The input disappears at two rather than being disabled, so
-                nobody types into a box that will refuse them. */}
-            <AppText style={styles.fieldLabel}>
-              {picked.length > 1 ? 'Your areas' : 'Your area'}
-            </AppText>
+            {/* The picker is a grouped LIST, not a search box (#166).
+
+                The app had a typeahead, built faithfully from
+                docs/prototypes/choner-find-flow.html, which was superseded a
+                day later by docs/prototypes/src/app_b.js:193. Typing only
+                works when you already know the name: someone unsure whether
+                we cover Kaduwela gets "No area matches" and no way to find
+                out what we do have. On the one field that decides whether a
+                match is possible at all, that is the difference between
+                choosing an area and giving up.
+
+                Up to TWO areas (#140), each a gradient chip you can close. */}
+            <AppText style={styles.fieldLabel}>Your locations</AppText>
             {picked.length ? (
               <View style={styles.pillRow}>
                 {picked.map((value) => (
@@ -285,47 +308,24 @@ export default function FindFormScreen() {
               </View>
             ) : null}
             {canAddArea ? (
-              <>
-                <Input
-                  placeholder={picked.length ? 'Add another area' : 'Type an area'}
-                  value={locationQuery}
-                  onChangeText={setLocationQuery}
-                  autoCorrect={false}
-                />
-                {suggestions.length ? (
-                  <View style={styles.suggest}>
-                    {suggestions.map((l, i) => (
-                      <PressableScale
-                        key={l.value}
-                        onPress={() => {
-                          setPicked((prev) =>
-                            prev.includes(l.value) ? prev : [...prev, l.value].slice(0, MAX_AREAS)
-                          );
-                          setLocationQuery('');
-                          // The keyboard goes on add, as the prototype does,
-                          // so the chip that just appeared is not hidden
-                          // behind it.
-                          Keyboard.dismiss();
-                        }}
-                        haptic="selection"
-                        accessibilityRole="button"
-                        style={[styles.suggestRow, i > 0 && styles.suggestDivider]}
-                      >
-                        <AppText style={styles.suggestLabel}>{l.label}</AppText>
-                      </PressableScale>
-                    ))}
-                  </View>
-                ) : locationQuery.trim() ? (
-                  <AppText variant="caption" muted>
-                    No area matches “{locationQuery.trim()}”.
-                  </AppText>
-                ) : picked.length ? (
-                  <AppText variant="caption" muted>
-                    A second area widens who you can be matched with. Optional.
-                  </AppText>
-                ) : null}
-              </>
+              <PressableScale
+                onPress={() => setPickerOpen(true)}
+                haptic="selection"
+                accessibilityRole="button"
+                accessibilityLabel={picked.length ? 'Add one more area' : 'Choose an area'}
+                style={styles.selectTrigger}
+              >
+                <AppText style={styles.selectTriggerLabel}>
+                  {picked.length ? 'Add one more' : 'Choose an area'}
+                </AppText>
+                <Ionicons name="chevron-down" size={18} color={theme.colors.muted} />
+              </PressableScale>
             ) : null}
+            <AppText variant="caption" muted style={styles.hint}>
+              {canAddArea
+                ? 'Pick up to two from the list. We only use these to find someone close enough to meet.'
+                : 'Two is the maximum. Remove one to change it.'}
+            </AppText>
           </>
         ) : null}
 
@@ -388,16 +388,72 @@ export default function FindFormScreen() {
         ) : null}
       </KeyboardFooterScroll>
 
+      {/* The list itself. A sheet rather than an inline dropdown: 69 areas do
+          not fit under a field, and a native <select> has no counterpart here.
+          Scrim and card follow ConfirmProvider so every overlay in the app
+          behaves the same way. */}
+      <Modal
+        visible={pickerOpen}
+        transparent
+        animationType="none"
+        onRequestClose={() => setPickerOpen(false)}
+      >
+        <Animated.View entering={FadeIn.duration(160)} style={styles.scrim}>
+          {/* Tapping the dimmed area closes, which is what every sheet in the
+              app does and what people try first. */}
+          <PressableScale
+            onPress={() => setPickerOpen(false)}
+            scaleTo="subtle"
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            style={styles.scrimFill}
+          />
+          <Animated.View entering={FadeInDown.delay(40).duration(200)} style={styles.sheet}>
+            <AppText variant="subtitle">
+              {picked.length ? 'Add one more' : 'Choose an area'}
+            </AppText>
+            <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetBody}>
+              {groups.map((group) => (
+                <View key={group.key}>
+                  <AppText variant="label" muted style={styles.groupTitle}>
+                    {group.title}
+                  </AppText>
+                  {group.rows.map((l, i) => (
+                    <PressableScale
+                      key={l.value}
+                      onPress={() => {
+                        setPicked((prev) =>
+                          prev.includes(l.value) ? prev : [...prev, l.value].slice(0, MAX_AREAS)
+                        );
+                        setPickerOpen(false);
+                      }}
+                      haptic="selection"
+                      accessibilityRole="button"
+                      style={[styles.areaRow, i > 0 && styles.areaRowDivider]}
+                    >
+                      <AppText style={styles.areaRowLabel}>{l.label}</AppText>
+                    </PressableScale>
+                  ))}
+                </View>
+              ))}
+            </ScrollView>
+            <Button label="Cancel" variant="ghost" onPress={() => setPickerOpen(false)} />
+          </Animated.View>
+        </Animated.View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
 
 function Choice({
+  icon,
   title,
   detail,
   active,
   onPress
 }: {
+  icon: string;
   title: string;
   detail: string;
   active: boolean;
@@ -413,10 +469,21 @@ function Choice({
       accessibilityLabel={`${title}. ${detail}`}
       style={[styles.choice, active && styles.choiceActive]}
     >
-      <AppText style={styles.choiceTitle}>{title}</AppText>
-      <AppText variant="caption" muted>
-        {detail}
-      </AppText>
+      {/* 34pt tile, 22pt glyph, muted until chosen — the prototype's
+          .choice .ic rule (choner-app-flow.html:149-151). */}
+      <View style={styles.choiceIcon}>
+        <Icon
+          name={icon}
+          size={22}
+          color={active ? theme.colors.primary2 : theme.colors.muted}
+        />
+      </View>
+      <View style={styles.choiceText}>
+        <AppText style={styles.choiceTitle}>{title}</AppText>
+        <AppText variant="caption" muted>
+          {detail}
+        </AppText>
+      </View>
     </PressableScale>
   );
 }
@@ -487,14 +554,20 @@ const styles = StyleSheet.create({
     padding: theme.spacing(1.5)
   },
   choice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
     backgroundColor: theme.colors.surface,
     borderRadius: 18,
     borderWidth: 1.5,
     borderColor: theme.colors.border,
     padding: theme.spacing(2),
-    gap: 2,
     ...theme.shadow.sm
   },
+  choiceIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  // The text column takes the remaining width so a two-line detail wraps
+  // inside the card rather than pushing the icon off it.
+  choiceText: { flex: 1, gap: 2 },
   choiceActive: { borderColor: theme.colors.primary2 },
   choiceTitle: { fontFamily: theme.fonts.bodyMedium, fontSize: 14, color: theme.colors.text },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -536,16 +609,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  suggest: {
+  selectTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: theme.colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    borderWidth: 1.5,
     borderColor: theme.colors.border,
-    overflow: 'hidden'
+    paddingVertical: 14,
+    paddingHorizontal: 16
   },
-  suggestRow: { paddingVertical: 12, paddingHorizontal: 16 },
-  suggestDivider: { borderTopWidth: 1, borderTopColor: theme.colors.border },
-  suggestLabel: { fontSize: 13.5, color: theme.colors.text },
+  selectTriggerLabel: { fontSize: 14, color: theme.colors.muted },
+  hint: { marginTop: 8, lineHeight: 17 },
+  scrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: theme.colors.overlayDim,
+    justifyContent: 'flex-end'
+  },
+  scrimFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  sheet: {
+    backgroundColor: theme.colors.bg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    gap: theme.spacing(1),
+    maxHeight: '80%'
+  },
+  sheetScroll: { flexGrow: 0 },
+  sheetBody: { paddingBottom: theme.spacing(1) },
+  groupTitle: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginTop: theme.spacing(1.5),
+    marginBottom: 4
+  },
+  areaRow: { paddingVertical: 13 },
+  areaRowDivider: { borderTopWidth: 1, borderTopColor: theme.colors.border },
+  areaRowLabel: { fontSize: 14, color: theme.colors.text },
   pillLabel: { fontSize: 13, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
   pillLabelActive: { color: '#FFFFFF' },
   footer: { padding: 20, paddingTop: theme.spacing(1) }
