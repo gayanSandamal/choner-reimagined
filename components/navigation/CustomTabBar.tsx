@@ -1,16 +1,33 @@
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 
-// expo-router supplies bottom-tabs internally; we don't import its types
-// here to avoid a hard dep on @react-navigation/bottom-tabs. The shape we
-// rely on is small and stable.
+// expo-router supplies bottom-tabs internally; we don't import its types here
+// to avoid a hard dep on @react-navigation/bottom-tabs.
+//
+// This shape is NOT stable, whatever the old comment here claimed. Up to SDK
+// 57 the tabBar render prop was handed a `navigation` object and we called
+// navigation.emit() and navigation.navigate(name). expo-router 58.0.28, which
+// came in with the SDK 58 upgrade (f6188b8, 29 Oct), passes
+// { state, descriptors, emitter, navigateToTab, insets } and NO `navigation`
+// at all. `state` survived, so the bar kept drawing perfectly; `navigation`
+// was undefined, so the first tap on it threw "Cannot read properties of
+// undefined (reading 'emit')" and took the app down. The hand-written type
+// above, plus the `as any` in app/(tabs)/_layout.tsx, is why neither
+// TypeScript nor the tests could see it.
+//
+// Both new props are optional here and the press path falls back to
+// expo-router's own imperative router, so the next time this shape moves the
+// bar degrades instead of crashing.
 type TabBarProps = {
   state: { index: number; routes: { key: string; name: string }[] };
-  navigation: {
-    emit: (e: { type: string; target?: string; canPreventDefault?: boolean }) => {
+  emitter?: {
+    // Method shorthand, and the literals expo-router's own event map wants, so
+    // this stays assignable from the real props without a cast.
+    emit(e: { type: 'tabPress'; target?: string; canPreventDefault: true }): {
       defaultPrevented: boolean;
     };
-    navigate: (name: never) => void;
   };
+  navigateToTab?: (routeKey: string) => void;
 };
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '@/constants/theme';
@@ -94,7 +111,7 @@ function TabButton({
   );
 }
 
-export function CustomTabBar({ state, navigation }: TabBarProps) {
+export function CustomTabBar({ state, emitter, navigateToTab }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const bottom = Platform.OS === 'ios' ? FLOAT_MARGIN : Math.max(insets.bottom, FLOAT_MARGIN);
 
@@ -120,14 +137,24 @@ export function CustomTabBar({ state, navigation }: TabBarProps) {
               focused={focused}
               onPress={() => {
                 haptics.selection();
-                const event = navigation.emit({
+                // Same order expo-router's own BottomTabBar uses: announce the
+                // press so a screen can intercept it (scroll-to-top, a guard),
+                // then move, and only if nothing prevented it and we are not
+                // already there. navigateToTab takes the route KEY, not the
+                // name.
+                const event = emitter?.emit({
                   type: 'tabPress',
                   target: route.key,
                   canPreventDefault: true
                 });
-                if (!focused && !event.defaultPrevented) {
-                  navigation.navigate(route.name as never);
+                if (focused || event?.defaultPrevented) return;
+                if (navigateToTab) {
+                  navigateToTab(route.key);
+                  return;
                 }
+                // No navigateToTab means this prop shape has moved again. A
+                // bar that still navigates beats one that throws.
+                router.navigate(`/(tabs)/${route.name}` as never);
               }}
             />
           );
