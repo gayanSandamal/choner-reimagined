@@ -3434,3 +3434,66 @@ dismissal lasts. First real check is a build with the row raised above the
 installed version.
 
 **Decided by:** user, 6 November 2026.
+
+---
+
+## 2026-11-06 — The edge functions were deployed from here, and `ai-coach` had never been deployed at all
+
+**Context:** #175 added CORS to `delete-account`, `ai-coach` and
+`submit-live-photo`, and merged code does nothing to a running function. The
+question was how to deploy, and whether the fix would even work once it was
+out.
+
+### What a preflight against production actually said
+
+Before deploying anything, an `OPTIONS` request was sent to each live function
+the way a browser sends one, with `Origin` and `Access-Control-Request-*`
+headers:
+
+| Function | Answered | Reading |
+|---|---|---|
+| `invite-email` | 200 + full CORS headers | already had an inline copy |
+| `delete-account` | 405, no CORS headers | the browser failure, exactly |
+| `submit-live-photo` | 405, no CORS headers | same |
+| `ai-coach` | **404 Not Found** | **it was never deployed** |
+
+Two conclusions, neither of which was a guess.
+
+**`verify_jwt` does not block the preflight on this project.** This was the
+real risk. There is a well-known Supabase trap where JWT verification is
+enforced at the gateway, which 401s an `OPTIONS` request that by definition
+carries no `Authorization` header, so the function's own CORS handling never
+runs and the fix is useless. `invite-email` has `verify_jwt = true` and
+answers at 200, which settles it empirically rather than by reading docs.
+
+**The AI coach has never worked, on any platform.** Not a CORS bug, not a web
+bug: there is no function on the server. The app cannot tell the difference,
+because supabase-js reports a missing function and an unanswered preflight
+with the same message. It would have kept presenting as "the AI coach is
+broken on web" indefinitely.
+
+### Deployed through the connector, not the CLI
+
+The Supabase connector in the session is authorised, so `delete-account`
+(version 4) and `submit-live-photo` (version 2) were deployed directly from
+`main`, with `_shared/cors.ts` sent alongside each entrypoint so the relative
+import resolves. `verify_jwt` left at `true` on both: each function
+re-verifies the caller's JWT with `getUser()` regardless, and turning it off
+would only move the first rejection later.
+
+The live `delete-account` source was read and compared against `main` **before**
+overwriting it, and differed by exactly the two CORS lines, so nothing of
+Gayan's was lost. Supabase keeps the previous version either way.
+
+Verified after: preflight 200 with the function's own headers, and an
+unauthorised `POST` returning a plain 401 that still carries them, so a real
+error reaches the client instead of an opaque CORS failure.
+
+### `ai-coach` deliberately left undeployed
+
+It needs an `OPENAI_API_KEY` secret, which the platform does not inject.
+Deploying it without one would replace a 404 with a 500 and look like progress.
+It waits in `docs/BLOCKED_ON_YOU.md` until the secret is set.
+
+**Decided by:** user, 6 November 2026 — asked for the two that would work and
+to leave the third.

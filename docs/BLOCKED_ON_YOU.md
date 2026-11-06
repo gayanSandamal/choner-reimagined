@@ -14,27 +14,29 @@ Last updated 2026-11-06.
 
 ## Open right now
 
-### 1. Deploy three Edge Functions — **Dinesh or Gayan**
+### 1. Set `OPENAI_API_KEY`, then `ai-coach` can go out — **Dinesh or Gayan**
 
-`DineshDoluweera/fix/edge-function-cors` adds CORS to `delete-account`,
-`ai-coach` and `submit-live-photo`. Until these are deployed, **all three stay
-broken in the browser**, merged or not. Account deletion is the one Apple and
-Google both require.
+`ai-coach` has never been deployed. A preflight sent to it on 6 November
+answered **404 Not Found**, so the AI coach has never worked on any platform,
+iPhone included. It was never a CORS problem, and nothing in the client would
+have told us: the error the app shows for a function that does not exist and
+for one that will not answer a preflight is the same error.
 
-```
-npx supabase login
-npx supabase link
-npx supabase functions deploy delete-account ai-coach submit-live-photo
-```
+It cannot usefully go out until the secret exists. `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` are injected by the platform; `OPENAI_API_KEY` is
+not.
 
-`supabase/config.toml` has `project_id = "choner-local"`, the local project, so
-`link` is not optional. Run it once and pick the hosted project from the list.
+Supabase dashboard → Project Settings → Edge Functions → Secrets. Add
+`OPENAI_API_KEY`. Optional: `OPENAI_MODEL` (default `gpt-4o-mini`) and
+`AI_DAILY_FREE_LIMIT` (default `5`).
 
-Done when: deleting an account from the web build no longer says "Failed to
-send a request to the Edge Function".
+Then say so, and Claude deploys it through the Supabase connector the same way
+the other two went out.
 
-Why not Claude: the Supabase connector in the session is unauthorised
-(`/mcp`), and deploying is a production change regardless.
+Done when: the AI coach returns a reply instead of an error.
+
+Why not Claude: it is a billing credential for a third party, and Claude will
+not handle one.
 
 ### 2. Fix `.env` on the other computer — **Dinesh**
 
@@ -59,14 +61,36 @@ Supabase dashboard → Project Settings → API, and Account → Access Tokens.
 
 Why not Claude: they are account credentials, and it will not handle them.
 
-### 4. Test the three open fixes on a device — **Dinesh**
+### 4. Test the merged fixes on a device — **Dinesh**
 
-`fix/tab-bar-emit`, `fix/toast-nested-button`, `fix/edge-function-cors`. None
-is confirmed on hardware. Everything Claude can check (typecheck, lint, tests,
-`deno check`) is already green and none of it would have caught the tab bar
-crash.
+`fix/tab-bar-emit`, `fix/toast-nested-button`, `fix/edge-function-cors` and
+`fix/verify-email-exit-160` are all on `main`. **None is confirmed on
+hardware.** Everything Claude can check (typecheck, lint, 38 jest suites,
+`deno check`, and a live preflight against the deployed functions) is green,
+and none of it would have caught the tab bar crash that started all of this.
 
 Why not Claude: it cannot hold a phone.
+
+---
+
+## Done, kept so the next person does not redo it
+
+### Deploying the three Edge Functions — two of three, 6 November
+
+`delete-account` (now version 4) and `submit-live-photo` (version 2) were
+deployed from `main` through the Supabase connector in the session. Verified
+from outside afterwards: the `OPTIONS` preflight answers **200 with the
+function's own CORS headers**, and an unauthorised `POST` comes back as a
+plain 401 that still carries them, so the browser sees the real reason rather
+than an opaque CORS failure.
+
+Worth recording, because it was the risk that could have made the whole fix
+pointless: `invite-email` has `verify_jwt = true` and answers a preflight at
+200. **JWT verification does not block the preflight on this project.** The
+documented trap, where the gateway 401s an `OPTIONS` request that by
+definition carries no `Authorization` header, does not apply here.
+
+`ai-coach` is item 1 above.
 
 ---
 
@@ -87,13 +111,20 @@ npx eas-cli login
 ```
 
 Needs an Expo account password, which Claude will not type. **Once that is
-done, say so and Claude can run the builds itself**, including the iOS
-development build that has never been made.
+done, say so and Claude can run the builds itself.** For the record: Gayan ran
+this project's first iOS builds on 6 November from his own machine. Both died
+in the RevenueCat pod (#177, then #178), and the dependency is now pinned to
+an exact `10.16.0` because `11.0.1` has no published iOS pod.
 
 ### Production database changes
 
 Migrations against the hosted project, `supabase db push`, SQL run on live
 data. Claude writes the migration; applying it is a human decision.
+
+Note that the Supabase connector in the session **is** authorised, so Claude
+can reach the hosted project directly. That makes this a question of who
+approves a change to production, not of what Claude is able to do. It asks
+first, every time, and says exactly what would change.
 
 ### The two store consoles — **Dinesh**
 
@@ -113,13 +144,16 @@ His login, his site.
 
 ### Dashboards Claude cannot reach
 
-Supabase (backup retention, which functions are actually deployed, logs),
-Sentry, PostHog, EAS Observe. Note that **Sentry and PostHog are both switched
-off anyway**: `EXPO_PUBLIC_SENTRY_DSN` and `EXPO_PUBLIC_POSTHOG_KEY` are empty
-strings, so `initObservability()` does nothing and no crash has ever been
-recorded. Filling either in would have shortened the freeze hunt
-considerably, though Sentry's native module is not in Expo Go, so it only
-starts reporting properly from a development build.
+Sentry, PostHog, EAS Observe. Supabase is reachable through the session's
+connector, so "which functions are actually deployed" is no longer a question
+only Dinesh can answer, which is how the `ai-coach` 404 was found at all.
+
+Note that **Sentry and PostHog are both switched off anyway**:
+`EXPO_PUBLIC_SENTRY_DSN` and `EXPO_PUBLIC_POSTHOG_KEY` are empty strings, so
+`initObservability()` does nothing and no crash has ever been recorded.
+Filling either in would have shortened the freeze hunt considerably, though
+Sentry's native module is not in Expo Go, so it only starts reporting properly
+from a development build.
 
 ---
 
