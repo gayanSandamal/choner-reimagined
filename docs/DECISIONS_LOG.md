@@ -3002,3 +3002,90 @@ app** produces a `choner://` link, so only that one can open the mobile app.
    domain away, not an app rewrite.
 
 **Measured by:** Claude, 2 November 2026.
+
+---
+
+## 6 November 2026 — Telling people there is a newer build, without nagging them
+
+Asked for: a notice when an update exists, "Update now" that opens the store,
+and a Dismiss that closes it **but comes back on the next app open**.
+
+### Where "there is an update" comes from
+
+There is no `expo-updates` in this project, so nothing on the device knows a
+newer binary exists, and neither store has a supported API that answers "what
+version are you serving?". Scraping a listing page works until the week it
+matters.
+
+So the fact is published rather than discovered: `public.app_releases`
+(202611061000), one row per platform, holding the version string and the URL
+to send people to. The app compares it with its own version and offers the
+notice when the store is strictly newer.
+
+Three consequences worth knowing:
+
+1. **The notice is a row, not a release.** It turns on by raising
+   `latest_version`, and off by lowering it. It can be tested in production
+   without building anything, and switched off the same way if it misfires.
+2. **The URL is data too.** "Update now" opens `store_url` verbatim, so the
+   iOS link can be added when there is an App Store record to link to, with no
+   app update. The row is seeded at 0.2.0 — the version currently shipping —
+   so merging this changed nothing anybody can see.
+3. **Android only, for now.** iOS has no App Store record and therefore no
+   numeric id, so it has no row. A missing row reads as "no update", which is
+   the correct default rather than a gap to patch.
+
+### NOT app_config, and NOT a version code
+
+`app_config` holds `service_role_key` and has RLS with no policies precisely
+so no client can read it. A row a client must read does not belong in the same
+table as the service-role key.
+
+And the comparison is on the version STRING, never on `versionCode` /
+`buildNumber`. `eas.json` sets `appVersionSource: remote`, so EAS assigns the
+build number and the one embedded in the manifest is whatever app.json last
+said — the 3 November build logged that warning verbatim. Comparing those
+would be comparing a real number with a stale one.
+
+### The default-privileges trap, found by looking
+
+The table was created with RLS on and a single `for select` policy, which is
+the shape this project uses everywhere. Checking the grants afterwards rather
+than assuming them turned up something else: **anon and authenticated held
+ALL SEVEN privileges** — INSERT, UPDATE, DELETE, TRUNCATE and the rest.
+Supabase's default privileges hand those to every client on any new table in
+`public`, so the `grant select` that looked like the permission was adding
+nothing.
+
+Only the absence of a write policy was stopping a signed-in user from editing
+the version every other user is told to install. That is one careless
+`for all using (true)` away from being real, and it would have looked fine in
+review. Fixed with an explicit `revoke all` before the grant, the same way
+202607311700 does it for app_config, and verified from outside with the anon
+key: select returns the row, insert and update both answer 401.
+
+### How long Dismiss lasts
+
+In memory, for the life of the process — `features/app-update/dismissal.ts`,
+and nothing writes it to disk. A flag in AsyncStorage would turn one tap on a
+busy morning into "never ask me again", permanently and silently, for the
+person most likely to be running an old build.
+
+Precise about "next app open": the JS context survives backgrounding, so
+re-opening from the app switcher keeps the notice dismissed and a cold start
+brings it back. If it should instead return after some time away, that is an
+AppState listener in that one file and nothing else changes.
+
+The dismissal is keyed by version, so waving away 0.3.0 does not also swallow
+0.4.0 if it lands while the app is still running.
+
+### What is not verified
+
+The notice has never been seen on a device. It renders nothing on web by
+design — there is no store to send a browser to — so the web preview cannot
+show it either, and `npx jest` is standing in: nine render tests for which
+states show the card and what the buttons do, and five for how long a
+dismissal lasts. First real check is a build with the row raised above the
+installed version.
+
+**Decided by:** user, 6 November 2026.

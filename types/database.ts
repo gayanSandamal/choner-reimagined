@@ -669,6 +669,35 @@ export interface Database {
         };
         Relationships: [];
       };
+      // What each store is currently serving (202611061000). Read by every
+      // client to decide whether to offer the update notice; written only by
+      // the service role, so Insert/Update exist for completeness rather than
+      // for the app to use. Nothing secret belongs here — app_config is the
+      // secret store and is unreadable to clients on purpose.
+      app_releases: {
+        Row: {
+          platform: 'ios' | 'android';
+          latest_version: string;
+          store_url: string;
+          notes: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          platform: 'ios' | 'android';
+          latest_version: string;
+          store_url: string;
+          notes?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          platform?: 'ios' | 'android';
+          latest_version?: string;
+          store_url?: string;
+          notes?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       reports: {
         Row: {
           id: string;
