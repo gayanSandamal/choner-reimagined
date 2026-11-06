@@ -7,7 +7,11 @@
 //                        Native Testing Library. For what only shows up once
 //                        something is on screen: which buttons a state offers.
 const alias = { '^@/(.*)$': '<rootDir>/$1' };
-const ignore = ['/node_modules/', '/dist/', '/ios/', '/android/'];
+// `/.claude/` keeps jest out of the worktrees the desktop app creates under
+// .claude/worktrees/. Each is a full checkout of another branch, so without
+// this `npm test` silently runs that branch's tests too, doubles the suite,
+// and reports failures against files that are not the ones being changed.
+const ignore = ['/node_modules/', '/dist/', '/ios/', '/android/', '/\\.claude/'];
 
 /** @type {import('jest').Config} */
 module.exports = {
