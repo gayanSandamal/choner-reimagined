@@ -1,6 +1,7 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { AppTopBar, useTopBar } from '@/components/navigation/AppTopBar';
+import { UpdateNotice } from '@/components/app/UpdateNotice';
 import { activityIcon } from '@/components/home/activityIcons';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
@@ -133,6 +134,13 @@ export default function HomeScreen() {
               </>
             ) : null}
           </AppText>
+
+          {/* App-level, not Home's content, which is why it sits above
+              everything and outside the loading branch: it is about the binary
+              the person is holding, so it should not wait on a challenge query
+              and it does not belong to another tab. Renders nothing unless
+              there is actually a newer version in the store. */}
+          <UpdateNotice />
 
           {challengeQ.isLoading || partnerQ.isLoading ? (
             <LoadingState />

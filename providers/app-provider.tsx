@@ -1,7 +1,6 @@
 import { PropsWithChildren, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from '@/providers/session-provider';
 import { ToastProvider, useToast } from '@/providers/toast-provider';
@@ -261,7 +260,12 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   return (
     <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* No GestureHandlerRootView here. app/_layout.tsx mounts one around
+          this provider, and react-native-gesture-handler asks for exactly one,
+          at the root: a second one nested inside the first gives the library
+          two competing roots for the same tree, and touch handling is what
+          goes wrong when it has them. The one in _layout.tsx is the root. */}
+      <>
         {/* initialWindowMetrics, or useSafeAreaInsets() returns a top of 0 on
             the FIRST render and the real value a frame later (#128).
             useTopBar() builds its iOS contentOffset from that inset, and
@@ -296,7 +300,7 @@ export function AppProvider({ children }: PropsWithChildren) {
             </ReduceMotionContext.Provider>
           </QueryClientProvider>
         </SafeAreaProvider>
-      </GestureHandlerRootView>
+      </>
     </ErrorBoundary>
   );
 }

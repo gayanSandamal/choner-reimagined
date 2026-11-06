@@ -1,0 +1,143 @@
+<!--
+  Choner: "Confirm signup" email.
+
+  Paste into Supabase Dashboard -> Authentication -> Emails -> Confirm signup.
+  Subject line: Confirm your email
+
+  Why this template exists:
+  the default Supabase template is a bare text link, and a bare text link in
+  Gmail's mobile WebView is easy to miss on the first tap, before the body has
+  finished laying out. Two things here fix that regardless of the mail client:
+  the tap target is a 56px-tall block rather than a line of text, and the full
+  URL is printed underneath as selectable text, so the email still works when
+  the button does not.
+
+  Email client notes, so nobody "tidies" these away:
+  - Layout is tables because Outlook ignores flex and grid.
+  - Every style is inline because Gmail strips <style> blocks.
+  - The button gradient is a background-image over a solid background-color.
+    Outlook shows the solid orange. Everything else shows the gradient.
+  - Poppins is linked for the clients that honour web fonts (Apple Mail, iOS
+    Mail). The rest fall back to the system sans stack and look fine.
+  - border-radius is ignored by Outlook desktop, which draws square corners.
+    That is acceptable.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light only" />
+    <meta name="supported-color-schemes" content="light only" />
+    <title>Confirm your email</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body
+    style="margin: 0; padding: 0; background-color: #fdfcfb; -webkit-font-smoothing: antialiased;"
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #fdfcfb;"
+    >
+      <tr>
+        <td align="center" style="padding: 32px 16px;">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="max-width: 480px; background-color: #ffffff; border: 1px solid #efedea; border-radius: 28px;"
+          >
+            <tr>
+              <td style="padding: 40px 32px 32px 32px;">
+                <!-- wordmark -->
+                <p
+                  style="margin: 0 0 28px 0; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; color: #001827;"
+                >
+                  Choner
+                </p>
+
+                <!-- heading -->
+                <h1
+                  style="margin: 0 0 12px 0; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 26px; line-height: 34px; font-weight: 300; color: #1c2b33;"
+                >
+                  Confirm your email
+                </h1>
+
+                <!-- body -->
+                <p
+                  style="margin: 0 0 32px 0; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 15px; line-height: 24px; font-weight: 300; color: #7c8c96;"
+                >
+                  One tap and you are in. This link works once, and it expires
+                  in 24 hours.
+                </p>
+
+                <!-- button -->
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                >
+                  <tr>
+                    <td
+                      align="center"
+                      bgcolor="#FD5B01"
+                      style="background-color: #fd5b01; background-image: linear-gradient(135deg, #fd8302 0%, #fd5b01 100%); border-radius: 18px;"
+                    >
+                      <a
+                        href="{{ .ConfirmationURL }}"
+                        target="_blank"
+                        style="display: block; padding: 18px 24px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; font-weight: 600; color: #ffffff; text-decoration: none; text-align: center;"
+                      >
+                        Confirm my email
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- the fallback that makes this email work when the tap does not -->
+                <p
+                  style="margin: 28px 0 8px 0; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 13px; line-height: 20px; font-weight: 300; color: #7c8c96;"
+                >
+                  Button not working? Copy this link into your browser.
+                </p>
+                <p
+                  style="margin: 0; padding: 14px 16px; background-color: #f4f2ef; border-radius: 14px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; line-height: 20px; font-weight: 300; color: #1c2b33; word-break: break-all;"
+                >
+                  {{ .ConfirmationURL }}
+                </p>
+              </td>
+            </tr>
+
+            <!-- footer -->
+            <tr>
+              <td style="padding: 0 32px 36px 32px;">
+                <div
+                  style="height: 1px; background-color: #efedea; margin-bottom: 20px;"
+                ></div>
+                <p
+                  style="margin: 0; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; line-height: 20px; font-weight: 300; color: #7c8c96;"
+                >
+                  You are getting this because someone used this address to sign
+                  up for Choner. If that was not you, ignore this email and
+                  nothing happens.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
