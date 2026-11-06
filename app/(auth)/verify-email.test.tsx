@@ -81,7 +81,7 @@ it('waits for a probe already in the air before signing out, so the exit keeps i
   const probe = deferred();
   (auth.checkVerified as jest.Mock).mockReturnValue(probe.promise);
 
-  await renderWithProviders(<VerifyEmailScreen />);
+  const view = await renderWithProviders(<VerifyEmailScreen />);
 
   // The app returning to the foreground starts a probe. It has not landed.
   expect(typeof onAppState).toBe('function');
@@ -109,4 +109,6 @@ it('waits for a probe already in the air before signing out, so the exit keeps i
   // ...and the destination is the one the button named.
   expect(router.replace).toHaveBeenCalledWith('/(auth)/sign-in');
   expect(router.replace).not.toHaveBeenCalledWith('/onboarding');
+
+  view.unmount();
 });
