@@ -12,6 +12,7 @@
 //   AI_DAILY_FREE_LIMIT (default: 5)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { withCors } from '../_shared/cors.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -43,7 +44,7 @@ async function getAuthUser(req: Request) {
   return data.user;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCors(async (req) => {
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405 });
 
   const user = await getAuthUser(req);
@@ -211,4 +212,4 @@ Deno.serve(async (req) => {
     messageId: assistantMsg.id,
     userMessageId: userMsg.id,
   });
-});
+}));

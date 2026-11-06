@@ -56,6 +56,7 @@
 // Shortening TTL_SECONDS shrinks the window if that is ever worth it.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { withCors } from '../_shared/cors.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -100,7 +101,7 @@ async function listPaths(bucket: string, prefix: string): Promise<string[]> {
   return found;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCors(async (req) => {
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405 });
 
   const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
@@ -152,4 +153,4 @@ Deno.serve(async (req) => {
   }
 
   return Response.json({ ok: true, files_removed: removed });
-});
+}));
