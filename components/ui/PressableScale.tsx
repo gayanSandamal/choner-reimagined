@@ -1,5 +1,5 @@
-import { forwardRef, useMemo } from 'react';
-import { Pressable, PressableProps, View } from 'react-native';
+import { forwardRef } from 'react';
+import { Pressable, PressableProps } from 'react-native';
 import type { PressableInstance } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -57,43 +57,52 @@ export const PressableScale = forwardRef<PressableInstance, Props>(function Pres
   ref
 ) {
   const reduceMotion = useReduceMotion();
-  const pressed = useSharedValue(0);
   const targetScale = theme.motion.pressScale[scaleTo];
+  // Reduced motion, and anything non-rectangular, fades instead of scaling.
+  const fade = noScale || reduceMotion;
 
-  const animatedStyle = useAnimatedStyle(() => {
-    if (noScale || reduceMotion) {
-      return { opacity: pressed.value ? 0.7 : 1 };
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  // Reanimated 4: this worklet reads shared values and does nothing else.
+  //
+  // It used to start the spring INSIDE the worklet, off a ternary on a
+  // `pressed` shared value, and it passed a dependency array. Both are
+  // Reanimated 3 shapes. Reanimated 4 ignores dependency arrays on native and
+  // warns once per app start, which is the "[Reanimated] Dependencies should
+  // only be used on the web" line in the Metro log: this was the only call
+  // site in the app producing it, and it arrived with Reanimated 4.7.1 in the
+  // SDK 58 upgrade (f6188b8) rather than with any change to this file.
+  // Animations now start where the press happens, which is where 4 wants them.
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }]
+  }));
+
+  const animatePress = (down: boolean) => {
+    if (fade) {
+      scale.value = 1;
+      opacity.value = withTiming(down ? 0.7 : 1, { duration: 90 });
+      return;
     }
-    return {
-      transform: [
-        {
-          scale: pressed.value
-            ? withSpring(targetScale, theme.motion.spring.bouncy)
-            : withSpring(1, theme.motion.spring.bouncy)
-        }
-      ]
-    };
-  }, [targetScale, noScale, reduceMotion]);
-
-  const composedStyle = useMemo(
-    () => (typeof style === 'function' ? style : style),
-    [style]
-  );
+    opacity.value = 1;
+    scale.value = withSpring(down ? targetScale : 1, theme.motion.spring.bouncy);
+  };
 
   return (
     <AnimatedPressable
       ref={ref}
       disabled={disabled}
-      style={[animatedStyle, composedStyle as any]}
+      style={[animatedStyle, style as any]}
       onPressIn={(e) => {
-        pressed.value = 1;
+        animatePress(true);
         if (!disabled) {
           fireHaptic(haptic);
         }
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        pressed.value = 0;
+        animatePress(false);
         onPressOut?.(e);
       }}
       onPress={(e) => {
