@@ -28,6 +28,19 @@ async function validateStoredSession(): Promise<boolean> {
   const status = (error as { status?: number }).status;
   if (status !== 401 && status !== 403 && status !== 404) return true;
 
+  // A 401 does not only mean "no such user". An ordinary expired access token
+  // answers exactly the same way, and access tokens expire every hour. On the
+  // web this check runs on every return to the tab, so without the step below
+  // the sequence "switch to your email, come back an hour later" signed people
+  // out and dropped them on the welcome screen with nothing to explain it.
+  //
+  // So ask for a refresh before concluding anything. A live account with a
+  // stale token gets a new one here and carries on. A deleted account cannot
+  // refresh either, because its refresh token died with it, which keeps the
+  // ghost-session protection this function was written for.
+  const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+  if (!refreshError && refreshed.session) return true;
+
   // Local scope on purpose: the server cannot validate a session whose user no
   // longer exists, so a normal (global) sign-out request would fail and leave
   // the ghost session sitting in storage.
@@ -47,9 +60,13 @@ export function SessionProvider({ children }: PropsWithChildren) {
     // network failure on boot left the app on the splash screen for good,
     // because nothing else clears it (#126).
     const restore = async () => {
+      // Hoisted so the catch can fall back to it. It used to live inside the
+      // try, which left the catch with nothing to keep and no way to honour
+      // what its own comment promised.
+      let stored: Session | null = null;
       try {
         const { data } = await supabase.auth.getSession();
-        const stored = data.session ?? null;
+        stored = data.session ?? null;
         // Nothing stored: normal signed-out boot, no server round trip needed.
         if (!stored) {
           if (!cancelled) setSession(null);
@@ -62,7 +79,13 @@ export function SessionProvider({ children }: PropsWithChildren) {
         // Could not reach the server. Leave whatever is stored alone and let
         // the app decide from it, exactly as validateStoredSession does for an
         // inconclusive answer: signing someone out over dropped wifi is worse.
-        if (!cancelled) setSession(null);
+        //
+        // This line used to read setSession(null), which did the opposite of
+        // the sentence above it: any network blip during boot signed the user
+        // out, and the router's no-session rule then sent them to welcome.
+        // `stored` is null when getSession itself threw, so a genuinely empty
+        // boot still lands signed out.
+        if (!cancelled) setSession(stored);
       } finally {
         if (!cancelled) setLoading(false);
       }
