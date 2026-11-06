@@ -382,7 +382,8 @@ once the listing is live.
 
 ## Flagged: things this form cannot be derived from the code
 
-Five items, in descending order of how much they matter.
+Five items, in descending order of how much they matter. Item 2 has since been
+fixed in this branch and is kept here for the reason given under it.
 
 **1. Google Places may be a live processor that the privacy policy does not
 name.** When a pair agrees where to meet, the typed text goes to
@@ -408,16 +409,26 @@ it, so the feature degrades silently either way.
 **Ask Gayan which it is.** It is one `supabase secrets list` away and it is the
 first thing to settle on this page.
 
-**2. The in-app privacy screen contradicts the hosted policy, and loses.**
-`app/legal/privacy.tsx` tells the user, in the app, that Choner collects
-"basic device telemetry used to deliver notifications and diagnose crashes",
-"app version" and "crash reports and anonymized analytics events". **None of
-that is true of this build.** It also mentions community posts and comments,
-which no screen reaches. The hosted policy at `choner.io/privacy.html` is the
-accurate one and is the URL Google reads, but a reviewer who opens the in-app
-screen sees a claim that the Data safety form denies. **This needs fixing in the
-app before submission**, and it is app code, so it is outside this task. Logged
-here because it is the one item on this page that could cost a resubmission.
+**2. The in-app privacy screen used to contradict the hosted policy. Fixed.**
+`app/legal/privacy.tsx` told the user, in the app, that Choner collects "basic
+device telemetry used to deliver notifications and diagnose crashes", "app
+version" and "crash reports and anonymized analytics events". **None of that
+was true of this build**, and a reviewer who opened that screen would have
+found a claim the Data safety form denies. It also described community posts
+and comments, which no screen reaches.
+
+The screen has been rewritten in this branch to say what the build actually
+collects, and it now carries an explicit **"What we do not collect"** section:
+no device location, no crash reports, no analytics or usage events, no
+advertising identifier. That paragraph is the one a reviewer comparing the app
+to this form will read, and it agrees with every answer above. The screen also
+links out to `choner.io/privacy.html` so the two cannot drift apart unnoticed.
+
+**The reason it stays on this page:** the moment anyone sets
+`EXPO_PUBLIC_SENTRY_DSN` or `EXPO_PUBLIC_POSTHOG_KEY`, that section becomes the
+false one. The in-app screen, the hosted policy and this form all change in the
+same pull request or not at all. There is a comment at the top of
+`app/legal/privacy.tsx` saying exactly that.
 
 **3. Whether Supabase hosting in Singapore needs a data transfer statement.**
 Play does not ask where data is stored, so there is nothing to fill in. The
