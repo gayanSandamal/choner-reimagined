@@ -87,25 +87,33 @@ export function ToastProvider({ children }: PropsWithChildren) {
             style={[styles.wrap, { top: insets.top + theme.spacing(1) }]}
             pointerEvents="box-none"
           >
-            <Pressable
-              onPress={onPress}
-              accessibilityRole="button"
-              accessibilityLabel={`${toast.title}. ${toast.body ?? ''}`}
-              style={styles.card}
-            >
-              <View style={styles.icon}>
-                <Ionicons name="flame" size={18} color={theme.colors.primary} />
-              </View>
-              <View style={styles.text}>
-                <AppText variant="caption" style={styles.title} numberOfLines={1}>
-                  {toast.title}
-                </AppText>
-                {toast.body ? (
-                  <AppText variant="caption" muted numberOfLines={2}>
-                    {toast.body}
+            {/* The card is a plain View, and the two things you can press are
+                SIBLINGS inside it. Dismiss used to be nested inside the card's
+                own Pressable, which is fine on native but invalid on web:
+                react-native-web renders accessibilityRole="button" as a real
+                <button>, and a <button> inside a <button> is illegal HTML.
+                React reported it as a hydration error on every banner. */}
+            <View style={styles.card}>
+              <Pressable
+                onPress={onPress}
+                accessibilityRole="button"
+                accessibilityLabel={`${toast.title}. ${toast.body ?? ''}`}
+                style={styles.body}
+              >
+                <View style={styles.icon}>
+                  <Ionicons name="flame" size={18} color={theme.colors.primary} />
+                </View>
+                <View style={styles.text}>
+                  <AppText variant="caption" style={styles.title} numberOfLines={1}>
+                    {toast.title}
                   </AppText>
-                ) : null}
-              </View>
+                  {toast.body ? (
+                    <AppText variant="caption" muted numberOfLines={2}>
+                      {toast.body}
+                    </AppText>
+                  ) : null}
+                </View>
+              </Pressable>
               <Pressable
                 onPress={() => {
                   clear();
@@ -117,7 +125,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
               >
                 <Ionicons name="close" size={16} color={theme.colors.muted} />
               </Pressable>
-            </Pressable>
+            </View>
           </Animated.View>
         ) : null}
       </View>
@@ -150,6 +158,15 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
     elevation: 8
+  },
+  // Icon and text, the part of the card that opens whatever the banner is
+  // about. Carries the row layout the card used to, and flex: 1 so the
+  // dismiss button stays pinned to the right edge.
+  body: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing(1.25)
   },
   icon: {
     width: 30,

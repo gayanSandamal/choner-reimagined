@@ -61,6 +61,12 @@ const ICONS: Record<string, Shape[]> = {
     { d: 'M2.5 19c0-3.3 2.9-5.6 6.5-5.6s6.5 2.3 6.5 5.6' },
     { d: 'M17 13.4c2.6 0 4.5 1.9 4.5 4.4' }
   ],
+  // Two panels side by side: "Separately, together" is one commitment kept in
+  // two places, so the shape is deliberately a pair, not a split.
+  separate: [
+    { x: 3, y: 6, w: 7, h: 12, rx: 1.5 },
+    { x: 14, y: 6, w: 7, h: 12, rx: 1.5 }
+  ],
   together: [
     { cx: 8, cy: 8, r: 2.6 },
     { cx: 16, cy: 8, r: 2.6 },

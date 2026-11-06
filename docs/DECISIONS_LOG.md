@@ -3005,6 +3005,130 @@ app** produces a `choner://` link, so only that one can open the mobile app.
 
 ---
 
+## Bellanwila Park, 3 November: the channel works, the pairs do not
+
+First field distribution. Dinesh and the team handed out leaflets and talked to
+people at Bellanwila Park on a rainy afternoon. **Five conversations, three
+registrations.**
+
+Everyone reached was male. Two cyclists and one person working out in the
+18-24 range, one runner late 20s to early 30s, one swimmer in the lower range.
+
+### The conversion rate is the finding
+
+| Channel | Reached | Registered | Rate |
+|---|---|---|---|
+| Website, 30 days to 20 October | ~20 visits | 3 | ~15% |
+| Bellanwila, one wet hour | 5 conversations | 3 | **60%** |
+
+Four times better, in the rain, on a first attempt, against a channel that had
+produced nothing for five weeks. **The QR ride cards, handed out since mid
+October, have produced zero registrations carrying a source.** The leaflets
+produced two in an hour.
+
+Face to face is the channel. Everything before this was noise.
+
+### Three registrations, zero possible pairs
+
+```
+18:53  cycling   together  Kohuwala        every time slot   source: park
+18:55  running   separate  Havelock Town   early morning     source: park
+20:27  running   together  Boralesgamuwa   evening, night    source: null
+```
+
+Kohuwala and Boralesgamuwa share **both** `high_level` and `horana_road`, so
+the corridor filter would pass them happily. They are split by activity. The
+two runners are split twice over: opposite modes, and dawn against night.
+
+So three people from one park, none of whom can be matched to another.
+
+**The two cyclists were standing together when they were approached, and only
+one registered.** They already train together. They are exactly the thing the
+product is trying to manufacture, and the process let one of them walk away.
+
+### The process change this buys
+
+**Do not leave a group until every person in it has registered, and tell them
+to pick the same mode and the same time slots.**
+
+A pair signed up together is worth more than six scattered individuals. The
+First 200 is 100 pairs, not 200 people, and pairs are cheapest to collect when
+they are already standing next to each other. This is the same density finding
+as the 16-registration audit on 20 October, where 120 combinations produced
+**zero** who could meet in person; the difference is that in a park the pair is
+physically present and the problem is solvable on the spot.
+
+### The 14-day plan: yes, but the park is the floor
+
+Dinesh proposes 14 days of this before a launch at the end of November.
+
+The arithmetic: a rainy day gives 5 conversations and 3 signups; a good
+two-hour day might give 20 conversations and 12 signups. Fourteen good days is
+168, which with the existing 21 reaches 190.
+
+**It will not run that way.** Fourteen consecutive good days in Colombo in
+November is not a thing, and two hours of approaching strangers every day is
+more tiring than it looks on day one. Halve it. **100 to 120 by the end of
+November** is the honest expectation, and that is six times the current total.
+
+### The running club is the multiplier
+
+A cyclist volunteered the Instagram page **`lightningbyneesh`**, which organises
+running events said to draw around 50 people, weekly or monthly.
+
+Fifty runners, one place, one time, with the organiser's implicit endorsement,
+pre-sorted by activity and containing people who already run together. At the
+observed rate that is **~30 registrations in one evening**, worth three park
+days in two hours.
+
+**Ask for the next three event dates rather than one**, and ask the cyclist who
+gave the page for an introduction. A warm intro from a member converts better
+than a stranger with leaflets.
+
+Two club events a week plus park days is what actually reaches 200. The park
+alone does not.
+
+### Two flags
+
+**The database is 10 male to 5 female.** Every person reached at the park was
+male. That skews the matching pool, weakens the pitch, and leaves half the
+market untested. Two men approaching women in a park is a poor channel and is
+not the fix. **Mixed running clubs are**, because the group setting supplies the
+trust the park cannot.
+
+**Tag each park separately** — `source=bellanwila`, not `source=park` — or in
+two weeks there is no way to tell which locations convert and no basis for
+choosing where to spend the sixth day.
+
+### The untagged registration: a delayed conversion, and a leak worth closing
+
+The 20:27 registration carries **no source tag** while the other two carry
+`park`. I asserted this meant someone took a leaflet home and registered that
+evening, which I had no basis for at the time. Dinesh confirms the team left
+around 19:30, so the registration did come an hour after they had gone.
+
+**Leaflets convert on a delay.** That is the good half, and it means a day's
+real yield is not countable on the day.
+
+The other half is a leak. `web/first-200/index.html:539` reads the tag from the
+query string:
+
+```js
+src: params.get('src') || null,
+```
+
+So the tag survives a **scanned QR** and is lost by anyone who reads the
+printed address and types it. One in three today. Any per-park comparison built
+on `src` will therefore undercount the leaflet's slower, higher-intent half,
+which is exactly the half worth measuring.
+
+**Two ways to close it, neither done yet.** Print the tagged address so a typed
+URL carries it, which costs legibility; or make the QR unmistakably the primary
+call to action and treat untagged registrations on a park day as that park's.
+Worth deciding before the next batch is printed.
+
+**Decided by:** user, 3 November 2026.
+
 ## "Check your email": the button goes, and the exits start telling the truth
 
 Two issues reported 2 November, #159 and #160. They sit on the same screen and
@@ -3105,6 +3229,124 @@ landed on `e543105` is shorter than the one passed to `git commit` and changed
 knowing before anyone relies on a commit message being exactly what they wrote.
 
 **Decided by:** user, 2 November 2026.
+
+## The iOS freeze: Expo Go was never going to run this app, and a real alert bug underneath
+
+Reported 5 November: the app froze four times on iOS, mid-use, after sign in.
+No error, no crash, no recovery except force-quitting Expo Go. Onboarding was
+fine every time.
+
+Two separate findings came out of chasing it, and only one of them is a fix.
+
+### Expo Go cannot run Choner at all
+
+This invalidates the test environment, so it comes first.
+
+Expo Go is a fixed, pre-built app. It carries the Expo SDK's own native modules
+and nothing else, and it cannot load a native module that is not in that set.
+Choner depends on three that are not:
+
+* `react-native-keyboard-controller`
+* `react-native-purchases`
+* `react-native-purchases-ui`
+
+So the four freezes are not evidence about the app. They are evidence about
+Expo Go being asked to run something it cannot. **Nothing observed in Expo Go
+from here on is worth a bug report**, and every iOS report has to come from a
+development build instead. That is also why onboarding "worked fine": the
+onboarding screens happen to avoid the paths that reach into those modules.
+
+Earlier sessions had already written down the move off Expo Go onto development
+builds as a plan. It is now a precondition, not a plan.
+
+### A real iOS alert-presentation defect, found anyway
+
+iOS presents one view controller at a time. An `Alert.alert` raised while
+another alert, an RN `<Modal>`, or a share sheet is still animating is dropped
+by UIKit, and can leave a presented-but-empty window above the app: the screen
+still renders and no longer accepts a touch. That reads exactly as a freeze
+with no error. The promise never settles either, because neither `onPress`
+fires, so whatever asked the question hangs with it.
+
+**The codebase already half-knew this.** Three call sites work around it by
+hand, each with a 300ms sleep and a comment saying why:
+`components/community/FeedSafetyMenu.tsx:39`,
+`components/safety/PairSafetyMenu.tsx:36`, and `app/challenge/[id].tsx:55`.
+Ten other `confirmAction` sites do not, and `handleDeleteAccount` in
+`app/settings/index.tsx:43-56` raises two alerts back to back with no gap at
+all, the second from inside the first's `onPress`.
+
+**Fixed by queueing in `lib/alert.ts`** rather than by sleeping at each site,
+so all 13 `confirmAction` sites and all 87 `notify` sites are covered,
+including ones added later:
+
+* `present()` chains each dialog with a 350ms settle gap after it, so the next
+  is never raised into the previous one's dismissal animation.
+* A 30-second watchdog settles a dialog that is never answered, so a dropped
+  one cannot wedge the queue for the rest of the session. `confirmAction`
+  resolves **false** there: every caller guards something destructive, and a
+  question nobody saw must never come back as a yes.
+* `cancelable` plus `onDismiss`, so Android's back button or an outside tap is
+  a cancel rather than a silent hang. iOS ignores both options.
+* `notify` now passes an explicit OK button where it passed none. iOS draws the
+  same single button either way, but a default button reports no press, so the
+  queue would have had nothing to wait on.
+* Identical alerts already queued are dropped. A burst of `notify` calls used
+  to collapse to one dialog **because UIKit discarded the rest**; once they
+  queue properly they would all appear in turn, making the user dismiss the
+  same message twice. That is worse than the bug, so the dedupe is deliberate.
+
+**The three 300ms sleeps stay.** The queue only knows about alerts, so it
+cannot see a `<Modal>` closing. That case wants `<Modal onDismiss>`, which
+fires after the dismissal animation instead of guessing at 300ms, and it is its
+own change across four files. Left as a follow-up.
+
+* `npm run typecheck` clean
+* `npm run lint` clean
+* `npx jest` — 33 suites, 318 passed, 2 skipped
+
+**Not confirmed to be the freeze, and it cannot be.** The defect is real and
+the fix is right either way, but nothing can be reproduced or ruled out until
+an iOS build exists, and none ever has. Stating otherwise would be guessing.
+
+### Why there is still no iOS build, and the path chosen
+
+Every `eas` command run as `dinesh_doluweera` fails the same way:
+
+```
+Entity not authorized: AppEntity[61b5bfb4-812d-48c7-b136-0c29d9b3e182], action = READ
+```
+
+[docs/APP_STORE_CONNECT.md](APP_STORE_CONNECT.md) named this a day earlier as
+the blocker to clear first. It has not been cleared. Gayan has to add
+`dinesh_doluweera` to the project or move it into the `choner.io` org.
+
+There was a way around it. An iOS **simulator** build needs no signing at all,
+no Apple account and no registered device, and EAS can run an iOS simulator in
+the cloud, which is the only way to see iOS from Windows. The Expo connector
+available in-session holds a token that *is* authorised on the project, so that
+build could have been triggered today.
+
+**Decided against it.** A simulator build verifies the fix but cannot reach a
+real phone or TestFlight, and the same access blocker has to clear before
+launch regardless. Clearing it now is the shorter path to the thing that
+matters. The two simulator profiles written for it were reverted rather than
+left in `eas.json` as config for a road not taken.
+
+### Dependencies aligned before the first native build
+
+`npx expo-doctor` passed 17 of 18 checks; the failure was ten packages drifted
+from SDK 58. Nine were patch bumps, but `react-native-safe-area-context` was a
+**minor** mismatch (5.10.1 against ~5.11.1) and that package is native. Aligned
+first, so a signing or native failure on the first-ever iOS prebuild cannot be
+confused with a version mismatch. Same move as `acebca3` did for SDK 57.
+On its own branch, `DineshDoluweera/chore/align-sdk-58-packages`, because it
+shares no files with the alert fix.
+
+**Separately: Node 22.12.0 is below the floor.** `react-native@0.88.1` requires
+`^22.13.0`. EAS builds in the cloud on its own Node, so this does not block a
+build, but it does block `npx expo start`, which a development build needs in
+order to load anything. It has to be updated before the dev build is usable.
 
 ---
 
