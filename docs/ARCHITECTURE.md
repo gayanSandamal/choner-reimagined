@@ -27,13 +27,11 @@
 - group_members
 - invites
 - partner_match_requests / partner_matches (see PARTNER_MATCHING.md)
-- ai_recommendations
 - notifications
 - premium_entitlements
 
 ## Edge functions
 - invite-email: sends challenge invitations through Resend
-- ai-coach: turns profile + challenge history into next-step guidance
 - daily-recovery: optional scheduled nudges / streak risk recovery
 
 ## Navigation
@@ -46,7 +44,6 @@
   - insights
   - profile
 - modal routes
-  - ai coach
   - notifications
   - premium
   - settings

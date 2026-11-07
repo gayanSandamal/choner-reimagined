@@ -57,7 +57,6 @@ const KIND_PREF_MAP: Record<string, string> = {
   // The reminder before a planned session (202610030920). It replaced the
   // daily "log it" reminder and honours the same switch.
   session_reminder: 'streak_alerts',
-  ai_suggestion: 'ai_recovery_alerts',
 };
 
 Deno.serve(async (req) => {

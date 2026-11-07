@@ -93,16 +93,18 @@
      our own system, but someone qualified should check it against Sri Lanka's
      PDPA before launch.
 
+     REMOVED, not merely switched off: OpenAI. There is no AI coach in Choner
+     and the code for one no longer exists. The edge function, the modal, the
+     client hooks and three unused database tables were all deleted on
+     2026-11-07, on the founder's instruction that the product does not offer
+     one. An earlier draft of this page claimed an AI coach, which was wrong
+     even then: presence in the repository was mistaken for being live. There
+     is nothing left here to keep in step.
+
      BUILT BUT NOT SWITCHED ON, and therefore deliberately absent from the list
      of processors below. Each one starts handling real user data the moment it
      is enabled, and THIS PAGE MUST BE UPDATED IN THE SAME CHANGE:
 
-       * OpenAI. supabase/functions/ai-coach/ exists and app/modals/ai-coach.tsx
-         exists, but the function is NOT DEPLOYED (production has six functions
-         and that is not one) and no screen navigates to the modal. There is no
-         AI coach in the product. An earlier draft of this page said there was,
-         which was wrong: presence in the repository was mistaken for being
-         live.
        * Sentry and PostHog. lib/observability.ts guards every call behind
          EXPO_PUBLIC_SENTRY_DSN and EXPO_PUBLIC_POSTHOG_KEY, and neither is set,
          so no crash report and no analytics event leaves the device.

@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405, headers: CORS });
 
-  // Signed-in users only (same check as ai-coach).
+  // Signed-in users only (same check as delete-account).
   const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
   const { data: auth } = jwt ? await admin.auth.getUser(jwt) : { data: { user: null } };
   if (!auth?.user) return new Response('unauthorized', { status: 401, headers: CORS });

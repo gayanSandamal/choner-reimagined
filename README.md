@@ -131,10 +131,10 @@ To run against your own backend:
 
 1. Create a project at [supabase.com](https://supabase.com) and copy its **URL** and **anon key** into `.env`.
 2. Apply the SQL migrations in [`supabase/migrations/`](supabase/migrations/) (via the Supabase SQL editor or the [Supabase CLI](https://supabase.com/docs/guides/cli)).
-3. Deploy the Edge Functions in [`supabase/functions/`](supabase/functions/) (e.g. `invite-email`, `ai-coach`, `send-push`, `revenuecat-webhook`).
+3. Deploy the Edge Functions in [`supabase/functions/`](supabase/functions/) (e.g. `invite-email`, `send-push`, `revenuecat-webhook`).
 4. Set server-only secrets (never put these in `.env`):
    ```bash
-   supabase secrets set RESEND_API_KEY=... OPENAI_API_KEY=... SUPABASE_SERVICE_ROLE_KEY=...
+   supabase secrets set RESEND_API_KEY=... SUPABASE_SERVICE_ROLE_KEY=...
    ```
    See the commented section at the bottom of `.env.example` for the full list.
 

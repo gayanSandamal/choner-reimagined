@@ -96,7 +96,7 @@ export default function SettingsScreen() {
             <SectionLabel label="Billing" />
             <ListItem
               title={isPremium ? 'Manage subscription' : 'Upgrade to Premium'}
-              subtitle={isPremium ? 'View, change, or cancel your subscription.' : 'Unlock AI coach, advanced insights, and more.'}
+              subtitle={isPremium ? 'View, change, or cancel your subscription.' : 'Unlock deeper insights, premium quests, and more.'}
               icon={isPremium ? 'card' : 'sparkles'}
               showChevron
               onPress={() => (isPremium ? handleManageSubscription() : router.push('/modals/premium'))}

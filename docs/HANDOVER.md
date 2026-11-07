@@ -33,10 +33,11 @@ being guessed at. Dates are absolute on purpose: "last week" rots.
   uncommitted — `git status` shows only `.claude/settings.local.json`,
   `supabase/.temp/cli-latest` and the untracked `_bmad-output/` planning folder.
 - **Expo SDK 58**, React Native via Expo Router. Builds clean on EAS.
-- **Feature gates** (`constants/features.ts`): `pro` and `aiCoach` both default
-  **off**. Each can be flipped per build with `EXPO_PUBLIC_FEATURE_PRO` /
-  `EXPO_PUBLIC_FEATURE_AI_COACH` — no code change needed. They are hidden, not
-  deleted, so nothing about them should be "finished" before launch.
+- **Feature gate** (`constants/features.ts`): `pro` defaults **off**, and can
+  be flipped per build with `EXPO_PUBLIC_FEATURE_PRO`, no code change needed.
+  It is hidden, not deleted, so nothing about it should be "finished" before
+  launch. The `aiCoach` gate is gone: there is no AI coach in Choner, and the
+  code for one was removed on 2026-11-07.
 - **Tests:** `npx jest` — the auth suites alone are 53 tests across 5 files.
   CI (`.github/workflows/ci.yml`) runs lint + typecheck on every PR.
 

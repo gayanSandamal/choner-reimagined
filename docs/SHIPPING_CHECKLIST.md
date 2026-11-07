@@ -11,7 +11,7 @@ Status legend: ✅ done in code · 🔑 needs a real key/secret · 🎨 needs an
 - ✅ Group create / detail / posts / comments / reactions / reporting
 - ✅ Notification preferences screen
 - ✅ Legal screens (privacy, terms, health disclaimer)
-- 👤 Final copy review (legal, AI coach system prompt, store listings)
+- 👤 Final copy review (legal, store listings)
 - 👤 Health advisor review of challenge templates
 
 ## Engineering
@@ -19,12 +19,12 @@ Status legend: ✅ done in code · 🔑 needs a real key/secret · 🎨 needs an
 - ✅ Real `get_user_insights` RPC (no more hardcoded numbers)
 - ✅ Push token persistence into `user_devices`
 - ✅ Realtime subscriptions for notifications + subscriptions
-- ✅ Edge functions: `ai-coach` (OpenAI), `revenuecat-webhook`, `send-push`
+- ✅ Edge functions: `revenuecat-webhook`, `send-push`
 - ✅ Sentry + PostHog wired (`lib/observability.ts`)
 - ✅ Error boundary at root (`components/ErrorBoundary.tsx`)
 - ✅ Account deletion RPC (`delete_account()`) + UI in Settings
 - ✅ Jest + one test suite + GitHub Actions CI
-- 🔑 Set Supabase secrets: `OPENAI_API_KEY`, `REVENUECAT_WEBHOOK_AUTH`, `RESEND_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- 🔑 Set Supabase secrets: `REVENUECAT_WEBHOOK_AUTH`, `RESEND_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - 🔑 Mobile env: `EXPO_PUBLIC_REVENUECAT_APPLE_API_KEY`, `EXPO_PUBLIC_REVENUECAT_GOOGLE_API_KEY`, `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_POSTHOG_KEY`
 - 🔑 Create Supabase Storage bucket `avatars` (public read) and run all migrations on the prod project
 - 🔑 `eas credentials` — APNs key + FCM v1 service account
@@ -34,7 +34,7 @@ Status legend: ✅ done in code · 🔑 needs a real key/secret · 🎨 needs an
 ## Trust / Legal
 - ✅ In-app privacy policy
 - ✅ In-app terms of service
-- ✅ Health disclaimer (in app + injected into AI coach system prompt)
+- ✅ Health disclaimer (in app)
 - ✅ Consent checkbox on sign-up (terms + privacy + health disclaimer)
 - ✅ Hosted privacy policy + terms (`web/legal/privacy.html`, `web/legal/terms.html`) — upload to choner.io and paste both URLs into App Store Connect and Play Console. NOT legally reviewed; have someone check them against PDPA before launch.
 - 👤 Data retention written policy
@@ -58,7 +58,7 @@ Status legend: ✅ done in code · 🔑 needs a real key/secret · 🎨 needs an
 - 👤 Admin dashboards (Supabase Studio + Sentry + PostHog suffice for v1)
 
 ## Recommended additions before launch
-- More tests: RLS smoke tests, billing entitlement gate, AI coach context builder
+- More tests: RLS smoke tests, billing entitlement gate
 - Detox or Maestro for one end-to-end flow
 - App Store subscription review (RevenueCat sandbox → TestFlight → review)
 - Content moderation tooling (Supabase Studio dashboard query for `reports` table)

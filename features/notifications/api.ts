@@ -59,7 +59,6 @@ export async function getPreferences(userId: string): Promise<PrefsRow> {
     push_enabled: true,
     streak_alerts: true,
     accountability_alerts: true,
-    ai_recovery_alerts: true,
     updated_at: new Date().toISOString(),
   };
   const { error: insErr } = await supabase.from('notification_preferences').insert(defaults);

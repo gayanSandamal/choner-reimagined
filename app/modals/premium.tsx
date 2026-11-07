@@ -28,11 +28,6 @@ import { notify } from '@/lib/alert';
 
 const FEATURES: { icon: keyof typeof Ionicons.glyphMap; label: string; body: string }[] = [
   {
-    icon: 'sparkles',
-    label: 'Unlimited AI coach',
-    body: 'Chat anytime with your private accountability coach.'
-  },
-  {
     icon: 'trending-up',
     label: 'Deep insights',
     body: 'Trend analysis, momentum graphs, and weekly recaps.'
