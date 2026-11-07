@@ -65,98 +65,38 @@ discovery rather than on discipline or tracking.
 
 ### Full description
 
-**Limit 4000 characters.** The copy below is about 3,200, so there is room to
-grow, but not much.
+**Limit 4000 characters.** The final copy is **3715 characters**, in
+[full-description.txt](full-description.txt), ready to paste with nothing to
+strip out.
 
-**Play does not render Markdown here.** No `#`, no `**bold**`, no `-` bullets:
-all three appear on the page as literal characters. The brief's draft was
-written in Markdown and would have shipped with the asterisks visible. Play
-accepts a small set of HTML tags and otherwise plain text with single line
-breaks preserved, so the ALL CAPS lines below are doing the work headings would
-do elsewhere.
+Written by Dinesh on 7 November 2026, replacing the draft that was here. It is
+longer and more structured than the draft, and it keeps the positioning from
+[POSITIONING.md](POSITIONING.md): meeting someone is the attraction, the shared
+activity is the reason to connect, consistency is the outcome.
 
-Checked against the build on 7 November 2026, feature by feature. What changed
-from the brief's draft, and why, is in [POSITIONING.md](POSITIONING.md) under
-"Checked against the build".
+**Play renders no Markdown in this field.** No `#`, no `**bold**`, no `-`
+bullets as syntax: all of them appear on the store page as literal characters.
+The version Dinesh wrote was in Markdown, so the file is the converted one,
+with headings in caps and the asterisks gone. Play accepts a small set of HTML
+tags and otherwise plain text with single line breaks preserved.
 
-```text
-Meet someone new. Find something healthy to do together.
+Three things in that copy are load-bearing and should survive any future edit:
 
-What if meeting someone new could also help you build a healthier habit?
-
-Choner pairs you with one other person who wants to do the same activity as you, so neither of you has to start alone. You agree what you are doing, you both show up, and it gets easier to keep going.
-
-HOW CHONER PAIRS YOU
-
-Tell us what you are working towards: move more, get stronger, reduce stress, or improve your energy. Pick something you will actually do, from running, jogging, walking, cycling, yoga or home workouts. Say how you want to show up, and choose the part of the city you are in.
-
-Choner then finds you one partner and shows you who they are. You can accept, or pass and look again. There is no feed of strangers to scroll, no profiles to browse, and nobody to message out of the blue. One person, one activity, agreed by both of you.
-
-Already have someone in mind? Invite them with a code instead.
-
-CHOOSE HOW YOU SHOW UP
-
-Together: meet in person and do the activity side by side.
-
-Separately, together: do the same thing in your own space at the same time, and keep each other to it.
-
-WHAT YOU DO TOGETHER
-
-Agree the session. The distance, the day, the time, and where to meet, one step at a time. Nothing is set until you both say yes.
-
-Show up. On the day you each say when you are on your way. A short chat opens while you are finding each other, and when you meet you scan each other's code so the session counts for both of you.
-
-Check in. Tap to log it, or send a photo for your partner. Photos are a trade: theirs appears once you have sent yours, each one is seen once, and they are deleted within seven days.
-
-Keep the streak. It belongs to the two of you, not to you alone. Miss a day and you owe a session rather than losing everything, and you can repair it. If your partner goes quiet you can nudge them, and they can nudge you.
-
-Community shows what people in your city chose to share this week: a first name, what they did, and nothing to scroll for hours. There is no post button and nobody to follow.
-
-SAFETY
-
-Choner is for people aged 18 and over.
-
-Choner is not a dating app. You are matched with one person, for one activity, and the whole app is built around that.
-
-You pick the area you are in, never your exact position. The app does not ask for or read your device location.
-
-Your partner sees your first name, your photo if you added one, the activity you both agreed, your area, and whether you showed up. They do not see your email address or your reasons for starting.
-
-You can report or block a partner from anywhere you can see them. A person on our team reads every report, it ends the match, and the other person is never told who did it or why.
-
-Phone numbers, email addresses and links cannot be sent in the chat. Keeping it in the app is what lets us help if something goes wrong.
-
-WHERE CHONER WORKS
-
-Choner is starting in Colombo. In-person matching covers Colombo and Greater Colombo, and whether a partner is available depends on your area and what you choose.
-
-Questions, problems, or anything at all: hello@choner.io
-
-Choner. Turn 'I should' into 'I did.'
-```
-
-Three lines in that copy are deliberate and worth defending if anyone asks to
-cut them:
-
-* **"There is no feed of strangers to scroll, no profiles to browse."** This is
-  the accuracy fix. `app/find/who-else.tsx` says in its own comment that the
-  directory is "proof that real people are here, never a candidate list.
-  Read-only on purpose: a card does not open a profile, and there is no message
-  or match action." Copy that promises discovery of people sets up an
-  expectation the build refuses, which is a one-star review and, if a reviewer
-  notices, a misleading-listing rejection.
-* **"Choner is not a dating app."** Choner pairs strangers by area and activity
-  and then arranges for them to meet in a park, and the listing now *leads*
-  with meeting someone new. A reviewer will have the same thought a user would,
-  and saying it first is cheaper than being re-categorised. The brief's own
-  guardrails say not to be positioned as a dating app; this is the line that
-  does that work.
-* **"Choner is starting in Colombo."** The location list in the app is Colombo
-  and Greater Colombo only, and the Community feed is scoped to your city. A
-  listing that implies a global product earns one-star reviews from people in
-  cities with nobody to match them to. The brief marks this optional. It is
-  kept, because it accurately describes the launch configuration, which is the
-  brief's own condition for keeping it.
+* **"No endless swiping, no profiles to browse and no strangers messaging you
+  out of the blue."** This is the accuracy line. `app/find/who-else.tsx`
+  describes itself in its own comment as "proof that real people are here,
+  never a candidate list", with no profile to open and no match or message
+  action, and `components/find/MatchOffer.tsx` offers exactly one partner at a
+  time. Copy that promises discovery sets an expectation the build refuses,
+  which is a one-star review, and a misleading listing is a removal rather
+  than a rejection.
+* **"It's about finding an activity partner, not a date."** Choner pairs
+  strangers by area and activity and then helps them meet in person, and the
+  listing leads with meeting someone new. A reviewer will have the same thought
+  a user would, and saying it first is cheaper than being re-categorised.
+* **"We're starting in Colombo, Sri Lanka."** The location list is Colombo and
+  Greater Colombo only. A listing implying a global product earns one-star
+  reviews from people in cities with nobody to match them to.
 
 ### Graphics
 
@@ -304,9 +244,14 @@ app does not have is a removal, not a rejection.
   supersedes the versionCode 3 bundle sitting on Internal testing.
 * Main store listing: **nothing written into the console yet**. The copy above
   is ready to paste.
-* Graphics: **app icon done** (512 x 512, exported 7 November). Feature graphic
-  and screenshots **do not exist**. This is the long pole. See
-  [ASSETS.md](ASSETS.md) and `docs/BLOCKED_ON_YOU.md`.
+* Graphics: **app icon and feature graphic both done**, 7 November. The icon is
+  a 512 x 512 export of `assets/icon.png`; the feature graphic is 1024 x 500,
+  navy ground, paper wordmark with the full stop in `#FD8302`, the hook of the
+  tagline in orange and the rest in near-white, set in the Poppins the app
+  ships. **Screenshots still do not exist**, and they are now the only missing
+  asset and the last thing blocking the closed test. Four of the six need a
+  real matched pair on a real device, which is the same paired account App
+  access needs. See [ASSETS.md](ASSETS.md) and `docs/BLOCKED_ON_YOU.md`.
 * Privacy policy, terms and deletion pages: **all three live**, checked
   6 November 2026.
 * Data safety, content rating, target audience: **not filed**. Answers drafted
