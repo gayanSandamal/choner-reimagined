@@ -3434,3 +3434,149 @@ dismissal lasts. First real check is a build with the row raised above the
 installed version.
 
 **Decided by:** user, 6 November 2026.
+
+---
+
+## 2026-11-06 — The edge functions were deployed from here, and `ai-coach` had never been deployed at all
+
+**Context:** #175 added CORS to `delete-account`, `ai-coach` and
+`submit-live-photo`, and merged code does nothing to a running function. The
+question was how to deploy, and whether the fix would even work once it was
+out.
+
+### What a preflight against production actually said
+
+Before deploying anything, an `OPTIONS` request was sent to each live function
+the way a browser sends one, with `Origin` and `Access-Control-Request-*`
+headers:
+
+| Function | Answered | Reading |
+|---|---|---|
+| `invite-email` | 200 + full CORS headers | already had an inline copy |
+| `delete-account` | 405, no CORS headers | the browser failure, exactly |
+| `submit-live-photo` | 405, no CORS headers | same |
+| `ai-coach` | **404 Not Found** | **it was never deployed** |
+
+Two conclusions, neither of which was a guess.
+
+**`verify_jwt` does not block the preflight on this project.** This was the
+real risk. There is a well-known Supabase trap where JWT verification is
+enforced at the gateway, which 401s an `OPTIONS` request that by definition
+carries no `Authorization` header, so the function's own CORS handling never
+runs and the fix is useless. `invite-email` has `verify_jwt = true` and
+answers at 200, which settles it empirically rather than by reading docs.
+
+**The AI coach has never worked, on any platform.** Not a CORS bug, not a web
+bug: there is no function on the server. The app cannot tell the difference,
+because supabase-js reports a missing function and an unanswered preflight
+with the same message. It would have kept presenting as "the AI coach is
+broken on web" indefinitely.
+
+### Deployed through the connector, not the CLI
+
+The Supabase connector in the session is authorised, so `delete-account`
+(version 4) and `submit-live-photo` (version 2) were deployed directly from
+`main`, with `_shared/cors.ts` sent alongside each entrypoint so the relative
+import resolves. `verify_jwt` left at `true` on both: each function
+re-verifies the caller's JWT with `getUser()` regardless, and turning it off
+would only move the first rejection later.
+
+The live `delete-account` source was read and compared against `main` **before**
+overwriting it, and differed by exactly the two CORS lines, so nothing of
+Gayan's was lost. Supabase keeps the previous version either way.
+
+Verified after: preflight 200 with the function's own headers, and an
+unauthorised `POST` returning a plain 401 that still carries them, so a real
+error reaches the client instead of an opaque CORS failure.
+
+### `ai-coach` deliberately left undeployed
+
+It needs an `OPENAI_API_KEY` secret, which the platform does not inject.
+Deploying it without one would replace a 404 with a 500 and look like progress.
+It waits in `docs/BLOCKED_ON_YOU.md` until the secret is set.
+
+**Decided by:** user, 6 November 2026 — asked for the two that would work and
+to leave the third.
+
+---
+
+## Google Play listing and positioning, 7 November 2026
+
+### The Play app name is `Choner`, not `Choner: Habit Partner`
+
+The draft in `docs/play-store/LISTING.md` argued for the suffix: the app name
+is the strongest ranking signal Play has, Play has no subtitle field the way
+Apple does, and nobody searching for a way to stick to a habit types a brand
+they have never heard of.
+
+Overruled in favour of the clean brand, matching Apple and everything else.
+
+Knock-on effect, recorded so it is not undone by accident: with no keyword in
+the name, the **short description is the only indexed field carrying one**, so
+it was rewritten to do that work.
+
+**Decided by:** user, 7 November 2026.
+
+### The Play category is Health & Fitness, not Social
+
+Social is arguably honest, since partner matching, a chat and a city feed are
+most of what a social app has. It also files Choner on a shelf with dating and
+messaging apps, which is the exact association the listing spends a line
+denying. What a user comes for is the habit; the social parts are machinery.
+
+Switching category later resets how Play has learned to rank a listing, so this
+is a pick-once decision.
+
+Costs one extra form: Health & Fitness triggers Play's **Health apps
+declaration**, which blocks the release until submitted.
+
+**Decided by:** user, 7 November 2026.
+
+### The listing leads with meeting someone new, not with discipline
+
+`docs/play-store/POSITIONING.md` is now the source of truth for store copy and
+launch marketing. The hierarchy it sets: meeting new people is the attraction,
+the shared healthy activity is the reason to connect, consistency is the
+outcome. Explicitly not a fitness tracker, not a habit tracker, not a lecture
+about discipline, and not a dating app or general social network.
+
+This replaces the earlier framing in `LISTING.md`, which wrote to someone who
+had already failed at a habit alone.
+
+**Decided by:** user, 7 November 2026, via the positioning brief.
+
+### Choner does not let anyone browse people, and the copy must not imply it
+
+The positioning brief's draft copy said users "discover people who want to work
+towards similar goals and find someone to do it with". The build does not do
+that, and the brief's own guardrails forbid saying it.
+
+`app/find/who-else.tsx` is a read-only directory, described in its own comment
+as "proof that real people are here, never a candidate list", with no profile
+to open and no match or message action. `components/find/MatchOffer.tsx` is the
+real flow: one offered partner, on a clock, which the user confirms, declines,
+or replaces.
+
+So the store copy says Choner finds you one partner and you accept or pass, and
+states outright that there is no feed to scroll and no profiles to browse.
+
+This is a standing constraint on marketing copy, not a one-off edit. Copy that
+promises discovery sets an expectation the build refuses, which is a one-star
+review, and a misleading listing is a removal rather than a rejection.
+
+**Found by:** Claude, 7 November 2026, verifying the brief against the code as
+the brief itself asks.
+
+### The Play app record already existed, under `io.choner.app`
+
+Created 29 October, sitting on the Internal testing track with a versionCode 3
+bundle. Pressing Create app again returns "This package name is already in
+use", which is what it looked like at first and is not a problem: Play never
+releases a package name once an app record has claimed it, including one you
+delete, so the correct reading is that the name is already correctly ours.
+
+A Play app record's package name can never be changed. `io.choner.app` is
+right; `com.choner.app` is the iOS bundle ID and belongs to a different
+Android developer console account, which is why `8bb0761` renamed it.
+
+**Confirmed from the console:** 7 November 2026.
