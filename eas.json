@@ -36,13 +36,12 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "REPLACE_WITH_APPLE_ID",
-        "ascAppId": "REPLACE_WITH_ASC_APP_ID",
-        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
+        "ascAppId": "6831758741",
+        "appleTeamId": "V5TUFJ2LWB"
       },
       "android": {
         "serviceAccountKeyPath": "./android-play-service-account.json",
-        "track": "internal",
+        "track": "alpha",
         "releaseStatus": "draft"
       }
     }
