@@ -2,6 +2,7 @@
   "expo": {
     "name": "Choner",
     "slug": "choner-mobile",
+    "owner": "choner-io",
     "scheme": "choner",
     "version": "0.2.0",
     "web": {
