@@ -10,7 +10,5 @@ function envFlag(value: string | undefined, fallback: boolean): boolean {
 
 export const features = {
   // Premium / Pro: paywall, upsells, subscription management, premium quests.
-  pro: envFlag(process.env.EXPO_PUBLIC_FEATURE_PRO, false),
-  // AI coach modal and its entry points.
-  aiCoach: envFlag(process.env.EXPO_PUBLIC_FEATURE_AI_COACH, false)
+  pro: envFlag(process.env.EXPO_PUBLIC_FEATURE_PRO, false)
 };

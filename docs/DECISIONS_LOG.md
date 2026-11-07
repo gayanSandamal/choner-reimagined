@@ -3498,6 +3498,80 @@ It waits in `docs/BLOCKED_ON_YOU.md` until the secret is set.
 **Decided by:** user, 6 November 2026 — asked for the two that would work and
 to leave the third.
 
+**Superseded the next day.** The right answer was not a secret. Choner does not
+offer an AI coach, so the third function was deleted rather than deployed. See
+the entry below.
+
+---
+
+## 2026-11-07 — There is no AI coach, so every trace of one is out of the repository
+
+**Context:** a day after deploying the CORS fix, the founder read that
+`ai-coach` was undeployed and needed an OpenAI key and answered: "Our app does
+not provide an AI coach. please remove that from everything. No AI Coach."
+
+He is right, and the repository had been quietly implying otherwise for
+months.
+
+### What was actually in there
+
+Not a stub. A complete feature, none of it reachable:
+
+- `supabase/functions/ai-coach/index.ts`, a working OpenAI call with a Choner
+  system prompt, a daily free limit and conversation persistence. **Never
+  deployed.** Its 404 on 6 November is what started this.
+- `app/modals/ai-coach.tsx`, a full chat screen, registered as a route in
+  `app/_layout.tsx`. **Nothing navigated to it.**
+- `features/ai/api.ts` and `features/ai/hooks.ts`, four react-query hooks.
+- `constants/features.ts`, an `aiCoach` gate defaulting to off.
+- An "AI suggestions" switch in notification settings, an `ai_suggestion` push
+  kind in `send-push` wired to the column behind it, "Unlimited AI coach" as
+  the first perk on the paywall, and "Unlock AI coach" in the settings upsell.
+- **Three database tables**: `ai_conversations`, `ai_messages` and
+  `ai_recommendations`, the last from a different migration and referenced by
+  no code at all. All three measured **empty** against production.
+
+So the product never had an AI coach, and the codebase could not have told you
+that. The flag was off, the function was unreachable and the modal was
+orphaned, but the paywall promised one to anyone who opened it with
+`EXPO_PUBLIC_FEATURE_PRO=true`.
+
+### Why this mattered beyond tidiness
+
+`web/legal/privacy.html` says, in the user-visible text, **"There is no AI in
+Choner"**. That sentence was true, and it was one feature flag away from being
+false in a published privacy policy. An HTML comment on that page already
+recorded that an earlier draft had claimed an AI coach and that the claim was
+wrong, the repository having been mistaken for the product. Deleting the code
+is what makes the promise structural instead of a thing someone has to
+remember.
+
+### What was removed, and the one thing that was not
+
+Everything above, plus the mentions in `README.md`, `.env.example` (the
+commented `OPENAI_API_KEY`, `OPENAI_MODEL` and `AI_DAILY_FREE_LIMIT`),
+`docs/ARCHITECTURE.md`, `docs/HANDOVER.md` and `docs/SHIPPING_CHECKLIST.md`,
+and the comment in `places-autocomplete` that pointed at `ai-coach` as the
+example of an auth check.
+
+`notification_preferences.ai_recovery_alerts` stays in the database. It is an
+inert boolean holding its own default for five rows; the switch that set it
+and the push kind that read it are both gone, and it is out of
+`types/database.ts` so nothing new can write to it. Dropping a populated
+column to tidy a name buys less than it risks.
+
+The three tables are dropped by `202611071100_there_is_no_ai_coach.sql`, which
+is **not applied**: it is a production schema change and that is the founder's
+call. Merging the code first and running the migration second is safe in that
+order and only that order.
+
+### Not a judgement about AI
+
+The brief is that the product does not offer one, not that it never could. If
+that changes, this is a feature to build deliberately, with the privacy policy
+updated in the same change, rather than a dormant one to switch on.
+
+**Decided by:** user, 7 November 2026.
 ---
 
 ## Google Play listing and positioning, 7 November 2026

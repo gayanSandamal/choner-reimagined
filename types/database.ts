@@ -609,7 +609,6 @@ export interface Database {
           push_enabled: boolean | null;
           streak_alerts: boolean | null;
           accountability_alerts: boolean | null;
-          ai_recovery_alerts: boolean | null;
           updated_at: string | null;
         };
         Insert: {
@@ -617,7 +616,6 @@ export interface Database {
           push_enabled?: boolean | null;
           streak_alerts?: boolean | null;
           accountability_alerts?: boolean | null;
-          ai_recovery_alerts?: boolean | null;
           updated_at?: string | null;
         };
         Update: {
@@ -625,7 +623,6 @@ export interface Database {
           push_enabled?: boolean | null;
           streak_alerts?: boolean | null;
           accountability_alerts?: boolean | null;
-          ai_recovery_alerts?: boolean | null;
           updated_at?: string | null;
         };
         Relationships: [];
@@ -751,63 +748,6 @@ export interface Database {
           user_id?: string | null;
           name?: string;
           props?: Json | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      ai_conversations: {
-        Row: {
-          id: string;
-          user_id: string;
-          title: string | null;
-          created_at: string;
-          last_message_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          title?: string | null;
-          created_at?: string;
-          last_message_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          title?: string | null;
-          created_at?: string;
-          last_message_at?: string;
-        };
-        Relationships: [];
-      };
-      ai_messages: {
-        Row: {
-          id: string;
-          conversation_id: string;
-          user_id: string;
-          role: 'system' | 'user' | 'assistant';
-          content: string;
-          tokens_in: number | null;
-          tokens_out: number | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          conversation_id: string;
-          user_id: string;
-          role: 'system' | 'user' | 'assistant';
-          content: string;
-          tokens_in?: number | null;
-          tokens_out?: number | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          conversation_id?: string;
-          user_id?: string;
-          role?: 'system' | 'user' | 'assistant';
-          content?: string;
-          tokens_in?: number | null;
-          tokens_out?: number | null;
           created_at?: string;
         };
         Relationships: [];

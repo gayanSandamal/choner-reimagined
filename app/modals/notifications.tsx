@@ -19,7 +19,6 @@ const ICON_BY_KIND: Record<string, keyof typeof Ionicons.glyphMap> = {
   partner_matched: 'heart',
   partner_accepted: 'heart',
   streak_risk: 'flame',
-  ai_suggestion: 'sparkles',
   group_post: 'chatbubbles',
   challenge_milestone: 'trophy',
   invite_accepted: 'mail-open',
@@ -70,7 +69,7 @@ export default function NotificationsModal() {
         ) : q.isError ? (
           <ErrorState message={(q.error as Error).message} onRetry={() => q.refetch()} />
         ) : (q.data ?? []).length === 0 ? (
-          <EmptyState title="You're all caught up" body="We'll let you know about partner activity, streaks at risk, and AI suggestions." />
+          <EmptyState title="You're all caught up" body="We'll let you know about partner activity and streaks at risk." />
         ) : (
           (Object.entries(groups) as [string, any[]][]).map(([label, items]) =>
             items.length === 0 ? null : (

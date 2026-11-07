@@ -9,8 +9,8 @@
 // That is why account deletion worked perfectly on an iPhone and failed on the
 // web build of the same app, against the same project, on the same day.
 //
-// Three of the six functions the client invokes had no CORS at all
-// (delete-account, ai-coach, submit-live-photo) while invite-email and
+// Two of the five functions the client invokes had no CORS at all
+// (delete-account, submit-live-photo) while invite-email and
 // places-autocomplete each carried their own inline copy, added the day
 // someone happened to hit them from a browser. One shared place instead, so
 // the next function is not the next outage.

@@ -14,29 +14,24 @@ Last updated 2026-11-07.
 
 ## Open right now
 
-### 1. Set `OPENAI_API_KEY`, then `ai-coach` can go out — **Dinesh or Gayan**
+### 1. `npm install`, on both computers — **Dinesh**
 
-`ai-coach` has never been deployed. A preflight sent to it on 6 November
-answered **404 Not Found**, so the AI coach has never worked on any platform,
-iPhone included. It was never a CORS problem, and nothing in the client would
-have told us: the error the app shows for a function that does not exist and
-for one that will not answer a preflight is the same error.
+`react-native-purchases` is pinned to exactly `10.16.0` as of #178, after
+`11.0.1` turned out to have no published iOS pod. A checkout that has not
+installed since then is running a different RevenueCat from the one the repo
+declares and the build servers use.
 
-It cannot usefully go out until the secret exists. `SUPABASE_URL` and
-`SUPABASE_SERVICE_ROLE_KEY` are injected by the platform; `OPENAI_API_KEY` is
-not.
+```
+npm install
+```
 
-Supabase dashboard → Project Settings → Edge Functions → Secrets. Add
-`OPENAI_API_KEY`. Optional: `OPENAI_MODEL` (default `gpt-4o-mini`) and
-`AI_DAILY_FREE_LIMIT` (default `5`).
+Both `E:\choner-reimagined` and `C:\Users\dines\choner-reimagined`. Run it
+when no Claude session is working in that folder.
 
-Then say so, and Claude deploys it through the Supabase connector the same way
-the other two went out.
+Done when: `node_modules/react-native-purchases/package.json` says `10.16.0`.
 
-Done when: the AI coach returns a reply instead of an error.
-
-Why not Claude: it is a billing credential for a third party, and Claude will
-not handle one.
+Why not Claude: it can reach only the machine it runs on, and installing while
+another session is mid-edit in the same folder is how a checkout gets broken.
 
 ### 2. Fix `.env` on the other computer — **Dinesh**
 
@@ -156,7 +151,10 @@ pointless: `invite-email` has `verify_jwt = true` and answers a preflight at
 documented trap, where the gateway 401s an `OPTIONS` request that by
 definition carries no `Authorization` header, does not apply here.
 
-`ai-coach` is item 1 above.
+The third, `ai-coach`, was never deployed and never will be: there is no AI
+coach in Choner. Its 404 is what surfaced that the code existed at all, and
+the whole feature was removed on 2026-11-07 instead. No `OPENAI_API_KEY` is
+needed by anything.
 
 ---
 

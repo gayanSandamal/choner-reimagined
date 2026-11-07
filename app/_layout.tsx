@@ -147,10 +147,6 @@ function RootLayoutNav() {
       <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
       <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
       <Stack.Screen
-        name="modals/ai-coach"
-        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-      />
-      <Stack.Screen
         name="modals/notifications"
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />

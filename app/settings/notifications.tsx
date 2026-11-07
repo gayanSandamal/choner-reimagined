@@ -9,11 +9,10 @@ import { useSession } from '@/providers/session-provider';
 import { useNotificationPreferences, useUpdateNotificationPreferences } from '@/features/notifications/hooks';
 import { theme } from '@/constants/theme';
 
-const PREFS: { key: 'push_enabled' | 'streak_alerts' | 'accountability_alerts' | 'ai_recovery_alerts'; title: string; subtitle: string }[] = [
+const PREFS: { key: 'push_enabled' | 'streak_alerts' | 'accountability_alerts'; title: string; subtitle: string }[] = [
   { key: 'push_enabled', title: 'Push notifications', subtitle: 'Master switch for all push notifications.' },
   { key: 'streak_alerts', title: 'Session reminders', subtitle: 'A reminder shortly before a session you and your partner planned.' },
   { key: 'accountability_alerts', title: 'Your partner', subtitle: 'When your partner plans, arrives, finishes a session, or the match changes.' },
-  { key: 'ai_recovery_alerts', title: 'AI suggestions', subtitle: 'Personalized nudges from your coach.' },
 ];
 
 export default function NotificationPreferencesScreen() {
