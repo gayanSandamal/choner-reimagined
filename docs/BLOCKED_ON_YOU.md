@@ -8,7 +8,7 @@ Kept here because it kept getting lost at the bottom of a long message. Claude
 adds to this file whenever it hits a wall, and says so in the same breath
 rather than mentioning it in passing.
 
-Last updated 2026-11-06.
+Last updated 2026-11-07.
 
 ---
 
@@ -67,6 +67,72 @@ and none of it would have caught the tab bar crash that started all of this.
 Why not Claude: it cannot hold a phone.
 
 ---
+
+### 5. Make the three Play Store graphics they will not launch without — **Dinesh**
+
+This is the longest pole in the launch that is not simply waiting.
+
+| Slot | Required | State |
+|---|---|---|
+| App icon, 512 x 512 | yes | **done**, exported from `assets/icon.png` on 7 November |
+| Feature graphic, 1024 x 500 | yes | does not exist |
+| Phone screenshots, 2 to 8 | yes, minimum 2 | none exist |
+
+Specs and which screens to shoot are in `docs/play-store/ASSETS.md`.
+
+What breaks if it is skipped: Play will not let the closed test roll out
+without them, so the 14-day tester clock never starts, so production access
+cannot be applied for. No amount of code work moves this. Every day it slips
+is a day on the end of the launch.
+
+Done when: the closed-testing release passes "Review release" with no graphics
+errors listed.
+
+Why not Claude: it is art. The icon was a resize of an existing file, which is
+why that one is done.
+
+### 6. Get 12 testers opted in, and keep them there — **Dinesh**
+
+The Choner.io Play account is a **personal** developer account, so production
+access needs at least 12 testers opted in to a **closed** test for 14
+continuous days. Internal testing does not count towards it, which is why
+`eas.json` moved to the `alpha` track in #184.
+
+Recruit about 15, not 12. One dropout puts the count under the line, and a
+replacement has to serve their own 14 days from scratch.
+
+Do not use paid tester services. Google rejects applications where the testing
+looks inauthentic and it can cost the account.
+
+What breaks if it is skipped: nothing else matters. This clock is longer than
+all the remaining engineering work put together, and it cannot start until
+item 5 is done and Google has reviewed the first closed release, which itself
+takes several days.
+
+Done when: the closed track shows 12 or more testers opted in, and the date
+that happened is written down, because that date is the one that decides the
+launch and nothing else does.
+
+Why not Claude: they are real people who have to accept an invite on their own
+phones.
+
+### 7. Declare trader status — **Dinesh**
+
+Play Console home shows "Declare your trader status" as Action required, with a
+February 2027 deadline. It does not block this release, so it should not pull
+anyone off items 5 and 6 today.
+
+Worth knowing before doing it: declaring as a trader publishes a name and
+address on the public store listing, and a personal account selling anything
+generally counts as one.
+
+What breaks if it is skipped: past the deadline, Google removes the developer
+profile and all its apps globally.
+
+Done when: the banner is gone from Play Console home.
+
+Why not Claude: account-owner-only, and it is a legal declaration about a
+person.
 
 ## Done, kept so the next person does not redo it
 
