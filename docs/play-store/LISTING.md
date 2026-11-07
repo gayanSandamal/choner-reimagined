@@ -38,12 +38,18 @@ required unless it says otherwise.
 **Limit 30 characters.** Shown under the icon everywhere in Play.
 
 ```text
-Choner: Habit Partner
+Choner
 ```
 
-21 characters. Plain `Choner` (6 characters) is the other candidate and is what
-the Apple doc picked. See **Needs Dinesh** at the bottom: this is a positioning
-call, not a technical one.
+Six characters. **Decided by Dinesh, 7 November 2026.** The earlier draft here
+was `Choner: Habit Partner`, on the argument that the app name is Play's
+strongest ranking signal and nobody searching for a way to stick to a habit
+will type a brand they have never heard. That was overruled in favour of the
+clean brand, matching Apple and the rest of the brand everywhere else.
+
+One consequence, and it is why the short description below changed: with no
+keyword in the name, the short description is now the only indexed field
+carrying any. It has to do that work.
 
 ### Short description
 
@@ -51,50 +57,48 @@ call, not a technical one.
 copy that appears in search results.
 
 ```text
-Get paired with one person who shows up, so you stop starting over.
+Meet new people. Find someone to build healthy habits with.
 ```
 
-67 characters.
-
-Two alternates at the same length, if the first reads too blunt:
-
-```text
-Keep the habit you keep restarting. One partner, same commitment, nearby.
-```
-
-```text
-Habits are easier with someone counting on you. Choner finds you that person.
-```
+59 characters. From [POSITIONING.md](POSITIONING.md), which leads on social
+discovery rather than on discipline or tracking.
 
 ### Full description
 
-**Limit 4000 characters.** The copy below is 2,989 characters, so there is room
-to grow if a section is missing, but not much. Anything added should replace
-something.
+**Limit 4000 characters.** The copy below is about 3,200, so there is room to
+grow, but not much.
 
-Written from what the app actually does. Every feature named here is reachable
-in the shipped build: the partner match, the invite code, the session plan, the
-QR scan, the time-boxed chat, the tap or photo check-in, the shared streak, the
-session owed, the nudge, the city Community feed, report and block. Nothing in
-it describes the AI coach, Pro, live video or groups, all of which exist in the
-repo and none of which ship.
+**Play does not render Markdown here.** No `#`, no `**bold**`, no `-` bullets:
+all three appear on the page as literal characters. The brief's draft was
+written in Markdown and would have shipped with the asterisks visible. Play
+accepts a small set of HTML tags and otherwise plain text with single line
+breaks preserved, so the ALL CAPS lines below are doing the work headings would
+do elsewhere.
 
-No em dashes, as standing instruction. Play renders this as plain text with
-single line breaks preserved, so the ALL CAPS lines are doing the work headings
-would do elsewhere. Play does not allow bold or headings here.
+Checked against the build on 7 November 2026, feature by feature. What changed
+from the brief's draft, and why, is in [POSITIONING.md](POSITIONING.md) under
+"Checked against the build".
 
 ```text
-Choner pairs you with one other person so neither of you has to keep a habit alone.
+Meet someone new. Find something healthy to do together.
 
-You know how this goes. You decide to start running. You go twice. Something comes up, the week slips, and a month later you are starting over again. Nothing was wrong with the plan. There was just nobody waiting for you.
+What if meeting someone new could also help you build a healthier habit?
 
-Choner gives you that person.
+Choner pairs you with one other person who wants to do the same activity as you, so neither of you has to start alone. You agree what you are doing, you both show up, and it gets easier to keep going.
 
-FINDING YOUR PARTNER
+HOW CHONER PAIRS YOU
 
-Tell us what you are working towards: move more, get stronger, reduce stress, or get your energy back. Pick something you will actually do, from running, jogging, walking, cycling, yoga or home workouts. Say how you want to show up, either meeting up in person or doing the same thing separately at the same time, and pick the part of the city you are in.
+Tell us what you are working towards: move more, get stronger, reduce stress, or improve your energy. Pick something you will actually do, from running, jogging, walking, cycling, yoga or home workouts. Say how you want to show up, and choose the part of the city you are in.
 
-Choner then finds you one partner. Not a feed of strangers, not a leaderboard, not a group chat. One person with the same commitment, near you, at a similar stage. If you already have someone in mind, invite them with a code instead.
+Choner then finds you one partner and shows you who they are. You can accept, or pass and look again. There is no feed of strangers to scroll, no profiles to browse, and nobody to message out of the blue. One person, one activity, agreed by both of you.
+
+Already have someone in mind? Invite them with a code instead.
+
+CHOOSE HOW YOU SHOW UP
+
+Together: meet in person and do the activity side by side.
+
+Separately, together: do the same thing in your own space at the same time, and keep each other to it.
 
 WHAT YOU DO TOGETHER
 
@@ -112,6 +116,8 @@ SAFETY
 
 Choner is for people aged 18 and over.
 
+Choner is not a dating app. You are matched with one person, for one activity, and the whole app is built around that.
+
 You pick the area you are in, never your exact position. The app does not ask for or read your device location.
 
 Your partner sees your first name, your photo if you added one, the activity you both agreed, your area, and whether you showed up. They do not see your email address or your reasons for starting.
@@ -120,28 +126,37 @@ You can report or block a partner from anywhere you can see them. A person on ou
 
 Phone numbers, email addresses and links cannot be sent in the chat. Keeping it in the app is what lets us help if something goes wrong.
 
-WHAT CHONER IS NOT
+WHERE CHONER WORKS
 
-It is not a dating app. It is not a chat app. It is not a tracker counting your steps in the background.
-
-One partner. One commitment. One question at the end of the week: did you both show up?
-
-Choner is starting in Colombo. Matching works best where there are other people nearby with the same commitment, so the earliest days are the thinnest.
+Choner is starting in Colombo. In-person matching covers Colombo and Greater Colombo, and whether a partner is available depends on your area and what you choose.
 
 Questions, problems, or anything at all: hello@choner.io
+
+Choner. Turn 'I should' into 'I did.'
 ```
 
-Two things in that copy are deliberate and worth defending if anyone asks to
+Three lines in that copy are deliberate and worth defending if anyone asks to
 cut them:
 
-* **"It is not a dating app."** Choner pairs strangers by area and activity and
-  then arranges for them to meet in a park. A reviewer will have the same
-  thought a user would, and saying it first is cheaper than being
-  re-categorised.
+* **"There is no feed of strangers to scroll, no profiles to browse."** This is
+  the accuracy fix. `app/find/who-else.tsx` says in its own comment that the
+  directory is "proof that real people are here, never a candidate list.
+  Read-only on purpose: a card does not open a profile, and there is no message
+  or match action." Copy that promises discovery of people sets up an
+  expectation the build refuses, which is a one-star review and, if a reviewer
+  notices, a misleading-listing rejection.
+* **"Choner is not a dating app."** Choner pairs strangers by area and activity
+  and then arranges for them to meet in a park, and the listing now *leads*
+  with meeting someone new. A reviewer will have the same thought a user would,
+  and saying it first is cheaper than being re-categorised. The brief's own
+  guardrails say not to be positioned as a dating app; this is the line that
+  does that work.
 * **"Choner is starting in Colombo."** The location list in the app is Colombo
   and Greater Colombo only, and the Community feed is scoped to your city. A
   listing that implies a global product earns one-star reviews from people in
-  cities with nobody to match them to.
+  cities with nobody to match them to. The brief marks this optional. It is
+  kept, because it accurately describes the launch configuration, which is the
+  brief's own condition for keeping it.
 
 ### Graphics
 
@@ -190,17 +205,22 @@ the release is blocked. The health disclaimer users already agree to at sign-up
 **Limit 500 characters per language.** Release notes, attached to the release
 rather than the listing.
 
-For the first closed test build:
+For the first closed test build, from [POSITIONING.md](POSITIONING.md):
 
 ```text
-The first build of Choner. Pick a habit, get paired with one person near you, agree a session, and show up together.
+Meet Choner!
+
+Find someone who wants to do the same healthy activity as you, agree a session, and start showing up together.
+
+Your next activity partner could be someone you have never met.
 
 This is an early test release. If something breaks or reads wrong, tell us at hello@choner.io. We read everything.
 ```
 
-232 characters.
-
----
+The brief's draft opened "Discover people who share your interest", which has
+the same browse problem as the full description had. Reworded to the matching
+flow that exists. The last paragraph is added because this is a closed test and
+testers need somewhere to send what they find.
 
 ## Every App content section, and where its answer lives
 
@@ -241,55 +261,59 @@ listing gets rejected for something that is not actually broken.
 
 ---
 
-## Needs Dinesh
+## Decided
 
-Four things here are yours, not mine. I have put a recommendation against each
-so none of them blocks the paperwork, but none of them is settled.
+**1. The app name is `Choner`.** Decided by Dinesh, 7 November 2026, against
+the recommendation here, which was `Choner: Habit Partner` for search. The
+brand wins. See the app name section for the knock-on effect on the short
+description.
 
-**1. The app name.** I have written `Choner: Habit Partner`. The Apple doc picked
-plain `Choner`. Plain `Choner` is cleaner and matches the brand everywhere else,
-but nobody searching Play for a way to stick to a habit will type it, and the
-app name is the strongest ranking signal Play has. The suffix costs nothing
-visually because Play truncates to the colon in most places. My recommendation
-is the suffix on Play and plain `Choner` on Apple, because Apple has a separate
-subtitle field doing that job and Play does not. **Your call, and worth five
-minutes rather than defaulting.**
+**2. The category is Health & Fitness.** Decided by Dinesh, 7 November 2026.
+The alternative was Social, which is arguably honest given partner matching, a
+chat and a city feed, but it files Choner next to dating and messaging apps,
+which is the exact association the listing spends a line denying. Switching
+later resets how Play has learned to rank the listing, so this is a pick-once
+call and it is made.
 
-**2. Who the listing is talking to.** The description above is written to
-someone who has already failed at a habit on their own, which is the landing
-page's framing ("ready to stop starting over"). It is not written to someone
-looking for a running buddy, or to someone who wants to get fit and has not
-tried yet. Those are three different first lines. I picked the one the repo
-already uses.
+**3. The positioning leads with meeting someone new**, not with discipline,
+tracking or weight loss. From [POSITIONING.md](POSITIONING.md), which is the
+source of truth for this and for launch marketing. The hierarchy is: meeting
+new people is the attraction, the shared healthy activity is the reason to
+connect, consistency is the outcome.
 
-**3. Whether to say "starting in Colombo" out loud.** It is honest and it
-protects the early reviews. It also caps the listing at a city and makes the
-product look smaller than the plan. I kept it in.
-
-**4. App category.** Health & Fitness, or Social. I have recommended Health &
-Fitness and explained why above. Switching later is possible but it resets how
-Play has learned to rank the listing, so pick once.
+**4. Who the listing talks to** follows from 3. It is written to someone who
+likes the idea of meeting a person to do something with, not to someone who has
+already decided to fix their discipline. That is a change from the earlier draft
+here, which was written to someone who had failed at a habit alone.
 
 One thing that is **not** a question: the description must not mention the AI
-coach, Pro, subscriptions or live video. None of them is in the build. A listing
-that promises a feature the app does not have is a removal, not a rejection.
+coach, Pro, subscriptions, live video, live maps or instant sessions. None of
+them is in the build, and the brief lists all of them as directions that must
+not be represented as existing features. A listing that promises a feature the
+app does not have is a removal, not a rejection.
 
----
+## Current state, 7 November 2026
 
-## Current state, 6 November 2026
-
-* Play developer account: **exists**, personal account "Choner.io".
-* Play app record created: **unknown from here**, and it must use
-  `io.choner.app`.
+* Play developer account: **exists**, personal account "Choner.io", account ID
+  8982616440901029351.
+* Play app record: **exists**, `io.choner.app`, last updated 29 October,
+  currently on the Internal testing track. Confirmed from the console on
+  7 November. Do not press Create app: the package name is already correctly
+  claimed, and pressing it again returns "This package name is already in use".
+* Binary: a production AAB at **versionCode 4**, built 7 November from `edb95da`,
+  supersedes the versionCode 3 bundle sitting on Internal testing.
 * Main store listing: **nothing written into the console yet**. The copy above
   is ready to paste.
-* Graphics: **none exist**. This is the long pole. See
-  [ASSETS.md](ASSETS.md).
+* Graphics: **app icon done** (512 x 512, exported 7 November). Feature graphic
+  and screenshots **do not exist**. This is the long pole. See
+  [ASSETS.md](ASSETS.md) and `docs/BLOCKED_ON_YOU.md`.
 * Privacy policy, terms and deletion pages: **all three live**, checked
   6 November 2026.
 * Data safety, content rating, target audience: **not filed**. Answers drafted
   in the other three files.
-* The 14-day clock: a personal developer account needs a closed test with at
-  least 12 testers opted in for 14 continuous days before production access can
-  be requested. That clock has not started. It is longer than everything else on
-  this page put together.
+* Trader status: **not declared**. Play shows this as Action required with a
+  February 2027 deadline, so it does not block this release.
+* The 14-day clock: **not started**. A personal developer account needs a closed
+  test with at least 12 testers opted in for 14 continuous days before
+  production access can be requested. It is longer than everything else on this
+  page put together.
