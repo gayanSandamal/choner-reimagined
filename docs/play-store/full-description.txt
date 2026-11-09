@@ -71,7 +71,7 @@ Choner is built around meeting people through shared healthy activities. It's ab
 
 You choose the area you're comfortable with. Choner does not need your exact location or live device location for in-person matching.
 
-Your partner can see your first name, profile photo if you've added one, your shared activity, selected area and relevant participation updates. Your email address and private reasons for joining are not shared with your partner.
+Your partner can see your first name, profile photo if you've added one, your shared activity, selected area, relevant participation updates and, once you are partners, the reasons you gave for starting. Your email address is never shared.
 
 You can report or block a partner from within the app. Reports are handled by the Choner team.
 

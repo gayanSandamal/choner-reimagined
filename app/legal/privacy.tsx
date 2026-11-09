@@ -70,8 +70,9 @@ export default function PrivacyScreen() {
         <AppText variant="subtitle">What your partner sees</AppText>
         <AppText muted>
           Your first name, your photo if you added one, the activity you both agreed, the area you
-          chose, and whether you showed up. They do not see your email address, your full name
-          unless you used it as your name, your reasons for starting, or anything you have reported.
+          chose, and whether you showed up. Once you are partners, they can also read the reasons
+          you gave for starting. They do not see your email address, your full name unless you used
+          it as your name, or anything you have reported.
         </AppText>
         <AppText variant="subtitle">How long we keep it</AppText>
         <AppText muted>
