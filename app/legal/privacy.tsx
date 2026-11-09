@@ -35,7 +35,7 @@ export default function PrivacyScreen() {
     <Screen scroll={false}>
       <ScrollView contentContainerStyle={{ gap: theme.spacing(2), paddingBottom: theme.spacing(4) }}>
         <ScreenHeader title="Privacy Policy" onBack={() => router.back()} />
-        <AppText variant="caption" muted>Last updated: 2026-11-06</AppText>
+        <AppText variant="caption" muted>Last updated: 2026-11-09</AppText>
         <AppText>
           Choner ("we", "us") collects only what it needs to pair you with someone and keep the two
           of you showing up: the account details you give us, the profile answers you choose, the
