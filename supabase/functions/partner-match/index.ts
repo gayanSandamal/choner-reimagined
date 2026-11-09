@@ -65,9 +65,24 @@ interface PoolCandidate {
 // Blurbs
 //
 // One curated line about each person, written at pairing time. Never their raw
-// reflections: until both sides confirm, these two are strangers. Their own
-// words are used where they wrote some, cut to a single sentence; otherwise we
-// say only what can be said without quoting them.
+// reflections: until both sides confirm, these two are strangers.
+//
+// That sentence used to be a lie. The code below it took the longest "Why"
+// answer, cut it to its first sentence, and shipped it as `Saman said: "..."`
+// on the match card, which is shown to someone who has not accepted yet and
+// may never accept. The Why screen calls those answers private in its own
+// comment, the profile row calls them private, and both the in-app and hosted
+// privacy policies promised a partner never sees them.
+//
+// Nothing leaked: the only quote anyone has seen came from the seeded sample
+// pool, scripts/db/seed-sample-pool.sql. But a real user picking "Something
+// else" on any of the four questions would have had their own words read by a
+// stranger.
+//
+// So the blurb is now always the style line. A CONFIRMED partner can still
+// read the reflections, which is the 2026-08-13 product decision recorded in
+// 202608131600 section 7 and enforced by is_my_partner(); the privacy copy
+// has been corrected to say so rather than claiming they are never shared.
 // ---------------------------------------------------------------------------
 
 const STYLE_BLURB: Record<string, string> = {
@@ -79,17 +94,6 @@ const STYLE_BLURB: Record<string, string> = {
 
 function blurbFor(c: PoolCandidate): string {
   const first = String(c.fullName ?? 'They').trim().split(/\s+/)[0];
-  const ownWords = (c.reflections ?? [])
-    .map((r) => (r.custom_text ?? '').trim())
-    .filter(Boolean)
-    .sort((a, b) => b.length - a.length)[0];
-
-  if (ownWords) {
-    const sentence = ownWords.split(/(?<=[.!?])\s/)[0].replace(/[.\s]+$/, '');
-    const trimmed = sentence.length > 140 ? `${sentence.slice(0, 137)}…` : sentence;
-    return `${first} said: "${trimmed}."`;
-  }
-
   const style = STYLE_BLURB[String(c.style)] ?? 'is getting started';
   const where = c.city ? ` Based in ${c.city}.` : '';
   return `${first} ${style}.${where}`;

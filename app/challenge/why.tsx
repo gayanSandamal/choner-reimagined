@@ -29,9 +29,18 @@ import { notify } from '@/lib/alert';
 
 // A CHALLENGES screen, not an onboarding one. It moved out of the onboarding
 // stack on 2026-09-29: the question is asked once, at the first session, which
-// is when it means something. Everyone answers it individually, and the
-// answers are private: they are a commitment device for the person who wrote
-// them, never something shown to the partner.
+// is when it means something. Everyone answers it individually.
+//
+// The answers are NOT private from a partner, whatever earlier versions of
+// this comment said. 202608131600 section 7 made them readable by a CONFIRMED
+// partner on 2026-08-13, enforced by is_my_partner(). They stay hidden from
+// anyone who is only an unaccepted match offer. Both privacy policies now say
+// exactly that.
+//
+// Reached only by invitees and the "joined" path out of onboarding/photo, so
+// most users are never asked. The answers also feed commitmentSignal() in
+// matching.ts, which scorePair() uses on every match, so an unanswered Why is
+// a weaker match rather than nothing.
 export default function WhyScreen() {
   const { session } = useSession();
   const userId = session?.user.id;

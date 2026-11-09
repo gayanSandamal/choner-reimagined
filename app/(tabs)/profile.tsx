@@ -92,7 +92,8 @@ export default function ProfileScreen() {
               sub="Name, goal, struggle, style, age and gender"
               onPress={() => router.push('/profile/edit')}
             />
-            {/* The only place a why can be read back: the answers are private. */}
+            {/* The only place a why can be read back in the app. Not private
+                from a confirmed partner: see 202608131600 section 7. */}
             <Row
               icon="heart"
               label="Why you're doing this"
