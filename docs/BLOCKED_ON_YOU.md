@@ -134,6 +134,20 @@ Done when: the banner is gone from Play Console home.
 Why not Claude: account-owner-only, and it is a legal declaration about a
 person.
 
+### 8b. Apply the "invite works once" database change — **Gayan**
+
+`supabase/migrations/202611101700_an_invite_works_once.sql`, from the
+invite-link-once branch. The app update already stops a used or expired link
+by itself; this makes the server refuse as well, so an older app on someone's
+phone cannot join twice or over an existing partner.
+
+**If it is skipped:** the app is still fixed, but the server keeps the old
+holes for anyone not on the new version.
+
+**How you know it worked:** as the account that accepted WALW89,
+`select accept_invite_by_code('WALW89');` in the app now shows "You already
+joined" rather than "You're in!".
+
 ## Done, kept so the next person does not redo it
 
 ### Deploying the three Edge Functions — two of three, 6 November

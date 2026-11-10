@@ -8,12 +8,62 @@ import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
 import { useSession } from '@/providers/session-provider';
 import { useAcceptInvite } from '@/features/community/hooks';
-import { previewInvite } from '@/features/community/api';
+import {
+  InviteRefusal,
+  inviteRefusalFromError,
+  inviteRefusalFromPreview,
+  previewInvite
+} from '@/features/community/api';
 import { useProfile } from '@/features/profile/hooks';
 import { setPendingInviteToken, clearPendingInviteToken } from '@/lib/pending-invite';
 import { theme } from '@/constants/theme';
 
-type Phase = 'idle' | 'accepting' | 'confirm-replace' | 'success' | 'error' | 'needs-auth';
+type Phase = 'idle' | 'accepting' | 'confirm-replace' | 'success' | 'closed' | 'error' | 'needs-auth';
+
+// An invite works once (10 Nov 2026). Every way it cannot be used gets its own
+// plain screen, and none of them changes anything.
+const CLOSED: Record<InviteRefusal, { icon: keyof typeof Ionicons.glyphMap; title: string; body: string }> = {
+  already_joined: {
+    icon: 'checkmark-circle-outline',
+    title: 'You already joined',
+    body: 'You joined this challenge with this invite, so the link has been used. Nothing has changed.'
+  },
+  used: {
+    icon: 'lock-closed-outline',
+    title: 'This invite has been used',
+    body: 'Someone has already joined with it. Ask for a new invite if you want to join.'
+  },
+  expired: {
+    icon: 'time-outline',
+    title: 'This invite has expired',
+    body: 'Invites last 48 hours. Ask them to send you a new one.'
+  },
+  own: {
+    icon: 'person-outline',
+    title: 'This is your own invite',
+    body: 'Send it to the person you want to do this with.'
+  },
+  not_found: {
+    icon: 'help-circle-outline',
+    title: 'This invite link does not work',
+    body: 'Check the code in the message, or ask them to send a new invite.'
+  },
+  you_partnered: {
+    icon: 'people-outline',
+    title: 'You already have a partner',
+    body: 'Your challenge and your partner stay as they are. End that match first if you want to join someone else.'
+  },
+  match_waiting: {
+    icon: 'hourglass-outline',
+    title: 'You have a match waiting',
+    body: 'Answer the match on Find first. Your challenge stays as it is.'
+  },
+  they_partnered: {
+    icon: 'people-outline',
+    title: 'This invite is no longer available',
+    body: 'They have paired up with someone else.'
+  }
+};
 
 export default function AcceptInviteScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
@@ -24,6 +74,15 @@ export default function AcceptInviteScreen() {
   const [message, setMessage] = useState('');
   // Filled when accepting would replace the challenge they are already on.
   const [replace, setReplace] = useState<{ from: string; to: string | null; inviter: string } | null>(null);
+  const [closed, setClosed] = useState<InviteRefusal | null>(null);
+
+  // Refused: say why, change nothing, and forget the stashed link so it is not
+  // tried again on the next launch.
+  const close = (why: InviteRefusal) => {
+    clearPendingInviteToken();
+    setClosed(why);
+    setPhase('closed');
+  };
   const startedRef = useRef(false);
 
   const accept = () => {
@@ -35,6 +94,8 @@ export default function AcceptInviteScreen() {
         setPhase('success');
       })
       .catch((e: any) => {
+        const why = inviteRefusalFromError(e);
+        if (why) return close(why);
         setPhase('error');
         setMessage(e?.message ?? 'Could not accept this invite.');
       });
@@ -84,7 +145,11 @@ export default function AcceptInviteScreen() {
     // RPC has its own checks and its own messages.
     previewInvite(String(token))
       .then((pv) => {
-        if (pv.found && pv.replaces && !pv.mine && !pv.blocked && !pv.expired) {
+        // Used, expired, yours, or you are already paired: stop here. This is
+        // what keeps a second tap on a used link from joining all over again.
+        const why = inviteRefusalFromPreview(pv);
+        if (why) return close(why);
+        if (pv.found && pv.replaces) {
           setReplace({ from: pv.replaces, to: pv.activity, inviter: pv.inviter_first_name });
           setPhase('confirm-replace');
           return;
@@ -136,6 +201,17 @@ export default function AcceptInviteScreen() {
                 router.replace('/(tabs)/home');
               }}
             />
+          </>
+        ) : phase === 'closed' && closed ? (
+          <>
+            <Ionicons name={CLOSED[closed].icon} size={52} color={theme.colors.primary2} />
+            <AppText variant="title" style={styles.textCenter}>
+              {CLOSED[closed].title}
+            </AppText>
+            <AppText variant="muted" style={styles.textCenter}>
+              {CLOSED[closed].body}
+            </AppText>
+            <Button label="Go home" onPress={() => router.replace('/(tabs)/home')} />
           </>
         ) : phase === 'needs-auth' ? (
           <>
