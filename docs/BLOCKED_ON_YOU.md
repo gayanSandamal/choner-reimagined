@@ -186,6 +186,21 @@ value is needed: Play Console, **Test and release**, **App integrity**,
 Claude and it becomes one more small file to upload. Not needed for the link to
 work.
 
+### 8c. Check Apple's time wheel on an iPhone before release — **Dinesh**
+
+The next store build has Apple's own wheel for the time on iPhone. Before it
+goes to the store, on a TestFlight install:
+
+1. Plan a session and look at the picker: the day column on the left, Apple's
+   wheel on the right, one row, both grey.
+2. **Settings, General, Date & Time, turn on 24-Hour Time**, then open the
+   picker again. Note whether the wheel shows AM/PM or 19:00.
+3. Your phone is on the Persian calendar: the day column should still read
+   "Today", "Tomorrow", "Thu 12 Nov", never Aban.
+
+**If 2 shows 19:00:** tell Claude. It is a cosmetic mismatch, not a broken
+picker.
+
 ## Done, kept so the next person does not redo it
 
 ### Deploying the three Edge Functions — two of three, 6 November

@@ -1,9 +1,32 @@
+import { Platform } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { TimeWheel } from './TimeWheel';
 
+// Apple's wheel is native. Stood in for by a plain view that keeps its props,
+// so a test can read what the app asked Apple for.
+const lastApple: { props: any } = { props: null };
+jest.mock('@react-native-community/datetimepicker', () => {
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: (props: any) => {
+      lastApple.props = props;
+      return <View testID="apple-time" />;
+    }
+  };
+});
+
+const realOS = Platform.OS;
+const asPlatform = (os: typeof Platform.OS) => {
+  Object.defineProperty(Platform, 'OS', { configurable: true, get: () => os });
+};
+afterEach(() => asPlatform(realOS));
+
 // Scrolling cannot be driven from here, but every value on the wheel can also
 // be tapped, and a tap goes through the same conversion a scroll does.
-describe('TimeWheel (#191)', () => {
+describe('TimeWheel on Android: every column is ours (#191)', () => {
+  beforeEach(() => asPlatform('android'));
+
   it('offers twelve hours, the two half hours, and AM or PM', async () => {
     await render(<TimeWheel value={{ h: 6, m: 30 }} onChange={jest.fn()} />);
     for (const h of [1, 5, 9, 11]) expect(screen.getByText(String(h))).toBeTruthy();
@@ -54,5 +77,49 @@ describe('TimeWheel (#191)', () => {
     await render(<TimeWheel value={{ h: 11, m: 0 }} onChange={onChange} />);
     await fireEvent.press(screen.getByText('12'));
     expect(onChange).toHaveBeenLastCalledWith({ h: 0, m: 0 });
+  });
+});
+
+describe("TimeWheel on iPhone: our day, Apple's time (decided 10 Nov 2026)", () => {
+  beforeEach(() => asPlatform('ios'));
+
+  const days = () => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return [0, 1, 2].map((n) => new Date(t.getFullYear(), t.getMonth(), t.getDate() + n));
+  };
+
+  it("hands hour, minutes and AM/PM to Apple's wheel, in half hours and daytime only", async () => {
+    await render(<TimeWheel value={{ h: 6, m: 30 }} onChange={jest.fn()} />);
+    expect(screen.getByTestId('apple-time')).toBeTruthy();
+    const apple = lastApple;
+    expect(apple.props.mode).toBe('time');
+    expect(apple.props.display).toBe('spinner');
+    expect(apple.props.minuteInterval).toBe(30);
+    expect(apple.props.value.getHours()).toBe(6);
+    expect(apple.props.value.getMinutes()).toBe(30);
+    expect(apple.props.minimumDate.getHours()).toBe(5);
+    expect(apple.props.maximumDate.getHours()).toBe(21);
+    // No hour column of ours on iPhone.
+    expect(screen.queryByText('11')).toBeNull();
+  });
+
+  it("reads the time back from Apple's wheel", async () => {
+    const onChange = jest.fn();
+    await render(<TimeWheel value={{ h: 6, m: 30 }} onChange={onChange} />);
+    expect(screen.getByTestId('apple-time')).toBeTruthy();
+    const apple = lastApple;
+    const d = new Date();
+    d.setHours(19, 30, 0, 0);
+    apple.props.onValueChange({}, d);
+    expect(onChange).toHaveBeenLastCalledWith({ h: 19, m: 30 });
+  });
+
+  it('keeps the day column ours, written by the app', async () => {
+    const onDay = jest.fn();
+    await render(<TimeWheel value={{ h: 6, m: 30 }} onChange={jest.fn()} days={days()} dayIndex={0} onDayIndex={onDay} />);
+    expect(screen.getByText('Today')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Tomorrow'));
+    expect(onDay).toHaveBeenLastCalledWith(1);
   });
 });

@@ -3700,7 +3700,8 @@ separately, and moving a session you cannot make.
   setting, which is why one screenshot showed 05:30 to 21:30.
 - **It is the app's own wheel, not the phone's picker.** The phone's is a wheel
   on iPhone only (Android's is a clock face), and adding it needs a new store
-  build. This one looks the same on both and ships over the air.
+  build. This one looks the same on both. (Superseded on iPhone the same
+  day: see "Apple's time wheel on iPhone" below.)
 - **It opens on 6:30 AM and always holds a time**, so only the day has to be
   chosen. Because of that, "today, 6:30 AM" is usually already in the past, so
   the planner now refuses a time that has gone and says so. The buttons never
@@ -3851,5 +3852,31 @@ stacked compete, and your challenge is the thing to do. End this match moved
 below everything; it still asks first.
 
 Prototyped first (artifact tab "Find: once you are paired"), confirmed, built.
+
+**Decided by:** user, 10 November 2026.
+
+## Apple's time wheel on iPhone, 10 November 2026
+
+**On iPhone, hour, minutes and AM/PM are Apple's own wheel; the day column
+stays ours**, restyled in Apple's grey (system font, black and grey, Apple's
+grey band, 216 points tall) so the row reads as one control. Android keeps
+our wheel for everything.
+
+Why only the time is Apple's: Apple's date wheel writes in the phone's
+calendar, and `@react-native-community/datetimepicker` has no way to change
+that (it sets the language, never the calendar). On a phone set to the
+Persian calendar it would show "19 Aban", the bug just fixed. Apple's
+time-only wheel shows no date, so it cannot.
+
+Apple's wheel greys out times before 5:00 AM and after 9:00 PM itself, in 30
+minute steps. It is asked for AM and PM (`locale="en_US"`). **Not yet known:**
+whether a phone set to 24-hour time still shows 19:00 there. Checked on a
+device before release.
+
+**Correction, found while building this:** Choner has no over-the-air
+updates. `expo-updates` is not installed, so every change reaches phones only
+through a store build. Earlier entries and messages today said changes would
+"ship over the air"; they do not. This one needs a store build for the native
+picker, and so does everything else.
 
 **Decided by:** user, 10 November 2026.

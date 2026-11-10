@@ -6,10 +6,14 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   View
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { AppText } from '@/components/ui/AppText';
 import {
+  DAY_END,
+  DAY_START,
   dayLabel,
   fromWheel,
   hourInDaytime,
@@ -25,10 +29,12 @@ import { theme } from '@/constants/theme';
 // The time wheel (#191): three columns you scroll, hour, minutes, AM or PM.
 // It replaces a wall of 33 half-hour buttons.
 //
-// Drawn by the app rather than borrowed from the phone, on purpose. The
-// phone's own picker is a wheel on iPhone only (Android's is a clock face),
-// and adding it means a new store build. This one looks the same on both and
-// ships over the air.
+// On Android every column is ours. On iPhone (decided 10 Nov 2026) the hour,
+// minutes and AM/PM are Apple's own wheel, and the day column stays ours,
+// restyled in Apple's grey so the row reads as one control. The day stays ours
+// because Apple's date wheel writes in the phone's calendar: on a phone set to
+// the Persian calendar it shows "19 Aban". Apple's time-only wheel shows no
+// date at all, so it cannot.
 //
 // It always holds a time, so there is no "nothing picked yet" state to guard.
 //
@@ -36,6 +42,10 @@ import { theme } from '@/constants/theme';
 // row, like the phone's own alarm picker (decided 10 Nov 2026).
 
 const ROW = 40;
+// Apple's wheel: 216 points tall, rows about 32 apart, a grey band in the
+// middle. The day column copies these so the two halves line up.
+const APPLE_H = 216;
+const APPLE_ROW = 32;
 
 function Column<T extends string | number>({
   items,
@@ -46,7 +56,10 @@ function Column<T extends string | number>({
   format,
   label,
   faint,
-  small
+  small,
+  rowHeight = ROW,
+  height,
+  apple
 }: {
   items: readonly T[];
   index: number;
@@ -60,14 +73,21 @@ function Column<T extends string | number>({
   faint?: (item: T) => boolean;
   // Smaller text, for the day column's longer words.
   small?: boolean;
+  rowHeight?: number;
+  // The column's height, when it has to match something else (Apple's wheel).
+  height?: number;
+  // Drawn in Apple's style: system font, black and grey, no orange.
+  apple?: boolean;
 }) {
+  const ROW = rowHeight;
+  const tall = height ?? ROW * rows;
   const ref = useRef<ElementRef<typeof ScrollView>>(null);
   // The index this column last reported itself. A change of `index` that does
   // not match it came from outside (a tap, a reset), and only those scroll the
   // column: scrolling to follow our own report would fight the finger.
   const reported = useRef(index);
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pad = (ROW * (rows - 1)) / 2;
+  const pad = (tall - ROW) / 2;
 
   const scrollTo = (i: number, animated: boolean) => ref.current?.scrollTo({ y: i * ROW, animated });
 
@@ -105,7 +125,7 @@ function Column<T extends string | number>({
   return (
     <ScrollView
       ref={ref}
-      style={{ width, height: ROW * rows }}
+      style={{ width, height: tall }}
       contentContainerStyle={{ paddingVertical: pad }}
       contentOffset={{ x: 0, y: index * ROW }}
       onLayout={() => scrollTo(reported.current, false)}
@@ -123,7 +143,15 @@ function Column<T extends string | number>({
       onAccessibilityAction={(e) => step(e.nativeEvent.actionName === 'increment' ? 1 : -1)}
     >
       {items.map((item, i) => (
-        <Pressable key={String(item)} onPress={() => onIndex(i)} style={styles.item}>
+        <Pressable key={String(item)} onPress={() => onIndex(i)} style={[styles.item, { height: ROW }]}>
+          {apple ? (
+            <Text
+              numberOfLines={1}
+              style={[styles.appleText, i === index && styles.appleOn, Math.abs(i - index) >= 2 && styles.appleFar]}
+            >
+              {format(item)}
+            </Text>
+          ) : (
           <AppText
             numberOfLines={1}
             style={[
@@ -136,6 +164,7 @@ function Column<T extends string | number>({
           >
             {format(item)}
           </AppText>
+          )}
         </Pressable>
       ))}
     </ScrollView>
@@ -169,6 +198,59 @@ export function TimeWheel({
     const n = { ...w, ...next };
     onChange(fromWheel(n.hour, n.minute, n.period));
   };
+
+  if (Platform.OS === 'ios') {
+    // Apple's wheel takes a whole date; only its time is read. The date is the
+    // chosen day (or today), so the daytime bounds below fall on the same day.
+    const base = withDays ? new Date(days![Math.min(dayIndex, days!.length - 1)]) : new Date();
+    base.setHours(0, 0, 0, 0);
+    const on = (t: TimeOfDay) => {
+      const d = new Date(base);
+      d.setHours(t.h, t.m, 0, 0);
+      return d;
+    };
+    return (
+      <View style={[styles.appleRow, { height: APPLE_H }]} accessibilityLabel={label}>
+        {withDays ? (
+          <>
+            <View pointerEvents="none" style={styles.appleBand} />
+            <Column
+              items={days!.map((_, i) => i)}
+              index={Math.min(dayIndex, days!.length - 1)}
+              onIndex={onDayIndex!}
+              rows={7}
+              rowHeight={APPLE_ROW}
+              height={APPLE_H}
+              width={132}
+              format={(i) => dayLabel(days![i])}
+              label={`${label}, day`}
+              apple
+            />
+          </>
+        ) : null}
+        <DateTimePicker
+          value={on(value)}
+          mode="time"
+          display="spinner"
+          // Half hours, as the Android wheel (#191).
+          minuteInterval={30}
+          // Daytime only, 5:00 AM to 9:00 PM: Apple greys out the rest itself.
+          minimumDate={on(DAY_START)}
+          maximumDate={on(DAY_END)}
+          // AM and PM, as everywhere else in the app. A phone set to 24-hour
+          // time may still show 19:00 here: to be checked on a device.
+          locale="en_US"
+          themeVariant="light"
+          textColor="#000000"
+          onValueChange={(_, d) => {
+            if (d) onChange({ h: d.getHours(), m: d.getMinutes() < 30 ? 0 : 30 });
+          }}
+          style={styles.appleTime}
+          accessibilityLabel={`${label}, time`}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wheel} accessibilityLabel={label}>
@@ -245,6 +327,21 @@ const styles = StyleSheet.create({
   itemText: { fontSize: 18, color: theme.colors.muted, fontFamily: theme.fonts.bodyMedium },
   itemOn: { fontSize: 21, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
   itemFaint: { color: theme.colors.dim },
+  // iPhone: Apple's look for our day column.
+  appleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  appleBand: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    top: (APPLE_H - APPLE_ROW) / 2,
+    height: APPLE_ROW,
+    borderRadius: 8,
+    backgroundColor: 'rgba(118,118,128,0.12)'
+  },
+  appleText: { fontSize: 20, color: 'rgba(60,60,67,0.6)' },
+  appleOn: { fontSize: 21, color: '#000000' },
+  appleFar: { color: 'rgba(60,60,67,0.3)', fontSize: 18 },
+  appleTime: { flex: 1, height: APPLE_H },
   itemSmall: { fontSize: 15 },
   itemOnSmall: { fontSize: 16 },
   colon: { fontSize: 20, color: theme.colors.text, fontFamily: theme.fonts.bodyBold }
