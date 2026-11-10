@@ -21,7 +21,8 @@ import {
   useSetSessionCheckin,
   useVerifySessionQr
 } from '@/features/plans/hooks';
-import { at, nextDays, TIME_SLOTS } from '@/features/plans/negotiation';
+import { at, DEFAULT_TIME, nextDays, timeLabel, TimeOfDay } from '@/features/plans/negotiation';
+import { TimeWheel } from '@/components/plans/TimeWheel';
 import { activityNoun, planCopy } from '@/features/plans/activity';
 import { myAmount, theirAmount } from '@/features/plans/amounts';
 import type { PairPlan } from '@/features/plans/types';
@@ -332,7 +333,8 @@ function RescheduleComposer({ plan, onDone }: { plan: PairPlan; onDone: () => vo
   const propose = useProposeReschedule();
   const days = nextDays(new Date(Date.now() + 24 * 3600e3), 6);
   const [day, setDay] = useState<Date | null>(null);
-  const [slot, setSlot] = useState<(typeof TIME_SLOTS)[number] | null>(null);
+  // Tomorrow at the earliest, so the wheel can never hold a time that has gone.
+  const [slot, setSlot] = useState<TimeOfDay>(DEFAULT_TIME);
   return (
     <View style={styles.wrap}>
       <AppText>{COPY.countingOnYou}</AppText>
@@ -346,18 +348,16 @@ function RescheduleComposer({ plan, onDone }: { plan: PairPlan; onDone: () => vo
           />
         ))}
       </View>
-      <View style={styles.chips}>
-        {TIME_SLOTS.map((s) => {
-          const label = new Date(2000, 0, 1, s.h, s.m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-          return <Chip key={label} size="sm" label={label} active={slot === s} onPress={() => setSlot(s)} />;
-        })}
-      </View>
+      <TimeWheel value={slot} onChange={setSlot} />
+      <AppText style={styles.picked}>
+        {day ? day.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }) : 'Pick a day'}, {timeLabel(slot)}
+      </AppText>
       <Button
         label="Suggest this time"
-        disabled={!day || !slot}
+        disabled={!day}
         loading={propose.isPending}
         onPress={async () => {
-          if (!day || !slot) return;
+          if (!day) return;
           const res: any = await guard(() => propose.mutateAsync({ planId: plan.id, startsAt: at(day, slot) }));
           if (res?.ok) onDone();
         }}
@@ -416,6 +416,7 @@ const styles = StyleSheet.create({
   wrap: { gap: theme.spacing(1.5) },
   options: { gap: theme.spacing(1) },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  picked: { textAlign: 'center', fontSize: 13, color: theme.colors.muted },
   itsOn: { fontSize: 12.5 },
   status: { fontSize: 15, color: theme.colors.text },
   small: { fontSize: 11.5 },

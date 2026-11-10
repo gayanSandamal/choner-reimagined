@@ -33,8 +33,7 @@ export function proposalLabel(field: string, value: any): string {
   return '';
 }
 
-// Day chips for the next week and 30-minute time chips, 5:00-21:00 — no
-// native date picker, and a real run is never planned at 2am.
+// Day chips for the next week, and a time wheel beside them (#191).
 export function nextDays(from = new Date(), count = 7) {
   return Array.from({ length: count }, (_, i) => {
     const d = new Date(from);
@@ -43,12 +42,38 @@ export function nextDays(from = new Date(), count = 7) {
     return d;
   });
 }
-export const TIME_SLOTS = Array.from({ length: 33 }, (_, i) => {
-  const mins = 5 * 60 + i * 30;
-  return { h: Math.floor(mins / 60), m: mins % 60 };
-});
-export function at(day: Date, slot: { h: number; m: number }) {
+
+// The time wheel: hour, minutes, AM or PM. It replaced 33 half-hour buttons
+// that ran 5:00 to 21:00. Half hours stay (decided 10 Nov 2026); the limit on
+// the hour does not, because a wheel reaches every hour and policing it would
+// mean a wheel that refuses to stop where you put it.
+export type TimeOfDay = { h: number; m: number };
+export type Period = 'AM' | 'PM';
+export const WHEEL_HOURS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+export const WHEEL_MINUTES: readonly number[] = [0, 30];
+export const WHEEL_PERIODS: readonly Period[] = ['AM', 'PM'];
+// Where the wheel opens: an early-morning run, the commonest plan.
+export const DEFAULT_TIME: TimeOfDay = { h: 6, m: 30 };
+
+export function toWheel(t: TimeOfDay): { hour: number; minute: number; period: Period } {
+  return { hour: t.h % 12 === 0 ? 12 : t.h % 12, minute: t.m, period: t.h < 12 ? 'AM' : 'PM' };
+}
+export function fromWheel(hour: number, minute: number, period: Period): TimeOfDay {
+  return { h: (hour % 12) + (period === 'PM' ? 12 : 0), m: minute };
+}
+// "6:30 AM". Always the 12-hour clock, to read the same as the wheel does.
+export function timeLabel(t: TimeOfDay): string {
+  const w = toWheel(t);
+  return `${w.hour}:${String(w.minute).padStart(2, '0')} ${w.period}`;
+}
+
+export function at(day: Date, slot: TimeOfDay) {
   const d = new Date(day);
   d.setHours(slot.h, slot.m, 0, 0);
   return d.toISOString();
+}
+// A wheel that opens on 6:30 AM with today chosen is usually already in the
+// past, so the pickers check before they offer it.
+export function isPast(day: Date, slot: TimeOfDay, now = new Date()) {
+  return new Date(at(day, slot)).getTime() <= now.getTime();
 }

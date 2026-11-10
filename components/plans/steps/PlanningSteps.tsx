@@ -17,7 +17,8 @@ import {
   useProposePlanValue,
   useSetDistanceAnswer
 } from '@/features/plans/hooks';
-import { at, nextDays, TIME_SLOTS } from '@/features/plans/negotiation';
+import { at, DEFAULT_TIME, isPast, nextDays, timeLabel, TimeOfDay } from '@/features/plans/negotiation';
+import { TimeWheel } from '@/components/plans/TimeWheel';
 import type { PairPlan } from '@/features/plans/types';
 import { notify } from '@/lib/alert';
 import { theme } from '@/constants/theme';
@@ -249,18 +250,14 @@ function DayTimePicker({
   const days = useMemo(() => nextDays(), []);
   const [day, setDay] = useState<Date | null>(null);
   const [same, setSame] = useState(true);
-  const [mine, setMine] = useState<(typeof TIME_SLOTS)[number] | null>(null);
-  const [theirs, setTheirs] = useState<(typeof TIME_SLOTS)[number] | null>(null);
-  const ready = day && mine && (!differentTimes || same || theirs);
-
-  const slotRow = (value: typeof mine, set: (s: (typeof TIME_SLOTS)[number]) => void) => (
-    <View style={styles.chips}>
-      {TIME_SLOTS.map((s) => {
-        const label = new Date(2000, 0, 1, s.h, s.m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-        return <Chip key={label} label={label} size="sm" active={value === s} onPress={() => set(s)} />;
-      })}
-    </View>
-  );
+  // The wheel always holds a time (#191), so the day is the only thing left
+  // to choose before the button wakes up.
+  const [mine, setMine] = useState<TimeOfDay>(DEFAULT_TIME);
+  const [theirs, setTheirs] = useState<TimeOfDay>({ h: 7, m: 0 });
+  const two = Boolean(differentTimes && !same);
+  const gone = day ? isPast(day, mine) || (two && isPast(day, theirs)) : false;
+  const ready = day && !gone;
+  const dayLabel = day ? day.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }) : 'Pick a day';
 
   return (
     <View style={styles.wrap}>
@@ -280,23 +277,30 @@ function DayTimePicker({
           <Chip label={COPY.differentTimes} active={!same} onPress={() => setSame(false)} />
         </View>
       ) : null}
-      {differentTimes && !same ? <AppText muted style={styles.compareLabel}>Your time</AppText> : null}
-      {slotRow(mine, setMine)}
-      {differentTimes && !same ? (
+      {two ? <AppText muted style={styles.compareLabel}>Your time</AppText> : null}
+      <TimeWheel value={mine} onChange={setMine} compact={two} label={two ? 'Your time' : 'Time'} />
+      {two ? (
         <>
           <AppText muted style={styles.compareLabel}>Their time</AppText>
-          {slotRow(theirs, setTheirs)}
+          <TimeWheel value={theirs} onChange={setTheirs} compact label="Their time" />
         </>
       ) : null}
+      {/* The choice read back in words before it is sent. */}
+      <AppText style={styles.picked}>
+        {gone
+          ? 'That time has already passed. Pick a later one.'
+          : two
+          ? `${dayLabel}, you at ${timeLabel(mine)}, them at ${timeLabel(theirs)}`
+          : `${dayLabel}, ${timeLabel(mine)}`}
+      </AppText>
       <Button
         label={cta}
         disabled={!ready}
         onPress={() =>
           day &&
-          mine &&
           onPick({
             starts_at: at(day, mine),
-            ...(differentTimes && !same && theirs ? { other_at: at(day, theirs) } : {})
+            ...(two ? { other_at: at(day, theirs) } : {})
           })
         }
       />
@@ -437,6 +441,7 @@ const styles = StyleSheet.create({
   compareLabel: { fontSize: 11.5 },
   compareValue: { fontSize: 16, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  picked: { textAlign: 'center', fontSize: 13, color: theme.colors.muted },
   suggestion: { fontSize: 13, color: theme.colors.text, paddingVertical: 6 },
   card: { backgroundColor: theme.colors.surface3, borderRadius: theme.radius.md, padding: theme.spacing(1.75), gap: 10 },
   row: { gap: 2 },
