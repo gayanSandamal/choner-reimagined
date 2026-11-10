@@ -3691,9 +3691,9 @@ you used and an expired one. So the second-tap bug is fixed by the app update
 alone. `202611101700_an_invite_works_once.sql` makes the server refuse too,
 so an older app cannot get round it.
 
-**Unchanged, and a question for the user:** someone solo on a different
-challenge is still asked "Switch to Gayan's challenge?" and can choose either
-way. Nothing is replaced without that yes. Whether to refuse outright
-instead is open.
+**Kept on purpose:** someone with no partner who is on a different challenge
+is still asked "Switch to Gayan's challenge?" and can choose either way.
+Nothing is replaced without that yes. Confirmed by the user, 10 November
+2026.
 
 **Asked for by:** user, 10 November 2026. Causes **found by:** Claude.
