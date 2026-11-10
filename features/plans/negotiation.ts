@@ -44,9 +44,13 @@ export function nextDays(from = new Date(), count = 7) {
 }
 
 // The time wheel: hour, minutes, AM or PM. It replaced 33 half-hour buttons
-// that ran 5:00 to 21:00. Half hours stay (decided 10 Nov 2026); the limit on
-// the hour does not, because a wheel reaches every hour and policing it would
-// mean a wheel that refuses to stop where you put it.
+// that ran 5:00 to 21:00. Half hours stay, and so does that range (both
+// decided 10 Nov 2026): a real run is never planned at 2am.
+//
+// The wheel still turns through every hour. It does not jump back when it is
+// left outside the range, because a wheel that refuses to stop where you put
+// it is worse than one that tells you why the button is asleep. The hours
+// outside are drawn faint, and the pickers say what the range is.
 export type TimeOfDay = { h: number; m: number };
 export type Period = 'AM' | 'PM';
 export const WHEEL_HOURS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -54,6 +58,14 @@ export const WHEEL_MINUTES: readonly number[] = [0, 30];
 export const WHEEL_PERIODS: readonly Period[] = ['AM', 'PM'];
 // Where the wheel opens: an early-morning run, the commonest plan.
 export const DEFAULT_TIME: TimeOfDay = { h: 6, m: 30 };
+// The daytime range, both ends included. Change the hours here and nowhere
+// else: the wheel, the pickers and the line they show all read these.
+export const DAY_START: TimeOfDay = { h: 5, m: 0 };
+export const DAY_END: TimeOfDay = { h: 21, m: 0 };
+const minutesOf = (t: TimeOfDay) => t.h * 60 + t.m;
+export function inDaytime(t: TimeOfDay) {
+  return minutesOf(t) >= minutesOf(DAY_START) && minutesOf(t) <= minutesOf(DAY_END);
+}
 
 export function toWheel(t: TimeOfDay): { hour: number; minute: number; period: Period } {
   return { hour: t.h % 12 === 0 ? 12 : t.h % 12, minute: t.m, period: t.h < 12 ? 'AM' : 'PM' };
@@ -72,6 +84,16 @@ export function at(day: Date, slot: TimeOfDay) {
   d.setHours(slot.h, slot.m, 0, 0);
   return d.toISOString();
 }
+// "Pick a time between 5:00 AM and 9:00 PM."
+export function daytimeHint() {
+  return `Pick a time between ${timeLabel(DAY_START)} and ${timeLabel(DAY_END)}.`;
+}
+// Whether an hour on the wheel has any time in range, for the AM or PM it is
+// showing. 9 PM does (9:00); 10 PM does not.
+export function hourInDaytime(hour: number, period: Period) {
+  return WHEEL_MINUTES.some((m) => inDaytime(fromWheel(hour, m, period)));
+}
+
 // A wheel that opens on 6:30 AM with today chosen is usually already in the
 // past, so the pickers check before they offer it.
 export function isPast(day: Date, slot: TimeOfDay, now = new Date()) {

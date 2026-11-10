@@ -3688,10 +3688,14 @@ separately, and moving a session you cannot make.
 
 - **Minutes are :00 and :30 only.** A wheel could offer every 5 or 15 minutes;
   the user chose to keep 30.
-- **Any hour can be chosen.** The buttons ran 5:00 to 21:00. A wheel reaches
-  every hour, and one that refused to stop where you put it would be worse than
-  one that lets you plan a 2 AM run. Not asked and not answered as its own
-  question; this is the default that fell out, and it is easy to narrow.
+- **Daytime only: 5:00 AM to 9:00 PM, both ends included.** The same range the
+  buttons had. First built allowing any hour; the user asked for the limit the
+  same day. The wheel still turns through every hour and does not jump back
+  when left outside the range, because a wheel that refuses to stop where you
+  put it is worse than one that says why the button is asleep. Hours with
+  nothing in range are drawn faint, the line under the wheel reads "Pick a time
+  between 5:00 AM and 9:00 PM.", and the button stays off. The two ends are
+  `DAY_START` and `DAY_END` in `features/plans/negotiation.ts`.
 - **Always the 12-hour clock.** The old buttons followed the phone's language
   setting, which is why one screenshot showed 05:30 to 21:30.
 - **It is the app's own wheel, not the phone's picker.** The phone's is a wheel

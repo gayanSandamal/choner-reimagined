@@ -21,7 +21,15 @@ import {
   useSetSessionCheckin,
   useVerifySessionQr
 } from '@/features/plans/hooks';
-import { at, DEFAULT_TIME, nextDays, timeLabel, TimeOfDay } from '@/features/plans/negotiation';
+import {
+  at,
+  daytimeHint,
+  DEFAULT_TIME,
+  inDaytime,
+  nextDays,
+  timeLabel,
+  TimeOfDay
+} from '@/features/plans/negotiation';
 import { TimeWheel } from '@/components/plans/TimeWheel';
 import { activityNoun, planCopy } from '@/features/plans/activity';
 import { myAmount, theirAmount } from '@/features/plans/amounts';
@@ -350,11 +358,13 @@ function RescheduleComposer({ plan, onDone }: { plan: PairPlan; onDone: () => vo
       </View>
       <TimeWheel value={slot} onChange={setSlot} />
       <AppText style={styles.picked}>
-        {day ? day.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }) : 'Pick a day'}, {timeLabel(slot)}
+        {inDaytime(slot)
+          ? `${day ? day.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }) : 'Pick a day'}, ${timeLabel(slot)}`
+          : daytimeHint()}
       </AppText>
       <Button
         label="Suggest this time"
-        disabled={!day}
+        disabled={!day || !inDaytime(slot)}
         loading={propose.isPending}
         onPress={async () => {
           if (!day) return;

@@ -27,6 +27,15 @@ describe('TimeWheel (#191)', () => {
     expect(onChange).toHaveBeenLastCalledWith({ h: 18, m: 30 });
   });
 
+  it('still lets a time outside daytime be chosen, and reports it as chosen', async () => {
+    // The wheel does not refuse 10 PM. The picker that owns it does, with a
+    // line saying what the range is.
+    const onChange = jest.fn();
+    await render(<TimeWheel value={{ h: 18, m: 0 }} onChange={onChange} />);
+    await fireEvent.press(screen.getByText('10'));
+    expect(onChange).toHaveBeenLastCalledWith({ h: 22, m: 0 });
+  });
+
   it('gets noon and midnight the right way round', async () => {
     const onChange = jest.fn();
     await render(<TimeWheel value={{ h: 11, m: 0 }} onChange={onChange} />);

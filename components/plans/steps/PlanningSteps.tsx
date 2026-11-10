@@ -17,7 +17,16 @@ import {
   useProposePlanValue,
   useSetDistanceAnswer
 } from '@/features/plans/hooks';
-import { at, DEFAULT_TIME, isPast, nextDays, timeLabel, TimeOfDay } from '@/features/plans/negotiation';
+import {
+  at,
+  daytimeHint,
+  DEFAULT_TIME,
+  inDaytime,
+  isPast,
+  nextDays,
+  timeLabel,
+  TimeOfDay
+} from '@/features/plans/negotiation';
 import { TimeWheel } from '@/components/plans/TimeWheel';
 import type { PairPlan } from '@/features/plans/types';
 import { notify } from '@/lib/alert';
@@ -256,7 +265,9 @@ function DayTimePicker({
   const [theirs, setTheirs] = useState<TimeOfDay>({ h: 7, m: 0 });
   const two = Boolean(differentTimes && !same);
   const gone = day ? isPast(day, mine) || (two && isPast(day, theirs)) : false;
-  const ready = day && !gone;
+  // Daytime only, 5:00 AM to 9:00 PM. Said rather than enforced by the wheel.
+  const outside = !inDaytime(mine) || (two && !inDaytime(theirs));
+  const ready = day && !gone && !outside;
   const dayLabel = day ? day.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }) : 'Pick a day';
 
   return (
@@ -287,7 +298,9 @@ function DayTimePicker({
       ) : null}
       {/* The choice read back in words before it is sent. */}
       <AppText style={styles.picked}>
-        {gone
+        {outside
+          ? daytimeHint()
+          : gone
           ? 'That time has already passed. Pick a later one.'
           : two
           ? `${dayLabel}, you at ${timeLabel(mine)}, them at ${timeLabel(theirs)}`

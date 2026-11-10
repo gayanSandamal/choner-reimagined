@@ -1,4 +1,16 @@
-import { at, fromWheel, isPast, middleDistance, nextDays, timeLabel, toWheel, WHEEL_MINUTES } from './negotiation';
+import {
+  at,
+  daytimeHint,
+  fromWheel,
+  hourInDaytime,
+  inDaytime,
+  isPast,
+  middleDistance,
+  nextDays,
+  timeLabel,
+  toWheel,
+  WHEEL_MINUTES
+} from './negotiation';
 
 describe('middleDistance', () => {
   it('meets in the middle of the handover scale', () => {
@@ -36,6 +48,27 @@ describe('pickers', () => {
     expect(timeLabel({ h: 0, m: 0 })).toBe('12:00 AM');
     expect(timeLabel({ h: 12, m: 0 })).toBe('12:00 PM');
     expect(timeLabel({ h: 21, m: 30 })).toBe('9:30 PM');
+  });
+
+  it('keeps plans to daytime, 5:00 AM to 9:00 PM, both ends included', () => {
+    expect(inDaytime({ h: 5, m: 0 })).toBe(true);
+    expect(inDaytime({ h: 21, m: 0 })).toBe(true);
+    expect(inDaytime({ h: 6, m: 30 })).toBe(true);
+    expect(inDaytime({ h: 4, m: 30 })).toBe(false);
+    expect(inDaytime({ h: 21, m: 30 })).toBe(false);
+    expect(inDaytime({ h: 0, m: 0 })).toBe(false);
+    expect(inDaytime({ h: 2, m: 0 })).toBe(false);
+    expect(daytimeHint()).toBe('Pick a time between 5:00 AM and 9:00 PM.');
+  });
+
+  it('knows which hours on the wheel have nothing in range', () => {
+    expect(hourInDaytime(12, 'AM')).toBe(false);
+    expect(hourInDaytime(4, 'AM')).toBe(false);
+    expect(hourInDaytime(5, 'AM')).toBe(true);
+    expect(hourInDaytime(12, 'PM')).toBe(true);
+    // 9:00 PM is the last time, so 9 stays lit and 10 does not.
+    expect(hourInDaytime(9, 'PM')).toBe(true);
+    expect(hourInDaytime(10, 'PM')).toBe(false);
   });
 
   it('knows a time that has already gone', () => {

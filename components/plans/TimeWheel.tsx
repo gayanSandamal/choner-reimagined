@@ -11,6 +11,7 @@ import {
 import { AppText } from '@/components/ui/AppText';
 import {
   fromWheel,
+  hourInDaytime,
   TimeOfDay,
   toWheel,
   WHEEL_HOURS,
@@ -39,7 +40,8 @@ function Column<T extends string | number>({
   rows,
   width,
   format,
-  label
+  label,
+  faint
 }: {
   items: readonly T[];
   index: number;
@@ -48,6 +50,9 @@ function Column<T extends string | number>({
   width: number;
   format: (item: T) => string;
   label: string;
+  // Drawn faint: an hour with no time inside the daytime range. Still
+  // reachable, so the wheel never fights the finger; the picker explains.
+  faint?: (item: T) => boolean;
 }) {
   const ref = useRef<ElementRef<typeof ScrollView>>(null);
   // The index this column last reported itself. A change of `index` that does
@@ -112,7 +117,9 @@ function Column<T extends string | number>({
     >
       {items.map((item, i) => (
         <Pressable key={String(item)} onPress={() => onIndex(i)} style={styles.item}>
-          <AppText style={[styles.itemText, i === index && styles.itemOn]}>{format(item)}</AppText>
+          <AppText style={[styles.itemText, i === index && styles.itemOn, faint?.(item) && styles.itemFaint]}>
+            {format(item)}
+          </AppText>
         </Pressable>
       ))}
     </ScrollView>
@@ -149,6 +156,7 @@ export function TimeWheel({
         width={64}
         format={String}
         label={`${label}, hour`}
+        faint={(hour) => !hourInDaytime(hour, w.period)}
       />
       <AppText style={styles.colon}>:</AppText>
       <Column
@@ -199,5 +207,6 @@ const styles = StyleSheet.create({
   item: { height: ROW, alignItems: 'center', justifyContent: 'center' },
   itemText: { fontSize: 18, color: theme.colors.muted, fontFamily: theme.fonts.bodyMedium },
   itemOn: { fontSize: 21, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
+  itemFaint: { color: theme.colors.dim },
   colon: { fontSize: 20, color: theme.colors.text, fontFamily: theme.fonts.bodyBold }
 });
