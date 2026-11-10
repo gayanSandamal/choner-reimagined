@@ -15,11 +15,11 @@ import * as Linking from 'expo-linking';
 // and opens a small page with the code when it is not.
 export const INVITE_WEB_ORIGIN = 'https://app.choner.io';
 
-// OFF until app.choner.io is actually serving web/invite. The host did not
-// exist on 10 Nov 2026, and a tappable link to nowhere is worse than the
-// untappable one it replaces. Turning this on is the whole of the switch:
-// nothing else in the app changes.
-export const INVITE_WEB_LIVE = false;
+// ON since 10 Nov 2026, once app.choner.io was serving web/invite (the page,
+// the preview picture and Apple's association file all checked live). Turn it
+// off again, and nothing else, if that host ever goes away: invites fall back
+// to the app's own choner:// address.
+export const INVITE_WEB_LIVE = true;
 
 // The address for an invite. The short code when there is one, because it is
 // what a person can read and retype; the long token still works in its place

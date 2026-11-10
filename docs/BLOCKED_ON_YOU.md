@@ -148,7 +148,7 @@ works. So: apply this first, then publish the update.
 `select pg_get_function_arguments('public.accept_plan_proposal'::regproc);`
 returns `p_proposal_id uuid, p_my_at timestamp with time zone DEFAULT NULL`.
 
-### 8. Create `app.choner.io` and upload the invite site — **Dinesh**
+### 8. Create `app.choner.io` and upload the invite site — **Dinesh** (DONE 10 Nov, checked live)
 
 The fix for the WhatsApp invite (#193) is written and switched off. Invites
 keep going out as the untappable `choner:///invite/...` until this is done,

@@ -33,11 +33,11 @@ describe('the invite link (#193)', () => {
     expect(inviteMessage(TOKEN, null, 'WALW89', '', true)).toContain('https://app.choner.io/invite/WALW89');
   });
 
-  // The switch is a deliberate, separate step: app.choner.io has to be serving
-  // web/invite first, or every invite becomes a tappable link to nowhere. If
-  // this fails because you turned it on, check the host is up, then change the
-  // expectation with it.
-  it('is still switched off', () => {
-    expect(INVITE_WEB_LIVE).toBe(false);
+  // Switched on 10 Nov 2026 after app.choner.io was checked live. If this
+  // fails because you turned it off, that is fine on purpose: change it with
+  // the constant, and say why in docs/DECISIONS_LOG.md.
+  it('is switched on', () => {
+    expect(INVITE_WEB_LIVE).toBe(true);
+    expect(buildInviteLink('t', 'WALW89')).toBe('https://app.choner.io/invite/WALW89');
   });
 });

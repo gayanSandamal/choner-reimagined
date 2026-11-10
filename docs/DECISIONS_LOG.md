@@ -3826,3 +3826,7 @@ Known limits:
   in the box. Sent within a second, it goes without the picture.
 
 **Decided by:** user, 10 November 2026. The off switch **found by:** Claude.
+
+**Switched on the same day.** Dinesh created `app.choner.io` and uploaded
+`web/invite/`. Checked live before flipping: the invite page returns 200, the
+preview picture loads, and `apple-app-site-association` is served as JSON.
