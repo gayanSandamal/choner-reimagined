@@ -48,9 +48,12 @@ export const TONES: QuizOption<ToneValue>[] = [
 ];
 
 export const ENERGY_LEVELS: QuizOption<EnergyValue>[] = [
-  { value: 'low', label: 'Low', description: 'Running on empty', icon: 'sleep' },
-  { value: 'medium', label: 'Medium', description: 'Getting by', icon: 'bolt' },
-  { value: 'high', label: 'High', description: 'Firing on all cylinders', icon: 'fire' }
+  // No descriptions (#190). "Running on empty" and "Firing on all cylinders"
+  // are English idioms that not everyone here knows; a face and one word say
+  // it without them.
+  { value: 'low', label: 'Low', description: '', icon: 'faceLow' },
+  { value: 'medium', label: 'Medium', description: '', icon: 'faceMid' },
+  { value: 'high', label: 'High', description: '', icon: 'faceHigh' }
 ];
 
 // Reduces friction and keeps the data clean vs. free text. Used behind the
