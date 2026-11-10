@@ -64,7 +64,8 @@ export const useProposePlanValue = () =>
   usePlanMutation(({ planId, field, value }: { planId: string; field: string; value: unknown }) =>
     proposePlanValue(planId, field, value)
   );
-export const useAcceptPlanProposal = () => usePlanMutation((id: string) => acceptPlanProposal(id));
+export const useAcceptPlanProposal = () =>
+  usePlanMutation(({ id, myAt }: { id: string; myAt?: string }) => acceptPlanProposal(id, myAt));
 export const useWithdrawPlanProposal = () => usePlanMutation((id: string) => withdrawPlanProposal(id));
 export const useRequestPlanHelp = () =>
   usePlanMutation(({ planId, field }: { planId: string; field: string }) => requestPlanHelp(planId, field));

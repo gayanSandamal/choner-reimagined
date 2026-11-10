@@ -19,8 +19,10 @@ import {
 } from '@/features/plans/hooks';
 import {
   at,
+  dayLabel,
   daytimeHint,
   DEFAULT_TIME,
+  firstOpenDay,
   inDaytime,
   isPast,
   nextDays,
@@ -250,52 +252,47 @@ function PlaceComposer({ onSubmit }: { onSubmit: (name: string, text: string) =>
 function DayTimePicker({
   onPick,
   cta,
-  differentTimes
+  differentTimes,
+  partnerName
 }: {
-  onPick: (value: { starts_at: string; other_at?: string }) => void;
+  onPick: (value: { starts_at: string; separate_times?: true }) => void;
   cta: string;
   differentTimes?: boolean;
+  partnerName?: string;
 }) {
   const days = useMemo(() => nextDays(), []);
-  const [day, setDay] = useState<Date | null>(null);
-  const [same, setSame] = useState(true);
-  // The wheel always holds a time (#191), so the day is the only thing left
-  // to choose before the button wakes up.
+  // One wheel for the day and the time (#191). It always holds both, so
+  // nothing has to be tapped before the button wakes up.
   const [mine, setMine] = useState<TimeOfDay>(DEFAULT_TIME);
-  const [theirs, setTheirs] = useState<TimeOfDay>({ h: 7, m: 0 });
+  const [dayIndex, setDayIndex] = useState(() => firstOpenDay(days, DEFAULT_TIME));
+  const [same, setSame] = useState(true);
+  const day = days[dayIndex];
+  // "Different times": you set only your own. Your partner adds theirs when
+  // they answer, rather than you choosing it for them (decided 10 Nov 2026).
   const two = Boolean(differentTimes && !same);
-  const gone = day ? isPast(day, mine) || (two && isPast(day, theirs)) : false;
+  const gone = isPast(day, mine);
   // Daytime only, 5:00 AM to 9:00 PM. Said rather than enforced by the wheel.
-  const outside = !inDaytime(mine) || (two && !inDaytime(theirs));
-  const ready = day && !gone && !outside;
-  const dayLabel = day ? day.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }) : 'Pick a day';
+  const outside = !inDaytime(mine);
+  const ready = !gone && !outside;
+  const them = partnerName ?? 'Your partner';
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.chips}>
-        {days.map((d) => (
-          <Chip
-            key={d.toISOString()}
-            label={d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })}
-            active={day?.getTime() === d.getTime()}
-            onPress={() => setDay(d)}
-          />
-        ))}
-      </View>
       {differentTimes ? (
         <View style={styles.chips}>
           <Chip label={COPY.sameTime} active={same} onPress={() => setSame(true)} />
           <Chip label={COPY.differentTimes} active={!same} onPress={() => setSame(false)} />
         </View>
       ) : null}
-      {two ? <AppText muted style={styles.compareLabel}>Your time</AppText> : null}
-      <TimeWheel value={mine} onChange={setMine} compact={two} label={two ? 'Your time' : 'Time'} />
-      {two ? (
-        <>
-          <AppText muted style={styles.compareLabel}>Their time</AppText>
-          <TimeWheel value={theirs} onChange={setTheirs} compact label="Their time" />
-        </>
-      ) : null}
+      {two ? <AppText muted style={styles.compareLabel}>Your day and time</AppText> : null}
+      <TimeWheel
+        value={mine}
+        onChange={setMine}
+        days={days}
+        dayIndex={dayIndex}
+        onDayIndex={setDayIndex}
+        label={two ? 'Your day and time' : 'Day and time'}
+      />
       {/* The choice read back in words before it is sent. */}
       <AppText style={styles.picked}>
         {outside
@@ -303,19 +300,51 @@ function DayTimePicker({
           : gone
           ? 'That time has already passed. Pick a later one.'
           : two
-          ? `${dayLabel}, you at ${timeLabel(mine)}, them at ${timeLabel(theirs)}`
-          : `${dayLabel}, ${timeLabel(mine)}`}
+          ? `${dayLabel(day)}, you at ${timeLabel(mine)}. ${them} picks their own time on the same day.`
+          : `${dayLabel(day)}, ${timeLabel(mine)}`}
       </AppText>
       <Button
         label={cta}
         disabled={!ready}
-        onPress={() =>
-          day &&
-          onPick({
-            starts_at: at(day, mine),
-            ...(two ? { other_at: at(day, theirs) } : {})
-          })
-        }
+        onPress={() => onPick({ starts_at: at(day, mine), ...(two ? { separate_times: true as const } : {}) })}
+      />
+    </View>
+  );
+}
+
+// The other side of "Different times": they suggested a day and their own
+// time, and you add yours. The day is theirs and fixed; only the time turns.
+function OwnTimeAnswer({
+  startsAt,
+  onAccept,
+  pending
+}: {
+  startsAt: string;
+  onAccept: (myAt: string) => void;
+  pending: boolean;
+}) {
+  const theirs = new Date(startsAt);
+  const day = new Date(theirs);
+  day.setHours(0, 0, 0, 0);
+  const [mine, setMine] = useState<TimeOfDay>({ h: theirs.getHours(), m: theirs.getMinutes() < 30 ? 0 : 30 });
+  const gone = isPast(day, mine);
+  const outside = !inDaytime(mine);
+  return (
+    <View style={styles.wrap}>
+      <AppText muted style={styles.compareLabel}>Your time, {dayLabel(day)}</AppText>
+      <TimeWheel value={mine} onChange={setMine} compact label="Your time" />
+      <AppText style={styles.picked}>
+        {outside
+          ? daytimeHint()
+          : gone
+          ? 'That time has already passed. Pick a later one.'
+          : `${dayLabel(day)}, you at ${timeLabel(mine)}`}
+      </AppText>
+      <Button
+        label={COPY.soundsGood}
+        loading={pending}
+        disabled={gone || outside}
+        onPress={() => onAccept(at(day, mine))}
       />
     </View>
   );
@@ -357,9 +386,15 @@ export function DayTimeStep({ plan }: { plan: PairPlan }) {
       <Negotiation
         plan={plan}
         field="day_time"
+        renderAnswer={(open, accept, pending) =>
+          open.value?.separate_times ? (
+            <OwnTimeAnswer startsAt={open.value.starts_at} onAccept={(myAt) => accept(myAt)} pending={pending} />
+          ) : null
+        }
         renderSuggest={(done) => (
           <DayTimePicker
             differentTimes
+            partnerName={plan.them.first_name}
             cta="Suggest this"
             onPick={(value) =>
               guard(async () => {

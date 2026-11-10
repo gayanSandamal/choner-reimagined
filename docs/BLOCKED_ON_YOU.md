@@ -134,6 +134,20 @@ Done when: the banner is gone from Play Console home.
 Why not Claude: account-owner-only, and it is a legal declaration about a
 person.
 
+### 8a. Apply one database change before the time wheel update ships — **Gayan**
+
+`supabase/migrations/202611101500_each_picks_their_own_time.sql`, from the
+issues 190 to 193 branch. It lets the person answering a "Different times"
+suggestion add their own time.
+
+**If it is skipped:** once the app update is out, tapping "Sounds good" on a
+"Different times" suggestion fails with "Could not do that". Everything else
+works. So: apply this first, then publish the update.
+
+**How you know it worked:** in the SQL editor,
+`select pg_get_function_arguments('public.accept_plan_proposal'::regproc);`
+returns `p_proposal_id uuid, p_my_at timestamp with time zone DEFAULT NULL`.
+
 ### 8. Create `app.choner.io` and upload the invite site — **Dinesh**
 
 The fix for the WhatsApp invite (#193) is written and switched off. Invites

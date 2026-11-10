@@ -3709,6 +3709,43 @@ separately, and moving a session you cannot make.
 **Decided by:** user, 10 November 2026 (wheel, 30 minute steps). The rest
 **found by:** Claude while building.
 
+### The day goes on the wheel too, and each person picks their own time (#191)
+
+**One wheel for day and time.** The seven day buttons are gone. The wheel has
+a day column first: "Today", "Tomorrow", then "Thu 12 Nov". Chosen over a
+separate date wheel above the time wheel, which was taller for no gain. Same
+wheel in all three places.
+
+**The app writes the day itself, with the month.** It no longer asks the
+phone's date formatter. A phone showed "Mon 18" to "Sun 24" for a week in
+November; the cause was not found, but a label that always carries the month
+cannot pass a wrong date off as a right one.
+
+**Found in the same screenshot: the old time buttons were half an hour out.**
+The code offered 5:00 to 21:00; the phone showed 05:30 to 21:30. The labels
+were formatted from a date in the year 2000, when Sri Lanka was on UTC+6:00,
+not today's +5:30, so every label was 30 minutes late and tapping "06:30"
+saved 6:00. The wheel writes its own times and does not have the problem.
+
+**"Different times": you set only your own.** The one suggesting no longer
+picks the other person's time. The suggestion carries their day and time and
+`separate_times: true`; the other person sees "Gayan at 6:30 AM. You pick your
+own time.", turns a time-only wheel on the same day, and their "Sounds good"
+sends it. Fairer, at the cost of one more step for whoever answers.
+
+It needs `202611101500_each_picks_their_own_time.sql`:
+`accept_plan_proposal` gains an optional `p_my_at`, checked to be within a day
+of the suggestion and not already gone. Optional with a default, so every
+installed app keeps calling it exactly as before. **Until it is applied,
+answering a "Different times" suggestion fails**, so it goes to production
+before the app update does.
+
+Also fixed while here: an older suggestion with both times always read "you
+at 6:30, them at 7:00" to both people, so the person answering was told the
+wrong time was theirs.
+
+**Decided by:** user, 10 November 2026.
+
 ### Match found is its own screen, and Find keeps working behind it (#192)
 
 The offer was a card inside the Find tab with no way out except answering. It

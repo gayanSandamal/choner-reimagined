@@ -15,7 +15,11 @@ export function middleDistance(a: string, b: string): string | null {
 // "After two rounds with no agreement": each side has had a turn twice.
 export const HELP_AFTER_ROUNDS = 3;
 
-export function proposalLabel(field: string, value: any): string {
+// Who is reading a suggestion, for the one label that depends on it: a day
+// and time where each person picks their own (#191).
+export type ProposalReader = { mine: boolean; them: string };
+
+export function proposalLabel(field: string, value: any, reader?: ProposalReader): string {
   if (field === 'cadence') return cadenceLabel(Number(value)) ?? String(value);
   if (field === 'distance' || field === 'mode') return String(value) === 'together'
     ? 'Together'
@@ -25,8 +29,20 @@ export function proposalLabel(field: string, value: any): string {
   if (field === 'place') return [value?.name, value?.text].filter(Boolean).join(', ');
   if (field === 'time' || field === 'day_time') {
     const a = formatDayTime(value.starts_at);
+    // "Different times": the one suggesting sets only their own time, and the
+    // other adds theirs when they answer.
+    if (field === 'day_time' && value.separate_times) {
+      if (!reader) return `${a.day}, ${a.time}, and a time of their own`;
+      return reader.mine
+        ? `${a.day}, you at ${a.time}. ${reader.them} picks their own time.`
+        : `${a.day}, ${reader.them} at ${a.time}. You pick your own time.`;
+    }
+    // Older suggestions, where the one suggesting picked both times. starts_at
+    // is always the suggester's, so who "you" is depends on who is reading.
     if (field === 'day_time' && value.other_at && value.other_at !== value.starts_at) {
-      return `${a.day}, you at ${a.time}, them at ${formatDayTime(value.other_at).time}`;
+      const b = formatDayTime(value.other_at).time;
+      if (reader && !reader.mine) return `${a.day}, you at ${b}, ${reader.them} at ${a.time}`;
+      return `${a.day}, you at ${a.time}, them at ${b}`;
     }
     return `${a.day}, ${a.time}`;
   }
@@ -84,6 +100,29 @@ export function at(day: Date, slot: TimeOfDay) {
   d.setHours(slot.h, slot.m, 0, 0);
   return d.toISOString();
 }
+// The day as the wheel writes it: "Today", "Tomorrow", then "Thu 12 Nov".
+// Written here, never by the phone's date formatter, and always with the
+// month, so a wrong date cannot pass for a right one (#191: a phone showed
+// "Mon 18" to "Sun 24" for a week in November).
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export function dayLabel(day: Date, now = new Date()) {
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(day);
+  d.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+// The wheel always holds a day, so it opens on the first one where the time
+// it opens on has not already gone: today, or tomorrow late in the day.
+export function firstOpenDay(days: Date[], slot: TimeOfDay, now = new Date()) {
+  const i = days.findIndex((d) => !isPast(d, slot, now));
+  return i < 0 ? 0 : i;
+}
+
 // "Pick a time between 5:00 AM and 9:00 PM."
 export function daytimeHint() {
   return `Pick a time between ${timeLabel(DAY_START)} and ${timeLabel(DAY_END)}.`;

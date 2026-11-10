@@ -26,13 +26,22 @@ export function Negotiation({
   field,
   renderSuggest,
   helpLabel = COPY.needHelp,
-  suggestAnotherLabel = 'Suggest another'
+  suggestAnotherLabel = 'Suggest another',
+  renderAnswer
 }: {
   plan: PairPlan;
   field: 'distance' | 'cadence' | 'mode' | 'place' | 'time' | 'day_time';
   renderSuggest: (done: () => void) => ReactNode;
   helpLabel?: string;
   suggestAnotherLabel?: string;
+  // In place of the plain "Sounds good", when answering needs something from
+  // you: your own time on "Different times" (#191). Return null to keep the
+  // plain button.
+  renderAnswer?: (
+    open: { id: string; value: any },
+    accept: (myAt?: string) => void,
+    pending: boolean
+  ) => ReactNode;
 }) {
   const open = (plan.open_proposals ?? []).find((p) => p.field === field) ?? null;
   const rounds = (plan as any).rounds?.[field] ?? 0;
@@ -78,7 +87,9 @@ export function Negotiation({
       <View style={styles.wrap}>
         <View style={styles.card}>
           <AppText muted style={styles.label}>You suggested</AppText>
-          <AppText style={styles.value}>{proposalLabel(field, open.value)}</AppText>
+          <AppText style={styles.value}>
+            {proposalLabel(field, open.value, { mine: true, them: plan.them.first_name })}
+          </AppText>
         </View>
         <AppText muted>{lines.waitingFor(plan.them.first_name)}</AppText>
         <Button
@@ -99,13 +110,17 @@ export function Negotiation({
           <AppText style={styles.chipText}>{COPY.needYourAnswer}</AppText>
         </View>
         <AppText muted style={styles.label}>{plan.them.first_name} suggested</AppText>
-        <AppText style={styles.value}>{proposalLabel(field, open.value)}</AppText>
+        <AppText style={styles.value}>
+          {proposalLabel(field, open.value, { mine: false, them: plan.them.first_name })}
+        </AppText>
       </View>
-      <Button
-        label={COPY.soundsGood}
-        loading={accept.isPending}
-        onPress={() => run(() => accept.mutateAsync(open.id))}
-      />
+      {renderAnswer?.(open, (myAt) => run(() => accept.mutateAsync({ id: open.id, myAt })), accept.isPending) ?? (
+        <Button
+          label={COPY.soundsGood}
+          loading={accept.isPending}
+          onPress={() => run(() => accept.mutateAsync({ id: open.id }))}
+        />
+      )}
       <Button label={suggestAnotherLabel} variant="ghost" onPress={() => setComposing(true)} />
       {helpLink}
     </View>

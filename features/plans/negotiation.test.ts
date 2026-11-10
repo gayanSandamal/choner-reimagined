@@ -1,12 +1,15 @@
 import {
   at,
+  dayLabel,
   daytimeHint,
+  firstOpenDay,
   fromWheel,
   hourInDaytime,
   inDaytime,
   isPast,
   middleDistance,
   nextDays,
+  proposalLabel,
   timeLabel,
   toWheel,
   WHEEL_MINUTES
@@ -69,6 +72,37 @@ describe('pickers', () => {
     // 9:00 PM is the last time, so 9 stays lit and 10 does not.
     expect(hourInDaytime(9, 'PM')).toBe(true);
     expect(hourInDaytime(10, 'PM')).toBe(false);
+  });
+
+  it('writes the day itself, with the month', () => {
+    const now = new Date(2026, 10, 10, 9, 0, 0); // Tuesday 10 November 2026
+    const days = nextDays(now);
+    expect(days.map((d) => dayLabel(d, now))).toEqual([
+      'Today',
+      'Tomorrow',
+      'Thu 12 Nov',
+      'Fri 13 Nov',
+      'Sat 14 Nov',
+      'Sun 15 Nov',
+      'Mon 16 Nov'
+    ]);
+    expect(dayLabel(new Date(2026, 11, 31), now)).toBe('Thu 31 Dec');
+  });
+
+  it('opens on today, or on tomorrow once the opening time has gone', () => {
+    const morning = new Date(2026, 10, 10, 5, 0, 0);
+    const evening = new Date(2026, 10, 10, 19, 0, 0);
+    expect(firstOpenDay(nextDays(morning), { h: 6, m: 30 }, morning)).toBe(0);
+    expect(firstOpenDay(nextDays(evening), { h: 6, m: 30 }, evening)).toBe(1);
+  });
+
+  it('says whose time is whose, whoever is reading', () => {
+    const value = { starts_at: new Date(2026, 10, 11, 6, 30).toISOString(), separate_times: true };
+    expect(proposalLabel('day_time', value, { mine: true, them: 'Gayan' })).toMatch(/you at 6:30.*Gayan picks their own time/);
+    expect(proposalLabel('day_time', value, { mine: false, them: 'Gayan' })).toMatch(/Gayan at 6:30.*You pick your own time/);
+    // An older suggestion with both times in it: starts_at is the suggester's.
+    const old = { starts_at: new Date(2026, 10, 11, 6, 30).toISOString(), other_at: new Date(2026, 10, 11, 7, 0).toISOString() };
+    expect(proposalLabel('day_time', old, { mine: false, them: 'Gayan' })).toMatch(/you at 7:00.*Gayan at 6:30/);
   });
 
   it('knows a time that has already gone', () => {

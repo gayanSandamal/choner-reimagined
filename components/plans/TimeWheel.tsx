@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { AppText } from '@/components/ui/AppText';
 import {
+  dayLabel,
   fromWheel,
   hourInDaytime,
   TimeOfDay,
@@ -30,6 +31,9 @@ import { theme } from '@/constants/theme';
 // ships over the air.
 //
 // It always holds a time, so there is no "nothing picked yet" state to guard.
+//
+// Given `days`, it carries the day as well: one wheel for day and time, in a
+// row, like the phone's own alarm picker (decided 10 Nov 2026).
 
 const ROW = 40;
 
@@ -41,7 +45,8 @@ function Column<T extends string | number>({
   width,
   format,
   label,
-  faint
+  faint,
+  small
 }: {
   items: readonly T[];
   index: number;
@@ -53,6 +58,8 @@ function Column<T extends string | number>({
   // Drawn faint: an hour with no time inside the daytime range. Still
   // reachable, so the wheel never fights the finger; the picker explains.
   faint?: (item: T) => boolean;
+  // Smaller text, for the day column's longer words.
+  small?: boolean;
 }) {
   const ref = useRef<ElementRef<typeof ScrollView>>(null);
   // The index this column last reported itself. A change of `index` that does
@@ -117,7 +124,16 @@ function Column<T extends string | number>({
     >
       {items.map((item, i) => (
         <Pressable key={String(item)} onPress={() => onIndex(i)} style={styles.item}>
-          <AppText style={[styles.itemText, i === index && styles.itemOn, faint?.(item) && styles.itemFaint]}>
+          <AppText
+            numberOfLines={1}
+            style={[
+              styles.itemText,
+              small && styles.itemSmall,
+              i === index && styles.itemOn,
+              i === index && small && styles.itemOnSmall,
+              faint?.(item) && styles.itemFaint
+            ]}
+          >
             {format(item)}
           </AppText>
         </Pressable>
@@ -130,14 +146,23 @@ export function TimeWheel({
   value,
   onChange,
   compact,
-  label = 'Time'
+  label = 'Time',
+  days,
+  dayIndex = 0,
+  onDayIndex
 }: {
   value: TimeOfDay;
   onChange: (t: TimeOfDay) => void;
-  // Three rows instead of five, for when two wheels share the screen.
+  // Three rows instead of five.
   compact?: boolean;
   label?: string;
+  // The days to offer, first column. Leave out for a time-only wheel.
+  days?: Date[];
+  dayIndex?: number;
+  onDayIndex?: (i: number) => void;
 }) {
+  const withDays = Boolean(days?.length && onDayIndex);
+  const narrow = withDays ? 50 : 64;
   const rows = compact ? 3 : 5;
   const w = toWheel(value);
   const set = (next: Partial<typeof w>) => {
@@ -148,12 +173,24 @@ export function TimeWheel({
   return (
     <View style={styles.wheel} accessibilityLabel={label}>
       <View pointerEvents="none" style={[styles.band, { top: (ROW * (rows - 1)) / 2 }]} />
+      {withDays ? (
+        <Column
+          items={days!.map((_, i) => i)}
+          index={Math.min(dayIndex, days!.length - 1)}
+          onIndex={onDayIndex!}
+          rows={rows}
+          width={118}
+          format={(i) => dayLabel(days![i])}
+          label={`${label}, day`}
+          small
+        />
+      ) : null}
       <Column
         items={WHEEL_HOURS}
         index={WHEEL_HOURS.indexOf(w.hour)}
         onIndex={(i) => set({ hour: WHEEL_HOURS[i] })}
         rows={rows}
-        width={64}
+        width={narrow}
         format={String}
         label={`${label}, hour`}
         faint={(hour) => !hourInDaytime(hour, w.period)}
@@ -164,7 +201,7 @@ export function TimeWheel({
         index={Math.max(0, WHEEL_MINUTES.indexOf(w.minute))}
         onIndex={(i) => set({ minute: WHEEL_MINUTES[i] })}
         rows={rows}
-        width={64}
+        width={narrow}
         format={(m) => String(m).padStart(2, '0')}
         label={`${label}, minutes`}
       />
@@ -173,7 +210,7 @@ export function TimeWheel({
         index={WHEEL_PERIODS.indexOf(w.period)}
         onIndex={(i) => set({ period: WHEEL_PERIODS[i] })}
         rows={rows}
-        width={72}
+        width={withDays ? 56 : 72}
         format={String}
         label={`${label}, AM or PM`}
       />
@@ -208,5 +245,7 @@ const styles = StyleSheet.create({
   itemText: { fontSize: 18, color: theme.colors.muted, fontFamily: theme.fonts.bodyMedium },
   itemOn: { fontSize: 21, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
   itemFaint: { color: theme.colors.dim },
+  itemSmall: { fontSize: 15 },
+  itemOnSmall: { fontSize: 16 },
   colon: { fontSize: 20, color: theme.colors.text, fontFamily: theme.fonts.bodyBold }
 });

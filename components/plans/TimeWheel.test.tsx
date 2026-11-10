@@ -36,6 +36,19 @@ describe('TimeWheel (#191)', () => {
     expect(onChange).toHaveBeenLastCalledWith({ h: 22, m: 0 });
   });
 
+  it('carries the day too, written with the month', async () => {
+    const onDay = jest.fn();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = [0, 1, 2].map((n) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + n));
+    await render(<TimeWheel value={{ h: 6, m: 30 }} onChange={jest.fn()} days={days} dayIndex={0} onDayIndex={onDay} />);
+    expect(screen.getByText('Today')).toBeTruthy();
+    expect(screen.getByText('Tomorrow')).toBeTruthy();
+    const third = screen.getByText(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat) \d{1,2} [A-Z][a-z]{2}$/);
+    await fireEvent.press(third);
+    expect(onDay).toHaveBeenLastCalledWith(2);
+  });
+
   it('gets noon and midnight the right way round', async () => {
     const onChange = jest.fn();
     await render(<TimeWheel value={{ h: 11, m: 0 }} onChange={onChange} />);
