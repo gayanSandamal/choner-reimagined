@@ -144,9 +144,9 @@ phone cannot join twice or over an existing partner.
 **If it is skipped:** the app is still fixed, but the server keeps the old
 holes for anyone not on the new version.
 
-**How you know it worked:** as the account that accepted WALW89,
-`select accept_invite_by_code('WALW89');` in the app now shows "You already
-joined" rather than "You're in!".
+**How you know it worked:** on a phone still on the OLD app version, signed in
+as the account that accepted WALW89, tap the WALW89 link. It says the invite
+was already used instead of "You're in!".
 
 ## Done, kept so the next person does not redo it
 
