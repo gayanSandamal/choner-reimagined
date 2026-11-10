@@ -6,6 +6,7 @@ import { useSetRepairPreference, useStartRepairPlan } from '@/features/plans/hoo
 import { formatDayTime } from '@/features/plans/format';
 import type { RepairDebt } from '@/features/plans/types';
 import { theme } from '@/constants/theme';
+import { monthName, weekdayName } from '@/lib/dates';
 import { notify } from '@/lib/alert';
 
 const REFUSALS: Record<string, string> = {
@@ -43,11 +44,8 @@ export function RepairCard({
   // repair_by is the instant the following week ENDS (a Monday midnight), so
   // step back a minute to name the last day it can still be done, with its
   // date: it can be up to two weeks away and a bare weekday would be ambiguous.
-  const by = new Date(new Date(debt.repair_by).getTime() - 60_000).toLocaleDateString(undefined, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'short'
-  });
+  const byDate = new Date(new Date(debt.repair_by).getTime() - 60_000);
+  const by = `${weekdayName(byDate)}, ${byDate.getDate()} ${monthName(byDate, 'short')}`;
 
   const planNow = async () => {
     try {

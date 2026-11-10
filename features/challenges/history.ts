@@ -1,3 +1,5 @@
+import { monthYearLabel } from '@/lib/dates';
+
 // One finished challenge, as get_challenge_history() returns it.
 export type ChallengeHistoryItem = {
   id: string;
@@ -14,13 +16,13 @@ export type ChallengeHistoryItem = {
 // "Ended · 7 of 12 · September 2026". The score is what the streak ended ON,
 // so it is shown for a challenge that was ended early as well as one that ran
 // its course. With no target there was no streak, and no score is invented.
-export function historyLine(item: Pick<ChallengeHistoryItem, 'done' | 'target' | 'ended_at'>, locale?: string): string {
+export function historyLine(item: Pick<ChallengeHistoryItem, 'done' | 'target' | 'ended_at'>): string {
   const parts = ['Ended'];
   if (item.target) parts.push(`${item.done} of ${item.target}`);
   if (item.ended_at) {
     const d = new Date(item.ended_at);
     if (!Number.isNaN(d.getTime())) {
-      parts.push(d.toLocaleDateString(locale, { month: 'long', year: 'numeric' }));
+      parts.push(monthYearLabel(d));
     }
   }
   return parts.join(' · ');

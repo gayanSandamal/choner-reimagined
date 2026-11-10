@@ -11,10 +11,11 @@ import { amountLine, myAmount, theirAmount } from '@/features/plans/amounts';
 import type { PairPlan } from '@/features/plans/types';
 import { notify } from '@/lib/alert';
 import { theme } from '@/constants/theme';
+import { clockLabel } from '@/lib/dates';
 
 function doneAt(m: { finished_at: string | null; checkin_at: string | null; checkin: string | null }) {
   const at = m.finished_at ?? (m.checkin === 'done' ? m.checkin_at : null);
-  return at ? new Date(at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : null;
+  return at ? clockLabel(new Date(at)) : null;
 }
 
 // §3.17 State A (you're in, partner not yet) and §3.18 State B (both).

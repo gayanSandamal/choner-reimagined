@@ -3716,10 +3716,14 @@ a day column first: "Today", "Tomorrow", then "Thu 12 Nov". Chosen over a
 separate date wheel above the time wheel, which was taller for no gain. Same
 wheel in all three places.
 
-**The app writes the day itself, with the month.** It no longer asks the
-phone's date formatter. A phone showed "Mon 18" to "Sun 24" for a week in
-November; the cause was not found, but a label that always carries the month
-cannot pass a wrong date off as a right one.
+**The app writes every date itself, with the month.** It no longer asks the
+phone. Cause found the same day: the tester's iPhone was on the **Persian
+calendar**. "Mon 18" to "Sun 24" were 18 to 24 Aban (9 to 15 November), and a
+session on Tuesday 10 November read "Tuesday, 19 Aban". The phone's formatter
+writes in the phone's calendar and clock, so every date and time on screen now
+comes from `lib/dates.ts`: Gregorian, English names, 12-hour clock, in the
+phone's own time zone. No `toLocaleDateString` or `toLocaleTimeString` is left
+in the app.
 
 **Found in the same screenshot: the old time buttons were half an hour out.**
 The code offered 5:00 to 21:00; the phone showed 05:30 to 21:30. The labels

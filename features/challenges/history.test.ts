@@ -2,19 +2,19 @@ import { historyLine, partnerRow } from './history';
 
 describe('historyLine', () => {
   it('reads "Ended · score · month year"', () => {
-    expect(historyLine({ done: 7, target: 12, ended_at: '2026-09-18T10:00:00Z' }, 'en-GB')).toBe(
+    expect(historyLine({ done: 7, target: 12, ended_at: '2026-09-18T10:00:00Z' })).toBe(
       'Ended · 7 of 12 · September 2026'
     );
   });
 
   it('shows 11 of 12 as the real ending it is', () => {
-    expect(historyLine({ done: 11, target: 12, ended_at: '2026-10-02T10:00:00Z' }, 'en-GB')).toBe(
+    expect(historyLine({ done: 11, target: 12, ended_at: '2026-10-02T10:00:00Z' })).toBe(
       'Ended · 11 of 12 · October 2026'
     );
   });
 
   it('invents no score for a challenge that never had a streak', () => {
-    expect(historyLine({ done: 0, target: null, ended_at: '2026-08-05T10:00:00Z' }, 'en-GB')).toBe(
+    expect(historyLine({ done: 0, target: null, ended_at: '2026-08-05T10:00:00Z' })).toBe(
       'Ended · August 2026'
     );
     expect(historyLine({ done: 0, target: null, ended_at: null })).toBe('Ended');
