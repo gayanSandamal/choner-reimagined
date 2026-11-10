@@ -8,7 +8,7 @@ Kept here because it kept getting lost at the bottom of a long message. Claude
 adds to this file whenever it hits a wall, and says so in the same breath
 rather than mentioning it in passing.
 
-Last updated 2026-11-07.
+Last updated 2026-11-10.
 
 ---
 
@@ -133,6 +133,44 @@ Done when: the banner is gone from Play Console home.
 
 Why not Claude: account-owner-only, and it is a legal declaration about a
 person.
+
+### 8. Create `app.choner.io` and upload the invite site — **Dinesh**
+
+The fix for the WhatsApp invite (#193) is written and switched off. Invites
+keep going out as the untappable `choner:///invite/...` until this is done,
+because the address the new link points at does not exist yet.
+
+In Namecheap cPanel:
+
+1. **Domains** (or **Subdomains**), create `app.choner.io`. Note the folder it
+   gives you, usually `app.choner.io` or `public_html/app`.
+2. **File Manager**, top right **Settings**, tick **Show Hidden Files**. Two of
+   the things below start with a dot and are invisible without this.
+3. Upload everything inside `web/invite/` from the repo into that folder,
+   keeping the layout:
+
+```
+.htaccess
+index.html
+logo.png
+og-invite.jpg
+.well-known/apple-app-site-association
+```
+
+4. If cPanel has not already done it, turn on the free SSL certificate for the
+   new subdomain (**SSL/TLS Status**, **Run AutoSSL**).
+
+**How you know it worked:** open `https://app.choner.io/invite/WALW89` on a
+phone. You see "You have been challenged." and the code WALW89 in a box.
+
+**Then tell Claude.** Turning the link on is one line
+(`INVITE_WEB_LIVE` in `lib/invite-link.ts`) and an over-the-air update.
+
+**For Android to open the app directly**, rather than the page first, one more
+value is needed: Play Console, **Test and release**, **App integrity**,
+**App signing**, copy the **SHA-256 certificate fingerprint**. Paste it to
+Claude and it becomes one more small file to upload. Not needed for the link to
+work.
 
 ## Done, kept so the next person does not redo it
 
