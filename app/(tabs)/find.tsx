@@ -168,6 +168,13 @@ export default function FindScreen() {
             partnerName={myPartner.first_name}
             partnerAvatarUrl={myPartner.avatar_url}
             pairedOn={myPartner.paired_on}
+            // The icon on the activity row. From the current challenge when it
+            // is the one this pairing is on; a plain target otherwise.
+            activityKey={
+              challenge?.id === myPartner.my_challenge_id
+                ? ((challenge?.challenge_templates?.activity_key as string | null) ?? null)
+                : null
+            }
             since={myPartner.since}
             challengeId={myPartner.my_challenge_id}
           />

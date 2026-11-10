@@ -128,6 +128,7 @@ const ICONS: Record<string, Shape[]> = {
   share: [{ d: 'M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 001 1h12a1 1 0 001-1v-6' }],
   back: [{ d: 'M15 5l-7 7 7 7' }],
   chev: [{ d: 'M9 5l7 7-7 7' }],
+  lock: [{ x: 5, y: 11, w: 14, h: 9, rx: 2 }, { d: 'M8 11V8a4 4 0 018 0v3' }],
   x: [{ d: 'M6 6l12 12M18 6L6 18' }],
   mail: [
     { x: 3, y: 5, w: 18, h: 14, rx: 2 },

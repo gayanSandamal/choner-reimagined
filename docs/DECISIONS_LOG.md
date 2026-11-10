@@ -3834,3 +3834,22 @@ Known limits:
 **Switched on the same day.** Dinesh created `app.choner.io` and uploaded
 `web/invite/`. Checked live before flipping: the invite page returns 200, the
 preview picture loads, and `apple-app-site-association` is served as JSON.
+
+## Find, once you are paired, 10 November 2026 (#196)
+
+Once both people accept, Find used to turn into a plain white card. It now
+keeps the style of searching and Match found, so the tab reads as one place
+from the first search to the partnership: the activity row ("Your shared
+activity with Gayan", locked), the radar standing still with both faces and
+the green tick in it, "Paired with Gayan", then **See your challenge**, then
+**Already on the move as an outline**, then **End this match last, in quiet
+grey**. Report and Block stay behind the "···". No "Invite someone else",
+because nobody can invite while they have a partner.
+
+Outline rather than orange for "Already on the move": two solid orange buttons
+stacked compete, and your challenge is the thing to do. End this match moved
+below everything; it still asks first.
+
+Prototyped first (artifact tab "Find: once you are paired"), confirmed, built.
+
+**Decided by:** user, 10 November 2026.
