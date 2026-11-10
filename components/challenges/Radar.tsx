@@ -25,6 +25,9 @@ const MIN_SCALE = CENTER / SIZE;
 interface Props {
   searching: boolean;
   onPress?: () => void;
+  // A match offer is waiting (#192). The centre says so and opens it. This is
+  // the one time the radar stands for a real person, because there is one.
+  found?: boolean;
 }
 
 // The Find tab's one object. Three rings expanding outward from a gradient
@@ -34,7 +37,7 @@ interface Props {
 // anyone is actually nearby, and it must never render blips standing in for
 // real people. Matching is concierge-paced, and inventing visible activity
 // would be a lie the rest of the product doesn't tell.
-export function Radar({ searching, onPress }: Props) {
+export function Radar({ searching, onPress, found = false }: Props) {
   const reduceMotion = useReduceMotion();
 
   return (
@@ -46,12 +49,14 @@ export function Radar({ searching, onPress }: Props) {
       <PressableScale
         onPress={onPress}
         // Not tappable once the search is already running.
-        disabled={searching || !onPress}
+        disabled={(searching && !found) || !onPress}
         scaleTo="subtle"
         haptic="medium"
         accessibilityRole="button"
-        accessibilityLabel={searching ? 'Searching for your partner' : 'Find a match'}
-        accessibilityState={{ disabled: searching }}
+        accessibilityLabel={
+          found ? 'Match found. See your match.' : searching ? 'Searching for your partner' : 'Find a match'
+        }
+        accessibilityState={{ disabled: searching && !found }}
         style={styles.centerHit}
       >
         <LinearGradient
@@ -61,7 +66,7 @@ export function Radar({ searching, onPress }: Props) {
           style={styles.center}
         >
           <AppText style={styles.centerText}>
-            {searching ? 'Searching…' : 'Find a\nMatch'}
+            {found ? 'Match\nfound' : searching ? 'Searching…' : 'Find a\nMatch'}
           </AppText>
         </LinearGradient>
       </PressableScale>

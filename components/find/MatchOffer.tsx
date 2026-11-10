@@ -1,5 +1,4 @@
-import { StyleSheet, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
@@ -29,22 +28,29 @@ type Offer = Extract<MyMatch, { matched: true }>;
 // The match, before it is a partnership. Three states on one screen, because
 // one person can answer before the other:
 //
-//   offered        their card, why you matched, Accept / Not quite right
+//   offered        their photo, why you matched, Let's do this / Not quite right
 //   you accepted   waiting on them. You can still back out
 //   expired        nobody finished answering in 24 hours; both back in the pool
 //
 // One clock for both people, started when the match was created.
+//
+// This is the whole of the Match found screen (app/find/match.tsx, #192): what
+// scrolls, and the answers pinned under it. It used to be a card inside the
+// Find tab, which left no way out of it except answering.
 export function MatchOffer({
   match,
   challengeId,
   onRefresh,
-  now: nowProp
+  now: nowProp,
+  topInset = 0
 }: {
   match: Offer;
   challengeId: string | null;
   onRefresh: () => void;
   // Fixed time for previews and tests; the live screen ticks.
   now?: Date;
+  // Room for the floating top bar the screen draws over this.
+  topInset?: number;
 }) {
   const ticking = useNow();
   const now = nowProp ?? ticking;
@@ -154,14 +160,18 @@ export function MatchOffer({
 
   if (state === 'expired') {
     return (
-      <Animated.View entering={FadeInDown.duration(360)} style={styles.plain}>
-        <View style={styles.icon}>
-          <Ionicons name="time-outline" size={24} color={theme.colors.muted} />
+      <View style={[styles.root, { paddingTop: topInset }]}>
+        <Animated.View entering={FadeInDown.duration(360)} style={styles.body}>
+          <View style={styles.icon}>
+            <Ionicons name="time-outline" size={24} color={theme.colors.muted} />
+          </View>
+          <AppText style={styles.title}>{MATCH_EXPIRED_TITLE}</AppText>
+          <AppText style={styles.copy}>{MATCH_EXPIRED_BODY}</AppText>
+        </Animated.View>
+        <View style={styles.footer}>
+          <Button label="See your search" onPress={onRefresh} />
         </View>
-        <AppText style={styles.heading}>{MATCH_EXPIRED_TITLE}</AppText>
-        <AppText style={styles.body}>{MATCH_EXPIRED_BODY}</AppText>
-        <Button label="See your search" onPress={onRefresh} />
-      </Animated.View>
+      </View>
     );
   }
 
@@ -176,20 +186,29 @@ export function MatchOffer({
 
   if (state === 'you_accepted') {
     return (
-      <Animated.View entering={FadeInDown.duration(360)} style={styles.plain}>
-        {/* The wrapper isolates the ring's own alignSelf so it centres. */}
-        <View>
-          <Avatar uri={match.partner_avatar_url} name={name} size={64} ring />
+      <View style={styles.root}>
+        <ScrollView
+          contentContainerStyle={[styles.body, { paddingTop: topInset + 12 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* The wrapper isolates the ring's own alignSelf so it centres. */}
+          <View>
+            <Avatar uri={match.partner_avatar_url} name={name} size={104} ring />
+          </View>
+          <AppText style={styles.title}>
+            You're <AppText style={styles.titleEm}>in.</AppText>
+          </AppText>
+          <AppText style={styles.copy}>
+            Waiting for {name} to accept. Saying hi unlocks once you have both accepted.
+          </AppText>
+          {clockRow}
+          <MatchReportLink matchId={match.match_id} partnerFirstName={name} />
+        </ScrollView>
+        <View style={styles.footer}>
+          <Button label="Back out" variant="ghost" disabled={busy} onPress={onBackOut} />
+          <Button label="Stop searching" variant="ghost" disabled={busy} onPress={onStopLooking} />
         </View>
-        <AppText style={styles.heading}>You're in.</AppText>
-        <AppText style={styles.body}>
-          Waiting for {name} to accept. Saying hi unlocks once you have both accepted.
-        </AppText>
-        {clockRow}
-        <Button label="Back out" variant="ghost" disabled={busy} onPress={onBackOut} />
-        <Button label="Stop searching" variant="ghost" disabled={busy} onPress={onStopLooking} />
-        <MatchReportLink matchId={match.match_id} partnerFirstName={name} />
-      </Animated.View>
+      </View>
     );
   }
 
@@ -198,63 +217,65 @@ export function MatchOffer({
   const reasons = [match.habit ? `You are both doing ${match.habit}` : null, match.blurb].filter(Boolean) as string[];
 
   return (
-    <Animated.View entering={FadeInDown.duration(400)}>
-      <LinearGradient
-        colors={['rgba(253,131,2,0.14)', 'rgba(253,131,2,0.02)', 'transparent']}
-        style={styles.card}
+    <View style={styles.root}>
+      <ScrollView
+        contentContainerStyle={[styles.body, { paddingTop: topInset + 12 }]}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Two sides of the same pairing, two different questions. One tapped
-            Find and is seeing the answer; the other was waiting and is being
-            asked to take somebody on. */}
-        <AppText style={styles.heading}>
-          {match.i_requested ? 'We found you a match' : `${name} wants to pair up`}
-        </AppText>
-        <View>
-          <Avatar uri={match.partner_avatar_url} name={name} size={72} ring />
-        </View>
-        <AppText style={styles.name}>{name}</AppText>
-
-        {reasons.length ? (
-          <View style={styles.reasons}>
-            <AppText style={styles.reasonsTitle}>WHY YOU MATCHED</AppText>
-            {reasons.map((r) => (
-              <View key={r} style={styles.reason}>
-                <Ionicons name="checkmark" size={14} color={theme.colors.success} />
-                <AppText style={styles.reasonText}>{r}</AppText>
-              </View>
-            ))}
+        <Animated.View entering={FadeInDown.duration(400)} style={styles.stack}>
+          <View>
+            <Avatar uri={match.partner_avatar_url} name={name} size={104} ring />
           </View>
-        ) : null}
+          {/* Two sides of the same pairing, two different questions. One tapped
+              Find and is seeing the answer; the other was waiting and is being
+              asked to take somebody on. */}
+          <AppText style={styles.title}>
+            {match.i_requested ? 'You found ' : `${name} wants `}
+            <AppText style={styles.titleEm}>{match.i_requested ? 'a Match.' : 'to pair up.'}</AppText>
+          </AppText>
+          <AppText style={styles.name}>{name}</AppText>
 
-        {clockRow}
+          {reasons.length ? (
+            <View style={styles.reasons}>
+              <AppText style={styles.reasonsTitle}>WHY YOU MATCHED</AppText>
+              {reasons.map((r) => (
+                <View key={r} style={styles.reason}>
+                  <View style={styles.tick}>
+                    <Ionicons name="checkmark" size={13} color={theme.colors.success} />
+                  </View>
+                  <AppText style={styles.reasonText}>{r}</AppText>
+                </View>
+              ))}
+            </View>
+          ) : null}
 
-        <Button label="Accept" loading={confirm.isPending} disabled={busy} onPress={onAccept} style={styles.wide} />
-        <Button label="Not quite right" variant="ghost" disabled={busy} onPress={onNotRight} style={styles.wide} />
+          {clockRow}
+          <AppText style={styles.note}>
+            {match.they_confirmed ? `${name} has already accepted.` : 'You both accept before anything starts.'}
+          </AppText>
+          <MatchReportLink matchId={match.match_id} partnerFirstName={name} />
+        </Animated.View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <Button label="Let's do this" loading={confirm.isPending} disabled={busy} onPress={onAccept} />
+        <Button label="Not quite right" variant="ghost" disabled={busy} onPress={onNotRight} />
         {match.i_requested ? (
           <AppText style={styles.note}>
             {match.searches_left} of {match.daily_limit} searches left today
           </AppText>
         ) : null}
-        <MatchReportLink matchId={match.match_id} partnerFirstName={name} />
-      </LinearGradient>
-      <AppText style={styles.note}>
-        {match.they_confirmed ? `${name} has already accepted.` : 'You both accept before anything starts.'}
-      </AppText>
-    </Animated.View>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 20,
-    padding: 22,
-    paddingVertical: 24,
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(253,131,2,0.28)'
-  },
-  plain: { alignItems: 'center', gap: theme.spacing(1), paddingTop: theme.spacing(2) },
+  root: { flex: 1 },
+  body: { alignItems: 'center', gap: 10, paddingHorizontal: 22, paddingBottom: 20 },
+  stack: { alignSelf: 'stretch', alignItems: 'center', gap: 10 },
+  // The answers stay put while the reasons scroll.
+  footer: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 12, gap: 6 },
   icon: {
     width: 56,
     height: 56,
@@ -263,13 +284,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: theme.colors.surface3
   },
-  heading: { fontSize: 20, color: theme.colors.text, textAlign: 'center', marginBottom: 4 },
-  body: { fontSize: 13, lineHeight: 20, color: theme.colors.muted, textAlign: 'center', maxWidth: 280 },
-  name: { fontSize: 17, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
-  reasons: { alignSelf: 'stretch', gap: 6, marginTop: 6 },
+  title: { fontSize: 26, lineHeight: 32, color: theme.colors.text, textAlign: 'center', marginTop: 8 },
+  titleEm: { fontSize: 26, lineHeight: 32, color: theme.colors.primary2, fontFamily: theme.fonts.bodyBold },
+  copy: { fontSize: 13, lineHeight: 20, color: theme.colors.muted, textAlign: 'center', maxWidth: 280 },
+  name: { fontSize: 15, color: theme.colors.muted, fontFamily: theme.fonts.bodyMedium },
+  reasons: {
+    alignSelf: 'stretch',
+    gap: 10,
+    marginTop: 10,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 16
+  },
   reasonsTitle: { fontSize: 10, letterSpacing: 1.2, color: theme.colors.muted },
-  reason: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  reasonText: { flexShrink: 1, fontSize: 13, lineHeight: 19, color: theme.colors.text },
+  reason: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  tick: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(46,158,107,0.14)'
+  },
+  reasonText: { flexShrink: 1, fontSize: 14, lineHeight: 21, color: theme.colors.text },
   clock: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -280,6 +319,5 @@ const styles = StyleSheet.create({
   },
   clockText: { fontSize: 13, color: theme.colors.primary2, fontFamily: theme.fonts.bodyMedium },
   clockNote: { fontSize: 11.5, color: theme.colors.muted },
-  wide: { alignSelf: 'stretch' },
-  note: { textAlign: 'center', color: theme.colors.muted, fontSize: 11, marginTop: 8 }
+  note: { textAlign: 'center', color: theme.colors.muted, fontSize: 11 }
 });
