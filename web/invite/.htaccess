@@ -1,0 +1,10 @@
+# app.choner.io (#193). One page answers every invite address:
+#   /invite/WALW89  ->  index.html, which reads the code out of the address.
+RewriteEngine On
+RewriteRule ^invite(/.*)?$ /index.html [L]
+
+# Apple asks for this file with no extension and refuses it unless it is
+# served as JSON, with no redirect on the way.
+<Files "apple-app-site-association">
+  ForceType application/json
+</Files>

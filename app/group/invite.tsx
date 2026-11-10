@@ -185,7 +185,7 @@ export default function InviteScreen() {
           {invite ? (
             <>
               <AppText style={styles.linkText} selectable>
-                {buildInviteLink(invite.token)}
+                {buildInviteLink(invite.token, invite.code)}
               </AppText>
               {invite.code ? (
                 <AppText style={styles.linkText} selectable>

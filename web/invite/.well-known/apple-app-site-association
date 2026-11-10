@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "V5TUFJ2LWB.com.choner.app"
+        ],
+        "components": [
+          {
+            "/": "/invite/*",
+            "comment": "An invite opens the app on that invite."
+          }
+        ]
+      }
+    ]
+  }
+}
