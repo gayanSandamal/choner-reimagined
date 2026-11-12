@@ -45,14 +45,35 @@ function readEnv() {
   return out;
 }
 
+// Which database the scripts talk to. The default is choner-dev, where the
+// sample users live and where the app points in development. Production has to
+// be named (CHONER_DB=prod): seed:pool --confirm deletes every account, and that
+// must never be one forgotten variable away from real people.
+const TARGETS = {
+  dev: { ref: 'uzhqvvnumvcmuxrmoxde', label: 'choner-dev', passwordVars: ['SUPABASE_DEV_DB_PASSWORD'] },
+  prod: { ref: 'bkncpybneoqjnkhhchxg', label: 'PRODUCTION', passwordVars: ['SUPABASE_DB_PASSWORD', 'SUPABASE_PASSWORD'] }
+};
+
+function resolveTarget(env) {
+  const name = (env.CHONER_DB || 'dev').trim().toLowerCase();
+  const target = TARGETS[name];
+  if (!target) throw new Error(`CHONER_DB must be "dev" or "prod", not "${env.CHONER_DB}"`);
+  return { name, ...target };
+}
+
 function connectionString() {
   const env = { ...readEnv(), ...process.env };
-  const password = env.SUPABASE_DB_PASSWORD || env.SUPABASE_PASSWORD;
-  if (!password) throw new Error('SUPABASE_DB_PASSWORD missing from .env');
-
-  const url = env.EXPO_PUBLIC_SUPABASE_URL || '';
-  const ref = url.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1];
-  if (!ref) throw new Error('could not read the project ref from EXPO_PUBLIC_SUPABASE_URL');
+  const target = resolveTarget(env);
+  const password = target.passwordVars.map((v) => env[v]).find(Boolean);
+  if (!password) {
+    throw new Error(
+      `${target.passwordVars[0]} missing from .env (needed for ${target.label}).` +
+        (target.name === 'dev' ? ' To run against production instead, set CHONER_DB=prod.' : '')
+    );
+  }
+  const ref = target.ref;
+  // stderr, so it never mixes into output a caller parses.
+  console.error(`[db] ${target.label} (${ref})`);
 
   const region = env.SUPABASE_DB_REGION || 'aws-1-ap-southeast-1';
   // encodeURIComponent, because a password with @ or / in it silently produces
