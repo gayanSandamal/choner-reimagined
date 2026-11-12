@@ -134,6 +134,18 @@ Done when: the banner is gone from Play Console home.
 Why not Claude: account-owner-only, and it is a legal declaration about a
 person.
 
+### 8d. The Community feed, when it ships after review — **Gayan, then Dinesh**
+
+On the community-feed branch. Not for the build going to review now.
+
+1. **Gayan:** apply `supabase/migrations/202611121000_community_posts.sql`
+   before the build that has the new Community tab goes out. Without it the
+   tab shows an error and "Share to inspire" fails.
+2. **Dinesh:** add a Community paragraph to both privacy policies (shared
+   photos are kept until removed, unlike check-in photos), and upload them.
+3. **Both:** reports land in `community_post_reports`. Check it at least once
+   a day; the stores require action within 24 hours.
+
 ## Done, kept so the next person does not redo it
 
 ### Deploying the three Edge Functions — two of three, 6 November

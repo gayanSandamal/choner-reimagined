@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from './api';
 import * as milestones from './milestones';
+import * as posts from './posts';
 
 export function useGroups(opts?: { mineOnly?: boolean; userId?: string }) {
   return useQuery({
@@ -187,3 +188,30 @@ export function useToggleMilestoneReaction() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['city-feed'] }),
   });
 }
+
+// ============================================================
+// The Community feed (202611121000)
+// ============================================================
+
+export function useCommunityFeed(enabled = true) {
+  return useQuery({
+    queryKey: ['community-feed'],
+    queryFn: () => posts.getCommunityFeed(),
+    enabled
+  });
+}
+
+function usePostMutation<A>(fn: (a: A) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['community-feed'] })
+  });
+}
+
+export const useCreateCommunityPost = () => usePostMutation(posts.createCommunityPost);
+export const useToggleCommunityClap = () => usePostMutation(posts.toggleCommunityClap);
+export const useHideCommunityPost = () => usePostMutation(posts.hideCommunityPost);
+export const useReportCommunityPost = () => usePostMutation(posts.reportCommunityPost);
+export const useBlockCommunityAuthor = () => usePostMutation(posts.blockCommunityAuthor);
+export const useRemoveCommunityPost = () => usePostMutation(posts.removeCommunityPost);

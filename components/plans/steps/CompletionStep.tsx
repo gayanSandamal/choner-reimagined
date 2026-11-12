@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/Chip';
@@ -96,7 +97,18 @@ export function CompletionStep({
           this session isn't asked about again; a post needs both yeses. */}
       {plan.my_share == null ? (
         <View style={styles.share}>
-          <Button label={COPY.shareToInspire} onPress={() => run(() => share.mutateAsync({ planId: plan.id, shared: true }))} />
+          {/* Opens the Community share screen: a photo or just words, posted
+              by you alone (decided 10 to 12 Nov 2026). The old pair post that
+              needed both yeses is no longer offered. */}
+          <Button
+            label={COPY.shareToInspire}
+            onPress={() =>
+              router.push({
+                pathname: '/community/share',
+                params: { challengeId, activityKey: plan.activity_key ?? '' }
+              } as never)
+            }
+          />
           <Button label={COPY.notNow} variant="ghost" onPress={() => run(() => share.mutateAsync({ planId: plan.id, shared: false }))} />
         </View>
       ) : plan.my_share ? (

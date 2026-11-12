@@ -3654,3 +3654,75 @@ right; `com.choner.app` is the iOS bundle ID and belongs to a different
 Android developer console account, which is why `8bb0761` renamed it.
 
 **Confirmed from the console:** 7 November 2026.
+
+## The Community feed, 10 to 12 November 2026
+
+Community stops being a list of milestone rows and becomes a feed, in the
+style of an Instagram or Facebook home feed. Prototyped first
+(https://claude.ai/artifact/QiG8EcsP6rLdtmhjXAKko3), confirmed, then built on
+its own branch. **It ships after store review, together with the Home photo
+gallery**, not in the build going to review now.
+
+### What a post is
+
+- **One person's own.** A photo from the session, or just words. It goes up
+  at once with the poster's first name only. The partner is never named.
+- **No partner approval, and no "who is in it?" question.** Both were
+  prototyped and dropped as too complicated. A partner who does not like a
+  photo removes it (below) or reports it.
+- **The photo is live camera only:** the check-in photo already taken today,
+  or a new one, such as the sunrise at the park where the session ended. A
+  shared check-in photo is copied, because check-in photos are partner-only
+  and deleted within days.
+- **"Inspire others with a thought"**, up to 140 characters, with four
+  tap-to-use lines underneath. With a photo it is the line under it; with just
+  words it is the picture, on orange, navy, green or violet.
+- **Phone numbers, @handles and links are refused**, in the app and again on
+  the server, so the feed cannot be used to contact a stranger.
+- **The streak is on the card** ("Day 5", with the flame), from the poster's
+  sessions together.
+
+### The feed
+
+- **Two cards fill a screen.** The photo or the words on top; under it the
+  face, the first name, the line, "Walking with their partner" (or "with you"
+  on your own partner's post) and the time.
+- **The clap** is a line icon, not the old emoji, 44 points tall, **bottom
+  right** of the card where the thumb rests. "···" stays top right.
+- **"···"** offers Hide, Report and Block. On your partner's post it also
+  offers **Remove**, which takes it down for everyone straight away, with no
+  wait for a review; the poster gets a note. Block is not offered on your own
+  partner's post: ending or blocking a partner stays on Find.
+- **Your partner gets a note** whenever you post.
+- **"Colombo, showing up together."** is gone from the top of the tab.
+- Still no post button, comments, profiles or messages. Sharing is offered
+  only at the end of a real session ("Share to inspire" on "You both showed
+  up").
+
+### Who reviews reports
+
+**Dinesh and Gayan**, both. Both stores require user posts to have reporting,
+blocking and filtering, and reports acted on within 24 hours. A report also
+hides the post for the person who reported it.
+
+### Not done yet, and needed before it ships
+
+- **The privacy policy** says check-in photos are seen by your partner only
+  and deleted within 7 days. A shared photo is kept until it is removed, so the
+  policy needs a paragraph about Community posts first.
+- **A word filter** for objectionable text, beyond the contact-details check.
+- **Photo location data:** the camera is already asked for no EXIF.
+- **One pool of photos** with the Home gallery, so a post shared here can also
+  fill Just Happened. Agreed; built when the gallery is.
+
+### How it is built
+
+`202611121000_community_posts.sql`: a `community_posts` table, claps, hides
+and reports, a private `community-photos` bucket whose photos can be signed
+only while their post is up, and the functions the app calls
+(`create_community_post`, `get_community_feed`, `toggle_community_clap`,
+`hide_community_post`, `report_community_post`, `block_community_author`,
+`remove_community_post`). The old milestones feed is left in place, so an
+older build keeps working.
+
+**Decided by:** user, 10 to 12 November 2026.

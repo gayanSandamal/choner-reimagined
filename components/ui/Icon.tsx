@@ -110,6 +110,21 @@ const ICONS: Record<string, Shape[]> = {
   share: [{ d: 'M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 001 1h12a1 1 0 001-1v-6' }],
   back: [{ d: 'M15 5l-7 7 7 7' }],
   chev: [{ d: 'M9 5l7 7-7 7' }],
+  // Community (202611121000): the clap that replaces the 👏 emoji, the post
+  // menu, and "a new photo" (the view where you finished).
+  clap: [
+    { d: 'M8.5 11.5l-2-2a1.4 1.4 0 012-2l3 3' },
+    { d: 'M10.5 9.5l-2.5-2.5a1.4 1.4 0 012-2l4.5 4.5' },
+    { d: 'M12 6.5l.5-.5a1.4 1.4 0 012 0l3 3c2.4 2.4 2.4 6.1 0 8.5s-6.1 2.4-8.5 0l-4-4a1.4 1.4 0 012-2l1.5 1.5' },
+    { d: 'M16 3l.5-1.5M19 4.5l1.2-1M20 8h1.5' }
+  ],
+  dots: [
+    { cx: 5, cy: 12, r: 1.5, solid: true },
+    { cx: 12, cy: 12, r: 1.5, solid: true },
+    { cx: 19, cy: 12, r: 1.5, solid: true }
+  ],
+  sun: [{ cx: 12, cy: 13, r: 4 }, { d: 'M3 19h18M12 4v2M5.6 6.6l1.4 1.4M18.4 6.6L17 8M3 13h2M19 13h2' }],
+  text: [{ d: 'M5 6h14M12 6v13M9 19h6' }],
   x: [{ d: 'M6 6l12 12M18 6L6 18' }],
   mail: [
     { x: 3, y: 5, w: 18, h: 14, rx: 2 },
