@@ -323,8 +323,55 @@ export type InvitePreview =
       activity: string | null;
       // The challenge that would be REPLACED, or null when nothing changes.
       replaces: string | null;
-      blocked: 'you_partnered' | 'they_partnered' | null;
+      // Accepted by somebody else. Absent before 202611101700.
+      used?: boolean;
+      blocked: 'you_partnered' | 'match_waiting' | 'they_partnered' | null;
     };
+
+// Why an invite cannot be used, as one word the invite screen can act on.
+export type InviteRefusal =
+  | 'already_joined'
+  | 'used'
+  | 'expired'
+  | 'own'
+  | 'not_found'
+  | 'you_partnered'
+  | 'match_waiting'
+  | 'they_partnered';
+
+// From what the preview says, before anything is attempted. Null means it can
+// be accepted. Works against the server before and after 202611101700.
+export function inviteRefusalFromPreview(pv: InvitePreview): InviteRefusal | null {
+  if (!pv.found) return 'not_found';
+  if (pv.own) return 'own';
+  if (pv.mine) return 'already_joined';
+  if (pv.used || (pv.status != null && pv.status !== 'pending')) return 'used';
+  if (pv.expired) return 'expired';
+  if (pv.blocked) return pv.blocked;
+  return null;
+}
+
+// From a refused accept. 202611101700 tags each refusal with a hint; an older
+// server only has the message, so match on that as well.
+export function inviteRefusalFromError(error: unknown): InviteRefusal | null {
+  const e = (error ?? {}) as { hint?: string; message?: string };
+  const hint = String(e.hint ?? '');
+  if (hint.startsWith('invite_')) {
+    const k = hint.slice('invite_'.length);
+    if (k === 'already_joined' || k === 'used' || k === 'expired' || k === 'you_partnered' || k === 'match_waiting') {
+      return k;
+    }
+  }
+  const m = String(e.message ?? '').toLowerCase();
+  if (m.includes('already joined')) return 'already_joined';
+  if (m.includes('already been used') || m.includes('already used')) return 'used';
+  if (m.includes('expired')) return 'expired';
+  if (m.includes('own invite')) return 'own';
+  if (m.includes('invite not found')) return 'not_found';
+  if (m.includes('already have a partner')) return 'you_partnered';
+  if (m.includes('paired up with someone else')) return 'they_partnered';
+  return null;
+}
 
 export async function previewInvite(codeOrToken: string) {
   const { data, error } = await supabase.rpc('preview_invite', { p_code: codeOrToken.trim() });
