@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
-import { useIsFocused } from '@react-navigation/native';
+// From expo-router, never @react-navigation/native: expo-router carries its
+// own copy of the navigation library, and the separately installed one has no
+// navigator around it, so it throws "Couldn't find a navigation object".
+import { useIsFocused } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
