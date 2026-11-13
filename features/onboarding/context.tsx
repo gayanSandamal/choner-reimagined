@@ -82,6 +82,14 @@ export function OnboardingProvider({ children }: PropsWithChildren) {
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;
 }
 
+// For a screen that is reached from inside onboarding AND from outside it,
+// such as /challenge/why. It lives outside app/onboarding, so the provider is
+// not there, and useOnboarding() threw: that was the "Something broke" after
+// "You're in!" on 10 Nov 2026. Null when there is no onboarding in progress.
+export function useOnboardingIfAny() {
+  return useContext(OnboardingContext);
+}
+
 export function useOnboarding() {
   const ctx = useContext(OnboardingContext);
   if (!ctx) throw new Error('useOnboarding must be used within OnboardingProvider');

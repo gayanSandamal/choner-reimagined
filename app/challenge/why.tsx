@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingState } from '@/components/ui/StateViews';
 import { KeyboardFooterScroll } from '@/components/ui/keyboard';
 import { ReflectionQuestionList } from '@/components/challenges/ReflectionQuestionList';
-import { useOnboarding } from '@/features/onboarding/context';
+import { useOnboardingIfAny } from '@/features/onboarding/context';
 import { useIsInvitee } from '@/features/onboarding/invitee';
 import {
   ReflectionDraft,
@@ -44,7 +44,9 @@ import { notify } from '@/lib/alert';
 export default function WhyScreen() {
   const { session } = useSession();
   const userId = session?.user.id;
-  const { chosenChallenge } = useOnboarding();
+  // Not useOnboarding(): this screen is outside the onboarding stack, so its
+  // provider is not here, and asking for it crashed the app.
+  const chosenChallenge = useOnboardingIfAny()?.chosenChallenge ?? null;
   const challengesQ = useMyChallenge(userId);
   const reflectionsQ = useReflections(userId);
   const saveReflections = useSaveReflections();
