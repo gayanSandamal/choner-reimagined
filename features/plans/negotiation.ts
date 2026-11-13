@@ -123,6 +123,12 @@ export function firstOpenDay(days: Date[], slot: TimeOfDay, now = new Date()) {
   return i < 0 ? 0 : i;
 }
 
+// Under every time wheel, so people know what they can pick before they try
+// (#204): "Times from 5:00 AM to 9:00 PM, every half hour."
+export function daytimeRangeLine() {
+  return `Times from ${timeLabel(DAY_START)} to ${timeLabel(DAY_END)}, every half hour.`;
+}
+
 // "Pick a time between 5:00 AM and 9:00 PM."
 export function daytimeHint() {
   return `Pick a time between ${timeLabel(DAY_START)} and ${timeLabel(DAY_END)}.`;

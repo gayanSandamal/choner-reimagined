@@ -3922,3 +3922,42 @@ through a store build. Earlier entries and messages today said changes would
 picker, and so does everything else.
 
 **Decided by:** user, 10 November 2026.
+
+## Profile first on Find, and two picker fixes, 13 November 2026
+
+### Your partner's profile (#203)
+
+Once both people accept, the paired Find screen's main button is **"See
+Gayan's profile"**, and tapping the two faces opens it too. "See your
+challenge" moved to the foot of the profile; Challenges is always one tap away
+in the tab bar. Reason: Find is about your partner, the plan lives on
+Challenges, and two orange actions on one screen meant the profile would never
+be found. A small "See Gayan's profile" line under the title was prototyped and
+dropped as a duplicate of the button.
+
+The profile (`app/find/partner.tsx`), inside Find, for a confirmed partner
+only: photo, first name, "Photo confirmed" when it is, the activity, **the
+areas they picked**, how long you have been paired, sessions together, and
+**their Why answers** (asked about them: "What's their purpose for doing
+this?"), or "Gayan has not answered these yet." "···" keeps Report and Block.
+No age, gender, contact details or messages.
+
+Needs `202611131200_partner_profile.sql`: `get_my_partner()` also returns
+the partner's photo status, areas and Why answers. Additive; older builds are
+unaffected.
+
+### The time wheel (#204)
+
+On iPhone the minutes showed as "..." because Apple's wheel was squeezed. The
+day column is narrower (108 points, smaller text) and Apple's wheel is given
+the rest of the row, at least 236 points. Under every time wheel, on both
+platforms, a line now says what can be picked: "Times from 5:00 AM to 9:00 PM,
+every half hour."
+
+### The streak card (#205)
+
+The day name under each circle ("Tue") was cut in half: 9pt Poppins in a box
+12 points high. It now takes its own line height, with more space between the
+rows of circles.
+
+**Decided by:** user, 13 November 2026. Prototyped first.

@@ -34,6 +34,8 @@ describe('TimeWheel on Android: every column is ours (#191)', () => {
     expect(screen.getByText('30')).toBeTruthy();
     expect(screen.getByText('AM')).toBeTruthy();
     expect(screen.getByText('PM')).toBeTruthy();
+    // Says what can be picked (#204).
+    expect(screen.getByText('Times from 5:00 AM to 9:00 PM, every half hour.')).toBeTruthy();
     // Half hours only, by decision: no :15, no :45.
     expect(screen.queryByText('15')).toBeNull();
     expect(screen.queryByText('45')).toBeNull();

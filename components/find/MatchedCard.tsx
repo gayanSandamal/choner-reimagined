@@ -18,7 +18,7 @@ import { theme } from '@/constants/theme';
 // Drawn in the same style as searching and Match found (#196, decided 10 Nov
 // 2026), so Find reads as one place from the first search to the partnership:
 // the activity row, the radar (still now, with both faces in it), "Paired with
-// Gayan", then See your challenge, Already on the move as an outline, and End
+// Gayan", then See Gayan's profile, Already on the move as an outline, and End
 // this match last and quiet.
 //
 // Every way OUT of a match lives here and nowhere else: End this match (the
@@ -49,7 +49,10 @@ export function MatchedCard({
   challengeId: string | null;
 }) {
   const howLong = pairedFor(since);
-  const openChallenge = () => router.push('/(tabs)/challenges');
+  // Profile first (#203, decided 13 Nov 2026): Find is about your partner, so
+  // the faces and the main button open their profile. The plan lives on
+  // Challenges, one tap away in the tab bar and at the foot of the profile.
+  const openProfile = () => router.push('/find/partner' as never);
 
   return (
     <Animated.View entering={FadeInDown.duration(360)}>
@@ -78,11 +81,11 @@ export function MatchedCard({
           </View>
         ) : null}
         <PressableScale
-          onPress={openChallenge}
+          onPress={openProfile}
           scaleTo="subtle"
           haptic="selection"
           accessibilityRole="button"
-          accessibilityLabel={`You and ${partnerName}, paired. See your challenge.`}
+          accessibilityLabel={`You and ${partnerName}, paired. See ${partnerName}'s profile.`}
           style={styles.radar}
         >
           {/* Still, not pulsing: the search is over. */}
@@ -111,7 +114,7 @@ export function MatchedCard({
       </View>
 
       <View style={styles.actions}>
-        <Button label="See your challenge" onPress={openChallenge} />
+        <Button label={`See ${partnerName}'s profile`} onPress={openProfile} />
         {/* Second, so an outline (decided 10 Nov 2026): two solid orange
             buttons stacked compete, and your challenge is the thing to do. */}
         <Button

@@ -214,6 +214,14 @@ goes to the store, on a TestFlight install:
 **If 2 shows 19:00:** tell Claude. It is a cosmetic mismatch, not a broken
 picker.
 
+### 8e. Apply the partner profile database change — **Gayan**
+
+`supabase/migrations/202611131200_partner_profile.sql`, on the #199 branch.
+Apply it before the build with the partner profile goes out.
+
+**If it is skipped:** the profile still opens, but without the area, the
+"Photo confirmed" tick, or the Why answers (it says the answers are missing).
+
 ## Done, kept so the next person does not redo it
 
 ### Deploying the three Edge Functions — two of three, 6 November

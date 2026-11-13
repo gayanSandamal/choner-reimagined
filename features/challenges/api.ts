@@ -704,6 +704,12 @@ export type MyPartner =
       partner_has_challenge: boolean;
       // The heart: sessions both completed with this partner.
       sessions_together: number;
+      // For their profile on Find (202611131200). Optional: an older server
+      // does not send them, and the profile shows what it has.
+      user_id?: string;
+      photo_confirmed?: boolean;
+      area?: string | null;
+      why?: { question_key: string; choice_key: string | null; custom_text: string | null }[];
     };
 
 export async function getMyPartner() {

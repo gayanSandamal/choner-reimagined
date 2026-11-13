@@ -66,7 +66,9 @@ function Circle({ circle, index }: { circle: StreakCircle; index: number }) {
       >
         {circle.state === 'missed' ? <View style={styles.missMark} /> : null}
       </View>
-      <AppText style={styles.day}>{day ?? ' '}</AppText>
+      <AppText style={styles.day} numberOfLines={1}>
+        {day ?? ' '}
+      </AppText>
     </View>
   );
 }
@@ -86,7 +88,7 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   eyebrow: { fontSize: 10, letterSpacing: 1.2, color: theme.colors.muted },
   score: { fontSize: 17, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 10 },
   cell: { alignItems: 'center', width: SIZE + 8, gap: 2 },
   circle: {
     width: SIZE,
@@ -102,6 +104,8 @@ const styles = StyleSheet.create({
   missed: { borderColor: theme.colors.muted, borderStyle: 'dashed' },
   // A short bar through a missed circle, so it reads as marked without colour.
   missMark: { width: SIZE - 10, height: 1.5, backgroundColor: theme.colors.muted },
-  day: { fontSize: 9, color: theme.colors.muted, height: 12 },
+  // Its own line height, never a fixed box: Poppins is taller than 9pt, and a
+  // 12pt-high box cut the day name in half (#205), worse with larger text.
+  day: { fontSize: 9, lineHeight: 13, minHeight: 13, color: theme.colors.muted, textAlign: 'center' },
   foot: { fontSize: 12 }
 });
