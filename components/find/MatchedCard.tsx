@@ -93,7 +93,7 @@ export function MatchedCard({
           <View pointerEvents="none" style={[styles.ring, styles.ring2]} />
           <View pointerEvents="none" style={[styles.ring, styles.ring3]} />
           <View style={styles.faces}>
-            <Avatar uri={myAvatarUrl} name={myName ?? 'You'} size={66} ring />
+            <Avatar uri={myAvatarUrl} name={myName ?? 'You'} size={66} ring self />
             <View style={styles.overlap}>
               <Avatar uri={partnerAvatarUrl} name={partnerName} size={66} ring />
             </View>

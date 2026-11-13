@@ -19,7 +19,7 @@ export function PairAvatars({
   return (
     <View style={styles.row}>
       <View style={styles.person}>
-        <Avatar uri={me.avatarUrl} name={me.name} size={64} ring />
+        <Avatar uri={me.avatarUrl} name={me.name} size={64} ring self />
         <AppText style={styles.name}>{me.name}</AppText>
       </View>
       <View style={[styles.person, dimThem && styles.dim]}>

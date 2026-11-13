@@ -61,6 +61,7 @@ export default function ProfileScreen() {
                 name={profileQ.data?.full_name ?? session?.user.email}
                 uri={profileQ.data?.avatar_url}
                 size={76}
+                self
               />
               <AppText style={styles.name}>{profileQ.data?.full_name ?? 'Your profile'}</AppText>
               <AppText style={styles.email}>{session?.user.email}</AppText>

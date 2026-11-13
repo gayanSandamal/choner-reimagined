@@ -4007,3 +4007,19 @@ half opacity, made thinner again by the smaller radar). They are now a stronger
 orange, thicker, and at higher opacity.
 
 **Decided by:** user, 13 November 2026.
+
+## Find matches the prototype: navy initials, the found radar, the heading, 13 November 2026
+
+From a side-by-side of the build and the prototype:
+
+- **Initials circles use Choner's colors.** Everyone else's is navy (#2B6098
+  to #0B2231); your own stays the brand orange (top bar, Profile, your side of
+  a pair). They used to take one of six blue and purple gradients picked from
+  the name.
+- **The found radar** shows a white check in the orange centre and two soft,
+  still rings, as the prototype. It used to say "Match found" in the centre
+  with three strong rings. Their face sits on the ring with a white edge, no
+  orange ring.
+- **"You found a Match." / "You're in."** emphasis is bold navy, not orange.
+
+**Decided by:** user, 13 November 2026.

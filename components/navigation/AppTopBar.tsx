@@ -138,7 +138,7 @@ export function AppTopBar({ accessory }: { accessory?: ReactNode } = {}) {
           accessibilityRole="button"
           accessibilityLabel="Your profile"
         >
-          <Avatar uri={profileQ.data?.avatar_url} name={profileQ.data?.full_name} size={32} />
+          <Avatar uri={profileQ.data?.avatar_url} name={profileQ.data?.full_name} size={32} self />
         </PressableScale>
       </View>
     </View>

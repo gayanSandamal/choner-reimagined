@@ -15,6 +15,7 @@ import Animated, {
   cancelAnimation
 } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
+import { Icon } from '@/components/ui/Icon';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { theme } from '@/constants/theme';
 import { useReduceMotion } from '@/lib/motion';
@@ -58,9 +59,20 @@ export function Radar({ searching, onPress, found = false, size = SIZE }: Props)
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
       <View style={[styles.rings, { transform: [{ scale }] }]} pointerEvents="none">
-        <Ring index={0} searching={searching} reduceMotion={still} />
-        <Ring index={1} searching={searching} reduceMotion={still} />
-        <Ring index={2} searching={searching} reduceMotion={still} />
+        {found ? (
+          // A match: the search is over. Two soft rings, standing still, as the
+          // prototype (13 Nov 2026).
+          <>
+            <View style={[styles.ring, styles.foundOuter]} />
+            <View style={[styles.ring, styles.foundInner]} />
+          </>
+        ) : (
+          <>
+            <Ring index={0} searching={searching} reduceMotion={still} />
+            <Ring index={1} searching={searching} reduceMotion={still} />
+            <Ring index={2} searching={searching} reduceMotion={still} />
+          </>
+        )}
       </View>
 
       <PressableScale
@@ -82,9 +94,11 @@ export function Radar({ searching, onPress, found = false, size = SIZE }: Props)
           end={{ x: 0.85, y: 1 }}
           style={styles.center}
         >
-          <AppText style={styles.centerText}>
-            {found ? 'Match\nfound' : searching ? 'Searching…' : 'Find a\nMatch'}
-          </AppText>
+          {found ? (
+            <Icon name="check" size={40} color="#FFFFFF" strokeWidth={2.6} />
+          ) : (
+            <AppText style={styles.centerText}>{searching ? 'Searching…' : 'Find a\nMatch'}</AppText>
+          )}
         </LinearGradient>
       </PressableScale>
     </View>
@@ -156,6 +170,8 @@ const styles = StyleSheet.create({
     height: SIZE,
     borderRadius: SIZE / 2
   },
+  foundOuter: { borderWidth: 1.5, borderColor: 'rgba(253,131,2,0.22)' },
+  foundInner: { width: SIZE * 0.72, height: SIZE * 0.72, borderRadius: SIZE * 0.36, borderWidth: 1.5, borderColor: 'rgba(253,131,2,0.32)' },
   ringRest: { borderWidth: 3, borderColor: 'rgba(253,131,2,0.55)' },
   ringSearching: { borderWidth: 2.5, borderColor: 'rgba(253,91,1,0.75)' },
   centerHit: { zIndex: 2 },

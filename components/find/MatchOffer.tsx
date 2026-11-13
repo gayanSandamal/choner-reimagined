@@ -297,7 +297,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface3
   },
   title: { fontSize: 26, lineHeight: 32, color: theme.colors.text, textAlign: 'center', marginTop: 8 },
-  titleEm: { fontSize: 26, lineHeight: 32, color: theme.colors.primary2, fontFamily: theme.fonts.bodyBold },
+  // Bold navy, not orange, as the prototype (13 Nov 2026).
+  titleEm: { fontSize: 26, lineHeight: 32, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
   copy: { fontSize: 13, lineHeight: 20, color: theme.colors.muted, textAlign: 'center', maxWidth: 280 },
   name: { fontSize: 15, color: theme.colors.muted, fontFamily: theme.fonts.bodyMedium },
   reasons: {

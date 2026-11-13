@@ -572,7 +572,9 @@ function MatchWaitingState({
         <Radar searching found onPress={open} />
         {/* Their own photo on the ring: a real person, the one who matched. */}
         <View style={styles.blip} pointerEvents="none">
-          <Avatar uri={match.partner_avatar_url} name={name} size={38} ring />
+          <View style={styles.blipFace}>
+            <Avatar uri={match.partner_avatar_url} name={name} size={34} />
+          </View>
         </View>
       </View>
 
@@ -812,6 +814,7 @@ const styles = StyleSheet.create({
   note: { textAlign: 'center', color: theme.colors.muted, fontSize: 11, marginBottom: 14, lineHeight: 17 },
   // Match waiting (#192)
   blip: { position: 'absolute', top: 30, right: '50%', marginRight: -104 },
+  blipFace: { borderRadius: 20, borderWidth: 2.5, borderColor: '#FFFFFF', ...theme.shadow.sm },
   found: { alignItems: 'center', marginTop: 6, marginBottom: 12 },
   foundRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   foundTitle: { fontSize: 16, color: theme.colors.primary2, fontFamily: theme.fonts.bodyBold },
