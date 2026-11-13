@@ -258,10 +258,10 @@ export function CheckinStep({ plan, challengeId }: { plan: PairPlan; challengeId
     return (
       <View style={styles.wrap}>
         <AppText>{COPY.momentPrompt}</AppText>
-        {/* D7 is open: the handover's line also promises "Saved to your
-            profile", which isn't true yet — today's photos are deleted after
-            your partner views them. Only the true half is shown. */}
-        <AppText muted style={styles.small}>Only visible to your partner, once.</AppText>
+        {/* No "Only visible to your partner, once." any more (12 Nov 2026):
+            the photo can also be shared on Community afterwards, if you choose
+            to, so the line asks for it by what it does for someone else. */}
+        <AppText muted style={styles.small}>{COPY.momentWhy}</AppText>
         <Button label="Take a photo" loading={completeTask.isPending} onPress={() => markDone(true)} />
         <Button label="Skip" variant="ghost" onPress={() => markDone(false)} />
       </View>

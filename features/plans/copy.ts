@@ -46,7 +46,10 @@ export const COPY = {
   checkinDone: 'Done',
   checkinLater: 'Doing it later',
   checkinCant: "Can't today",
-  momentPrompt: 'Want to share a moment from today? Optional. A light touch, not proof.',
+  // Asks for the photo by what it can do for someone else (12 Nov 2026):
+  // the point is getting people to share. It is still optional.
+  momentPrompt: 'Snap a moment from today.',
+  momentWhy: "Your progress could be someone's reason to start.",
   photoPrivacy: "Only visible to each other as a view-once photo after you've both shared. Saved to your profile.",
   iveCompletedIt: "I've completed it",
   whatHappened: 'What happened?',
