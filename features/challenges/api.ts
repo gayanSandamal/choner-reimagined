@@ -544,6 +544,12 @@ export type MyMatch =
       expires_at?: string;
       searches_left: number;
       daily_limit: number;
+      // 202611131400. Optional: an older server does not send them.
+      partner_photo_confirmed?: boolean;
+      // How the two plan to do it: meet up, or each where they are.
+      how?: 'together' | 'separate' | null;
+      // For a together pair only, the area they share. Never their full list.
+      shared_area?: string | null;
     };
 
 export async function getMyMatch(): Promise<MyMatch> {

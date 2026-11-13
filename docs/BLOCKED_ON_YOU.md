@@ -214,6 +214,12 @@ goes to the store, on a TestFlight install:
 **If 2 shows 19:00:** tell Claude. It is a cosmetic mismatch, not a broken
 picker.
 
+### 8f. Apply the Match found database change — **Gayan**
+
+`supabase/migrations/202611131400_match_photo_and_area.sql`, on the #199
+branch, with 8e. Without it Match found simply leaves out "photo confirmed"
+and the area line.
+
 ### 8e. Apply the partner profile database change — **Gayan**
 
 `supabase/migrations/202611131200_partner_profile.sql`, on the #199 branch.

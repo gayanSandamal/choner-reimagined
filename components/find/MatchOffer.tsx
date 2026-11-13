@@ -165,7 +165,23 @@ export function MatchOffer({
 
   // Why you matched. Only what is true of both and safe to show a stranger:
   // the activity, and the one line written when the pairing was made.
-  const reasons = [match.habit ? `You are both doing ${match.habit}` : null, match.blurb].filter(Boolean) as string[];
+  // Where they'll do it (13 Nov 2026): the shared area for a pair who will
+  // meet; for a pair doing it separately, location played no part, so none
+  // is named.
+  const where =
+    match.how === 'together' && match.shared_area
+      ? `You're both in the ${match.shared_area} area`
+      : match.how === 'separate'
+      ? "You'll each go wherever suits you"
+      : null;
+  const reasons = [match.habit ? `You are both doing ${match.habit}` : null, where, match.blurb].filter(Boolean) as string[];
+  // Under the name: their photo is really them.
+  const confirmed = match.partner_photo_confirmed ? (
+    <View style={styles.confirmed}>
+      <Ionicons name="checkmark" size={14} color={theme.colors.success} />
+      <AppText style={styles.confirmedText}>{name}, photo confirmed</AppText>
+    </View>
+  ) : null;
   const reasonList = reasons.length ? (
     <View style={styles.reasons}>
       <AppText style={styles.reasonsTitle}>WHY YOU MATCHED</AppText>
@@ -197,6 +213,7 @@ export function MatchOffer({
           {/* Who you are waiting on stays on screen (13 Nov 2026): the name
               and why you matched, as on the offer. */}
           <AppText style={styles.name}>{name}</AppText>
+          {confirmed}
           {reasonList}
           {clockRow}
           <MatchReportLink matchId={match.match_id} partnerFirstName={name} />
@@ -240,6 +257,7 @@ export function MatchOffer({
             <AppText style={styles.titleEm}>{match.i_requested ? 'a Match.' : 'to pair up.'}</AppText>
           </AppText>
           <AppText style={styles.name}>{name}</AppText>
+          {confirmed}
 
           {reasonList}
 
@@ -314,6 +332,8 @@ const styles = StyleSheet.create({
   clockText: { fontSize: 13, color: theme.colors.primary2, fontFamily: theme.fonts.bodyMedium },
   clockNote: { fontSize: 11.5, color: theme.colors.muted },
   note: { textAlign: 'center', color: theme.colors.muted, fontSize: 11 },
+  confirmed: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  confirmedText: { fontSize: 12.5, color: theme.colors.success, fontFamily: theme.fonts.bodyMedium },
   waiting: { alignSelf: 'center', marginBottom: 4 },
   scrim: { flex: 1, backgroundColor: 'rgba(0,24,39,0.45)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 22, paddingBottom: 34, gap: 6 },

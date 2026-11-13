@@ -126,7 +126,9 @@ function Ring({
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: MIN_SCALE + progress.value * (1 - MIN_SCALE) }],
-    opacity: (searching ? 0.85 : 0.55) * (1 - progress.value)
+    // The resting rings were barely visible (13 Nov 2026): 0.28 orange at half
+    // opacity, shrunk with the smaller start-screen radar. Now clearly there.
+    opacity: (searching ? 0.85 : 0.8) * (1 - progress.value)
   }));
 
   return (
@@ -154,7 +156,7 @@ const styles = StyleSheet.create({
     height: SIZE,
     borderRadius: SIZE / 2
   },
-  ringRest: { borderWidth: 2, borderColor: 'rgba(253,131,2,0.28)' },
+  ringRest: { borderWidth: 3, borderColor: 'rgba(253,131,2,0.55)' },
   ringSearching: { borderWidth: 2.5, borderColor: 'rgba(253,91,1,0.75)' },
   centerHit: { zIndex: 2 },
   center: {

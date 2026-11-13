@@ -3987,3 +3987,23 @@ Prototyped first (tabs "Find: match found" and "Find: the start"), then built.
   looking" after the search has stopped, or uses battery unseen.
 
 **Decided by:** user, 13 November 2026.
+
+## Match found: photo confirmed and the area, only when it applies, 13 November 2026
+
+Before both people accept, Match found (and "You're in") now shows:
+
+- **"Ruwan, photo confirmed"** under the name, when their photo is confirmed.
+- **The area, only for a pair who will meet:** "You're both in the Nugegoda
+  area", the one area they share. Never the other person's full list.
+- **For a pair doing it separately:** "You'll each go wherever suits you".
+  Location played no part in their match, so none is named.
+
+Needs `202611131400_match_photo_and_area.sql` (`get_my_match()` gains
+`partner_photo_confirmed`, `how` and `shared_area`). Additive; older builds
+ignore them.
+
+Also: **the start screen's radar rings were barely visible** (pale orange at
+half opacity, made thinner again by the smaller radar). They are now a stronger
+orange, thicker, and at higher opacity.
+
+**Decided by:** user, 13 November 2026.
