@@ -190,6 +190,8 @@ export default function FindScreen() {
           // 'matched' with no offer in hand is the moment between the matcher
           // writing the state and the offer arriving: still the search.
           <SearchingState
+            habit={habit}
+            activityKey={(challenge?.challenge_templates?.activity_key as string | null) ?? null}
             onStop={onStopSearch}
             stopping={leavePool.isPending}
             noMatch={Boolean(searchState?.matched === false && searchState.no_match)}
@@ -402,11 +404,19 @@ function LandingState({
         onPress={() => router.push('/challenge/browse')}
       />
 
-      <Radar searching={false} onPress={onStart} />
+      {/* Smaller here so the whole start screen fits without scrolling
+          (13 Nov 2026). */}
+      <Radar searching={false} onPress={onStart} size={170} />
       <AppText style={styles.tap}>Tap to find a match</AppText>
 
       <Doors />
-      <DirectoryRow />
+      {/* The standard orange button (13 Nov 2026), no longer the quiet row. */}
+      <Button
+        label="Already on the move"
+        leftIcon={<Icon name="community" size={18} color="#FFFFFF" strokeWidth={2} />}
+        onPress={() => router.push('/find/who-else')}
+        style={styles.moveBtn}
+      />
     </Animated.View>
   );
 }
@@ -414,6 +424,8 @@ function LandingState({
 // Searching. Same radar, visually escalated so it reads as the search waking
 // up rather than a different screen.
 function SearchingState({
+  habit,
+  activityKey,
   onStop,
   stopping,
   noMatch,
@@ -421,6 +433,8 @@ function SearchingState({
   searchesLeft,
   dailyLimit
 }: {
+  habit: string | null;
+  activityKey: string | null;
   onStop: () => void;
   stopping: boolean;
   // We looked and nobody cleared the bar. Not the same as "give it a second":
@@ -443,6 +457,8 @@ function SearchingState({
         </View>
       ) : null}
 
+      {/* The activity, locked, as on every other Find screen (13 Nov 2026). */}
+      <ActivityRow activity={habit ?? 'Your commitment'} activityKey={activityKey} locked onPress={() => {}} />
       <Radar searching />
 
       <View style={styles.searchStatus}>
@@ -465,8 +481,18 @@ function SearchingState({
       {/* Searching is a tab root rendered from server state, so "back to the
           form" means editing your answers while staying in the pool: the form
           prefills them, and re-submitting doesn't spend a search. */}
+      {/* Not a dead end (13 Nov 2026): the directory as an outline button,
+          then Edit answers, then Stop searching last and quiet. */}
+      <Button
+        label="Already on the move"
+        variant="outline"
+        leftIcon={<Icon name="community" size={18} color={theme.colors.primary} strokeWidth={2} />}
+        onPress={() => router.push('/find/who-else')}
+      />
       <Button label="Edit answers" variant="ghost" onPress={() => router.push('/find/form')} />
-      <Button label="Stop searching" variant="ghost" loading={stopping} onPress={onStop} />
+      <PressableScale haptic="selection" hitSlop={8} accessibilityRole="button" onPress={onStop} disabled={stopping} style={styles.quietWrap}>
+        <AppText style={styles.quiet}>Stop searching</AppText>
+      </PressableScale>
     </Animated.View>
   );
 }
@@ -691,7 +717,7 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     fontSize: 13,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 12,
     paddingHorizontal: 6
   },
   // .tap: centred, --g2, 11.5 / 600 (choner-find-flow.html:184)
@@ -703,7 +729,7 @@ const styles = StyleSheet.create({
     color: theme.colors.primary2
   },
   // .orl: a word with a 1px rule either side (app_a.html:259-260)
-  orl: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 10 },
+  orl: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, marginBottom: 8 },
   orlRule: { flex: 1, height: 1, backgroundColor: theme.colors.border },
   orlWord: { fontSize: 12, color: theme.colors.muted },
   // .dlink (app_a.html:300-302)
@@ -763,7 +789,11 @@ const styles = StyleSheet.create({
   },
   // No top margin: the "or" divider inside already carries its own 14 (#136).
   doors: {},
-  links: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 22, rowGap: 10 },
+  // Room above and below, so it is not squeezed under the invite button.
+  links: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 22, rowGap: 10, paddingVertical: 12 },
+  moveBtn: { marginTop: 2 },
+  quietWrap: { alignSelf: 'center', paddingVertical: 10 },
+  quiet: { fontSize: 13.5, color: theme.colors.muted, fontFamily: theme.fonts.bodyMedium },
   link: { color: theme.colors.primary2, fontSize: 13, fontFamily: theme.fonts.bodyMedium },
   searchStatus: { alignItems: 'center', marginTop: 6, marginBottom: 22 },
   searchStatusTitle: {

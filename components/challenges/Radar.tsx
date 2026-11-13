@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -7,7 +8,8 @@ import Animated, {
   useSharedValue,
   withDelay,
   withRepeat,
-  withTiming
+  withTiming,
+  cancelAnimation
 } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
 import { PressableScale } from '@/components/ui/PressableScale';
@@ -28,6 +30,9 @@ interface Props {
   // A match offer is waiting (#192). The centre says so and opens it. This is
   // the one time the radar stands for a real person, because there is one.
   found?: boolean;
+  // Across, in points. The start screen uses a smaller radar so it fits
+  // without scrolling (13 Nov 2026); everywhere else keeps 230.
+  size?: number;
 }
 
 // The Find tab's one object. Three rings expanding outward from a gradient
@@ -37,14 +42,23 @@ interface Props {
 // anyone is actually nearby, and it must never render blips standing in for
 // real people. Matching is concierge-paced, and inventing visible activity
 // would be a lie the rest of the product doesn't tell.
-export function Radar({ searching, onPress, found = false }: Props) {
+export function Radar({ searching, onPress, found = false, size = SIZE }: Props) {
   const reduceMotion = useReduceMotion();
+  // The rings move only when moving means something (13 Nov 2026): a slow
+  // pulse at the start, a faster one while searching, and still once a match
+  // is found, since the search has stopped. They also stop while another tab
+  // is showing: tabs stay mounted, and nobody needs rings animating unseen.
+  const focused = useIsFocused();
+  const still = reduceMotion || found || !focused;
+  const scale = size / SIZE;
 
   return (
-    <View style={styles.wrap}>
-      <Ring index={0} searching={searching} reduceMotion={reduceMotion} />
-      <Ring index={1} searching={searching} reduceMotion={reduceMotion} />
-      <Ring index={2} searching={searching} reduceMotion={reduceMotion} />
+    <View style={[styles.wrap, { width: size, height: size }]}>
+      <View style={[styles.rings, { transform: [{ scale }] }]} pointerEvents="none">
+        <Ring index={0} searching={searching} reduceMotion={still} />
+        <Ring index={1} searching={searching} reduceMotion={still} />
+        <Ring index={2} searching={searching} reduceMotion={still} />
+      </View>
 
       <PressableScale
         onPress={onPress}
@@ -57,7 +71,7 @@ export function Radar({ searching, onPress, found = false }: Props) {
           found ? 'Match found. See your match.' : searching ? 'Searching for your partner' : 'Find a match'
         }
         accessibilityState={{ disabled: searching && !found }}
-        style={styles.centerHit}
+        style={[styles.centerHit, scale !== 1 && { transform: [{ scale: Math.max(scale, 0.85) }] }]}
       >
         <LinearGradient
           colors={searching ? (['#FD8302', '#FD4E01'] as const) : (['#FDA340', '#FD7A02'] as const)}
@@ -89,9 +103,11 @@ function Ring({
 
   useEffect(() => {
     if (reduceMotion) {
-      // A permanently pulsing screen is exactly what Reduce Motion exists for.
-      // The rings still render, they just hold still.
-      progress.value = 0;
+      // A permanently pulsing screen is exactly what Reduce Motion exists for,
+      // and the same holds for a found match or an unseen tab. The rings still
+      // render, they just hold still, at a resting spread.
+      cancelAnimation(progress);
+      progress.value = 0.35 + index * 0.2;
       return;
     }
     progress.value = 0;
@@ -128,6 +144,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 6
   },
+  rings: { position: 'absolute', width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
   ring: {
     position: 'absolute',
     width: SIZE,

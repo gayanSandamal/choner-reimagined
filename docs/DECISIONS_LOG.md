@@ -3961,3 +3961,29 @@ The day name under each circle ("Tue") was cut in half: 9pt Poppins in a box
 rows of circles.
 
 **Decided by:** user, 13 November 2026. Prototyped first.
+
+## Find: the search stops at a match, and no dead ends, 13 November 2026
+
+Prototyped first (tabs "Find: match found" and "Find: the start"), then built.
+
+- **The search stops when a match is found.** "Stop searching" is gone from
+  the match and the waiting ("You're in") screens. **Back out** opens a choice:
+  "Back out of this match? Ruwan goes back in the search." with **Search
+  again** (decline, stay in the search), **Not now** (decline and leave the
+  search) and **Keep waiting**.
+- **"You're in" keeps who you are waiting on:** their name and why you
+  matched, as on the offer. It used to drop to just the initials.
+- **Searching is not a dead end:** the locked activity row at the top, the
+  radar, then **Already on the move** (outline), Edit answers, and Stop
+  searching last in grey.
+- **The start screen:** "Have an invite code?" gets room above and below;
+  **Already on the move is the standard orange button**, no longer the quiet
+  row; the radar is smaller (170 points) and the gaps tighter so the screen
+  fits without scrolling on a standard iPhone. Small phones may still scroll.
+- **The radar moves only when it means something:** a slow pulse at the start,
+  a faster one while searching, **still once a match is found**, and stopped
+  whenever another tab is showing. It never slowed the app (it runs on the
+  graphics thread and only scales and fades), but it no longer says "still
+  looking" after the search has stopped, or uses battery unseen.
+
+**Decided by:** user, 13 November 2026.
