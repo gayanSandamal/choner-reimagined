@@ -27,6 +27,10 @@ interface Props {
   layout?: Layout;
   // Small flag above the label — the challenge picker's "Recommended".
   badge?: string;
+  // 'tile' is the usual small icon on a grey square that turns orange when
+  // chosen. 'bare' drops the square and draws the icon large and always in the
+  // brand orange, for a step where the picture is most of the answer (#190).
+  iconStyle?: 'tile' | 'bare';
 }
 
 export function OptionCard({
@@ -36,7 +40,8 @@ export function OptionCard({
   selected,
   onPress,
   layout = 'row',
-  badge
+  badge,
+  iconStyle = 'tile'
 }: Props) {
   const t = useSharedValue(selected ? 1 : 0);
 
@@ -68,7 +73,9 @@ export function OptionCard({
       <Animated.View
         style={[styles.base, vertical ? styles.vertical : styles.horizontal, animatedStyle]}
       >
-        {icon ? (
+        {icon && iconStyle === 'bare' && isIconName(icon) ? (
+          <Icon name={icon} size={44} color={theme.colors.primary} strokeWidth={1.5} />
+        ) : icon ? (
           <View style={[styles.iconBox, layout === 'pill' && styles.iconBoxSm]}>
             {isIconName(icon) ? (
               <Icon

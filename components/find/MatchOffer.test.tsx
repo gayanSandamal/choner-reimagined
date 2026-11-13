@@ -30,41 +30,45 @@ const show = (over: Record<string, unknown> = {}, onRefresh = jest.fn()) =>
 beforeEach(() => jest.clearAllMocks());
 
 describe('MatchOffer', () => {
-  it('offered: their card, why you matched, the clock, Accept and Not quite right', async () => {
+  it('offered: their photo, why you matched, the clock, the two answers', async () => {
     await show();
-    expect(screen.getByText('We found you a match')).toBeTruthy();
+    expect(screen.getByText(/You found/)).toBeTruthy();
+    expect(screen.getByText('a Match.')).toBeTruthy();
     expect(screen.getByText('Dinesh')).toBeTruthy();
     expect(screen.getByText('WHY YOU MATCHED')).toBeTruthy();
     expect(screen.getByText('You are both doing Running')).toBeTruthy();
     expect(screen.getByText('Early mornings suit you both.')).toBeTruthy();
     expect(screen.getByText('23h 12m left')).toBeTruthy();
-    expect(screen.getByText('Accept')).toBeTruthy();
+    expect(screen.getByText("Let's do this")).toBeTruthy();
     expect(screen.getByText('Not quite right')).toBeTruthy();
+    expect(screen.getByText('2 of 3 searches left today')).toBeTruthy();
     // The old model's "7-day challenge" must not come back.
     expect(screen.queryByText(/day challenge/)).toBeNull();
   });
 
   it('asks the person who was waiting a different question', async () => {
     await show({ i_requested: false });
-    expect(screen.getByText('Dinesh wants to pair up')).toBeTruthy();
+    expect(screen.getByText(/Dinesh wants/)).toBeTruthy();
+    expect(screen.getByText('to pair up.')).toBeTruthy();
     // They never asked for a search, so no search count is shown to them.
     expect(screen.queryByText(/searches left today/)).toBeNull();
   });
 
   it('accepting confirms this match', async () => {
     await show();
-    fireEvent.press(screen.getByText('Accept'));
-    await screen.findByText('Accept');
+    fireEvent.press(screen.getByText("Let's do this"));
+    await screen.findByText("Let's do this");
     expect(supabase.rpc).toHaveBeenCalledWith('confirm_match', { p_match_id: 'm1' });
   });
 
   it('you accepted: waiting on them, the same clock, and a way to back out', async () => {
     await show({ i_confirmed: true });
-    expect(screen.getByText("You're in.")).toBeTruthy();
+    expect(screen.getByText(/You're/)).toBeTruthy();
+    expect(screen.getByText('in.')).toBeTruthy();
     expect(screen.getByText(/Waiting for Dinesh to accept/)).toBeTruthy();
     expect(screen.getByText('23h 12m left')).toBeTruthy();
     expect(screen.getByText('Back out')).toBeTruthy();
-    expect(screen.queryByText('Accept')).toBeNull();
+    expect(screen.queryByText("Let's do this")).toBeNull();
   });
 
   it('backing out warns first, then declines', async () => {
@@ -79,7 +83,7 @@ describe('MatchOffer', () => {
     const onRefresh = jest.fn();
     await show({ expires_at: inMs(-1000) }, onRefresh);
     expect(screen.getByText('This match ran out of time.')).toBeTruthy();
-    expect(screen.queryByText('Accept')).toBeNull();
+    expect(screen.queryByText("Let's do this")).toBeNull();
     expect(screen.queryByText('Not quite right')).toBeNull();
     fireEvent.press(screen.getByText('See your search'));
     expect(onRefresh).toHaveBeenCalled();

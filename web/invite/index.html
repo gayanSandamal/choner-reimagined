@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>You're invited to Choner</title>
+<meta name="description" content="Someone wants to keep a habit with you on Choner. Join them.">
+<meta name="robots" content="noindex">
+<!-- The link preview WhatsApp and the rest draw above an invite (#193). They
+     all need og:image to be an ABSOLUTE url, the width and height are what
+     earn the big card rather than a thumbnail, and the file stays well under
+     300KB because WhatsApp quietly drops anything larger. Same rules as the
+     First 200 page, where each of these was learned the hard way.
+
+     The preview is the same for every invite. This is a plain file on shared
+     hosting, so it cannot put the inviter's name in the picture; the name
+     travels in the message itself. -->
+<meta property="og:site_name" content="Choner">
+<meta property="og:title" content="You're invited to Choner">
+<meta property="og:description" content="Someone is challenging you to show up. Join them.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://app.choner.io/invite">
+<meta property="og:image" content="https://app.choner.io/og-invite.jpg">
+<meta property="og:image:secure_url" content="https://app.choner.io/og-invite.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="840">
+<meta property="og:image:alt" content="choner. You're invited. Someone is counting on you. Show up together.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="You're invited to Choner">
+<meta name="twitter:description" content="Someone is challenging you to show up. Join them.">
+<meta name="twitter:image" content="https://app.choner.io/og-invite.jpg">
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="apple-touch-icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+  :root{ --navy:#001827; --navy2:#0B2231; --g1:#FD8302; --g2:#FD5B01; --bg:#FDFCFA; --text:#14202B; --muted:#6B7480; --border:#ECE7E1; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{ background:var(--bg); color:var(--text); font-family:Poppins,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; }
+  .bar{ margin:14px 16px 0; padding:14px 18px; border-radius:22px; background:linear-gradient(160deg,var(--navy2),var(--navy)); color:#fff; display:flex; align-items:center; justify-content:space-between; }
+  .logo{ font-weight:700; font-size:20px; letter-spacing:-.4px; }
+  .logo span{ color:var(--g1); }
+  .bar small{ font-size:12.5px; color:rgba(255,255,255,.72); }
+  main{ max-width:440px; margin:0 auto; padding:34px 22px 40px; }
+  h1{ font-size:30px; line-height:36px; font-weight:400; margin:0 0 12px; letter-spacing:-.5px; }
+  h1 b{ font-weight:700; color:var(--g2); }
+  p{ font-size:14.5px; line-height:23px; color:var(--muted); margin:0 0 22px; }
+  .code{ background:#fff; border:1px solid var(--border); border-radius:18px; padding:18px; text-align:center; margin-bottom:18px; }
+  .code small{ display:block; font-size:10.5px; letter-spacing:1.4px; color:var(--muted); margin-bottom:6px; }
+  .code b{ font-size:30px; letter-spacing:5px; font-weight:700; }
+  .btn{ display:block; width:100%; text-align:center; text-decoration:none; font:600 15.5px/1 Poppins,system-ui,sans-serif; padding:18px; border-radius:16px; margin-bottom:12px; }
+  .btn.go{ color:#fff; background:linear-gradient(135deg,var(--g1),var(--g2)); }
+  .btn.alt{ color:var(--g1); border:1px solid var(--g1); background:transparent; }
+  .how{ font-size:12.5px; line-height:20px; text-align:center; margin-top:8px; }
+  [hidden]{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="bar"><div class="logo">choner<span>.</span></div><small>Invite</small></div>
+<main>
+  <h1>You have been <b>challenged.</b></h1>
+  <p>Someone wants to keep a habit with you on Choner. Two people, one commitment, and each of you shows up because the other is counting on it.</p>
+
+  <div class="code" id="codebox" hidden><small>YOUR INVITE CODE</small><b id="code"></b></div>
+
+  <a class="btn go" id="open" href="choner:///invite/code">Open in Choner</a>
+  <!-- Until the public launch there is no store page to send anyone to, so
+       this goes to The First 200. On launch day it becomes the two store
+       links. -->
+  <a class="btn alt" href="https://join.choner.io/">Get the app</a>
+
+  <p class="how" id="how">Already installed? Open Choner, tap "I have an invite code" and enter the code from your message.</p>
+</main>
+<script>
+  // The address is /invite/<code>. Nothing is looked up here: the code is
+  // only read back so it can be typed in, and handed to the app if it is
+  // installed. Anything that does not look like a code is ignored.
+  (function () {
+    var m = /\/invite\/([A-Za-z0-9]{4,64})\/?$/.exec(location.pathname);
+    if (!m) return;
+    var code = m[1];
+    document.getElementById('code').textContent = code.length <= 12 ? code.toUpperCase() : code;
+    document.getElementById('codebox').hidden = code.length > 12;
+    document.getElementById('open').href = 'choner:///invite/' + encodeURIComponent(code);
+    if (code.length <= 12) {
+      document.getElementById('how').textContent =
+        'Already installed? Open Choner, tap "I have an invite code" and enter ' + code.toUpperCase() + '.';
+    }
+  })();
+</script>
+</body>
+</html>

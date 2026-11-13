@@ -13,7 +13,7 @@ describe('streakScore', () => {
 
 describe('circles', () => {
   it('labels a session with its own day', () => {
-    expect(circleDay({ state: 'done', at: '2026-10-05T10:00:00Z', plan_id: 'p' }, 'en-GB')).toBe('Mon');
+    expect(circleDay({ state: 'done', at: '2026-10-05T10:00:00Z', plan_id: 'p' })).toBe('Mon');
     expect(circleDay({ state: 'ahead' })).toBeNull();
     expect(circleDay({ state: 'planned', at: null, plan_id: 'p' })).toBeNull();
   });

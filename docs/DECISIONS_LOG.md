@@ -3655,6 +3655,205 @@ Android developer console account, which is why `8bb0761` renamed it.
 
 **Confirmed from the console:** 7 November 2026.
 
+## Issues 190 to 193, 10 November 2026
+
+Four issues from two-phone testing. Each was prototyped first
+(https://claude.ai/artifact/3Pj4SwBsu3ykpe4PqhALZ8), confirmed there, then
+built. The rule for issue work from here on: prototype, the user confirms,
+then build.
+
+### "How are you feeling" loses its descriptions and gains three faces (#190)
+
+"Running on empty", "Getting by" and "Firing on all cylinders" are English
+idioms, and not everyone in Sri Lanka knows them. They are gone. Each option is
+now a face and one word: Low, Medium, High.
+
+The issue asked for emoji. The user then chose faces **drawn as orange line
+icons** rather than full-color emoji, which keeps the September rule (no
+emoji, line icons only) intact instead of making the first exception to it.
+The three are `faceLow`, `faceMid` and `faceHigh` in `components/ui/Icon.tsx`.
+The Low face is tired, not sad: closed eyes and a flat mouth. A frown read as a
+judgement on the answer, on a step that says "this isn't a test".
+
+No database change. The answer is still saved as `stress_level`.
+
+**Decided by:** user, 10 November 2026.
+
+### Time is picked on a wheel, in half hours (#191)
+
+The 33 half-hour buttons (twice over when two people pick different times) are
+replaced by one wheel: hour, minutes, AM or PM. `components/plans/TimeWheel.tsx`
+is used in all three places the grid was: planning together, planning
+separately, and moving a session you cannot make.
+
+- **Minutes are :00 and :30 only.** A wheel could offer every 5 or 15 minutes;
+  the user chose to keep 30.
+- **Daytime only: 5:00 AM to 9:00 PM, both ends included.** The same range the
+  buttons had. First built allowing any hour; the user asked for the limit the
+  same day. The wheel still turns through every hour and does not jump back
+  when left outside the range, because a wheel that refuses to stop where you
+  put it is worse than one that says why the button is asleep. Hours with
+  nothing in range are drawn faint, the line under the wheel reads "Pick a time
+  between 5:00 AM and 9:00 PM.", and the button stays off. The two ends are
+  `DAY_START` and `DAY_END` in `features/plans/negotiation.ts`.
+- **Always the 12-hour clock.** The old buttons followed the phone's language
+  setting, which is why one screenshot showed 05:30 to 21:30.
+- **It is the app's own wheel, not the phone's picker.** The phone's is a wheel
+  on iPhone only (Android's is a clock face), and adding it needs a new store
+  build. This one looks the same on both and ships over the air.
+- **It opens on 6:30 AM and always holds a time**, so only the day has to be
+  chosen. Because of that, "today, 6:30 AM" is usually already in the past, so
+  the planner now refuses a time that has gone and says so. The buttons never
+  checked.
+
+**Decided by:** user, 10 November 2026 (wheel, 30 minute steps). The rest
+**found by:** Claude while building.
+
+### The day goes on the wheel too, and each person picks their own time (#191)
+
+**One wheel for day and time.** The seven day buttons are gone. The wheel has
+a day column first: "Today", "Tomorrow", then "Thu 12 Nov". Chosen over a
+separate date wheel above the time wheel, which was taller for no gain. Same
+wheel in all three places.
+
+**The app writes every date itself, with the month.** It no longer asks the
+phone. Cause found the same day: the tester's iPhone was on the **Persian
+calendar**. "Mon 18" to "Sun 24" were 18 to 24 Aban (9 to 15 November), and a
+session on Tuesday 10 November read "Tuesday, 19 Aban". The phone's formatter
+writes in the phone's calendar and clock, so every date and time on screen now
+comes from `lib/dates.ts`: Gregorian, English names, 12-hour clock, in the
+phone's own time zone. No `toLocaleDateString` or `toLocaleTimeString` is left
+in the app.
+
+**Found in the same screenshot: the old time buttons were half an hour out.**
+The code offered 5:00 to 21:00; the phone showed 05:30 to 21:30. The labels
+were formatted from a date in the year 2000, when Sri Lanka was on UTC+6:00,
+not today's +5:30, so every label was 30 minutes late and tapping "06:30"
+saved 6:00. The wheel writes its own times and does not have the problem.
+
+**"Different times": you set only your own.** The one suggesting no longer
+picks the other person's time. The suggestion carries their day and time and
+`separate_times: true`; the other person sees "Gayan at 6:30 AM. You pick your
+own time.", turns a time-only wheel on the same day, and their "Sounds good"
+sends it. Fairer, at the cost of one more step for whoever answers.
+
+It needs `202611101500_each_picks_their_own_time.sql`:
+`accept_plan_proposal` gains an optional `p_my_at`, checked to be within a day
+of the suggestion and not already gone. Optional with a default, so every
+installed app keeps calling it exactly as before. **Until it is applied,
+answering a "Different times" suggestion fails**, so it goes to production
+before the app update does.
+
+Also fixed while here: an older suggestion with both times always read "you
+at 6:30, them at 7:00" to both people, so the person answering was told the
+wrong time was theirs.
+
+**Decided by:** user, 10 November 2026.
+
+### Match found is its own screen, and Find keeps working behind it (#192)
+
+The offer was a card inside the Find tab with no way out except answering. It
+is now `app/find/match.tsx`: a back arrow on the navy bar, the large photo,
+"You found a Match.", the reasons, the 24 hour clock, Report, and the two
+answers pinned at the bottom. The button says "Let's do this", as the September
+prototype did, where the build said "Accept".
+
+Back goes to the Find tab, which now has a state for "an offer is waiting":
+
+- Where it said "Searching" it says **"Match found"**. Tapping it, or the
+  radar, reopens the offer.
+- **"Invite someone else"** comes first. It is orange-outlined while you have
+  not answered. Once you accept it stays in place, grey and dead, with a line
+  saying why.
+- **"Already on the move"** comes second, as the standard orange button.
+
+A new offer opens its screen by itself once. After that it waits on the Find
+tab, so returning to the tab does not throw the same screen at someone who just
+left it.
+
+**Inviting someone else lets the match go.** Tapping it asks "Let Gayan go?"
+and, on yes, declines the match and leaves the search before opening the
+invite screen. The alternative was to leave a stranger waiting on a match the
+other person had walked away from.
+
+**This reverses #125 in one place.** "Already on the move" was made a quiet row
+last month because, as an orange button, it read as the main thing to do on
+Find. It is orange again only while a match is waiting. The landing, the
+invited state and the others keep the quiet row. Flagged to the user before
+building; built as asked.
+
+**The radar now shows one real person.** Its own rule is that it never draws
+blips standing in for people. While a match is waiting it carries the partner's
+photo, because that is a real person and the one who matched.
+
+**Not built: the photo tick and the area.** The prototype showed "Gayan, photo
+confirmed" and "You're both in the Nugegoda area". Neither is in what
+`get_my_match()` returns, and the screen does not claim what it cannot see. It
+shows the two reasons the build already had: the shared activity and the line
+written at pairing. Adding the two is a change to a security definer function,
+which is Gayan's to make.
+
+**Decided by:** user, 10 November 2026.
+
+### The invite becomes a real link, and it is switched off until its host exists (#193)
+
+The invite went out as `choner:///invite/<36 characters>`. No chat app treats
+that as a link, so in WhatsApp it could not be tapped and drew no preview.
+
+It becomes `https://app.choner.io/invite/WALW89`: tappable everywhere, short
+(it carries the six-character code, not the token), and with a preview card
+from the page's `og:` tags. With the app installed it opens straight on the
+invite; without it, it opens a small page showing the code.
+
+`web/invite/` is that site, ready to upload: the page, the preview picture, a
+rewrite rule, and the file Apple needs. The preview picture is its own
+(`og-invite.jpg`, "YOU'RE INVITED"), drawn from the First 200 cover, because
+that cover has "THE FIRST 200" printed on it.
+
+**`INVITE_WEB_LIVE` in `lib/invite-link.ts` is `false`.** `app.choner.io` did
+not resolve on 10 November, and a tappable link to nowhere is worse than the
+untappable one it replaces. So this change is safe to merge and release as it
+is: invites keep going out exactly as before until that one constant is turned
+on. Turning it on is the whole switch. A test fails when it is flipped, on
+purpose, to make whoever does it stop and check the host first.
+
+Known limits:
+
+- **Android opens the page, not the app, for now.** Going straight to the app
+  needs `assetlinks.json` with the Play signing key's fingerprint, which only
+  the Play Console shows. The page's "Open in Choner" button covers it
+  meanwhile. iPhone goes straight to the app.
+- **"Get the app" goes to The First 200** until there is a public store page.
+- **The preview is the same for every invite.** A plain file on shared hosting
+  cannot put the inviter's name in the picture. The name stays in the message.
+- **WhatsApp builds the preview on the sender's phone**, while the message sits
+  in the box. Sent within a second, it goes without the picture.
+
+**Decided by:** user, 10 November 2026. The off switch **found by:** Claude.
+
+**Switched on the same day.** Dinesh created `app.choner.io` and uploaded
+`web/invite/`. Checked live before flipping: the invite page returns 200, the
+preview picture loads, and `apple-app-site-association` is served as JSON.
+
+## Find, once you are paired, 10 November 2026 (#196)
+
+Once both people accept, Find used to turn into a plain white card. It now
+keeps the style of searching and Match found, so the tab reads as one place
+from the first search to the partnership: the activity row ("Your shared
+activity with Gayan", locked), the radar standing still with both faces and
+the green tick in it, "Paired with Gayan", then **See your challenge**, then
+**Already on the move as an outline**, then **End this match last, in quiet
+grey**. Report and Block stay behind the "···". No "Invite someone else",
+because nobody can invite while they have a partner.
+
+Outline rather than orange for "Already on the move": two solid orange buttons
+stacked compete, and your challenge is the thing to do. End this match moved
+below everything; it still asks first.
+
+Prototyped first (artifact tab "Find: once you are paired"), confirmed, built.
+
+**Decided by:** user, 10 November 2026.
+
 ## An invite link works once, 10 November 2026
 
 Found on Dinesh's iPhone with WALW89, an invite his account had already

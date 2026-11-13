@@ -1,4 +1,5 @@
 import type { Streak, StreakCircle } from './types';
+import { weekdayName } from '@/lib/dates';
 
 // The preset lengths. Presets only for MVP: no custom entry.
 export const STREAK_PRESETS = [10, 20, 30] as const;
@@ -22,11 +23,11 @@ export function streakLine(s: Pick<Streak, 'done' | 'target'> | null | undefined
 
 // The label under one circle: its day, short. A circle is a session and
 // carries its own day, which is why there is no separate "this week" card.
-export function circleDay(c: StreakCircle, locale?: string): string | null {
+export function circleDay(c: StreakCircle): string | null {
   if (c.state === 'ahead' || !c.at) return null;
   const d = new Date(c.at);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(locale, { weekday: 'short' });
+  return weekdayName(d, 'short');
 }
 
 // What a screen reader says for one circle.

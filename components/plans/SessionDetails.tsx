@@ -32,14 +32,17 @@ import {
 import type { PairPlan } from '@/features/plans/types';
 import { confirmAction, notify } from '@/lib/alert';
 import { theme } from '@/constants/theme';
+import { clockLabel, dateLabel } from '@/lib/dates';
 
 function whenParts(iso: string | null) {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   return {
-    day: d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }),
-    time: d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+    // Written by the app, never by the phone: a phone on the Persian calendar
+    // showed this as "Tuesday, 19 Aban" (lib/dates.ts).
+    day: dateLabel(d),
+    time: clockLabel(d)
   };
 }
 

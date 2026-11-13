@@ -101,8 +101,8 @@ export default function EnergyScreen() {
             key={option.value}
             layout="pill"
             icon={option.icon}
+            iconStyle="bare"
             label={option.label}
-            description={option.description}
             selected={energy === option.value}
             onPress={() => setEnergy(option.value)}
           />

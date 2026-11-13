@@ -17,7 +17,19 @@ import {
   useProposePlanValue,
   useSetDistanceAnswer
 } from '@/features/plans/hooks';
-import { at, nextDays, TIME_SLOTS } from '@/features/plans/negotiation';
+import {
+  at,
+  dayLabel,
+  daytimeHint,
+  DEFAULT_TIME,
+  firstOpenDay,
+  inDaytime,
+  isPast,
+  nextDays,
+  timeLabel,
+  TimeOfDay
+} from '@/features/plans/negotiation';
+import { TimeWheel } from '@/components/plans/TimeWheel';
 import type { PairPlan } from '@/features/plans/types';
 import { notify } from '@/lib/alert';
 import { theme } from '@/constants/theme';
@@ -240,65 +252,99 @@ function PlaceComposer({ onSubmit }: { onSubmit: (name: string, text: string) =>
 function DayTimePicker({
   onPick,
   cta,
-  differentTimes
+  differentTimes,
+  partnerName
 }: {
-  onPick: (value: { starts_at: string; other_at?: string }) => void;
+  onPick: (value: { starts_at: string; separate_times?: true }) => void;
   cta: string;
   differentTimes?: boolean;
+  partnerName?: string;
 }) {
   const days = useMemo(() => nextDays(), []);
-  const [day, setDay] = useState<Date | null>(null);
+  // One wheel for the day and the time (#191). It always holds both, so
+  // nothing has to be tapped before the button wakes up.
+  const [mine, setMine] = useState<TimeOfDay>(DEFAULT_TIME);
+  const [dayIndex, setDayIndex] = useState(() => firstOpenDay(days, DEFAULT_TIME));
   const [same, setSame] = useState(true);
-  const [mine, setMine] = useState<(typeof TIME_SLOTS)[number] | null>(null);
-  const [theirs, setTheirs] = useState<(typeof TIME_SLOTS)[number] | null>(null);
-  const ready = day && mine && (!differentTimes || same || theirs);
-
-  const slotRow = (value: typeof mine, set: (s: (typeof TIME_SLOTS)[number]) => void) => (
-    <View style={styles.chips}>
-      {TIME_SLOTS.map((s) => {
-        const label = new Date(2000, 0, 1, s.h, s.m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-        return <Chip key={label} label={label} size="sm" active={value === s} onPress={() => set(s)} />;
-      })}
-    </View>
-  );
+  const day = days[dayIndex];
+  // "Different times": you set only your own. Your partner adds theirs when
+  // they answer, rather than you choosing it for them (decided 10 Nov 2026).
+  const two = Boolean(differentTimes && !same);
+  const gone = isPast(day, mine);
+  // Daytime only, 5:00 AM to 9:00 PM. Said rather than enforced by the wheel.
+  const outside = !inDaytime(mine);
+  const ready = !gone && !outside;
+  const them = partnerName ?? 'Your partner';
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.chips}>
-        {days.map((d) => (
-          <Chip
-            key={d.toISOString()}
-            label={d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })}
-            active={day?.getTime() === d.getTime()}
-            onPress={() => setDay(d)}
-          />
-        ))}
-      </View>
       {differentTimes ? (
         <View style={styles.chips}>
           <Chip label={COPY.sameTime} active={same} onPress={() => setSame(true)} />
           <Chip label={COPY.differentTimes} active={!same} onPress={() => setSame(false)} />
         </View>
       ) : null}
-      {differentTimes && !same ? <AppText muted style={styles.compareLabel}>Your time</AppText> : null}
-      {slotRow(mine, setMine)}
-      {differentTimes && !same ? (
-        <>
-          <AppText muted style={styles.compareLabel}>Their time</AppText>
-          {slotRow(theirs, setTheirs)}
-        </>
-      ) : null}
+      {two ? <AppText muted style={styles.compareLabel}>Your day and time</AppText> : null}
+      <TimeWheel
+        value={mine}
+        onChange={setMine}
+        days={days}
+        dayIndex={dayIndex}
+        onDayIndex={setDayIndex}
+        label={two ? 'Your day and time' : 'Day and time'}
+      />
+      {/* The choice read back in words before it is sent. */}
+      <AppText style={styles.picked}>
+        {outside
+          ? daytimeHint()
+          : gone
+          ? 'That time has already passed. Pick a later one.'
+          : two
+          ? `${dayLabel(day)}, you at ${timeLabel(mine)}. ${them} picks their own time on the same day.`
+          : `${dayLabel(day)}, ${timeLabel(mine)}`}
+      </AppText>
       <Button
         label={cta}
         disabled={!ready}
-        onPress={() =>
-          day &&
-          mine &&
-          onPick({
-            starts_at: at(day, mine),
-            ...(differentTimes && !same && theirs ? { other_at: at(day, theirs) } : {})
-          })
-        }
+        onPress={() => onPick({ starts_at: at(day, mine), ...(two ? { separate_times: true as const } : {}) })}
+      />
+    </View>
+  );
+}
+
+// The other side of "Different times": they suggested a day and their own
+// time, and you add yours. The day is theirs and fixed; only the time turns.
+function OwnTimeAnswer({
+  startsAt,
+  onAccept,
+  pending
+}: {
+  startsAt: string;
+  onAccept: (myAt: string) => void;
+  pending: boolean;
+}) {
+  const theirs = new Date(startsAt);
+  const day = new Date(theirs);
+  day.setHours(0, 0, 0, 0);
+  const [mine, setMine] = useState<TimeOfDay>({ h: theirs.getHours(), m: theirs.getMinutes() < 30 ? 0 : 30 });
+  const gone = isPast(day, mine);
+  const outside = !inDaytime(mine);
+  return (
+    <View style={styles.wrap}>
+      <AppText muted style={styles.compareLabel}>Your time, {dayLabel(day)}</AppText>
+      <TimeWheel value={mine} onChange={setMine} compact label="Your time" />
+      <AppText style={styles.picked}>
+        {outside
+          ? daytimeHint()
+          : gone
+          ? 'That time has already passed. Pick a later one.'
+          : `${dayLabel(day)}, you at ${timeLabel(mine)}`}
+      </AppText>
+      <Button
+        label={COPY.soundsGood}
+        loading={pending}
+        disabled={gone || outside}
+        onPress={() => onAccept(at(day, mine))}
       />
     </View>
   );
@@ -340,9 +386,15 @@ export function DayTimeStep({ plan }: { plan: PairPlan }) {
       <Negotiation
         plan={plan}
         field="day_time"
+        renderAnswer={(open, accept, pending) =>
+          open.value?.separate_times ? (
+            <OwnTimeAnswer startsAt={open.value.starts_at} onAccept={(myAt) => accept(myAt)} pending={pending} />
+          ) : null
+        }
         renderSuggest={(done) => (
           <DayTimePicker
             differentTimes
+            partnerName={plan.them.first_name}
             cta="Suggest this"
             onPick={(value) =>
               guard(async () => {
@@ -437,6 +489,7 @@ const styles = StyleSheet.create({
   compareLabel: { fontSize: 11.5 },
   compareValue: { fontSize: 16, color: theme.colors.text, fontFamily: theme.fonts.bodyMedium },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  picked: { textAlign: 'center', fontSize: 13, color: theme.colors.muted },
   suggestion: { fontSize: 13, color: theme.colors.text, paddingVertical: 6 },
   card: { backgroundColor: theme.colors.surface3, borderRadius: theme.radius.md, padding: theme.spacing(1.75), gap: 10 },
   row: { gap: 2 },

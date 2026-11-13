@@ -21,8 +21,13 @@ export const setDistanceAnswer = (planId: string, value: string) =>
   rpc<PlanResult>('set_distance_answer', { p_plan_id: planId, p_value: value });
 export const proposePlanValue = (planId: string, field: string, value: unknown) =>
   rpc<PlanResult>('propose_plan_value', { p_plan_id: planId, p_field: field, p_value: value });
-export const acceptPlanProposal = (proposalId: string) =>
-  rpc<PlanResult>('accept_plan_proposal', { p_proposal_id: proposalId });
+// myAt: your own time, when answering "Different times" (#191). Sent only
+// then, so every other answer is the same call it has always been.
+export const acceptPlanProposal = (proposalId: string, myAt?: string) =>
+  rpc<PlanResult>('accept_plan_proposal', {
+    p_proposal_id: proposalId,
+    ...(myAt ? { p_my_at: myAt } : {})
+  });
 export const withdrawPlanProposal = (proposalId: string) =>
   rpc<PlanResult>('withdraw_plan_proposal', { p_proposal_id: proposalId });
 export const requestPlanHelp = (planId: string, field: string) =>

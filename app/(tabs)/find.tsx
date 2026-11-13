@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,23 +13,31 @@ import { LoadingState } from '@/components/ui/StateViews';
 import { Radar } from '@/components/challenges/Radar';
 import { Icon } from '@/components/ui/Icon';
 import { activityIcon } from '@/components/home/activityIcons';
-import { MatchOffer } from '@/components/find/MatchOffer';
+import { Avatar } from '@/components/ui/Avatar';
 import { MatchedCard } from '@/components/find/MatchedCard';
 import { challengeHabitTitle, partnerStateOf, setPartnerState } from '@/features/challenges/api';
+import type { MyMatch } from '@/features/challenges/api';
 import { consumeDeclineNotice, DECLINE_NOTICE } from '@/features/challenges/decline-notice';
 import {
+  useDeclineMatch,
   useLeaveMatchPool,
   useMyChallenge,
   useMyMatch,
   useMyPartner
 } from '@/features/challenges/hooks';
-import { MATCH_EXPIRED_BODY, MATCH_EXPIRED_TITLE } from '@/features/challenges/match-clock';
+import {
+  MATCH_EXPIRED_BODY,
+  MATCH_EXPIRED_TITLE,
+  matchClock,
+  offerState
+} from '@/features/challenges/match-clock';
+import { useNow } from '@/lib/use-now';
 import { usePendingInvites } from '@/features/community/hooks';
 import { useProfile } from '@/features/profile/hooks';
 import { shareInviteLink } from '@/lib/invite-link';
 import { useSession } from '@/providers/session-provider';
 import { theme } from '@/constants/theme';
-import { notify } from '@/lib/alert';
+import { confirmAction, notify } from '@/lib/alert';
 import { usePullRefresh } from '@/lib/use-pull-refresh';
 
 // The Find tab owns every partner path: the search, the invite, the match
@@ -38,10 +46,16 @@ import { usePullRefresh } from '@/lib/use-pull-refresh';
 //
 // What it shows is decided by the server, in this order:
 //   a partnership         the matched card (it outlives the challenge)
-//   a match offer         offered / you accepted / expired, on one 24h clock
+//   a match offer         "Match found", which opens the offer on its own
+//                         screen (app/find/match.tsx); the other doors stay
 //   searching             the radar, awake
 //   an invite sent        waiting for them to join
 //   otherwise             the landing: the radar, and the doors next to it
+// Offers this run of the app has already opened by itself. A new match opens
+// its screen once; after that the Find tab is where it waits, so coming back
+// to this tab does not throw the same screen at someone who just left it.
+const openedOffers = new Set<string>();
+
 export default function FindScreen() {
   const { session } = useSession();
   const queryClient = useQueryClient();
@@ -75,6 +89,16 @@ export default function FindScreen() {
     setWatchForMatch(partnerState === 'finding' || partnerState === 'matched');
   }, [partnerState]);
   const habit = challengeHabitTitle(challenge);
+
+  const offer = !myPartner && searchState?.matched ? searchState : null;
+  useFocusEffect(
+    useCallback(() => {
+      if (!offer || offer.i_confirmed || openedOffers.has(offer.match_id)) return;
+      if (offerState(offer) === 'expired') return;
+      openedOffers.add(offer.match_id);
+      router.push('/find/match');
+    }, [offer?.match_id, offer?.i_confirmed])
+  );
 
   // A habit someone invented has nobody else in the pool doing it, so the
   // search cannot help. Stated here rather than failing at the RPC.
@@ -144,11 +168,24 @@ export default function FindScreen() {
             partnerName={myPartner.first_name}
             partnerAvatarUrl={myPartner.avatar_url}
             pairedOn={myPartner.paired_on}
+            // The icon on the activity row. From the current challenge when it
+            // is the one this pairing is on; a plain target otherwise.
+            activityKey={
+              challenge?.id === myPartner.my_challenge_id
+                ? ((challenge?.challenge_templates?.activity_key as string | null) ?? null)
+                : null
+            }
             since={myPartner.since}
             challengeId={myPartner.my_challenge_id}
           />
         ) : searchState?.matched ? (
-          <MatchOffer match={searchState} challengeId={challenge?.id ?? null} onRefresh={onRefresh} />
+          <MatchWaitingState
+            match={searchState}
+            challengeId={challenge?.id ?? null}
+            habit={habit}
+            activityKey={(challenge?.challenge_templates?.activity_key as string | null) ?? null}
+            onRefresh={onRefresh}
+          />
         ) : partnerState === 'finding' || partnerState === 'matched' ? (
           // 'matched' with no offer in hand is the moment between the matcher
           // writing the state and the offer arriving: still the search.
@@ -195,6 +232,9 @@ function OrDivider() {
 // the icon left and a chevron right. NOT the orange outline Button this used
 // to be — the directory is the last and least of the doors, under everything
 // else, and an orange button made it read as the main thing to do (#125).
+//
+// One exception, decided 10 Nov 2026 (#192): while a match offer is waiting it
+// is the standard orange button. See MatchWaitingState.
 function DirectoryRow() {
   return (
     <PressableScale
@@ -227,11 +267,13 @@ function ActivityRow({
   activity,
   activityKey,
   locked,
+  lockedNote = "Locked while you're looking for a match",
   onPress
 }: {
   activity: string;
   activityKey: string | null;
   locked: boolean;
+  lockedNote?: string;
   onPress: () => void;
 }) {
   const icon = activityIcon(activityKey) ?? 'target';
@@ -248,9 +290,7 @@ function ActivityRow({
       <View style={styles.actText}>
         <AppText style={styles.actTitle}>{activity}</AppText>
         <AppText style={styles.actSub}>
-          {locked
-            ? "Locked while you're looking for a match"
-            : 'You can change this until you start searching for a match'}
+          {locked ? lockedNote : 'You can change this until you start searching for a match'}
         </AppText>
       </View>
       {locked ? null : <Icon name="chev" size={16} color={theme.colors.dim} strokeWidth={2} />}
@@ -427,6 +467,130 @@ function SearchingState({
           prefills them, and re-submitting doesn't spend a search. */}
       <Button label="Edit answers" variant="ghost" onPress={() => router.push('/find/form')} />
       <Button label="Stop searching" variant="ghost" loading={stopping} onPress={onStop} />
+    </Animated.View>
+  );
+}
+
+// A match offer is waiting (#192). The offer itself is its own screen; this is
+// what the Find tab shows behind it. Where it said "Searching" it says "Match
+// found", and the two other doors are here: invite someone, then the
+// directory, in that order.
+function MatchWaitingState({
+  match,
+  challengeId,
+  habit,
+  activityKey,
+  onRefresh
+}: {
+  match: Extract<MyMatch, { matched: true }>;
+  challengeId: string | null;
+  habit: string | null;
+  activityKey: string | null;
+  onRefresh: () => void;
+}) {
+  const now = useNow();
+  const decline = useDeclineMatch();
+  const leavePool = useLeaveMatchPool();
+  const name = match.partner_first_name;
+  const clock = matchClock(match.expires_at, now);
+  const accepted = match.i_confirmed;
+  const busy = decline.isPending || leavePool.isPending;
+  const open = () => router.push('/find/match');
+
+  // The sweep runs every 15 minutes, so a dead offer can still be here.
+  if (offerState(match, now) === 'expired') {
+    return (
+      <Animated.View entering={FadeInDown.duration(360)} style={styles.block}>
+        <View style={styles.expired}>
+          <AppText style={styles.expiredTitle}>{MATCH_EXPIRED_TITLE}</AppText>
+          <AppText style={styles.expiredBody}>{MATCH_EXPIRED_BODY}</AppText>
+        </View>
+        <Button label="See your search" onPress={onRefresh} />
+      </Animated.View>
+    );
+  }
+
+  // Inviting someone you know while a stranger waits on you would leave them
+  // waiting on a match that can never complete. So it lets them go first, and
+  // says so before it does. Once you have accepted, the button is still here
+  // but dead: back out of the match to use it.
+  const onInvite = async () => {
+    const sure = await confirmAction({
+      title: `Let ${name} go?`,
+      message: `Inviting someone else ends this match. ${name} goes back in the search.`,
+      confirmLabel: 'Invite someone else',
+      cancelLabel: 'Not yet',
+      destructive: true
+    });
+    if (!sure) return;
+    try {
+      await decline.mutateAsync(match.match_id);
+      if (challengeId) await leavePool.mutateAsync(challengeId);
+      router.push('/group/invite');
+    } catch (error: any) {
+      notify('Could not do that', error.message);
+    }
+  };
+
+  return (
+    <Animated.View entering={FadeInDown.duration(360)}>
+      <ActivityRow
+        activity={habit ?? 'Your commitment'}
+        activityKey={activityKey}
+        locked
+        lockedNote="Locked while a match is waiting"
+        onPress={open}
+      />
+
+      <View>
+        <Radar searching found onPress={open} />
+        {/* Their own photo on the ring: a real person, the one who matched. */}
+        <View style={styles.blip} pointerEvents="none">
+          <Avatar uri={match.partner_avatar_url} name={name} size={38} ring />
+        </View>
+      </View>
+
+      <PressableScale
+        haptic="selection"
+        accessibilityRole="button"
+        accessibilityLabel="Match found. See your match."
+        onPress={open}
+        style={styles.found}
+      >
+        <View style={styles.foundRow}>
+          <AppText style={styles.foundTitle}>Match found</AppText>
+          <Icon name="chev" size={15} color={theme.colors.primary2} strokeWidth={2.4} />
+        </View>
+        <AppText style={styles.searchStatusBody}>
+          {accepted
+            ? `You accepted. Waiting for ${name}.`
+            : match.i_requested
+            ? `${name} is waiting for your answer.`
+            : `${name} wants to pair up with you.`}
+        </AppText>
+      </PressableScale>
+
+      {clock.state === 'running' ? (
+        <AppText style={styles.note}>{clock.label}. The same clock for you both.</AppText>
+      ) : null}
+
+      <View style={styles.block}>
+        <Button
+          label="Invite someone else"
+          variant="outline"
+          disabled={accepted || busy}
+          loading={busy}
+          onPress={onInvite}
+          style={accepted ? styles.inviteOff : undefined}
+          labelStyle={accepted ? styles.inviteOffLabel : undefined}
+        />
+        {accepted ? (
+          <AppText style={styles.offNote}>
+            You have accepted this match, so inviting someone else is off. Back out of the match to use it.
+          </AppText>
+        ) : null}
+        <Button label="Already on the move" onPress={() => router.push('/find/who-else')} />
+      </View>
     </Animated.View>
   );
 }
@@ -616,6 +780,15 @@ const styles = StyleSheet.create({
     lineHeight: 18
   },
   note: { textAlign: 'center', color: theme.colors.muted, fontSize: 11, marginBottom: 14, lineHeight: 17 },
+  // Match waiting (#192)
+  blip: { position: 'absolute', top: 30, right: '50%', marginRight: -104 },
+  found: { alignItems: 'center', marginTop: 6, marginBottom: 12 },
+  foundRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  foundTitle: { fontSize: 16, color: theme.colors.primary2, fontFamily: theme.fonts.bodyBold },
+  // Still there, plainly switched off: grey rather than a faded orange.
+  inviteOff: { borderColor: theme.colors.dim, opacity: 1 },
+  inviteOffLabel: { color: theme.colors.dim },
+  offNote: { textAlign: 'center', color: theme.colors.muted, fontSize: 11.5, lineHeight: 17, marginTop: -4 },
   declined: {
     textAlign: 'center',
     color: theme.colors.text,

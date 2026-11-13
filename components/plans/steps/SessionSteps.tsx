@@ -21,7 +21,17 @@ import {
   useSetSessionCheckin,
   useVerifySessionQr
 } from '@/features/plans/hooks';
-import { at, nextDays, TIME_SLOTS } from '@/features/plans/negotiation';
+import {
+  at,
+  dayLabel,
+  daytimeHint,
+  DEFAULT_TIME,
+  inDaytime,
+  nextDays,
+  timeLabel,
+  TimeOfDay
+} from '@/features/plans/negotiation';
+import { TimeWheel } from '@/components/plans/TimeWheel';
 import { activityNoun, planCopy } from '@/features/plans/activity';
 import { myAmount, theirAmount } from '@/features/plans/amounts';
 import type { PairPlan } from '@/features/plans/types';
@@ -330,34 +340,24 @@ function RecoveryPanel({ plan, onBack }: { plan: PairPlan; onBack: () => void })
 
 function RescheduleComposer({ plan, onDone }: { plan: PairPlan; onDone: () => void }) {
   const propose = useProposeReschedule();
-  const days = nextDays(new Date(Date.now() + 24 * 3600e3), 6);
-  const [day, setDay] = useState<Date | null>(null);
-  const [slot, setSlot] = useState<(typeof TIME_SLOTS)[number] | null>(null);
+  const [days] = useState(() => nextDays(new Date(Date.now() + 24 * 3600e3), 6));
+  // Tomorrow at the earliest, so the wheel can never hold a time that has gone.
+  const [dayIndex, setDayIndex] = useState(0);
+  const [slot, setSlot] = useState<TimeOfDay>(DEFAULT_TIME);
+  const day = days[dayIndex];
   return (
     <View style={styles.wrap}>
       <AppText>{COPY.countingOnYou}</AppText>
-      <View style={styles.chips}>
-        {days.map((d) => (
-          <Chip
-            key={d.toISOString()}
-            label={d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })}
-            active={day?.getTime() === d.getTime()}
-            onPress={() => setDay(d)}
-          />
-        ))}
-      </View>
-      <View style={styles.chips}>
-        {TIME_SLOTS.map((s) => {
-          const label = new Date(2000, 0, 1, s.h, s.m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-          return <Chip key={label} size="sm" label={label} active={slot === s} onPress={() => setSlot(s)} />;
-        })}
-      </View>
+      {/* One wheel for the day and the time (#191). */}
+      <TimeWheel value={slot} onChange={setSlot} days={days} dayIndex={dayIndex} onDayIndex={setDayIndex} label="Day and time" />
+      <AppText style={styles.picked}>
+        {inDaytime(slot) ? `${dayLabel(day)}, ${timeLabel(slot)}` : daytimeHint()}
+      </AppText>
       <Button
         label="Suggest this time"
-        disabled={!day || !slot}
+        disabled={!inDaytime(slot)}
         loading={propose.isPending}
         onPress={async () => {
-          if (!day || !slot) return;
           const res: any = await guard(() => propose.mutateAsync({ planId: plan.id, startsAt: at(day, slot) }));
           if (res?.ok) onDone();
         }}
@@ -416,6 +416,7 @@ const styles = StyleSheet.create({
   wrap: { gap: theme.spacing(1.5) },
   options: { gap: theme.spacing(1) },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  picked: { textAlign: 'center', fontSize: 13, color: theme.colors.muted },
   itsOn: { fontSize: 12.5 },
   status: { fontSize: 15, color: theme.colors.text },
   small: { fontSize: 11.5 },

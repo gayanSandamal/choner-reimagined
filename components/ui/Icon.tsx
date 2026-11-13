@@ -53,6 +53,24 @@ const ICONS: Record<string, Shape[]> = {
     { d: 'M12 3s4 3.5 4 8a4 4 0 01-8 0c0-1.2.6-2 1.2-2.8C10 9.8 11 11 11 11s.3-3.4 1-5c.3.8 0-2 0-3z' },
     { d: 'M9.5 14.5a2.5 2.5 0 005 0c0-1.2-.8-2-1.3-2.9' }
   ],
+  // Three faces for "How are you feeling this week?" (#190): drawn as line
+  // icons so they take the brand orange, which an emoji never could.
+  faceLow: [
+    { cx: 12, cy: 12, r: 9 },
+    { d: 'M7.4 10.2c.7.8 2 .8 2.7 0M13.9 10.2c.7.8 2 .8 2.7 0' },
+    { d: 'M9.8 15.8h4.4' }
+  ],
+  faceMid: [
+    { cx: 12, cy: 12, r: 9 },
+    { cx: 8.8, cy: 10, r: 1, solid: true },
+    { cx: 15.2, cy: 10, r: 1, solid: true },
+    { d: 'M8.6 14.6c1.8 1.7 5 1.7 6.8 0' }
+  ],
+  faceHigh: [
+    { cx: 12, cy: 12, r: 9 },
+    { d: 'M7.4 10.4c.7-.9 2-.9 2.7 0M13.9 10.4c.7-.9 2-.9 2.7 0' },
+    { d: 'M7.6 13.4h8.8a4.4 4.4 0 01-8.8 0z', join: 'round' }
+  ],
 
   // people and tone
   community: [
@@ -113,6 +131,7 @@ const ICONS: Record<string, Shape[]> = {
   share: [{ d: 'M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 001 1h12a1 1 0 001-1v-6' }],
   back: [{ d: 'M15 5l-7 7 7 7' }],
   chev: [{ d: 'M9 5l7 7-7 7' }],
+  lock: [{ x: 5, y: 11, w: 14, h: 9, rx: 2 }, { d: 'M8 11V8a4 4 0 018 0v3' }],
   x: [{ d: 'M6 6l12 12M18 6L6 18' }],
   mail: [
     { x: 3, y: 5, w: 18, h: 14, rx: 2 },
