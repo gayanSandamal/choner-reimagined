@@ -3699,6 +3699,16 @@ gallery**, not in the build going to review now.
   only at the end of a real session ("Share to inspire" on "You both showed
   up").
 
+### The photo prompt asks for sharing
+
+After "Done" on a session, the photo screen no longer says "Only visible to
+your partner, once." It reads "Snap a moment from today." with "Your
+progress could be someone's reason to start." under it. The point is to get
+people to take, and then share, a photo; sharing itself is still a separate
+choice on the next screen.
+
+**Decided by:** user, 13 November 2026.
+
 ### Who reviews reports
 
 **Dinesh and Gayan**, both. Both stores require user posts to have reporting,
