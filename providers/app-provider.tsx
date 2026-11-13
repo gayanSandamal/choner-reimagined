@@ -103,10 +103,12 @@ function SessionWiring() {
     // entitlements are associated with the right account.
     configurePurchases(userId).catch(() => undefined);
 
-    // Register Expo push token to user_devices.
+    // Register Expo push token to user_devices, but only if notifications are
+    // already allowed. Sign-in never shows the system prompt: it is asked in
+    // context, with a reason first (NotificationAsk, on Find).
     (async () => {
       try {
-        const token = await registerForPushNotificationsAsync();
+        const token = await registerForPushNotificationsAsync({ ask: false });
         if (token && !cancelled) {
           await registerPushToken({ userId, token });
         }

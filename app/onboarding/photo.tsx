@@ -150,7 +150,9 @@ export default function PhotoScreen() {
                   ? 'Choner needs your camera to take this photo.'
                   : 'Checking your camera…'}
               </AppText>
-              <Button label="Allow camera" variant="outline" onPress={() => requestPermission()} />
+              {/* "Continue", never "Allow": Apple rejects a custom button that
+                  tells people how to answer the system prompt (5.1.1). */}
+              <Button label="Continue" variant="outline" onPress={() => requestPermission()} />
             </View>
           )}
         </Animated.View>

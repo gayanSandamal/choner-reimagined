@@ -189,7 +189,8 @@ function QrVerify({ plan, onClose }: { plan: PairPlan; onClose: () => void }) {
           <Button label="Show my code" loading={issue.isPending} onPress={showCode} />
         )
       ) : !permission?.granted ? (
-        <Button label="Allow camera" onPress={() => requestPermission()} />
+        // "Continue", never "Allow" (Apple 5.1.1).
+        <Button label="Continue" onPress={() => requestPermission()} />
       ) : (
         <CameraView
           style={styles.camera}

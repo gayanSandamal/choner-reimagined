@@ -3654,3 +3654,30 @@ right; `com.choner.app` is the iOS bundle ID and belongs to a different
 Android developer console account, which is why `8bb0761` renamed it.
 
 **Confirmed from the console:** 7 November 2026.
+
+## Permissions are asked in context, 13 November 2026
+
+A store reviewer flagged that the app asks for permissions with pop-ups as
+soon as it is installed. Checked every permission the app asks for:
+
+- **Notifications were asked straight after sign-in**, with no reason on
+  screen. Now sign-in only registers for push if notifications are already
+  allowed. The question is asked on Find, once there is a partner or a match,
+  on a short screen first: "Know when Gayan shows up. Choner sends a
+  notification when Gayan checks in, suggests a plan, or a match is waiting
+  for your answer. Nothing else." with **Continue** and **Not now**. Not now
+  is respected for a week. (`components/notifications/NotificationAsk.tsx`)
+- **"Allow camera" buttons are now "Continue".** Apple rejects a custom button
+  before the system prompt that tells people how to answer (guideline
+  5.1.1). Onboarding photo and the meet-up code scanner.
+- **The photo library is no longer asked for** when changing a profile
+  picture. The system photo picker needs no permission.
+
+Unchanged and already fine: camera and photo explanations in the system
+pop-ups; no location, contacts, microphone or tracking; on Android nothing
+beyond camera, notifications and storage on Android 12 and older.
+
+Still to check, in the store consoles: App Privacy (Apple) and Data safety
+(Play) match this list. Owned by Dinesh and Gayan.
+
+**Decided by:** user, 13 November 2026, on a report from Gayan.

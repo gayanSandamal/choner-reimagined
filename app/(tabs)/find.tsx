@@ -15,6 +15,7 @@ import { Icon } from '@/components/ui/Icon';
 import { activityIcon } from '@/components/home/activityIcons';
 import { MatchOffer } from '@/components/find/MatchOffer';
 import { MatchedCard } from '@/components/find/MatchedCard';
+import { NotificationAsk } from '@/components/notifications/NotificationAsk';
 import { challengeHabitTitle, partnerStateOf, setPartnerState } from '@/features/challenges/api';
 import { consumeDeclineNotice, DECLINE_NOTICE } from '@/features/challenges/decline-notice';
 import {
@@ -176,6 +177,13 @@ export default function FindScreen() {
           />
         )}
       </ScrollView>
+      {/* Notifications are asked for here, once there is someone to hear
+          about, with the reason on screen first. Never at sign-in. */}
+      <NotificationAsk
+        when={Boolean(myPartner || searchState?.matched)}
+        userId={userId}
+        partnerName={myPartner?.first_name ?? (searchState?.matched ? searchState.partner_first_name : null)}
+      />
     </View>
   );
 }
