@@ -1,8 +1,17 @@
 # Maintenance scripts
 
-Two scripts, both talking to the hosted Supabase project through `psql` over the
-pooler. Credentials come from `.env` (`SUPABASE_DB_PASSWORD`), which is already
-what `supabase db push` uses, so nothing extra needs configuring.
+Every script here talks to a hosted Supabase project through `psql` over the
+pooler, and **by default that project is choner-dev** (`uzhqvvnumvcmuxrmoxde`),
+the one the app uses in development and in `preview` builds. Each run prints the
+target first, as `[db] choner-dev (…)` or `[db] PRODUCTION (…)`.
+
+| Target | How | Password in `.env` |
+|---|---|---|
+| choner-dev | default | `SUPABASE_DEV_DB_PASSWORD` |
+| production | `CHONER_DB=prod npm run …` | `SUPABASE_DB_PASSWORD` |
+
+Production has to be asked for by name on purpose: `seed:pool --confirm` deletes
+every account on whatever it points at.
 
 `psql` is not on `PATH` in a default Homebrew install — it is keg-only. Install
 with `brew install libpq`; `scripts/db/conn.js` knows where to look.

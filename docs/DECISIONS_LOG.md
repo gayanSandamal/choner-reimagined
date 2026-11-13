@@ -3855,6 +3855,48 @@ Prototyped first (artifact tab "Find: once you are paired"), confirmed, built.
 
 **Decided by:** user, 10 November 2026.
 
+## An invite link works once, 10 November 2026
+
+Found on Dinesh's iPhone with WALW89, an invite his account had already
+accepted on 8 November and was paired through.
+
+### What was wrong
+
+- **Tapping a used link joined again.** `accept_challenge_invite()` let the
+  person who had already accepted accept again: it re-ran the whole join,
+  re-pointed their challenge at the inviter's, and the app said "You're in!"
+  a second time.
+- **An expired invite still worked.** The server never looked at
+  `expires_at`. Only the preview did.
+- **Being paired did not stop it.** The only partner check,
+  `has_other_active_partner()`, leaves the inviter out, so someone already
+  paired with the inviter went straight through.
+- **"Continue" after "You're in!" crashed the app** ("Something broke").
+  `/challenge/why` asked for onboarding state, which only exists inside the
+  onboarding screens, and this screen is outside them. Every path into it
+  from onboarding crashed the same way.
+
+### What it does now
+
+An invite works once, for one person, within its 48 hours, and never over an
+existing partner or a match offer still waiting on an answer. Every other
+case gets its own plain screen and changes nothing: "You already joined",
+"This invite has been used", "This invite has expired", "This is your own
+invite", "You already have a partner", "You have a match waiting", "This
+invite is no longer available". The stashed link is forgotten, so it is not
+retried on the next launch.
+
+The app checks first, from `preview_invite()`, which already reported a link
+you used and an expired one. So the second-tap bug is fixed by the app update
+alone. `202611101700_an_invite_works_once.sql` makes the server refuse too,
+so an older app cannot get round it.
+
+**Kept on purpose:** someone with no partner who is on a different challenge
+is still asked "Switch to Gayan's challenge?" and can choose either way.
+Nothing is replaced without that yes. Confirmed by the user, 10 November
+2026.
+
+**Asked for by:** user, 10 November 2026. Causes **found by:** Claude.
 ## Apple's time wheel on iPhone, 10 November 2026
 
 **On iPhone, hour, minutes and AM/PM are Apple's own wheel; the day column
