@@ -134,7 +134,7 @@ Done when: the banner is gone from Play Console home.
 Why not Claude: account-owner-only, and it is a legal declaration about a
 person.
 
-### 8a. Apply one database change before the time wheel update ships — **Gayan**
+### 8a. Apply one database change before the time wheel update ships — **Gayan** (DONE, live before 14 Nov)
 
 `supabase/migrations/202611101500_each_picks_their_own_time.sql`, from the
 issues 190 to 193 branch. It lets the person answering a "Different times"
@@ -148,7 +148,7 @@ works. So: apply this first, then publish the update.
 `select pg_get_function_arguments('public.accept_plan_proposal'::regproc);`
 returns `p_proposal_id uuid, p_my_at timestamp with time zone DEFAULT NULL`.
 
-### 8b. Apply the "invite works once" database change — **Gayan**
+### 8b. Apply the "invite works once" database change — **Gayan** (DONE 14 Nov, by Claude, see below)
 
 `supabase/migrations/202611101700_an_invite_works_once.sql`, from the
 invite-link-once branch. The app update already stops a used or expired link
@@ -214,13 +214,13 @@ goes to the store, on a TestFlight install:
 **If 2 shows 19:00:** tell Claude. It is a cosmetic mismatch, not a broken
 picker.
 
-### 8f. Apply the Match found database change — **Gayan**
+### 8f. Apply the Match found database change — **Gayan** (DONE 14 Nov, by Claude, see below)
 
 `supabase/migrations/202611131400_match_photo_and_area.sql`, on the #199
 branch, with 8e. Without it Match found simply leaves out "photo confirmed"
 and the area line.
 
-### 8e. Apply the partner profile database change — **Gayan**
+### 8e. Apply the partner profile database change — **Gayan** (DONE 14 Nov, by Claude, see below)
 
 `supabase/migrations/202611131200_partner_profile.sql`, on the #199 branch.
 Apply it before the build with the partner profile goes out.
@@ -229,6 +229,40 @@ Apply it before the build with the partner profile goes out.
 "Photo confirmed" tick, or the Why answers (it says the answers are missing).
 
 ## Done, kept so the next person does not redo it
+
+### Live database changes and the matcher, 14 November — **for Gayan to know**
+
+Gayan was away, so Dinesh asked Claude to do these through the Supabase
+connector. Each was checked before and after.
+
+**Before:** the live versions of the four functions being replaced were
+compared with the repo's previous versions and matched exactly, so undoing any
+of them is re-applying the older migration.
+
+**Applied to the live database** (`bkncpybneoqjnkhhchxg`), in this order:
+
+1. `202611101700_an_invite_works_once.sql` (8b). Tried on choner-dev first, as
+   a user with a waiting match: the invite preview said `match_waiting` and
+   accepting was refused. On live, WALW89 now shows as already used by the
+   account that accepted it.
+2. `202611131200_partner_profile.sql` (8e). `get_my_partner()` returns
+   `user_id`, `photo_confirmed`, `area` and `why`. There are no live
+   partnerships yet, so it has not been seen with a real pair.
+3. `202611131400_match_photo_and_area.sql` (8f). On a real offer,
+   `get_my_match()` returned `how`, `shared_area` and
+   `partner_photo_confirmed`.
+
+choner-dev has 8a, 8b, 8e and 8f as well.
+
+**`partner-match` redeployed from `main`**, version 11 to 12. The live copy
+differed from main in two places only: the #188 privacy fix (a match card no
+longer quotes someone's Why answer to a stranger) and the match notification
+opening Match found (`route: '/find/match'`). The uploaded files were read
+back and match main exactly. A dry run from the database answered 200, scored
+the pool and wrote nothing.
+
+**Not done:** the Community feed change (`202611121000_community_posts.sql`)
+stays on its parked branch, unapplied.
 
 ### Deploying the three Edge Functions — two of three, 6 November
 
