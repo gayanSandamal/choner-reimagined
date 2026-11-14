@@ -32,6 +32,13 @@ describe('NotificationAsk', () => {
     expect(register).toHaveBeenCalledWith({ ask: true });
   });
 
+  it('while searching, asks about the match itself', async () => {
+    status.mockResolvedValue('undetermined');
+    await render(<NotificationAsk when userId="u1" partnerName={null} />);
+    expect(await screen.findByText('Know the moment we find your match')).toBeTruthy();
+    expect(screen.queryByText(/Allow/)).toBeNull();
+  });
+
   it('stays away before there is a partner or a match', async () => {
     status.mockResolvedValue('undetermined');
     await render(<NotificationAsk when={false} userId="u1" partnerName={null} />);

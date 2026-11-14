@@ -4049,3 +4049,19 @@ From a side-by-side of the build and the prototype:
 - **"You found a Match." / "You're in."** emphasis is bold navy, not orange.
 
 **Decided by:** user, 13 November 2026.
+
+## Match found: no jump, the notification opens it, and asking at the search, 14 November 2026
+
+- **Find no longer opens "You found a Match." by itself.** It was meant to
+  happen once per match but reopened on every launch, because the "already
+  shown" note lived only while the app was open. Find shows "Match found" with
+  their face on the radar; tapping either opens the screen.
+- **The match notification opens Match found directly** (`route:
+  '/find/match'` in `partner-match`), so tapping it is still one step. This
+  needs `partner-match` redeployed, which was already pending.
+- **Notifications are asked for when a search starts**, not once a match
+  exists. Asking after the match meant the first match notification was always
+  missed. While searching the screen reads "Know the moment we find your
+  match"; once there is a partner, "Know when Gayan shows up", as before.
+
+**Decided by:** user, 14 November 2026.

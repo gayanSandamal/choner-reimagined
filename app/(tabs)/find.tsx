@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -52,11 +52,6 @@ import { usePullRefresh } from '@/lib/use-pull-refresh';
 //   searching             the radar, awake
 //   an invite sent        waiting for them to join
 //   otherwise             the landing: the radar, and the doors next to it
-// Offers this run of the app has already opened by itself. A new match opens
-// its screen once; after that the Find tab is where it waits, so coming back
-// to this tab does not throw the same screen at someone who just left it.
-const openedOffers = new Set<string>();
-
 export default function FindScreen() {
   const { session } = useSession();
   const queryClient = useQueryClient();
@@ -91,15 +86,9 @@ export default function FindScreen() {
   }, [partnerState]);
   const habit = challengeHabitTitle(challenge);
 
-  const offer = !myPartner && searchState?.matched ? searchState : null;
-  useFocusEffect(
-    useCallback(() => {
-      if (!offer || offer.i_confirmed || openedOffers.has(offer.match_id)) return;
-      if (offerState(offer) === 'expired') return;
-      openedOffers.add(offer.match_id);
-      router.push('/find/match');
-    }, [offer?.match_id, offer?.i_confirmed])
-  );
+  // No jump to Match found when the tab opens (14 Nov 2026): it reopened on
+  // every launch. Find shows "Match found" and the person waits there; their
+  // face, that line, or the match notification opens the screen.
 
   // A habit someone invented has nobody else in the pool doing it, so the
   // search cannot help. Stated here rather than failing at the RPC.
@@ -216,10 +205,12 @@ export default function FindScreen() {
           />
         )}
       </ScrollView>
-      {/* Notifications are asked for here, once there is someone to hear
-          about, with the reason on screen first. Never at sign-in. */}
+      {/* Notifications are asked for here, with the reason on screen first,
+          never at sign-in. From the moment a search starts (14 Nov 2026):
+          asking only once a match existed meant the match notification itself
+          was missed. */}
       <NotificationAsk
-        when={Boolean(myPartner || searchState?.matched)}
+        when={Boolean(myPartner || searchState?.matched || partnerState === 'finding' || partnerState === 'matched')}
         userId={userId}
         partnerName={myPartner?.first_name ?? (searchState?.matched ? searchState.partner_first_name : null)}
       />
