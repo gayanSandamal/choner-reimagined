@@ -4,7 +4,6 @@ import { router } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/button';
-import { IconName } from '@/components/ui/Icon';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
 import { OptionCard } from '@/components/onboarding/OptionCard';
@@ -18,17 +17,10 @@ import { getMyChallenge, partnerStateOf, setChallengeExercises } from '@/feature
 import { ACTIVITY_SLUGS, WORKOUTS_SLUG } from '@/features/onboarding/mappings';
 import { useSession } from '@/providers/session-provider';
 import { useQueryClient } from '@tanstack/react-query';
+import { ACTIVITY_ICONS } from '@/components/home/activityIcons';
 import { theme } from '@/constants/theme';
 import { notify } from '@/lib/alert';
 
-const ACTIVITY_ICONS: Record<string, IconName> = {
-  running: 'run',
-  jogging: 'run',
-  walking: 'walk',
-  cycling: 'bike',
-  yoga: 'leaf',
-  home_workouts: 'dumb'
-};
 
 // Create a commitment, and change it.
 //

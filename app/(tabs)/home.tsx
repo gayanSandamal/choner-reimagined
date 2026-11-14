@@ -37,7 +37,7 @@ function greetingFor(date = new Date()) {
 // Home: a living view of your commitment.
 //
 // Greeting, the shared heart, the commitment with its single next action, then
-// Choner Pulse and Just Happened. Rebuilt on the weekly model on 3 October.
+// The Pulse and Just Happened. Rebuilt on the weekly model on 3 October.
 // The daily screen it replaces is gone: no check-in, no task list, no "log it
 // before 8pm", no reason line, no share prompt.
 //
