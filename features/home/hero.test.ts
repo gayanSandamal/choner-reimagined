@@ -120,7 +120,7 @@ describe('the heart', () => {
   });
 });
 
-describe('Choner Pulse says only what is true', () => {
+describe('The Pulse says only what is true', () => {
   const zero = { people: 0, by_activity: [], pairs: 0, new_pairs_today: 0, sessions_today: 0, sessions_planned: 0 };
 
   it('says nothing when nothing has happened', () => {

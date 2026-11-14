@@ -21,20 +21,42 @@ type Shape =
 
 const ICONS: Record<string, Shape[]> = {
   // activities
+  //
+  // Redrawn 14 Nov 2026 (#207) as one family of figures, each activity its own
+  // pose. Running and Jogging used to share one icon, and Yoga was a leaf.
+  // Running leans forward with speed lines; jogging is upright with a short
+  // stride; walking is straight; yoga is a tree pose; workouts a full dumbbell.
   run: [
-    { cx: 14.5, cy: 4.5, r: 1.6, solid: true },
-    { d: 'M10 21l1.6-5.4L9 14l1.2-4.4c.3-1 1.1-1.6 2-1.5l3 .4 2.6 2.6M14.5 9.1l-1.6 4 2.4 1.8L14.5 19' }
+    { cx: 15.5, cy: 4, r: 2, solid: true },
+    { d: 'M14.3 7.4l-2.8 5.2M13.9 8.2l3 1.6 2-1.6M13.9 8.2l-3.2.6-1.6 2.6M11.5 12.6l3.2 2.4-1 4.6M11.5 12.6l-2.4 3.6H5.6M2 9.5h3M1.5 13h3' }
+  ],
+  jog: [
+    { cx: 12.8, cy: 4, r: 2, solid: true },
+    { d: 'M12.4 7.2l-.6 6M12.2 8.6l2.4 1.8.8-1.8M12.2 8.6l-2.2 1.8-.6 2.4M11.8 13.2l2.2 3.2-.6 4.1M11.8 13.2l-1.9 3.4-2.2 2.6' }
   ],
   walk: [
-    { cx: 13, cy: 4.5, r: 1.6 },
-    { d: 'M11 21l1.5-6-2.5-2 1-5 3 1 2 3M8 12l-1 3M15 11l3 2' }
+    { cx: 12, cy: 4, r: 2, solid: true },
+    { d: 'M12 7.2v6.3M12 8.8l2.2 3.6M12 8.8l-2.2 3.6M12 13.5l2.4 7M12 13.5l-2.4 7' }
   ],
   bike: [
-    { cx: 6, cy: 16, r: 3.5 },
-    { cx: 18, cy: 16, r: 3.5 },
-    { d: 'M6 16l4-7h5l3 7M10 9l-1.5-3H6M15 9l-2 7' }
+    { cx: 5.5, cy: 17, r: 3.5 },
+    { cx: 18.5, cy: 17, r: 3.5 },
+    { d: 'M5.5 17l3.8-6.5h6.2l3 6.5M9.3 10.5L12 17l3.5-6.5M8 10.5h2.6' },
+    { cx: 15, cy: 3.6, r: 1.8, solid: true },
+    { d: 'M14.2 6l-2.6 2.6 3.9 1.9' }
   ],
-  dumb: [{ d: 'M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12' }],
+  yoga: [
+    { cx: 12, cy: 7.3, r: 1.7, solid: true },
+    { d: 'M12 10.5v5M12 10.5L7.6 6.4 12 1.8l4.4 4.6-4.4 4.1M12 15.5V22M12 15.5l4 1.8-3.6 2.3' }
+  ],
+  dumb: [
+    { x: 5, y: 6.5, w: 3, h: 11, rx: 1 },
+    { x: 16, y: 6.5, w: 3, h: 11, rx: 1 },
+    { x: 2.4, y: 9, w: 2.6, h: 6, rx: 1 },
+    { x: 19, y: 9, w: 2.6, h: 6, rx: 1 },
+    { d: 'M8 12h8' }
+  ],
+  // Not an activity any more: "Reduce stress" in onboarding still uses it.
   leaf: [{ d: 'M5 19c0-8 5-13 14-14 0 9-5 14-14 14zM5 19l8-8' }],
 
   // states and feelings

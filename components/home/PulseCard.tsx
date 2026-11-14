@@ -9,8 +9,10 @@ import { HomePulse, PulseMoment, pulseChips, pulseMomentItems } from '@/features
 import { ACTIVITY_ICONS } from './activityIcons';
 import { theme } from '@/constants/theme';
 
-// Choner Pulse and Just Happened, drawn as the prototype's dark cards
-// (.pulse2 and .jsq, #112). Every number is a real count from
+// The Pulse and Just Happened, drawn as the prototype's dark cards
+// (.pulse2 and .jsq, #112). The Pulse was redrawn for #207 (decided 14 Nov
+// 2026): "The Pulse" as the heading, the number on its own line with the
+// sentence under it, and flatter tiles with the icon beside the number. Every number is a real count from
 // get_home_pulse(); an activity with nobody on it is not drawn, and with
 // nobody at all neither card is.
 //
@@ -35,11 +37,11 @@ function Anon({ i, size, ring }: { i: number; size: number; ring: string }) {
   );
 }
 
-function Faces({ from, size, ring }: { from: number; size: number; ring: string }) {
+function Faces({ from, size, ring, overlap = 6 }: { from: number; size: number; ring: string; overlap?: number }) {
   return (
     <View style={styles.faces}>
       {[0, 1, 2].map((k) => (
-        <View key={k} style={k > 0 ? { marginLeft: -6 } : null}>
+        <View key={k} style={k > 0 ? { marginLeft: -overlap } : null}>
           <Anon i={from + k} size={size} ring={ring} />
         </View>
       ))}
@@ -62,12 +64,17 @@ export function PulseCard({ pulse, onOpenDirectory }: { pulse: HomePulse; onOpen
     <LinearGradient colors={NAVY_GRADIENT} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={styles.pulse}>
       <View style={styles.head}>
         <LiveDot />
-        <AppText style={styles.heading}>Choner Pulse</AppText>
+        <AppText style={styles.heading}>The Pulse</AppText>
       </View>
-      <AppText style={styles.headline}>
-        <AppText style={styles.big}>{pulse.people} </AppText>
-        {pulse.people === 1 ? 'person is on Choner right now' : 'people are on Choner right now'}
-      </AppText>
+      {/* Two lines, never one. Set inside one line of text, the 40pt number
+          made that whole line 46pt tall, so when the sentence wrapped its last
+          word ("now") fell a number's height below the rest (#207). */}
+      <View>
+        <AppText style={styles.big}>{pulse.people}</AppText>
+        <AppText style={styles.headline}>
+          {pulse.people === 1 ? 'person is on Choner right now' : 'people are on Choner right now'}
+        </AppText>
+      </View>
 
       <View style={styles.tiles}>
         {tiles.map((a, i) => (
@@ -85,11 +92,17 @@ export function PulseCard({ pulse, onOpenDirectory }: { pulse: HomePulse; onOpen
               end={{ x: 1, y: 1 }}
               style={styles.tileIcon}
             >
-              <Icon name={ACTIVITY_ICONS[a.activity_key] ?? 'target'} size={20} color="#FFFFFF" />
+              <Icon name={ACTIVITY_ICONS[a.activity_key] ?? 'target'} size={21} color="#FFFFFF" />
             </LinearGradient>
-            <AppText style={styles.tileCount}>{a.people}</AppText>
-            <AppText style={styles.tileLabel}>{a.title}</AppText>
-            <Faces from={a.people + i} size={16} ring="#13293A" />
+            <View style={styles.tileText}>
+              <AppText style={styles.tileCount}>{a.people}</AppText>
+              <AppText style={styles.tileLabel} numberOfLines={1}>
+                {a.title}
+              </AppText>
+              {/* 26, up from 16 (14 Nov 2026): at 16 the faces were too small to
+                  read as people on a phone. */}
+              <Faces from={a.people + i} size={26} overlap={8} ring="#13293A" />
+            </View>
           </PressableScale>
         ))}
       </View>
@@ -210,25 +223,33 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   live: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.primary2 },
   heading: { fontSize: 13, color: PEACH, fontFamily: theme.fonts.bodyBold },
-  headline: { fontSize: 15, lineHeight: 20, color: 'rgba(255,255,255,0.85)' },
+  headline: { fontSize: 14.5, lineHeight: 20, color: 'rgba(255,255,255,0.85)' },
   big: { fontSize: 40, lineHeight: 46, letterSpacing: -1.5, color: '#FFFFFF', fontFamily: theme.fonts.bodyBold },
   // .tiles, two columns
+  // .tiles, two columns, the icon beside the number (#207). Checked on a
+  // phone the same day: taller, with the icon in the top left corner and
+  // bigger faces, because the first cut was too cramped to read.
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   tile: {
     flexBasis: '47%',
     flexGrow: 1,
+    flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 4,
+    gap: 12,
     backgroundColor: 'rgba(255,255,255,0.07)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
     borderRadius: 16,
-    padding: 12
+    paddingHorizontal: 12,
+    paddingTop: 14,
+    paddingBottom: 16,
+    minHeight: 124
   },
-  tileIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  tileCount: { fontSize: 24, lineHeight: 28, letterSpacing: -0.6, color: '#FFFFFF', fontFamily: theme.fonts.bodyBold },
-  tileLabel: { fontSize: 11.5, color: 'rgba(255,255,255,0.65)' },
-  faces: { flexDirection: 'row', marginTop: 4 },
+  tileIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  tileText: { flex: 1, minWidth: 0, gap: 4 },
+  tileCount: { fontSize: 22, lineHeight: 26, letterSpacing: -0.5, color: '#FFFFFF', fontFamily: theme.fonts.bodyBold },
+  tileLabel: { fontSize: 12, lineHeight: 16, color: 'rgba(255,255,255,0.65)' },
+  faces: { flexDirection: 'row', marginTop: 6 },
   anon: { alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   // .dsum
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
