@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
@@ -120,41 +121,19 @@ export function MatchOffer({
     }
   };
 
-  // Backing out after accepting: this pairing ends, the search carries on.
-  const onBackOut = async () => {
-    const ok = await confirmAction({
-      title: 'Back out of this match?',
-      message: "You'll go back to looking, and so will they. This pairing won't be suggested again.",
-      confirmLabel: 'Back out',
-      cancelLabel: 'Keep waiting',
-      destructive: true
-    });
-    if (!ok) return;
+  // Backing out after accepting (decided 13 Nov 2026). The search stopped when
+  // the match was found, so there is no "Stop searching" here: Back out asks
+  // whether to search again or leave it for now. Either way the match is
+  // declined first, so the other person is released, not left waiting.
+  const [backingOut, setBackingOut] = useState(false);
+  const backOut = async (searchAgain: boolean) => {
+    setBackingOut(false);
     try {
       await decline.mutateAsync(match.match_id);
+      if (!searchAgain && challengeId) await leavePool.mutateAsync(challengeId);
       raiseDeclineNotice();
     } catch (error: any) {
       notify('Could not do that', error.message);
-    }
-  };
-
-  // Out of the search altogether. Declining first so the other person is
-  // released rather than left waiting on a match that can never complete.
-  const onStopLooking = async () => {
-    if (!challengeId) return;
-    const ok = await confirmAction({
-      title: 'Stop searching?',
-      message: 'You can start looking again whenever you want.',
-      confirmLabel: 'Stop searching',
-      cancelLabel: 'Keep waiting',
-      destructive: true
-    });
-    if (!ok) return;
-    try {
-      await decline.mutateAsync(match.match_id);
-      await leavePool.mutateAsync(challengeId);
-    } catch (error: any) {
-      notify('Could not stop', error.message);
     }
   };
 
@@ -184,6 +163,39 @@ export function MatchOffer({
       </View>
     ) : null;
 
+  // Why you matched. Only what is true of both and safe to show a stranger:
+  // the activity, and the one line written when the pairing was made.
+  // Where they'll do it (13 Nov 2026): the shared area for a pair who will
+  // meet; for a pair doing it separately, location played no part, so none
+  // is named.
+  const where =
+    match.how === 'together' && match.shared_area
+      ? `You're both in the ${match.shared_area} area`
+      : match.how === 'separate'
+      ? "You'll each go wherever suits you"
+      : null;
+  const reasons = [match.habit ? `You are both doing ${match.habit}` : null, where, match.blurb].filter(Boolean) as string[];
+  // Under the name: their photo is really them.
+  const confirmed = match.partner_photo_confirmed ? (
+    <View style={styles.confirmed}>
+      <Ionicons name="checkmark" size={14} color={theme.colors.success} />
+      <AppText style={styles.confirmedText}>{name}, photo confirmed</AppText>
+    </View>
+  ) : null;
+  const reasonList = reasons.length ? (
+    <View style={styles.reasons}>
+      <AppText style={styles.reasonsTitle}>WHY YOU MATCHED</AppText>
+      {reasons.map((r) => (
+        <View key={r} style={styles.reason}>
+          <View style={styles.tick}>
+            <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+          </View>
+          <AppText style={styles.reasonText}>{r}</AppText>
+        </View>
+      ))}
+    </View>
+  ) : null;
+
   if (state === 'you_accepted') {
     return (
       <View style={styles.root}>
@@ -198,23 +210,34 @@ export function MatchOffer({
           <AppText style={styles.title}>
             You're <AppText style={styles.titleEm}>in.</AppText>
           </AppText>
-          <AppText style={styles.copy}>
-            Waiting for {name} to accept. Saying hi unlocks once you have both accepted.
-          </AppText>
+          {/* Who you are waiting on stays on screen (13 Nov 2026): the name
+              and why you matched, as on the offer. */}
+          <AppText style={styles.name}>{name}</AppText>
+          {confirmed}
+          {reasonList}
           {clockRow}
           <MatchReportLink matchId={match.match_id} partnerFirstName={name} />
         </ScrollView>
         <View style={styles.footer}>
-          <Button label="Back out" variant="ghost" disabled={busy} onPress={onBackOut} />
-          <Button label="Stop searching" variant="ghost" disabled={busy} onPress={onStopLooking} />
+          <AppText style={[styles.copy, styles.waiting]}>
+            Waiting for {name} to accept. Saying hi unlocks once you have both accepted.
+          </AppText>
+          <Button label="Back out" variant="ghost" disabled={busy} onPress={() => setBackingOut(true)} />
         </View>
+        <Modal visible={backingOut} transparent animationType="fade" onRequestClose={() => setBackingOut(false)}>
+          <Pressable style={styles.scrim} onPress={() => setBackingOut(false)}>
+            <Pressable style={styles.sheet} onPress={() => {}}>
+              <AppText style={styles.sheetTitle}>Back out of this match?</AppText>
+              <AppText style={styles.sheetBody}>{name} goes back in the search.</AppText>
+              <Button label="Search again" onPress={() => backOut(true)} />
+              <Button label="Not now" variant="ghost" onPress={() => backOut(false)} />
+              <Button label="Keep waiting" variant="ghost" onPress={() => setBackingOut(false)} labelStyle={styles.keep} />
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     );
   }
-
-  // Why you matched. Only what is true of both and safe to show a stranger:
-  // the activity, and the one line written when the pairing was made.
-  const reasons = [match.habit ? `You are both doing ${match.habit}` : null, match.blurb].filter(Boolean) as string[];
 
   return (
     <View style={styles.root}>
@@ -234,20 +257,9 @@ export function MatchOffer({
             <AppText style={styles.titleEm}>{match.i_requested ? 'a Match.' : 'to pair up.'}</AppText>
           </AppText>
           <AppText style={styles.name}>{name}</AppText>
+          {confirmed}
 
-          {reasons.length ? (
-            <View style={styles.reasons}>
-              <AppText style={styles.reasonsTitle}>WHY YOU MATCHED</AppText>
-              {reasons.map((r) => (
-                <View key={r} style={styles.reason}>
-                  <View style={styles.tick}>
-                    <Ionicons name="checkmark" size={13} color={theme.colors.success} />
-                  </View>
-                  <AppText style={styles.reasonText}>{r}</AppText>
-                </View>
-              ))}
-            </View>
-          ) : null}
+          {reasonList}
 
           {clockRow}
           <AppText style={styles.note}>
@@ -285,7 +297,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface3
   },
   title: { fontSize: 26, lineHeight: 32, color: theme.colors.text, textAlign: 'center', marginTop: 8 },
-  titleEm: { fontSize: 26, lineHeight: 32, color: theme.colors.primary2, fontFamily: theme.fonts.bodyBold },
+  // Bold navy, not orange, as the prototype (13 Nov 2026).
+  titleEm: { fontSize: 26, lineHeight: 32, color: theme.colors.text, fontFamily: theme.fonts.bodyBold },
   copy: { fontSize: 13, lineHeight: 20, color: theme.colors.muted, textAlign: 'center', maxWidth: 280 },
   name: { fontSize: 15, color: theme.colors.muted, fontFamily: theme.fonts.bodyMedium },
   reasons: {
@@ -306,7 +319,9 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(46,158,107,0.14)'
+    // Solid green with a white tick (14 Nov 2026): green means go, so it
+    // should be seen, not a pale wash.
+    backgroundColor: theme.colors.success
   },
   reasonText: { flexShrink: 1, fontSize: 14, lineHeight: 21, color: theme.colors.text },
   clock: {
@@ -319,5 +334,13 @@ const styles = StyleSheet.create({
   },
   clockText: { fontSize: 13, color: theme.colors.primary2, fontFamily: theme.fonts.bodyMedium },
   clockNote: { fontSize: 11.5, color: theme.colors.muted },
-  note: { textAlign: 'center', color: theme.colors.muted, fontSize: 11 }
+  note: { textAlign: 'center', color: theme.colors.muted, fontSize: 11 },
+  confirmed: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  confirmedText: { fontSize: 12.5, color: theme.colors.success, fontFamily: theme.fonts.bodyMedium },
+  waiting: { alignSelf: 'center', marginBottom: 4 },
+  scrim: { flex: 1, backgroundColor: 'rgba(0,24,39,0.45)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 22, paddingBottom: 34, gap: 6 },
+  sheetTitle: { fontSize: 18, color: theme.colors.text, fontFamily: theme.fonts.bodyBold, textAlign: 'center' },
+  sheetBody: { fontSize: 13, color: theme.colors.muted, textAlign: 'center', marginBottom: 10 },
+  keep: { color: theme.colors.muted }
 });

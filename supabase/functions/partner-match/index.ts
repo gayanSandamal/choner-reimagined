@@ -207,7 +207,9 @@ Deno.serve(async (req) => {
           body: isRequester
             ? `${otherName} is doing ${habit} too. You both have 24 hours to accept.`
             : `They're doing ${habit} as well. You both have 24 hours to accept.`,
-          route: '/(tabs)/find'
+          // Straight to Match found (14 Nov 2026). Find no longer opens it by
+          // itself, so the notification is the one-tap way in.
+          route: '/find/match'
         })
       });
     } catch (err) {

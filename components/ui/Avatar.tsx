@@ -16,26 +16,14 @@ interface Props {
   name?: string | null;
   size?: number;
   ring?: boolean;
+  // Your own initials circle is the brand orange; everyone else's is navy
+  // (13 Nov 2026, matching the prototypes). It used to be one of six
+  // gradients picked from the name, blues and purples that are not Choner's.
+  self?: boolean;
 }
 
-// Deterministic hue from name — same person always gets the same gradient.
-function hashHue(input: string) {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    hash = (hash << 5) - hash + input.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash) % 360;
-}
-
-const PALETTES: ReadonlyArray<readonly [string, string]> = [
-  [theme.colors.primary, '#FF4E81'],
-  ['#7C5CFF', '#33C2FF'],
-  ['#3DD68C', '#FFC46A'],
-  ['#FFB566', '#FF6B6B'],
-  ['#33C2FF', '#7C5CFF'],
-  ['#FF4E81', '#FFB566']
-];
+const SELF: readonly [string, string] = [theme.colors.primary, theme.colors.primary2];
+const OTHER: readonly [string, string] = ['#2B6098', '#0B2231'];
 
 function initials(name?: string | null) {
   if (!name) return '?';
@@ -44,9 +32,9 @@ function initials(name?: string | null) {
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
-export function Avatar({ uri, name, size = 48, ring = false }: Props) {
+export function Avatar({ uri, name, size = 48, ring = false, self = false }: Props) {
   const radius = size / 2;
-  const palette = PALETTES[hashHue(name ?? '') % PALETTES.length]!;
+  const palette = self ? SELF : OTHER;
   // Null until the signature lands, and null when there is no photo — the
   // initials gradient covers both, so there is no separate loading state.
   const signed = useAvatarUri(uri);

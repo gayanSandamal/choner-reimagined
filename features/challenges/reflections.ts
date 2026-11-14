@@ -207,3 +207,33 @@ export function draftToAnswers(draft: ReflectionDraft): ReflectionAnswer[] {
 export function answeredCount(draft: ReflectionDraft): number {
   return draftToAnswers(draft).filter(isAnswered).length;
 }
+
+// ============================================================
+// Read by a partner (the profile on Find, #203)
+// ============================================================
+
+// The four questions, asked about someone else.
+const ABOUT_THEM: Record<ReflectionQuestionKey, string> = {
+  purpose: "What's their purpose for doing this?",
+  matters: 'Why does this matter to them right now?',
+  gain: 'What will they gain if they stick with it?',
+  lose: "What will they lose if they don't?"
+};
+
+// Their answers as question and answer pairs, in the usual order. Their own
+// words win; an answer with neither words nor a choice is left out.
+export function partnerWhy(
+  answers: { question_key: string; choice_key: string | null; custom_text: string | null }[] | null | undefined
+): { question: string; answer: string }[] {
+  const out: { question: string; answer: string }[] = [];
+  for (const q of REFLECTION_QUESTIONS) {
+    const a = (answers ?? []).find((x) => x.question_key === q.key);
+    if (!a) continue;
+    const custom = a.custom_text?.trim();
+    const label =
+      custom ||
+      (a.choice_key && a.choice_key !== CUSTOM_CHOICE_KEY ? q.options.find((o) => o.key === a.choice_key)?.label : null);
+    if (label) out.push({ question: ABOUT_THEM[q.key], answer: label });
+  }
+  return out;
+}

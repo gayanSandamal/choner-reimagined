@@ -46,6 +46,19 @@ describe('MatchOffer', () => {
     expect(screen.queryByText(/day challenge/)).toBeNull();
   });
 
+  it('says the photo is confirmed and, for a pair who will meet, the area they share', async () => {
+    await show({ partner_photo_confirmed: true, how: 'together', shared_area: 'Nugegoda' });
+    expect(screen.getByText('Dinesh, photo confirmed')).toBeTruthy();
+    expect(screen.getByText("You're both in the Nugegoda area")).toBeTruthy();
+  });
+
+  it('names no area for a pair doing it separately', async () => {
+    await show({ how: 'separate', shared_area: 'Nugegoda' });
+    expect(screen.queryByText(/Nugegoda/)).toBeNull();
+    expect(screen.getByText("You'll each go wherever suits you")).toBeTruthy();
+    expect(screen.queryByText(/photo confirmed/)).toBeNull();
+  });
+
   it('asks the person who was waiting a different question', async () => {
     await show({ i_requested: false });
     expect(screen.getByText(/Dinesh wants/)).toBeTruthy();
@@ -71,11 +84,29 @@ describe('MatchOffer', () => {
     expect(screen.queryByText("Let's do this")).toBeNull();
   });
 
-  it('backing out warns first, then declines', async () => {
+  it("you accepted: keeps their name and why you matched, and has no Stop searching", async () => {
     await show({ i_confirmed: true });
-    fireEvent.press(screen.getByText('Back out'));
+    expect(screen.getByText('Dinesh')).toBeTruthy();
+    expect(screen.getByText('You are both doing Running')).toBeTruthy();
+    // The search stopped when the match was found (13 Nov 2026).
+    expect(screen.queryByText('Stop searching')).toBeNull();
+  });
+
+  it('backing out asks: search again declines and keeps you searching', async () => {
+    await show({ i_confirmed: true });
+    await fireEvent.press(screen.getByText('Back out'));
+    expect(screen.getByText('Back out of this match?')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Search again'));
     await screen.findByText('Back out');
-    expect(confirmAction).toHaveBeenCalledWith(expect.objectContaining({ title: 'Back out of this match?' }));
+    expect(supabase.rpc).toHaveBeenCalledWith('decline_match', { p_match_id: 'm1' });
+    expect(supabase.rpc).not.toHaveBeenCalledWith('leave_match_pool', expect.anything());
+  });
+
+  it('backing out with Not now also leaves the search', async () => {
+    await show({ i_confirmed: true });
+    await fireEvent.press(screen.getByText('Back out'));
+    await fireEvent.press(screen.getByText('Not now'));
+    await screen.findByText('Back out');
     expect(supabase.rpc).toHaveBeenCalledWith('decline_match', { p_match_id: 'm1' });
   });
 

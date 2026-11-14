@@ -2,6 +2,7 @@ import {
   at,
   dayLabel,
   daytimeHint,
+  daytimeRangeLine,
   firstOpenDay,
   fromWheel,
   hourInDaytime,
@@ -62,6 +63,7 @@ describe('pickers', () => {
     expect(inDaytime({ h: 0, m: 0 })).toBe(false);
     expect(inDaytime({ h: 2, m: 0 })).toBe(false);
     expect(daytimeHint()).toBe('Pick a time between 5:00 AM and 9:00 PM.');
+    expect(daytimeRangeLine()).toBe('Times from 5:00 AM to 9:00 PM, every half hour.');
   });
 
   it('knows which hours on the wheel have nothing in range', () => {

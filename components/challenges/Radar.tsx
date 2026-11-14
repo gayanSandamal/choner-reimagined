@@ -1,4 +1,8 @@
 import { useEffect } from 'react';
+// From expo-router, never @react-navigation/native: expo-router carries its
+// own copy of the navigation library, and the separately installed one has no
+// navigator around it, so it throws "Couldn't find a navigation object".
+import { useIsFocused } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -7,9 +11,11 @@ import Animated, {
   useSharedValue,
   withDelay,
   withRepeat,
-  withTiming
+  withTiming,
+  cancelAnimation
 } from 'react-native-reanimated';
 import { AppText } from '@/components/ui/AppText';
+import { Icon } from '@/components/ui/Icon';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { theme } from '@/constants/theme';
 import { useReduceMotion } from '@/lib/motion';
@@ -28,6 +34,9 @@ interface Props {
   // A match offer is waiting (#192). The centre says so and opens it. This is
   // the one time the radar stands for a real person, because there is one.
   found?: boolean;
+  // Across, in points. The start screen uses a smaller radar so it fits
+  // without scrolling (13 Nov 2026); everywhere else keeps 230.
+  size?: number;
 }
 
 // The Find tab's one object. Three rings expanding outward from a gradient
@@ -37,14 +46,34 @@ interface Props {
 // anyone is actually nearby, and it must never render blips standing in for
 // real people. Matching is concierge-paced, and inventing visible activity
 // would be a lie the rest of the product doesn't tell.
-export function Radar({ searching, onPress, found = false }: Props) {
+export function Radar({ searching, onPress, found = false, size = SIZE }: Props) {
   const reduceMotion = useReduceMotion();
+  // The rings move only when moving means something (13 Nov 2026): a slow
+  // pulse at the start, a faster one while searching, and still once a match
+  // is found, since the search has stopped. They also stop while another tab
+  // is showing: tabs stay mounted, and nobody needs rings animating unseen.
+  const focused = useIsFocused();
+  const still = reduceMotion || found || !focused;
+  const scale = size / SIZE;
 
   return (
-    <View style={styles.wrap}>
-      <Ring index={0} searching={searching} reduceMotion={reduceMotion} />
-      <Ring index={1} searching={searching} reduceMotion={reduceMotion} />
-      <Ring index={2} searching={searching} reduceMotion={reduceMotion} />
+    <View style={[styles.wrap, { width: size, height: size }]}>
+      <View style={[styles.rings, { transform: [{ scale }] }]} pointerEvents="none">
+        {found ? (
+          // A match: the search is over. Two soft rings, standing still, as the
+          // prototype (13 Nov 2026).
+          <>
+            <View style={[styles.ring, styles.foundOuter]} />
+            <View style={[styles.ring, styles.foundInner]} />
+          </>
+        ) : (
+          <>
+            <Ring index={0} searching={searching} reduceMotion={still} />
+            <Ring index={1} searching={searching} reduceMotion={still} />
+            <Ring index={2} searching={searching} reduceMotion={still} />
+          </>
+        )}
+      </View>
 
       <PressableScale
         onPress={onPress}
@@ -57,7 +86,7 @@ export function Radar({ searching, onPress, found = false }: Props) {
           found ? 'Match found. See your match.' : searching ? 'Searching for your partner' : 'Find a match'
         }
         accessibilityState={{ disabled: searching && !found }}
-        style={styles.centerHit}
+        style={[styles.centerHit, scale !== 1 && { transform: [{ scale: Math.max(scale, 0.85) }] }]}
       >
         <LinearGradient
           colors={searching ? (['#FD8302', '#FD4E01'] as const) : (['#FDA340', '#FD7A02'] as const)}
@@ -65,9 +94,11 @@ export function Radar({ searching, onPress, found = false }: Props) {
           end={{ x: 0.85, y: 1 }}
           style={styles.center}
         >
-          <AppText style={styles.centerText}>
-            {found ? 'Match\nfound' : searching ? 'Searching…' : 'Find a\nMatch'}
-          </AppText>
+          {found ? (
+            <Icon name="check" size={40} color="#FFFFFF" strokeWidth={2.6} />
+          ) : (
+            <AppText style={styles.centerText}>{searching ? 'Searching…' : 'Find a\nMatch'}</AppText>
+          )}
         </LinearGradient>
       </PressableScale>
     </View>
@@ -89,9 +120,11 @@ function Ring({
 
   useEffect(() => {
     if (reduceMotion) {
-      // A permanently pulsing screen is exactly what Reduce Motion exists for.
-      // The rings still render, they just hold still.
-      progress.value = 0;
+      // A permanently pulsing screen is exactly what Reduce Motion exists for,
+      // and the same holds for a found match or an unseen tab. The rings still
+      // render, they just hold still, at a resting spread.
+      cancelAnimation(progress);
+      progress.value = 0.35 + index * 0.2;
       return;
     }
     progress.value = 0;
@@ -107,7 +140,9 @@ function Ring({
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: MIN_SCALE + progress.value * (1 - MIN_SCALE) }],
-    opacity: (searching ? 0.85 : 0.55) * (1 - progress.value)
+    // The resting rings were barely visible (13 Nov 2026): 0.28 orange at half
+    // opacity, shrunk with the smaller start-screen radar. Now clearly there.
+    opacity: (searching ? 0.85 : 0.8) * (1 - progress.value)
   }));
 
   return (
@@ -128,13 +163,16 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 6
   },
+  rings: { position: 'absolute', width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
   ring: {
     position: 'absolute',
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2
   },
-  ringRest: { borderWidth: 2, borderColor: 'rgba(253,131,2,0.28)' },
+  foundOuter: { borderWidth: 1.5, borderColor: 'rgba(253,131,2,0.22)' },
+  foundInner: { width: SIZE * 0.72, height: SIZE * 0.72, borderRadius: SIZE * 0.36, borderWidth: 1.5, borderColor: 'rgba(253,131,2,0.32)' },
+  ringRest: { borderWidth: 3, borderColor: 'rgba(253,131,2,0.55)' },
   ringSearching: { borderWidth: 2.5, borderColor: 'rgba(253,91,1,0.75)' },
   centerHit: { zIndex: 2 },
   center: {

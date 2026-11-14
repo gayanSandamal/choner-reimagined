@@ -78,6 +78,9 @@ export function NotificationAsk({
   };
 
   const who = partnerName ?? 'your partner';
+  // While searching there is nobody yet: the first thing worth hearing is the
+  // match itself.
+  const searching = !partnerName;
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={later}>
       <View style={styles.scrim}>
@@ -85,10 +88,13 @@ export function NotificationAsk({
           <View style={styles.icon}>
             <Icon name="bell" size={26} color={theme.colors.primary2} />
           </View>
-          <AppText style={styles.title}>Know when {who} shows up</AppText>
+          <AppText style={styles.title}>
+            {searching ? 'Know the moment we find your match' : `Know when ${who} shows up`}
+          </AppText>
           <AppText style={styles.body}>
-            Choner sends a notification when {who} checks in, suggests a plan, or a match is waiting for
-            your answer. Nothing else.
+            {searching
+              ? "Choner sends a notification the moment there is a match, and later when your partner checks in or suggests a plan. Nothing else."
+              : `Choner sends a notification when ${who} checks in, suggests a plan, or a match is waiting for your answer. Nothing else.`}
           </AppText>
           <Button label="Continue" loading={busy} onPress={onContinue} />
           <Button label="Not now" variant="ghost" disabled={busy} onPress={later} />

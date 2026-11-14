@@ -3700,7 +3700,8 @@ separately, and moving a session you cannot make.
   setting, which is why one screenshot showed 05:30 to 21:30.
 - **It is the app's own wheel, not the phone's picker.** The phone's is a wheel
   on iPhone only (Android's is a clock face), and adding it needs a new store
-  build. This one looks the same on both and ships over the air.
+  build. This one looks the same on both. (Superseded on iPhone the same
+  day: see "Apple's time wheel on iPhone" below.)
 - **It opens on 6:30 AM and always holds a time**, so only the day has to be
   chosen. Because of that, "today, 6:30 AM" is usually already in the past, so
   the planner now refuses a time that has gone and says so. The buttons never
@@ -3922,3 +3923,145 @@ Still to check, in the store consoles: App Privacy (Apple) and Data safety
 (Play) match this list. Owned by Dinesh and Gayan.
 
 **Decided by:** user, 13 November 2026, on a report from Gayan.
+## Apple's time wheel on iPhone, 10 November 2026
+
+**On iPhone, hour, minutes and AM/PM are Apple's own wheel; the day column
+stays ours**, restyled in Apple's grey (system font, black and grey, Apple's
+grey band, 216 points tall) so the row reads as one control. Android keeps
+our wheel for everything.
+
+Why only the time is Apple's: Apple's date wheel writes in the phone's
+calendar, and `@react-native-community/datetimepicker` has no way to change
+that (it sets the language, never the calendar). On a phone set to the
+Persian calendar it would show "19 Aban", the bug just fixed. Apple's
+time-only wheel shows no date, so it cannot.
+
+Apple's wheel greys out times before 5:00 AM and after 9:00 PM itself, in 30
+minute steps. It is asked for AM and PM (`locale="en_US"`). **Not yet known:**
+whether a phone set to 24-hour time still shows 19:00 there. Checked on a
+device before release.
+
+**Correction, found while building this:** Choner has no over-the-air
+updates. `expo-updates` is not installed, so every change reaches phones only
+through a store build. Earlier entries and messages today said changes would
+"ship over the air"; they do not. This one needs a store build for the native
+picker, and so does everything else.
+
+**Decided by:** user, 10 November 2026.
+
+## Profile first on Find, and two picker fixes, 13 November 2026
+
+### Your partner's profile (#203)
+
+Once both people accept, the paired Find screen's main button is **"See
+Gayan's profile"**, and tapping the two faces opens it too. "See your
+challenge" moved to the foot of the profile; Challenges is always one tap away
+in the tab bar. Reason: Find is about your partner, the plan lives on
+Challenges, and two orange actions on one screen meant the profile would never
+be found. A small "See Gayan's profile" line under the title was prototyped and
+dropped as a duplicate of the button.
+
+The profile (`app/find/partner.tsx`), inside Find, for a confirmed partner
+only: photo, first name, "Photo confirmed" when it is, the activity, **the
+areas they picked**, how long you have been paired, sessions together, and
+**their Why answers** (asked about them: "What's their purpose for doing
+this?"), or "Gayan has not answered these yet." "···" keeps Report and Block.
+No age, gender, contact details or messages.
+
+Needs `202611131200_partner_profile.sql`: `get_my_partner()` also returns
+the partner's photo status, areas and Why answers. Additive; older builds are
+unaffected.
+
+### The time wheel (#204)
+
+On iPhone the minutes showed as "..." because Apple's wheel was squeezed. The
+day column is narrower (108 points, smaller text) and Apple's wheel is given
+the rest of the row, at least 236 points. Under every time wheel, on both
+platforms, a line now says what can be picked: "Times from 5:00 AM to 9:00 PM,
+every half hour."
+
+### The streak card (#205)
+
+The day name under each circle ("Tue") was cut in half: 9pt Poppins in a box
+12 points high. It now takes its own line height, with more space between the
+rows of circles.
+
+**Decided by:** user, 13 November 2026. Prototyped first.
+
+## Find: the search stops at a match, and no dead ends, 13 November 2026
+
+Prototyped first (tabs "Find: match found" and "Find: the start"), then built.
+
+- **The search stops when a match is found.** "Stop searching" is gone from
+  the match and the waiting ("You're in") screens. **Back out** opens a choice:
+  "Back out of this match? Ruwan goes back in the search." with **Search
+  again** (decline, stay in the search), **Not now** (decline and leave the
+  search) and **Keep waiting**.
+- **"You're in" keeps who you are waiting on:** their name and why you
+  matched, as on the offer. It used to drop to just the initials.
+- **Searching is not a dead end:** the locked activity row at the top, the
+  radar, then **Already on the move** (outline), Edit answers, and Stop
+  searching last in grey.
+- **The start screen:** "Have an invite code?" gets room above and below;
+  **Already on the move is the standard orange button**, no longer the quiet
+  row; the radar is smaller (170 points) and the gaps tighter so the screen
+  fits without scrolling on a standard iPhone. Small phones may still scroll.
+- **The radar moves only when it means something:** a slow pulse at the start,
+  a faster one while searching, **still once a match is found**, and stopped
+  whenever another tab is showing. It never slowed the app (it runs on the
+  graphics thread and only scales and fades), but it no longer says "still
+  looking" after the search has stopped, or uses battery unseen.
+
+**Decided by:** user, 13 November 2026.
+
+## Match found: photo confirmed and the area, only when it applies, 13 November 2026
+
+Before both people accept, Match found (and "You're in") now shows:
+
+- **"Ruwan, photo confirmed"** under the name, when their photo is confirmed.
+- **The area, only for a pair who will meet:** "You're both in the Nugegoda
+  area", the one area they share. Never the other person's full list.
+- **For a pair doing it separately:** "You'll each go wherever suits you".
+  Location played no part in their match, so none is named.
+
+Needs `202611131400_match_photo_and_area.sql` (`get_my_match()` gains
+`partner_photo_confirmed`, `how` and `shared_area`). Additive; older builds
+ignore them.
+
+Also: **the start screen's radar rings were barely visible** (pale orange at
+half opacity, made thinner again by the smaller radar). They are now a stronger
+orange, thicker, and at higher opacity.
+
+**Decided by:** user, 13 November 2026.
+
+## Find matches the prototype: navy initials, the found radar, the heading, 13 November 2026
+
+From a side-by-side of the build and the prototype:
+
+- **Initials circles use Choner's colors.** Everyone else's is navy (#2B6098
+  to #0B2231); your own stays the brand orange (top bar, Profile, your side of
+  a pair). They used to take one of six blue and purple gradients picked from
+  the name.
+- **The found radar** shows a white check in the orange centre and two soft,
+  still rings, as the prototype. It used to say "Match found" in the centre
+  with three strong rings. Their face sits on the ring with a white edge, no
+  orange ring.
+- **"You found a Match." / "You're in."** emphasis is bold navy, not orange.
+
+**Decided by:** user, 13 November 2026.
+
+## Match found: no jump, the notification opens it, and asking at the search, 14 November 2026
+
+- **Find no longer opens "You found a Match." by itself.** It was meant to
+  happen once per match but reopened on every launch, because the "already
+  shown" note lived only while the app was open. Find shows "Match found" with
+  their face on the radar; tapping either opens the screen.
+- **The match notification opens Match found directly** (`route:
+  '/find/match'` in `partner-match`), so tapping it is still one step. This
+  needs `partner-match` redeployed, which was already pending.
+- **Notifications are asked for when a search starts**, not once a match
+  exists. Asking after the match meant the first match notification was always
+  missed. While searching the screen reads "Know the moment we find your
+  match"; once there is a partner, "Know when Gayan shows up", as before.
+
+**Decided by:** user, 14 November 2026.

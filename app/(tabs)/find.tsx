@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -52,11 +52,6 @@ import { usePullRefresh } from '@/lib/use-pull-refresh';
 //   searching             the radar, awake
 //   an invite sent        waiting for them to join
 //   otherwise             the landing: the radar, and the doors next to it
-// Offers this run of the app has already opened by itself. A new match opens
-// its screen once; after that the Find tab is where it waits, so coming back
-// to this tab does not throw the same screen at someone who just left it.
-const openedOffers = new Set<string>();
-
 export default function FindScreen() {
   const { session } = useSession();
   const queryClient = useQueryClient();
@@ -91,15 +86,9 @@ export default function FindScreen() {
   }, [partnerState]);
   const habit = challengeHabitTitle(challenge);
 
-  const offer = !myPartner && searchState?.matched ? searchState : null;
-  useFocusEffect(
-    useCallback(() => {
-      if (!offer || offer.i_confirmed || openedOffers.has(offer.match_id)) return;
-      if (offerState(offer) === 'expired') return;
-      openedOffers.add(offer.match_id);
-      router.push('/find/match');
-    }, [offer?.match_id, offer?.i_confirmed])
-  );
+  // No jump to Match found when the tab opens (14 Nov 2026): it reopened on
+  // every launch. Find shows "Match found" and the person waits there; their
+  // face, that line, or the match notification opens the screen.
 
   // A habit someone invented has nobody else in the pool doing it, so the
   // search cannot help. Stated here rather than failing at the RPC.
@@ -191,6 +180,8 @@ export default function FindScreen() {
           // 'matched' with no offer in hand is the moment between the matcher
           // writing the state and the offer arriving: still the search.
           <SearchingState
+            habit={habit}
+            activityKey={(challenge?.challenge_templates?.activity_key as string | null) ?? null}
             onStop={onStopSearch}
             stopping={leavePool.isPending}
             noMatch={Boolean(searchState?.matched === false && searchState.no_match)}
@@ -214,10 +205,12 @@ export default function FindScreen() {
           />
         )}
       </ScrollView>
-      {/* Notifications are asked for here, once there is someone to hear
-          about, with the reason on screen first. Never at sign-in. */}
+      {/* Notifications are asked for here, with the reason on screen first,
+          never at sign-in. From the moment a search starts (14 Nov 2026):
+          asking only once a match existed meant the match notification itself
+          was missed. */}
       <NotificationAsk
-        when={Boolean(myPartner || searchState?.matched)}
+        when={Boolean(myPartner || searchState?.matched || partnerState === 'finding' || partnerState === 'matched')}
         userId={userId}
         partnerName={myPartner?.first_name ?? (searchState?.matched ? searchState.partner_first_name : null)}
       />
@@ -410,11 +403,19 @@ function LandingState({
         onPress={() => router.push('/challenge/browse')}
       />
 
-      <Radar searching={false} onPress={onStart} />
+      {/* Smaller here so the whole start screen fits without scrolling
+          (13 Nov 2026). */}
+      <Radar searching={false} onPress={onStart} size={170} />
       <AppText style={styles.tap}>Tap to find a match</AppText>
 
       <Doors />
-      <DirectoryRow />
+      {/* The standard orange button (13 Nov 2026), no longer the quiet row. */}
+      <Button
+        label="Already on the move"
+        leftIcon={<Icon name="community" size={18} color="#FFFFFF" strokeWidth={2} />}
+        onPress={() => router.push('/find/who-else')}
+        style={styles.moveBtn}
+      />
     </Animated.View>
   );
 }
@@ -422,6 +423,8 @@ function LandingState({
 // Searching. Same radar, visually escalated so it reads as the search waking
 // up rather than a different screen.
 function SearchingState({
+  habit,
+  activityKey,
   onStop,
   stopping,
   noMatch,
@@ -429,6 +432,8 @@ function SearchingState({
   searchesLeft,
   dailyLimit
 }: {
+  habit: string | null;
+  activityKey: string | null;
   onStop: () => void;
   stopping: boolean;
   // We looked and nobody cleared the bar. Not the same as "give it a second":
@@ -451,6 +456,8 @@ function SearchingState({
         </View>
       ) : null}
 
+      {/* The activity, locked, as on every other Find screen (13 Nov 2026). */}
+      <ActivityRow activity={habit ?? 'Your commitment'} activityKey={activityKey} locked onPress={() => {}} />
       <Radar searching />
 
       <View style={styles.searchStatus}>
@@ -473,8 +480,18 @@ function SearchingState({
       {/* Searching is a tab root rendered from server state, so "back to the
           form" means editing your answers while staying in the pool: the form
           prefills them, and re-submitting doesn't spend a search. */}
+      {/* Not a dead end (13 Nov 2026): the directory as an outline button,
+          then Edit answers, then Stop searching last and quiet. */}
+      <Button
+        label="Already on the move"
+        variant="outline"
+        leftIcon={<Icon name="community" size={18} color={theme.colors.primary} strokeWidth={2} />}
+        onPress={() => router.push('/find/who-else')}
+      />
       <Button label="Edit answers" variant="ghost" onPress={() => router.push('/find/form')} />
-      <Button label="Stop searching" variant="ghost" loading={stopping} onPress={onStop} />
+      <PressableScale haptic="selection" hitSlop={8} accessibilityRole="button" onPress={onStop} disabled={stopping} style={styles.quietWrap}>
+        <AppText style={styles.quiet}>Stop searching</AppText>
+      </PressableScale>
     </Animated.View>
   );
 }
@@ -554,7 +571,9 @@ function MatchWaitingState({
         <Radar searching found onPress={open} />
         {/* Their own photo on the ring: a real person, the one who matched. */}
         <View style={styles.blip} pointerEvents="none">
-          <Avatar uri={match.partner_avatar_url} name={name} size={38} ring />
+          <View style={styles.blipFace}>
+            <Avatar uri={match.partner_avatar_url} name={name} size={34} />
+          </View>
         </View>
       </View>
 
@@ -579,7 +598,10 @@ function MatchWaitingState({
       </PressableScale>
 
       {clock.state === 'running' ? (
-        <AppText style={styles.note}>{clock.label}. The same clock for you both.</AppText>
+        // The time left is what matters here: bold navy, not faded (14 Nov 2026).
+        <AppText style={styles.note}>
+          <AppText style={styles.clockStrong}>{clock.label}</AppText>. The same clock for you both.
+        </AppText>
       ) : null}
 
       <View style={styles.block}>
@@ -699,7 +721,7 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     fontSize: 13,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 12,
     paddingHorizontal: 6
   },
   // .tap: centred, --g2, 11.5 / 600 (choner-find-flow.html:184)
@@ -711,7 +733,7 @@ const styles = StyleSheet.create({
     color: theme.colors.primary2
   },
   // .orl: a word with a 1px rule either side (app_a.html:259-260)
-  orl: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 10 },
+  orl: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, marginBottom: 8 },
   orlRule: { flex: 1, height: 1, backgroundColor: theme.colors.border },
   orlWord: { fontSize: 12, color: theme.colors.muted },
   // .dlink (app_a.html:300-302)
@@ -771,7 +793,11 @@ const styles = StyleSheet.create({
   },
   // No top margin: the "or" divider inside already carries its own 14 (#136).
   doors: {},
-  links: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 22, rowGap: 10 },
+  // Room above and below, so it is not squeezed under the invite button.
+  links: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 22, rowGap: 10, paddingVertical: 12 },
+  moveBtn: { marginTop: 2 },
+  quietWrap: { alignSelf: 'center', paddingVertical: 10 },
+  quiet: { fontSize: 13.5, color: theme.colors.muted, fontFamily: theme.fonts.bodyMedium },
   link: { color: theme.colors.primary2, fontSize: 13, fontFamily: theme.fonts.bodyMedium },
   searchStatus: { alignItems: 'center', marginTop: 6, marginBottom: 22 },
   searchStatusTitle: {
@@ -788,8 +814,10 @@ const styles = StyleSheet.create({
     lineHeight: 18
   },
   note: { textAlign: 'center', color: theme.colors.muted, fontSize: 11, marginBottom: 14, lineHeight: 17 },
+  clockStrong: { color: theme.colors.text, fontFamily: theme.fonts.bodyBold, fontSize: 13 },
   // Match waiting (#192)
   blip: { position: 'absolute', top: 30, right: '50%', marginRight: -104 },
+  blipFace: { borderRadius: 20, borderWidth: 2.5, borderColor: '#FFFFFF', ...theme.shadow.sm },
   found: { alignItems: 'center', marginTop: 6, marginBottom: 12 },
   foundRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   foundTitle: { fontSize: 16, color: theme.colors.primary2, fontFamily: theme.fonts.bodyBold },
