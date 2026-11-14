@@ -36,7 +36,7 @@ function greetingFor(date = new Date()) {
 
 // Home: a living view of your commitment.
 //
-// Greeting, the pair card (the heart until 14 Nov 2026), the commitment with its single next action, then
+// Greeting, the shared heart, the commitment with its single next action, then
 // Choner Pulse and Just Happened. Rebuilt on the weekly model on 3 October.
 // The daily screen it replaces is gone: no check-in, no task list, no "log it
 // before 8pm", no reason line, no share prompt.
