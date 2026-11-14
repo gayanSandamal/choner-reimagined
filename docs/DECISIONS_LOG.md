@@ -4065,3 +4065,15 @@ From a side-by-side of the build and the prototype:
   match"; once there is a partner, "Know when Gayan shows up", as before.
 
 **Decided by:** user, 14 November 2026.
+
+## Live database changes applied while Gayan was away, 14 November 2026
+
+With Gayan unavailable and the next store build waiting on them, the three
+pending database changes (8b invite works once, 8e partner profile, 8f Match
+found photo and area) were applied to the live database, each tried and
+checked, and `partner-match` was redeployed from `main` (version 12: the #188
+privacy fix and the notification opening Match found). Details and how to undo
+are in `docs/BLOCKED_ON_YOU.md` under Done. The Community feed change stays
+unapplied with its parked branch.
+
+**Decided by:** user, 14 November 2026.
