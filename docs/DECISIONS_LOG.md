@@ -4077,3 +4077,29 @@ are in `docs/BLOCKED_ON_YOU.md` under Done. The Community feed change stays
 unapplied with its parked branch.
 
 **Decided by:** user, 14 November 2026.
+
+## Home's heart becomes the pair mark, 14 November 2026
+
+A heart reads as romance or dating, which Choner is not, so the heart at the
+top of Home is replaced by **the pair mark**: two circles, you and your
+partner, one symbol that goes from incomplete to complete.
+
+- **No partner:** your circle in Choner orange with its gradient, and an empty
+  dashed circle beside it.
+- **Searching, or waiting on an invite:** the same, with a faint grey person
+  in the empty circle.
+- **Matched:** your partner's circle in dark navy with a gradient. Where the
+  two cross, your circle sits on top, so the shared part shows in your orange.
+- **Proportions from Dinesh's reference:** circles overlapping by about a fifth
+  of their width, and a person icon about a quarter of a circle's width.
+- **Still, no animation** (an animated version was prototyped and not chosen).
+- The words stay ("You + ?", "You + Gayan", sessions together) and the five
+  session dots stay. The heart also grew a little at each stage; the mark is
+  wide and stays one size, so the dots carry that progress.
+- Not changed here: the heart on the Challenges tab, the small hearts between
+  pairs on Just Happened, and the heart icon on match notifications.
+
+Prototype: https://claude.ai/artifact/EJn3T8RmcDaBS1qx9tFKBc (fourth take, no
+animation).
+
+**Decided by:** user, 14 November 2026.

@@ -6,7 +6,7 @@ import { activityIcon } from '@/components/home/activityIcons';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
-import { HomeHeart } from '@/components/home/HomeHeart';
+import { HomePair } from '@/components/home/HomePair';
 import { HomeHeroCard } from '@/components/home/HomeHeroCard';
 import { JustHappened, PulseCard } from '@/components/home/PulseCard';
 import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
@@ -36,7 +36,7 @@ function greetingFor(date = new Date()) {
 
 // Home: a living view of your commitment.
 //
-// Greeting, the shared heart, the commitment with its single next action, then
+// Greeting, the pair card (the heart until 14 Nov 2026), the commitment with its single next action, then
 // Choner Pulse and Just Happened. Rebuilt on the weekly model on 3 October.
 // The daily screen it replaces is gone: no check-in, no task list, no "log it
 // before 8pm", no reason line, no share prompt.
@@ -148,7 +148,7 @@ export default function HomeScreen() {
             <ErrorState message={(challengeQ.error as Error).message} onRetry={() => challengeQ.refetch()} />
           ) : (
             <>
-              <HomeHeart
+              <HomePair
                 partnerName={partner?.first_name ?? null}
                 partnerState={partnerStateOf(challenge)}
                 sessionsTogether={partner?.sessions_together ?? 0}
