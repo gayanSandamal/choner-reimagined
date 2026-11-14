@@ -99,9 +99,9 @@ export function PulseCard({ pulse, onOpenDirectory }: { pulse: HomePulse; onOpen
               <AppText style={styles.tileLabel} numberOfLines={1}>
                 {a.title}
               </AppText>
-              {/* 22, up from 16 (14 Nov 2026): at 16 the faces were too small to
+              {/* 26, up from 16 (14 Nov 2026): at 16 the faces were too small to
                   read as people on a phone. */}
-              <Faces from={a.people + i} size={22} overlap={7} ring="#13293A" />
+              <Faces from={a.people + i} size={26} overlap={8} ring="#13293A" />
             </View>
           </PressableScale>
         ))}
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 14,
     paddingBottom: 16,
-    minHeight: 118
+    minHeight: 124
   },
   tileIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   tileText: { flex: 1, minWidth: 0, gap: 4 },
