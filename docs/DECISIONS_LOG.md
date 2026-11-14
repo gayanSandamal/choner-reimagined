@@ -4077,3 +4077,24 @@ are in `docs/BLOCKED_ON_YOU.md` under Done. The Community feed change stays
 unapplied with its parked branch.
 
 **Decided by:** user, 14 November 2026.
+
+## The Pulse on Home: the "now" fix, flatter tiles, new activity icons (#207), 14 November 2026
+
+- **Renamed "Choner Pulse" to "The Pulse".**
+- **"now" no longer falls below the sentence.** The big number and the
+  sentence were set as one line of text, so that line was as tall as the
+  number, and when the sentence wrapped its last word dropped a number's
+  height below. The number now sits on its own line with the sentence under it.
+- **Layout D from the prototype:** the same two columns and the same details
+  (icon, count, name, faces), with the icon beside the number. Tiles are
+  about half as tall, the card about a third shorter.
+- **New activity icons, in today's colors** (white on the orange squares),
+  used everywhere an activity shows: Home, the Pulse, Find, Match found and
+  the challenge picker. Running and Jogging no longer share an icon (running
+  leans with speed lines, jogging is upright), Yoga is a tree pose instead of
+  a leaf, and Workouts is a full dumbbell. The leaf stays for "Reduce stress"
+  in onboarding.
+
+Prototype: https://claude.ai/artifact/Tx5Dt8cenzfqVgo2N3cVHW (section 5).
+
+**Decided by:** user, 14 November 2026.
