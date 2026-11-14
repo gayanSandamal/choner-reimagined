@@ -128,7 +128,25 @@ export function attachNotificationResponseListener() {
   return () => sub.remove();
 }
 
-export async function registerForPushNotificationsAsync() {
+// Whether the phone has answered the notification question yet. Push is only
+// ever asked for in context, with a reason on screen first (Apple 5.1.1):
+// never at sign-in. See components/notifications/NotificationAsk.tsx.
+export type PushStatus = 'granted' | 'denied' | 'undetermined' | 'unavailable';
+export async function getPushStatus(): Promise<PushStatus> {
+  if (!Notifications) return 'unavailable';
+  try {
+    const { status, canAskAgain } = await Notifications.getPermissionsAsync();
+    if (status === 'granted') return 'granted';
+    return status === 'denied' && !canAskAgain ? 'denied' : 'undetermined';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+// `ask: false` (the default) never shows the system prompt: it only fetches a
+// token when permission is already there. Pass `ask: true` only from a screen
+// that has just explained why.
+export async function registerForPushNotificationsAsync({ ask = false }: { ask?: boolean } = {}) {
   if (!Notifications) return null;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -141,6 +159,7 @@ export async function registerForPushNotificationsAsync() {
   let finalStatus = existingStatus;
 
   if (existingStatus !== 'granted') {
+    if (!ask) return null;
     const permission = await Notifications.requestPermissionsAsync();
     finalStatus = permission.status;
   }

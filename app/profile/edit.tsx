@@ -63,11 +63,9 @@ export default function EditProfileScreen() {
 
   const onPickAvatar = async () => {
     if (!userId) return;
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      notify('Permission needed', 'Please allow photo library access to change your avatar.');
-      return;
-    }
+    // No library permission asked: the system photo picker (iOS 14+, Android
+    // 13+) returns only the one photo chosen and needs none. Asking anyway
+    // was one prompt too many.
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
