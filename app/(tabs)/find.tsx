@@ -598,7 +598,10 @@ function MatchWaitingState({
       </PressableScale>
 
       {clock.state === 'running' ? (
-        <AppText style={styles.note}>{clock.label}. The same clock for you both.</AppText>
+        // The time left is what matters here: bold navy, not faded (14 Nov 2026).
+        <AppText style={styles.note}>
+          <AppText style={styles.clockStrong}>{clock.label}</AppText>. The same clock for you both.
+        </AppText>
       ) : null}
 
       <View style={styles.block}>
@@ -811,6 +814,7 @@ const styles = StyleSheet.create({
     lineHeight: 18
   },
   note: { textAlign: 'center', color: theme.colors.muted, fontSize: 11, marginBottom: 14, lineHeight: 17 },
+  clockStrong: { color: theme.colors.text, fontFamily: theme.fonts.bodyBold, fontSize: 13 },
   // Match waiting (#192)
   blip: { position: 'absolute', top: 30, right: '50%', marginRight: -104 },
   blipFace: { borderRadius: 20, borderWidth: 2.5, borderColor: '#FFFFFF', ...theme.shadow.sm },

@@ -188,7 +188,7 @@ export function MatchOffer({
       {reasons.map((r) => (
         <View key={r} style={styles.reason}>
           <View style={styles.tick}>
-            <Ionicons name="checkmark" size={13} color={theme.colors.success} />
+            <Ionicons name="checkmark" size={15} color="#FFFFFF" />
           </View>
           <AppText style={styles.reasonText}>{r}</AppText>
         </View>
@@ -319,7 +319,9 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(46,158,107,0.14)'
+    // Solid green with a white tick (14 Nov 2026): green means go, so it
+    // should be seen, not a pale wash.
+    backgroundColor: theme.colors.success
   },
   reasonText: { flexShrink: 1, fontSize: 14, lineHeight: 21, color: theme.colors.text },
   clock: {
