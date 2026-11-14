@@ -37,11 +37,11 @@ function Anon({ i, size, ring }: { i: number; size: number; ring: string }) {
   );
 }
 
-function Faces({ from, size, ring }: { from: number; size: number; ring: string }) {
+function Faces({ from, size, ring, overlap = 6 }: { from: number; size: number; ring: string; overlap?: number }) {
   return (
     <View style={styles.faces}>
       {[0, 1, 2].map((k) => (
-        <View key={k} style={k > 0 ? { marginLeft: -6 } : null}>
+        <View key={k} style={k > 0 ? { marginLeft: -overlap } : null}>
           <Anon i={from + k} size={size} ring={ring} />
         </View>
       ))}
@@ -99,7 +99,9 @@ export function PulseCard({ pulse, onOpenDirectory }: { pulse: HomePulse; onOpen
               <AppText style={styles.tileLabel} numberOfLines={1}>
                 {a.title}
               </AppText>
-              <Faces from={a.people + i} size={16} ring="#13293A" />
+              {/* 22, up from 16 (14 Nov 2026): at 16 the faces were too small to
+                  read as people on a phone. */}
+              <Faces from={a.people + i} size={22} overlap={7} ring="#13293A" />
             </View>
           </PressableScale>
         ))}
@@ -224,26 +226,30 @@ const styles = StyleSheet.create({
   headline: { fontSize: 14.5, lineHeight: 20, color: 'rgba(255,255,255,0.85)' },
   big: { fontSize: 40, lineHeight: 46, letterSpacing: -1.5, color: '#FFFFFF', fontFamily: theme.fonts.bodyBold },
   // .tiles, two columns
-  // .tiles, two columns. Icon beside the number, so each tile is about half
-  // as tall as it was and the card about a third shorter (#207).
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // .tiles, two columns, the icon beside the number (#207). Checked on a
+  // phone the same day: taller, with the icon in the top left corner and
+  // bigger faces, because the first cut was too cramped to read.
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   tile: {
     flexBasis: '47%',
     flexGrow: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    alignItems: 'flex-start',
+    gap: 12,
     backgroundColor: 'rgba(255,255,255,0.07)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 14,
-    padding: 10
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingTop: 14,
+    paddingBottom: 16,
+    minHeight: 118
   },
   tileIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  tileText: { flex: 1, minWidth: 0, gap: 3 },
-  tileCount: { fontSize: 20, lineHeight: 24, letterSpacing: -0.5, color: '#FFFFFF', fontFamily: theme.fonts.bodyBold },
-  tileLabel: { fontSize: 11, lineHeight: 15, color: 'rgba(255,255,255,0.65)' },
-  faces: { flexDirection: 'row', marginTop: 2 },
+  tileText: { flex: 1, minWidth: 0, gap: 4 },
+  tileCount: { fontSize: 22, lineHeight: 26, letterSpacing: -0.5, color: '#FFFFFF', fontFamily: theme.fonts.bodyBold },
+  tileLabel: { fontSize: 12, lineHeight: 16, color: 'rgba(255,255,255,0.65)' },
+  faces: { flexDirection: 'row', marginTop: 6 },
   anon: { alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   // .dsum
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
