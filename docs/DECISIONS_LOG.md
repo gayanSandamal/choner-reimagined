@@ -4120,3 +4120,17 @@ ends and a cream dot, the full stop from "choner.", on the orange gradient
   inside the app still show the heart and ring.
 
 **Decided by:** user, 15 November 2026.
+
+### Update, 16 November 2026: a bolder, bigger C ("B1")
+
+The first "C." still looked light next to other apps. The C is now about
+40% thicker and the whole mark 10% bigger: it fills about 73% of the icon's
+width, leaving about 14% clear on each side, in line with other letter-mark
+iOS icons. The dot grows a little with the C to keep the balance. Picked
+over a 20% and a 30% bigger version: at 30% the dot nearly touches the
+rounded corner, and anything past this size would have to be drawn smaller
+on Android to stay inside the safe circle. Every file in `assets/icons/`
+was redrawn to match (iOS light, dark, tinted, Android layers, Play Store
+512 and the master SVG); `app.json` is unchanged.
+
+**Decided by:** user, 16 November 2026.
