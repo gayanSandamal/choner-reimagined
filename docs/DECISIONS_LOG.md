@@ -4121,17 +4121,17 @@ ends and a cream dot, the full stop from "choner.", on the orange gradient
 
 **Decided by:** user, 15 November 2026.
 
-### Update, 16 November 2026: a bolder, bigger C ("B1")
+### Update, 16 November 2026: a bolder, bigger C ("A, 10% bigger")
 
 The first "C." still looked light next to other apps. The C is now about
-47% thicker (weight "B" plus another 5%, decided the same day) and the
-whole mark 10% bigger: it fills about 73% of the icon's
-width, leaving about 14% clear on each side, in line with other letter-mark
-iOS icons. The dot grows a little with the C to keep the balance. Picked
-over a 20% and a 30% bigger version: at 30% the dot nearly touches the
-rounded corner, and anything past this size would have to be drawn smaller
-on Android to stay inside the safe circle. Every file in `assets/icons/`
-was redrawn to match (iOS light, dark, tinted, Android layers, Play Store
-512 and the master SVG); `app.json` is unchanged.
+20% thicker (option "A" of three weights) and the whole mark 10% bigger:
+it fills about 72% of the icon's width, leaving about 14% clear on each
+side, in line with other letter-mark iOS icons. The dot grows a little with
+the C to keep the balance. Heavier weights (40% and 47% thicker) were tried
+the same day and dropped. Bigger than this, the dot nears the rounded corner
+and the mark would have to be drawn smaller on Android to stay inside the
+safe circle. Every file in `assets/icons/` was redrawn to match (iOS light,
+dark, tinted, Android layers, Play Store 512 and the master SVG); `app.json`
+is unchanged.
 
 **Decided by:** user, 16 November 2026.
