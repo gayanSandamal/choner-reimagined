@@ -6,7 +6,7 @@ import { activityIcon } from '@/components/home/activityIcons';
 import { useTabBarClearance } from '@/components/navigation/CustomTabBar';
 import { AppText } from '@/components/ui/AppText';
 import { LoadingState, ErrorState } from '@/components/ui/StateViews';
-import { HomeHeart } from '@/components/home/HomeHeart';
+import { HomePair } from '@/components/home/HomePair';
 import { HomeHeroCard } from '@/components/home/HomeHeroCard';
 import { JustHappened, PulseCard } from '@/components/home/PulseCard';
 import { challengeHabitTitle, partnerStateOf } from '@/features/challenges/api';
@@ -148,7 +148,7 @@ export default function HomeScreen() {
             <ErrorState message={(challengeQ.error as Error).message} onRetry={() => challengeQ.refetch()} />
           ) : (
             <>
-              <HomeHeart
+              <HomePair
                 partnerName={partner?.first_name ?? null}
                 partnerState={partnerStateOf(challenge)}
                 sessionsTogether={partner?.sessions_together ?? 0}

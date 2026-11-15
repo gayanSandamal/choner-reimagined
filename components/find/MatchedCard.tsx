@@ -97,9 +97,11 @@ export function MatchedCard({
             <View style={styles.overlap}>
               <Avatar uri={partnerAvatarUrl} name={partnerName} size={66} ring />
             </View>
-            <View style={styles.tick}>
-              <Ionicons name="checkmark" size={15} color="#FFFFFF" />
-            </View>
+          </View>
+          {/* Centered by the radar, like the rings: the two faces are the same
+              size, so the radar's center is where they overlap. */}
+          <View pointerEvents="none" style={styles.tick}>
+            <Ionicons name="checkmark" size={15} color="#FFFFFF" />
           </View>
         </PressableScale>
       </View>
@@ -183,9 +185,6 @@ const styles = StyleSheet.create({
   overlap: { marginLeft: -14 },
   tick: {
     position: 'absolute',
-    alignSelf: 'center',
-    left: '50%',
-    marginLeft: -15,
     width: 30,
     height: 30,
     borderRadius: 15,
