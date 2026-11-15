@@ -4122,3 +4122,40 @@ Prototype: https://claude.ai/artifact/EJn3T8RmcDaBS1qx9tFKBc (fourth take, no
 animation).
 
 **Decided by:** user, 14 November 2026.
+
+## New app icon: "C.", 15 November 2026
+
+The heart-and-ring icon was hard to see on a home screen (the mark filled
+about 40% of the tile, with lines about a pixel thick at real size) and a
+heart reads as romance. The app icon becomes **"C."**: a navy C with round
+ends and a cream dot, the full stop from "choner.", on the orange gradient
+#FFA51F to #FE8C00 to #FD5401.
+
+- **Navy C, not white.** White on this orange is about 2 to 1 contrast, too
+  faint at icon size; navy is about 8 to 1 and holds on any wallpaper.
+- **iOS:** light, dark (orange C on navy) and tinted versions for iOS 18
+  home screens. **Android:** adaptive foreground, background and monochrome
+  layers, with the mark inside the 66% safe circle.
+- Files in `assets/icons/`, master artwork `assets/icons/choner-icon-master.svg`.
+  The old `assets/icon.png` stays in the repo, unused by the app config.
+- Ships only in a new store build. The Play Store listing icon must be
+  re-uploaded by hand (`assets/icons/play-store-icon-512.png`).
+- Not changed yet: the splash screen, the notification icon and the logo
+  inside the app still show the heart and ring.
+
+**Decided by:** user, 15 November 2026.
+
+### Update, 16 November 2026: a bolder, bigger C ("A, 10% bigger")
+
+The first "C." still looked light next to other apps. The C is now about
+20% thicker (option "A" of three weights) and the whole mark 10% bigger:
+it fills about 72% of the icon's width, leaving about 14% clear on each
+side, in line with other letter-mark iOS icons. The dot grows a little with
+the C to keep the balance. Heavier weights (40% and 47% thicker) were tried
+the same day and dropped. Bigger than this, the dot nears the rounded corner
+and the mark would have to be drawn smaller on Android to stay inside the
+safe circle. Every file in `assets/icons/` was redrawn to match (iOS light,
+dark, tinted, Android layers, Play Store 512 and the master SVG); `app.json`
+is unchanged.
+
+**Decided by:** user, 16 November 2026.

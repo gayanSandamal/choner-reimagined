@@ -74,7 +74,7 @@ This is the longest pole in the launch that is not simply waiting.
 
 | Slot | Required | State |
 |---|---|---|
-| App icon, 512 x 512 | yes | **done**, exported from `assets/icon.png` on 7 November |
+| App icon, 512 x 512 | yes | done with the old heart icon on 7 November. **Re-upload needed** once the "C." icon ships: `assets/icons/play-store-icon-512.png` (Dinesh, Play Console, Store listing, App icon) |
 | Feature graphic, 1024 x 500 | yes | does not exist |
 | Phone screenshots, 2 to 8 | yes, minimum 2 | none exist |
 

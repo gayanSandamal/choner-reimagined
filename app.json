@@ -11,8 +11,13 @@
     },
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icons/ios-light.png",
     "ios": {
+      "icon": {
+        "light": "./assets/icons/ios-light.png",
+        "dark": "./assets/icons/ios-dark.png",
+        "tinted": "./assets/icons/ios-tinted.png"
+      },
       "supportsTablet": true,
       "bundleIdentifier": "com.choner.app",
       "buildNumber": "1",
@@ -31,8 +36,10 @@
       "versionCode": 1,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#001827"
+        "foregroundImage": "./assets/icons/adaptive-icon-foreground.png",
+        "backgroundImage": "./assets/icons/adaptive-icon-background.png",
+        "monochromeImage": "./assets/icons/adaptive-icon-monochrome.png",
+        "backgroundColor": "#FE8C00"
       },
       "permissions": [
         "POST_NOTIFICATIONS"
