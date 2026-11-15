@@ -4098,3 +4098,25 @@ unapplied with its parked branch.
 Prototype: https://claude.ai/artifact/Tx5Dt8cenzfqVgo2N3cVHW (section 5).
 
 **Decided by:** user, 14 November 2026.
+
+## New app icon: "C.", 15 November 2026
+
+The heart-and-ring icon was hard to see on a home screen (the mark filled
+about 40% of the tile, with lines about a pixel thick at real size) and a
+heart reads as romance. The app icon becomes **"C."**: a navy C with round
+ends and a cream dot, the full stop from "choner.", on the orange gradient
+#FFA51F to #FE8C00 to #FD5401.
+
+- **Navy C, not white.** White on this orange is about 2 to 1 contrast, too
+  faint at icon size; navy is about 8 to 1 and holds on any wallpaper.
+- **iOS:** light, dark (orange C on navy) and tinted versions for iOS 18
+  home screens. **Android:** adaptive foreground, background and monochrome
+  layers, with the mark inside the 66% safe circle.
+- Files in `assets/icons/`, master artwork `assets/icons/choner-icon-master.svg`.
+  The old `assets/icon.png` stays in the repo, unused by the app config.
+- Ships only in a new store build. The Play Store listing icon must be
+  re-uploaded by hand (`assets/icons/play-store-icon-512.png`).
+- Not changed yet: the splash screen, the notification icon and the logo
+  inside the app still show the heart and ring.
+
+**Decided by:** user, 15 November 2026.
