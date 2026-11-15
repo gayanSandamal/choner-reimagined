@@ -4124,7 +4124,8 @@ ends and a cream dot, the full stop from "choner.", on the orange gradient
 ### Update, 16 November 2026: a bolder, bigger C ("B1")
 
 The first "C." still looked light next to other apps. The C is now about
-40% thicker and the whole mark 10% bigger: it fills about 73% of the icon's
+47% thicker (weight "B" plus another 5%, decided the same day) and the
+whole mark 10% bigger: it fills about 73% of the icon's
 width, leaving about 14% clear on each side, in line with other letter-mark
 iOS icons. The dot grows a little with the C to keep the balance. Picked
 over a 20% and a 30% bigger version: at 30% the dot nearly touches the
