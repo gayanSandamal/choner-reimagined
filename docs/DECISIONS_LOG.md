@@ -4182,6 +4182,14 @@ and makes people curious.
   is held by the old Choner app (version 0.1.1, heart icon) in Gayan's
   expired developer account; Gayan is trying to free it. Fallback if he
   cannot: "Choner: Meet & Move" until the name is free.
+- **Fallback taken, 16 November:** freeing "Choner" would mean paying for
+  the old developer account again, so the App Store name is **"Choner: Meet
+  & Move"**, and the subtitle is **"Healthy habits, together"** (24
+  characters): it matches the welcome screen and adds "habits" and
+  "together" to search. Dropped: "Find your workout partner" (narrows Choner
+  to workouts), "Accountability partners" (dry), no subtitle (wastes search
+  words). The name under the icon on the phone stays "Choner"
+  (`app.json`), so no build change.
 
 **Decided by:** user, 16 November 2026.
 
@@ -4230,3 +4238,41 @@ the app opens on one logo.
   Challenges, which are icons, not the logo.
 
 **Decided by:** user, 16 November 2026.
+
+## Play feature graphic: the dark "C." version, 16 November 2026
+
+The feature graphic is redrawn with the new logo: navy ground, the orange "C."
+with a white dot (as on the dark splash), "choner." in white with an orange
+dot, "Turn I should into I did" with "I did" in orange, and "Healthy habits,
+together" under it. A light version (cream ground, navy dot and text) was made
+and dropped: Play's store page is mostly white, so the navy one stands out and
+matches the icon. File: `Downloads/Choner_Play_Store/feature-graphic-1024x500.png`,
+uploaded by hand in Play Console.
+
+**Decided by:** user, 16 November 2026.
+
+## Play screenshots: six, drawn from the app's own screens, 16 November 2026
+
+Six phone screenshots, 1080 x 1920, made as images from the app's real layouts
+and copy (no device was available to capture them): Find with a match, Home
+paired, agreeing where to meet, Challenges with a session owed, "You both
+showed up", and Community. Captions follow `docs/play-store/ASSETS.md`, except
+shot 5: the photo trade it describes ("seen once, then gone") is not in this
+build, so shot 5 is the completion screen with "Show up together, then cheer
+each other on." People shown are made-up names with initials, no faces. The
+Home shot leaves out the Pulse card so no user count is claimed. Files:
+`Downloads/Choner_Play_Store/screenshots/choner-play-1..6.png`.
+
+- **Captions rewritten by Dinesh, same day:** 1 "Find someone who wants to do
+  it too." 2 "Something to show up for. Someone to show up with." 3 "Make the
+  plan together. Agree on every step." 4 "One missed commitment doesn't have to
+  end your progress." 5 "You both showed up. That's how consistency grows."
+  6 "Your city is showing up. Be part of it."
+- **Backgrounds, option 2 chosen:** navy, orange gradient, white, repeating.
+  1 and 4 navy `#001827` (white text, orange `#FD8302` highlight); 2 and 5 the
+  icon's orange gradient (navy text, white highlight, since white text was hard
+  to read on the light top of the gradient); 3 and 6 white (navy text, orange
+  highlight). Dropped: option 1, navy for 1, 3, 5 and cream for the rest.
+  Files: `Downloads/Choner_Play_Store/screenshots-option-2/`.
+
+**Decided by:** user, 16 November 2026 (all six, made as images).
