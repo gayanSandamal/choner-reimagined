@@ -4,7 +4,7 @@
     "slug": "choner-mobile",
     "owner": "choner-io",
     "scheme": "choner",
-    "version": "0.2.0",
+    "version": "1.0.0",
     "web": {
       "bundler": "metro",
       "output": "single"
@@ -18,7 +18,7 @@
         "dark": "./assets/icons/ios-dark.png",
         "tinted": "./assets/icons/ios-tinted.png"
       },
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.choner.app",
       "buildNumber": "1",
       "infoPlist": {
@@ -99,8 +99,12 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#001827",
-          "imageWidth": 200
+          "backgroundColor": "#FDFCFB",
+          "imageWidth": 200,
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#001827"
+          }
         }
       ],
       "expo-status-bar",

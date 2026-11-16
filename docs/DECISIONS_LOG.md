@@ -4159,3 +4159,74 @@ dark, tinted, Android layers, Play Store 512 and the master SVG); `app.json`
 is unchanged.
 
 **Decided by:** user, 16 November 2026.
+
+## App Store name "Choner", subtitle "Meet & Move", 16 November 2026
+
+TestFlight showed the App Store name as "Choner: Accountability Partner".
+The name becomes just **"Choner"**, matching the Play app name decided on
+7 November, and the subtitle becomes **"Meet & Move"**: it sounds exciting
+and makes people curious.
+
+- Considered and dropped: "Move together" (warm, but close to "move in
+  together"), "Activity Partner" (plain), "Healthy Habits Together" (over
+  the 30-character limit with "Choner: "), "Fitness Companion" (too narrow).
+- Flagged once: "Meet" could read as dating, the reason the heart left
+  Home and the icon. Accepted for launch; the subtitle can change later.
+- Set by hand in App Store Connect (App Information, Name and Subtitle).
+  It changes with the next version sent to review, not with a build, and
+  can be changed again with any later version.
+- **Categories:** Health & Fitness (primary, matching Play) and Lifestyle
+  (secondary). Social Networking was left out: next to "Meet & Move" it
+  would push the dating reading further.
+- **Name blocked, 16 November:** Apple says "Choner" is already in use. It
+  is held by the old Choner app (version 0.1.1, heart icon) in Gayan's
+  expired developer account; Gayan is trying to free it. Fallback if he
+  cannot: "Choner: Meet & Move" until the name is free.
+
+**Decided by:** user, 16 November 2026.
+
+## The App Store release is 1.0.0 and iPhone-only, 16 November 2026
+
+App Store Connect opened the first version as "1.0", and Apple only attaches
+a build whose version matches, while the builds so far were 0.2.0. The app
+version becomes **1.0.0** (`app.json`), so the first public release reads
+1.0 on both stores. **`ios.supportsTablet` becomes `false`**: with iPad on,
+Apple also demands 13-inch iPad screenshots, and Choner has never been laid
+out or tested on an iPad. Both need a new build, and flipping iPad later is
+another new binary, so they go in together before the first submission.
+Held until the other pre-build changes are in.
+
+**Decided by:** user, 16 November 2026.
+
+## The "C." logo replaces the heart everywhere, 16 November 2026
+
+The app icon became "C." on 15 November; the rest of the brand followed so
+the app opens on one logo.
+
+- **Splash, follows the phone's light or dark setting** (revised the same
+  day): light mode is an orange-gradient C with a navy dot on #FDFCFB, dark
+  mode an orange-gradient C with a white dot on navy (#001827). Both are 10%
+  thinner and 10% smaller than the app icon's C, which looked too big for
+  the screen. "choner." sits at the bottom (navy or white, orange dot) and
+  fades in 0.3s after the C. The phone's own splash can only show one
+  centered picture, so the app draws the wordmark (`components/SplashView.tsx`).
+  Considered and dropped: a light screen with a navy C, a dark screen with a
+  white C, and orange "choner." with a white dot.
+- **Welcome screen:** the orange C with a cream dot, 56pt tall, 10% thinner
+  like the splash
+  (`assets/brand/c-mark-orange.png`).
+- **Loading:** a navy C with an orange dot, 44pt tall, 10% thinner, like the "choner."
+  wordmark (`assets/brand/c-mark-navy.png`). It still breathes.
+- **Android notification icon:** a white C. (Android tints it orange).
+- **Websites:** the app icon as the browser tab icon (`favicon.png`,
+  rounded) and home screen icon (`apple-touch-icon.png`, square, iOS rounds
+  it) on all three sites. The link previews put the icon next to the
+  "choner." wordmark, with new file names (`og-cover-3.jpg`,
+  `og-invite-2.jpg`) so WhatsApp and Facebook do not show the cached heart.
+- The app changes ship only in a store build. The website changes are live
+  once uploaded (item 8g in `docs/BLOCKED_ON_YOU.md`).
+- Left alone: the unused heart code (`BrandLogo`, `AnimatedBrandLogo`,
+  `assets/choner-logo.png`), and the small hearts on Just Happened and
+  Challenges, which are icons, not the logo.
+
+**Decided by:** user, 16 November 2026.
