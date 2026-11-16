@@ -13,9 +13,10 @@ import { PromiseCard } from '@/components/onboarding/PromiseCard';
 import { ProgressDots } from '@/components/onboarding/ProgressDots';
 import { theme } from '@/constants/theme';
 
-const LOGO = require('../../assets/choner-logo.png');
-// The artwork is 542 x 368.
-const LOGO_WIDTH = 120;
+// The "C." mark, the same as the app icon (decided 16 Nov 2026).
+const LOGO = require('../../assets/brand/c-mark-orange.png');
+// The artwork is 189 x 168, drawn 56pt tall.
+const LOGO_HEIGHT = 56;
 
 const PROMISES: { icon: IconName; title: string; description: string }[] = [
   {
@@ -52,8 +53,8 @@ export default function WelcomeScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ProgressDots current={1} gradient />
           <Animated.View entering={FadeInDown.duration(360)} style={styles.hero}>
-            {/* The brand PNG, as in the prototype. The Lottie mark drew an
-                older navy-filled heart that read as a different logo (#97). */}
+            {/* The "C." mark, as on the app icon and the splash, so the app
+                opens on one logo. */}
             <Image
               source={LOGO}
               style={styles.logo}
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: { padding: 20, paddingTop: theme.spacing(2), gap: theme.spacing(3), flexGrow: 1 },
   hero: { alignItems: 'center', gap: theme.spacing(1.5) },
-  logo: { width: LOGO_WIDTH, height: (LOGO_WIDTH * 368) / 542 },
+  logo: { width: (LOGO_HEIGHT * 189) / 168, height: LOGO_HEIGHT },
   sub: {
     textAlign: 'center',
     color: 'rgba(255,255,255,0.72)',

@@ -85,7 +85,8 @@ function AnimatedIcon({
   );
 }
 
-const LOGO = require('../../assets/choner-logo.png');
+// The "C." mark in navy with an orange dot, like the "choner." wordmark.
+const LOGO = require('../../assets/brand/c-mark-navy.png');
 
 // The brand mark breathing, not a spinning hourglass on an orange disc. That
 // disc was the old loading look and still showed on every tab's first load
@@ -227,6 +228,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden'
   },
-  // choner-logo.png is 542 x 368.
-  loadingMark: { width: 72, height: (72 * 368) / 542 }
+  // c-mark-navy.png is 149 x 132, drawn 44pt tall.
+  loadingMark: { width: (44 * 149) / 132, height: 44 }
 });

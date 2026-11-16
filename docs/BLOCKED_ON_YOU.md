@@ -228,6 +228,24 @@ Apply it before the build with the partner profile goes out.
 **If it is skipped:** the profile still opens, but without the area, the
 "Photo confirmed" tick, or the Why answers (it says the answers are missing).
 
+### 8g. Upload the new website icons and link previews — **Dinesh**
+
+The "C." logo replaced the heart on the three web pages (16 Nov 2026). The
+HTML now points at files that are not on the hosts yet. Upload, in cPanel:
+
+- **join.choner.io:** `web/first-200/index.html`, `privacy.html`,
+  `favicon.png`, `apple-touch-icon.png`, `og-cover-3.jpg`
+- **app.choner.io:** `web/invite/index.html`, `favicon.png`,
+  `apple-touch-icon.png`, `og-invite-2.jpg`
+- **choner.io:** `web/legal/privacy.html`, `terms.html`, `favicon.png`,
+  `apple-touch-icon.png`
+
+**If the HTML goes up without the images:** the browser tab shows no icon
+and shared links show no picture. Upload the images first.
+
+Done when: opening each site shows the orange "C." in the browser tab, and
+pasting the link into the Facebook Sharing Debugger shows the new picture.
+
 ## Done, kept so the next person does not redo it
 
 ### Live database changes and the matcher, 14 November — **for Gayan to know**
