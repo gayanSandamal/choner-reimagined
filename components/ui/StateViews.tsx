@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   Easing,
@@ -85,37 +85,28 @@ function AnimatedIcon({
   );
 }
 
-// The "C." mark in navy with an orange dot, like the "choner." wordmark.
-const LOGO = require('../../assets/brand/c-mark-navy.png');
-
-// The brand mark breathing, not a spinning hourglass on an orange disc. That
-// disc was the old loading look and still showed on every tab's first load
-// (#114). Reduced motion gets the still mark.
+// A thin orange ring spinning on a pale track. The breathing "C." mark felt
+// wrong as a loader (decided 17 November 2026). Reduced motion gets the
+// still ring.
 function LoadingMark() {
   const reduceMotion = useReduceMotion();
   const t = useSharedValue(0);
 
   useEffect(() => {
     if (reduceMotion) return;
-    t.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 700, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      false
-    );
+    t.value = withRepeat(withTiming(1, { duration: 900, easing: Easing.linear }), -1, false);
   }, [reduceMotion]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: 0.55 + t.value * 0.45,
-    transform: [{ scale: 0.94 + t.value * 0.06 }]
+    transform: [{ rotate: `${t.value * 360}deg` }]
   }));
 
   return (
-    <Animated.View style={style} accessibilityRole="progressbar" accessibilityLabel="Loading">
-      <Image source={LOGO} style={styles.loadingMark} resizeMode="contain" />
-    </Animated.View>
+    <Animated.View
+      style={[styles.loadingRing, style]}
+      accessibilityRole="progressbar"
+      accessibilityLabel="Loading"
+    />
   );
 }
 
@@ -228,6 +219,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden'
   },
-  // c-mark-navy.png is 149 x 132, drawn 44pt tall.
-  loadingMark: { width: (44 * 149) / 132, height: 44 }
+  loadingRing: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 3.5,
+    borderColor: theme.colors.surface3,
+    borderTopColor: theme.colors.primary,
+    borderRightColor: theme.colors.primary2
+  }
 });

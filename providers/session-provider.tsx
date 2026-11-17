@@ -2,7 +2,7 @@ import { PropsWithChildren, createContext, useContext, useEffect, useMemo, useSt
 import { AppState } from 'react-native';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { queryClient } from '@/lib/query-client';
+import { queryClient, queryPersister } from '@/lib/query-client';
 
 interface SessionContextValue {
   session: Session | null;
@@ -93,7 +93,14 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
     restore();
 
-    const { data } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    const { data } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      // Every way out (sign out, delete account, a dead session) ends here.
+      // The last account's data is saved on the phone (lib/query-client), so
+      // it has to go with them or the next person to sign in sees it.
+      if (event === 'SIGNED_OUT') {
+        queryClient.clear();
+        void queryPersister.removeClient();
+      }
       setSession(currentSession);
       setLoading(false);
     });
