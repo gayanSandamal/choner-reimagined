@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.choner.app",
+      "sha256_cert_fingerprints": [
+        "12:6C:68:27:94:DA:58:D9:3D:F3:46:E8:8E:89:D5:0D:3A:3A:0E:E8:0C:6A:49:26:56:3E:34:A7:71:28:6E:84"
+      ]
+    }
+  }
+]

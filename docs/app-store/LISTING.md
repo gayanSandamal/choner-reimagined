@@ -6,7 +6,7 @@ Paste into App Store Connect, version 1.0. Written 17 November 2026.
 |---|---|---|
 | Name | 30 | `Choner: Meet & Move` (19) |
 | Subtitle | 30 | `Healthy habits, together` (24) |
-| Promotional text | 170 | `Meet someone who wants to do it too. Plan one session at a time, show up together and keep your streak going. Now starting in Colombo.` (134) |
+| Promotional text | 170 | `Meet someone who wants to move too. Find your activity partner, make a plan and give each other a reason to show up.` (116) |
 | Keywords | 100 | `workout,partner,buddy,accountability,fitness,running,walking,yoga,cycling,exercise,streak,colombo` (97) |
 | Description | 4000 | [description.txt](description.txt), the same copy as Play (3816) |
 | Support URL | | `https://choner.io` |
