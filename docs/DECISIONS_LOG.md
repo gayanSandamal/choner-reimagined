@@ -4344,3 +4344,17 @@ per-row security rules, and leaked password protection (Gayan, Supabase Auth
 settings). Still open and on Dinesh: rotate the keys pasted on 14 October.
 
 **Decided by:** user, 17 November 2026.
+
+## "You two are in": two faces meet, 17 November 2026
+
+- The screen after Say hi dropped the shared-session heart (it belongs to
+  Challenges, where it counts sessions together, and read as the old visual
+  here). Now both photos slide in from either side and overlap, once, then
+  "Noah and Emma", the heading and the button rise in. Reduced motion shows
+  the finished picture.
+- Option 1 of 4, without the orange dot on top. Dropped: the navy moment,
+  the "four steps ahead" list and the orange screen with two dots.
+- Ships in the next store build, together with #214. No build until this is
+  tested.
+
+**Decided by:** user, 17 November 2026.
