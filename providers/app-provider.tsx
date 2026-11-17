@@ -1,11 +1,12 @@
 import { PropsWithChildren, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
-import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from '@/providers/session-provider';
 import { ToastProvider, useToast } from '@/providers/toast-provider';
 import { ConfirmProvider } from '@/providers/confirm-provider';
-import { queryClient } from '@/lib/query-client';
+import { persistOptions, queryClient } from '@/lib/query-client';
 import {
   attachNotificationResponseListener,
   registerForPushNotificationsAsync,
@@ -276,7 +277,7 @@ export function AppProvider({ children }: PropsWithChildren) {
             sat over the floating pill with no way to scroll back. Passing the
             metrics synchronously means the first render already has them. */}
         <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-          <QueryClientProvider client={queryClient}>
+          <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
             <ReduceMotionContext.Provider value={reduceMotion}>
               <SessionProvider>
                 {/* Wraps SessionWiring so the realtime handler can raise an
@@ -300,7 +301,7 @@ export function AppProvider({ children }: PropsWithChildren) {
                 </ToastProvider>
               </SessionProvider>
             </ReduceMotionContext.Provider>
-          </QueryClientProvider>
+          </PersistQueryClientProvider>
         </SafeAreaProvider>
       </>
     </ErrorBoundary>

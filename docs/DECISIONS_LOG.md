@@ -4276,3 +4276,71 @@ Home shot leaves out the Pulse card so no user count is claimed. Files:
   Files: `Downloads/Choner_Play_Store/screenshots-option-2/`.
 
 **Decided by:** user, 16 November 2026 (all six, made as images).
+
+## Play countries: Sri Lanka only, 17 November 2026
+
+- **Public release (production track):** Sri Lanka only. Matching only works
+  in Colombo and Greater Colombo, and the listing says "Now starting in
+  Colombo". More countries get added when a new city opens.
+- **Testers abroad (investors):** Play internal testing (any country, up to
+  100 Google emails, opt-in link) and TestFlight external testers on iPhone.
+  They use the paired demo account so nobody real waits on them.
+
+**Decided by:** user, 17 November 2026.
+
+## Loading icon: the orange ring, 17 November 2026
+
+- The breathing "C." mark didn't feel right as a loader. Replaced with a thin
+  ring spinning on a pale track: track `#F4F2EF`, arc `#FD8302` into
+  `#FD5B01`, 40pt, one turn every 0.9 s. Reduced motion shows it still.
+- One component (`LoadingState` in `components/ui/StateViews.tsx`), so every
+  screen's loader changes. Ships only in the next store builds.
+- Dropped options: two dots meeting, three dots, pulsing dot, dot on a track,
+  bouncing wordmark.
+
+**Decided by:** user, 17 November 2026.
+
+## Loading speed on the free plan, 17 November 2026
+
+- **Why it's slow:** the free plan's shared processor. A count over about
+  1,500 rows took 50 to 110 ms with everything in memory (57 MB database,
+  100% cache hits), when it should take under 1 ms. The Singapore region is
+  the closest one to Sri Lanka, so that's not the cause.
+- **Pro plan (about $25 a month):** not now, no budget yet. It's the biggest
+  single fix when there's money for it.
+- **Matcher every 15 minutes, not 5:** applied live the same day
+  (`202611171500_matcher_every_15_min.sql`). Each run took about 0.6 s and
+  competed with people using the app.
+- **Last data kept on the phone:** each screen's last data is saved, so the
+  app opens on it and refreshes quietly in the background. It's wiped on sign
+  out and on a new app version, and kept for 24 hours. Ships in the next
+  store build.
+- **Later:** 62 security rules that call `auth.uid()` once per row instead of
+  once per query. Small at today's size.
+
+**Decided by:** user, 17 November 2026.
+
+## Security review, 17 November 2026
+
+Went through a 26-point checklist against the live project. Two real holes,
+both fixed on production the same day (tested on staging first):
+
+- **Unchecked database functions.** With only the public app key, anyone
+  could read the matching pool (names, age ranges, genders, onboarding
+  answers), create a match between any two people, start a challenge on
+  someone else's account and read anyone's streak numbers. The server-only
+  ones are now server-only, and `ensure_user_challenge` and
+  `start_user_challenge` check the caller is the account being changed
+  (`202611171600_lock_down_open_functions.sql`).
+- **Open invite email.** `invite-email` sent any text to any address as
+  hello@choner.io. It now needs a signed-in user, sends only their own
+  pending invite, caps at 20 a day and escapes the inviter's name.
+
+Also: profile photos are limited to 5 MB and image types (they had no
+limit), and `send-email` (an unused, fully open email function) was deleted.
+
+Left for later: updating 16 flagged packages (mostly build tools), the 62
+per-row security rules, and leaked password protection (Gayan, Supabase Auth
+settings). Still open and on Dinesh: rotate the keys pasted on 14 October.
+
+**Decided by:** user, 17 November 2026.

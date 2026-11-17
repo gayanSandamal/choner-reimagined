@@ -6,7 +6,13 @@
 //   render   *.test.tsx  components, rendered with the Expo preset and React
 //                        Native Testing Library. For what only shows up once
 //                        something is on screen: which buttons a state offers.
-const alias = { '^@/(.*)$': '<rootDir>/$1' };
+const alias = {
+  '^@/(.*)$': '<rootDir>/$1',
+  // lib/query-client saves the cache to phone storage, which has no native
+  // module under jest. The package ships an in-memory stand-in for tests.
+  '^@react-native-async-storage/async-storage$':
+    '@react-native-async-storage/async-storage/jest/async-storage-mock'
+};
 // `/.claude/` keeps jest out of the worktrees the desktop app creates under
 // .claude/worktrees/. Each is a full checkout of another branch, so without
 // this `npm test` silently runs that branch's tests too, doubles the suite,

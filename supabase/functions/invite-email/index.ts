@@ -1,6 +1,27 @@
 import { Resend } from "npm:resend@4.0.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const admin = createClient(
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+);
+
+// Security review, 17 November 2026. This used to send whatever it was given
+// to whatever address it was given, and the gateway's verify_jwt accepts the
+// public app key, so anyone could send mail as hello@choner.io. Now:
+//   - the caller must be a signed-in user (re-checked with getUser),
+//   - the invite must exist, be theirs and still be pending; the address and
+//     code come from that row, not from the request,
+//   - the inviter's name comes from their profile and is HTML-escaped,
+//   - at most DAILY_LIMIT invite emails per person per 24 hours.
+const DAILY_LIMIT = 20;
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!
+  );
+}
 
 // Browsers preflight any cross-origin POST carrying an Authorization header,
 // which is every call supabase-js makes. Without these the preflight fails and
@@ -26,16 +47,54 @@ Deno.serve(async (req) => {
   } catch {
     return Response.json({ error: "Invalid request body" }, { status: 400, headers: CORS });
   }
+  const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  const { data: auth } = jwt ? await admin.auth.getUser(jwt) : { data: null };
+  const uid = auth?.user?.id;
+  if (!uid) {
+    return Response.json({ error: "Sign in to send an invite." }, { status: 401, headers: CORS });
+  }
+  if (!body.token) {
+    return Response.json({ error: "Missing invite." }, { status: 400, headers: CORS });
+  }
+
+  const { data: invite } = await admin
+    .from("challenge_invites")
+    .select("email, code, token, status, invited_by")
+    .eq("token", body.token)
+    .maybeSingle();
+  if (!invite || invite.invited_by !== uid || invite.status !== "pending" || !invite.email) {
+    return Response.json({ error: "Invite not found." }, { status: 404, headers: CORS });
+  }
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count } = await admin
+    .from("challenge_invites")
+    .select("id", { count: "exact", head: true })
+    .eq("invited_by", uid)
+    .gte("created_at", since);
+  if ((count ?? 0) > DAILY_LIMIT) {
+    return Response.json({ error: "Too many invites today. Try again tomorrow." }, { status: 429, headers: CORS });
+  }
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("full_name")
+    .eq("id", uid)
+    .maybeSingle();
+  body.email = invite.email;
+  body.code = invite.code ?? undefined;
+  body.inviterName = escapeHtml((profile?.full_name ?? "").trim().slice(0, 60) || "A friend");
+
   const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "hello@choner.io";
 
   // Base for the accept link. Set APP_INVITE_URL to your web/app origin
   // (e.g. https://app.choner.io) in production; falls back to the app scheme.
   const base = (Deno.env.get("APP_INVITE_URL") ?? "choner://").replace(/\/?$/, "/");
-  const acceptUrl = body.token ? `${base}invite/${body.token}` : null;
+  const acceptUrl = `${base}invite/${encodeURIComponent(invite.token)}`;
   const inviter = body.inviterName ?? "A friend";
   // What a person types. The 6-character code (202609291300) when the caller
   // sent one; the long token otherwise, which accept_invite_by_code still takes.
-  const typedCode = body.code ?? body.token;
+  const typedCode = escapeHtml(body.code ?? body.token);
 
   // When the base is a custom scheme (choner://), the button is useless to a
   // recipient who hasn't installed the app yet — and that's every invitee, plus
