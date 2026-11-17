@@ -8,7 +8,7 @@ Kept here because it kept getting lost at the bottom of a long message. Claude
 adds to this file whenever it hits a wall, and says so in the same breath
 rather than mentioning it in passing.
 
-Last updated 2026-11-10.
+Last updated 2026-11-17.
 
 ---
 
@@ -245,6 +245,68 @@ and shared links show no picture. Upload the images first.
 
 Done when: opening each site shows the orange "C." in the browser tab, and
 pasting the link into the Facebook Sharing Debugger shows the new picture.
+
+### 9. Publish App Privacy — **Dinesh**
+
+App Store Connect → Trust & Safety → App Privacy. All nine data types are
+filled in and saved (17 Nov), but the label is not live until someone presses
+**Publish**. Claude stopped before it on purpose: it cannot be taken back.
+
+Done when: the App Privacy page shows no Publish button and the preview reads
+"Data Linked to You" with no "Data Used to Track You".
+
+### 10. Finish App Store version 1.0 and submit — **Dinesh**
+
+Done by Claude on 17 Nov: build 1.0.0 (12) attached, listing text, App
+Privacy answers, age rating 18+. Left for Dinesh:
+
+* Screenshots: `Downloads/Choner_App_Store/iphone-6.9-screenshots/` (6.9")
+  or `iphone-6.3-screenshots/` (1206 x 2622).
+* Search results image: `Downloads/Choner_App_Store/search-results/choner-search-orange-3840x2560.png`.
+* Pricing and Availability: free, Sri Lanka only.
+* Then **Add for Review**, then **Submit**.
+
+Done when: version 1.0 shows "Waiting for Review".
+
+**Paused 17 to 18 Nov by an Apple outage.** From the evening of 17 Nov App
+Store Connect returned server errors (500/503) loading the app, with a stray
+"News Request" pop-up, and the Apps page showed no apps. On 18 Nov Apple's
+System Status page listed **"App Store Connect - Outage"**. It is on Apple's
+side, not caused by the age rating. Pick this up once the status page shows
+App Store Connect as available again.
+
+### 11. Play Console: new build, new screenshots, reviewer note — **Dinesh**
+
+* ~~Upload versionCode 6~~ done 17 Nov: closed testing (sent for review)
+  and internal testing (live). Production is locked until item 6 (12
+  testers for 14 days) is met.
+* Re-upload the six screenshots from `screenshots-option-2/` (the match is
+  now Kavindi, with a photo).
+* App access: the reviewer account plus the note "Already paired with a
+  partner and has a session planned. Please don't end the match."
+
+### 12. Leaked password protection — **Gayan**
+
+Supabase → Authentication → Passwords → turn on leaked password protection
+(checks new passwords against HaveIBeenPwned). Flagged by the security review
+on 17 Nov. It may need the Pro plan.
+
+### 13. The reviewer pair's session date — **Dinesh, to tell Claude**
+
+Alex (`reviewer.choner@gmail.com`) and Sam (`reviewer.choner+sam@gmail.com`,
+kept by Dinesh) are paired on production with a first run planned for
+**27 Nov 2026, 6:30 am**. If either store is still reviewing on 25 Nov, tell
+Claude to move the session later, or the reviewer sees it as missed.
+
+### 14. Upload `assetlinks.json` to app.choner.io — **Dinesh** (DONE 17 Nov, checked live)
+
+Android invite links open the web page instead of the app until this file is
+live. Upload `Downloads/Choner_Website_Upload/2_app.choner.io (invite)/.well-known/assetlinks.json`
+to the `.well-known` folder of app.choner.io, next to
+`apple-app-site-association`.
+
+Done when: `https://app.choner.io/.well-known/assetlinks.json` shows the JSON
+(not a 404). Claude can check it.
 
 ## Done, kept so the next person does not redo it
 

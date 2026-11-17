@@ -4394,3 +4394,128 @@ settings). Still open and on Dinesh: rotate the keys pasted on 14 October.
   Nadeesha and Kasun inside rolled-back transactions.
 
 **Decided by:** user, 17 November 2026.
+
+## App Store promotional text, rewritten, 17 November 2026
+
+- Now: "Meet someone who wants to move too. Find your activity partner, make a
+  plan and give each other a reason to show up." Changed by Dinesh directly
+  in App Store Connect; `docs/app-store/LISTING.md` updated to match.
+- Was: "Meet someone who wants to do it too. Plan one session at a time, show
+  up together and keep your streak going. Now starting in Colombo."
+
+**Decided by:** user, 17 November 2026.
+
+## App Store header: B dark, 17 November 2026
+
+- The product page header is the "C." with the "choner." wordmark on navy,
+  over one large, faint "C" in the icon's shape that runs off the edges
+  (style B, dark). Brand colors only: navy, the icon's orange gradient,
+  white. File: `Downloads/Choner_App_Store/header-and-search-v2/choner-B-dark-header-3840x1646.png`.
+- Header only (3840 x 1646). No search-results asset, so App Store search
+  keeps showing the real screenshots, which is what Apple asks search
+  images to do.
+- Considered over three rounds: rings with dots (round 1, dropped for
+  off-brand tints and clutter), A plain and B faint-C in dark, light and
+  orange (round 2), and halves, navy with an orange band, and big orange
+  (round 3).
+
+**Decided by:** user, 17 November 2026.
+
+## App Store search-results image: orange, 17 November 2026
+
+- Orange gradient, the "C." in navy, "choner." in white with a navy dot.
+  Headline "Find someone. Build healthy habits together." with "someone."
+  in navy, and a supporting line in navy. On the right, an iPhone on the
+  match screen.
+- The match on that screen is Kavindi, with an AI-generated face from
+  thispersondoesnotexist.com (not a real person), so the circle isn't empty.
+- File: `Downloads/Choner_App_Store/search-results/choner-search-orange-3840x2560.png`.
+  With this uploaded, App Store search shows this image instead of the
+  screenshots.
+
+**Decided by:** user, 17 November 2026.
+
+## Screenshots: the match is Kavindi, with a photo, 17 November 2026
+
+- The partner in all six screenshots, iPhone and Play, is now Kavindi (a
+  woman) instead of Kavindu, and screenshot 1 shows her face (AI-generated,
+  thispersondoesnotexist.com) in the avatar instead of initials. The search
+  results image shows the same screen, so all three match.
+- App previews (videos): skipped for now. Apple requires real screen
+  recordings; if added later, Dinesh records three 15 to 30 second clips on
+  the iPhone and they are cut to 886 x 1920.
+
+**Decided by:** user, 17 November 2026.
+
+## App Store Connect, version 1.0 set up, 17 November 2026
+
+Done in App Store Connect by Claude in Dinesh's Chrome, each checked after a
+reload. Nothing was submitted.
+
+- **Build:** 1.0.0 (12) attached to version 1.0. Build 11 was never attached.
+- **Listing text:** promotional text, the full description (3,725
+  characters, same as Play), keywords, support URL `https://choner.io`,
+  copyright `2026 Choner`. Dinesh then changed the promotional text (entry
+  above).
+- **Reviewer sign-in:** entered by Dinesh. The account is Alex
+  (`reviewer.choner@gmail.com`), paired on production with Sam
+  (`reviewer.choner+sam@gmail.com`, Dinesh keeps it): running, Viharamahadevi
+  Park, 5 km, 3 times a week, first run 27 Nov 2026 6:30 am, both confirmed.
+  The same pair serves Google Play. Set up through the app's own server
+  functions, not by editing rows by hand.
+- **App Privacy** (saved, not yet published): privacy policy
+  `https://choner.io/privacy.html`; nine data types, each "App Functionality,
+  linked to the user, not used for tracking": Name, Email Address, Fitness,
+  Coarse Location, Photos or Videos, Other User Content, User ID, Device ID,
+  Other Data Types. Matches the Play Data safety answers.
+- **Age rating: 18+** (override). Answers: parental controls no, age
+  assurance no, unrestricted web no, user-generated content yes, social media
+  no, under-13 social media check no (no Declared Age Range API), messaging
+  and chat yes, advertising no; all mature themes, sexuality, violence and
+  chance questions none or no; medical information none; health or wellness
+  topics yes. Apple calculated 9+; overridden to 18+ because the terms
+  require 18 or over, which Apple says the rating must match. Age suitability
+  URL `https://choner.io/terms.html`. Result: 18+ in 173 countries, 19+ in
+  Korea.
+- **Header:** B dark uploaded by Dinesh.
+- **Screenshots:** also made at 1206 x 2622 for the 6.1"/6.3" slot
+  (`Downloads/Choner_App_Store/iphone-6.3-screenshots/`).
+
+Left for Dinesh: listed in `docs/BLOCKED_ON_YOU.md`, items 9 to 13.
+
+**Decided by:** user, 17 November 2026.
+
+## Google Play: 1.0.0 (6) on internal and closed testing, 17 November 2026
+
+- **Closed testing (Alpha):** Dinesh replaced the old 0.2.0 draft with
+  1.0.0 (versionCode 6) and sent it, with 13 changes, for Google's review.
+- **Internal testing:** Claude added versionCode 6 from the bundle library
+  (re-uploading the same file is refused: "Version code 6 has already been
+  used"), release name `1.0.0 (6)`, notes "First release of Choner: find an
+  activity partner, plan sessions together and keep a shared streak.", and
+  published it. Live for internal testers, 17 Nov 23:37.
+- **Production stays locked:** Choner's Play account is a personal account,
+  so Google requires a closed test with at least 12 opted-in testers for at
+  least 14 days in a row before production can be applied for. 0 testers on
+  17 Nov. App content declarations are all complete.
+
+**Decided by:** user, 17 November 2026.
+
+## Android invite links: assetlinks.json, 17 November 2026
+
+- Play's pre-launch check reported deep links not working. Cause:
+  `https://app.choner.io/.well-known/assetlinks.json` returned 404, so
+  Android could not verify `app.choner.io/invite/...` for `io.choner.app`
+  (the known gap from 10 November). iPhone's
+  `apple-app-site-association` was already live.
+- The file is now in the repo at `web/invite/.well-known/assetlinks.json`,
+  with Play App Signing's SHA-256 fingerprint copied from Play Console
+  (App integrity → App signing → Digital Asset Links JSON). Only the Play
+  signing key is listed, so Play-installed builds verify; the preview APK
+  (EAS-signed, staging) still opens the web page, which is fine.
+- Upload copy: `Downloads/Choner_Website_Upload/2_app.choner.io (invite)/.well-known/assetlinks.json`.
+  Uploaded by Dinesh the same night and checked live: HTTP 200, served as
+  `application/json`, and Google's Digital Asset Links API returns the
+  statement for `io.choner.app` with the Play signing fingerprint.
+
+**Decided by:** user, 17 November 2026.
