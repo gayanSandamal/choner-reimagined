@@ -18,6 +18,17 @@ export function SayHiStep({ plan }: { plan: PairPlan }) {
   const send = useSendPairMessage();
   const hasOpener = plan.messages.some((m) => m.key === 'opener');
   const iReplied = plan.messages.some((m) => m.mine && m.key !== 'opener');
+  const theyReplied = plan.messages.some((m) => !m.mine && m.key !== 'opener');
+  const them = plan.them.first_name || 'your match';
+  // Only one of you can send the first hi (whoever matched first), so the
+  // other person used to get a heading and an empty screen with nothing to
+  // tap. Say what they're waiting for instead.
+  const waiting =
+    !plan.i_open && !hasOpener
+      ? `Waiting for ${them} to say hi first.`
+      : plan.i_open && hasOpener && !theyReplied
+        ? `Waiting for ${them} to reply.`
+        : null;
 
   const onSend = async (key: string) => {
     try {
@@ -53,6 +64,12 @@ export function SayHiStep({ plan }: { plan: PairPlan }) {
         </View>
       ) : null}
 
+      {waiting ? (
+        <View style={styles.waiting}>
+          <AppText muted>{waiting}</AppText>
+        </View>
+      ) : null}
+
       <AppText muted style={styles.safety}>{COPY.safety}</AppText>
     </View>
   );
@@ -67,5 +84,11 @@ const styles = StyleSheet.create({
   mineText: { color: '#FFFFFF', fontSize: 14 },
   theirsText: { color: theme.colors.text, fontSize: 14 },
   replies: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  waiting: {
+    backgroundColor: theme.colors.surface3,
+    borderRadius: theme.radius.md,
+    paddingVertical: 12,
+    paddingHorizontal: 14
+  },
   safety: { fontSize: 11.5, lineHeight: 17, marginTop: theme.spacing(2) }
 });
