@@ -4344,3 +4344,53 @@ per-row security rules, and leaked password protection (Gayan, Supabase Auth
 settings). Still open and on Dinesh: rotate the keys pasted on 14 October.
 
 **Decided by:** user, 17 November 2026.
+
+## "You two are in": two faces meet, 17 November 2026
+
+- The screen after Say hi dropped the shared-session heart (it belongs to
+  Challenges, where it counts sessions together, and read as the old visual
+  here). Now both photos slide in from either side and overlap, once, then
+  "Noah and Emma", the heading and the button rise in. Reduced motion shows
+  the finished picture.
+- Option 1 of 4, without the orange dot on top. Dropped: the navy moment,
+  the "four steps ahead" list and the orange screen with two dots.
+- Ships in the next store build, together with #214. No build until this is
+  tested.
+
+**Decided by:** user, 17 November 2026.
+
+## No quiet hours, 17 November 2026
+
+- Every notification is now a push at any hour. Before, from 10 pm to 8 am in
+  the receiver's time, notifications only went to the in-app list (no buzz,
+  never pushed later) and the nudge button was refused.
+- Removed from `notify_user`, `confirm_match` ("said yes") and
+  `nudge_partner`, live on staging and production the same day
+  (`202611171800_no_quiet_hours.sql`). The in-app row is still the fallback
+  if the server keys are missing.
+- Why: early runners missed day-of notices ("arrived", "running late") until
+  8 am, and a held notice never reached the lock screen at all.
+- `docs/NUDGES_AND_REMINDERS.md` still describes quiet hours; this entry
+  replaces it.
+
+**Decided by:** user, 17 November 2026.
+
+## Planning steps notify the other person, 17 November 2026
+
+- Saying hi, replying, answering how far, suggesting a value and agreeing to
+  one used to happen silently, so a pair stalled on "Waiting for Nadeesha"
+  unless the other person opened the app. Each now pushes to the other
+  person and opens their plan:
+  - "Nadeesha said hi", "Say hi back."
+  - "Kasun replied", "Let's plan your first ride." (the activity's own word)
+  - "Nadeesha answered how far", "Your turn." or "Nadeesha answered too",
+    "On to the next step."
+  - "Kasun suggested how often / where to meet / a time / how to do it",
+    "Agree or suggest another."
+  - "Nadeesha agreed on how often", "On to the next step."
+- Same kind (`plan_update`) and on/off setting as the other plan notices.
+  Live on staging and production the same day
+  (`202611171830_planning_step_notifications.sql`), tested on staging with
+  Nadeesha and Kasun inside rolled-back transactions.
+
+**Decided by:** user, 17 November 2026.

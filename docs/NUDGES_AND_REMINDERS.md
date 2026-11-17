@@ -6,6 +6,12 @@ Three things are broken or missing. Only one of them is a regression; the other
 two never existed. This document separates them, because they have different
 fixes and different risk.
 
+> **Update, 17 November 2026: there are no quiet hours any more.** Every
+> notification, including a nudge, is a push at any hour
+> (`202611171800_no_quiet_hours.sql`, see `DECISIONS_LOG.md`). Where this
+> document describes the 22:00 to 08:00 rule or a `quiet_hours` refusal, that
+> is history.
+
 ---
 
 ## What's actually wrong
@@ -104,7 +110,7 @@ fast taps race against a constraint rather than against each other) and
 `nudge_partner()`, which returns `jsonb` rather than raising so the UI can tell
 five different refusals apart.
 
-Quiet hours are enforced against the **recipient's** timezone. The automated
+~~Quiet hours~~ (removed 17 November 2026) were enforced against the **recipient's** timezone. The automated
 sweep already refuses to fire between 22:00 and 08:00; a human-initiated nudge
 gets the same courtesy, because intent doesn't make a 3am push welcome.
 
@@ -188,7 +194,7 @@ constructed and inspected but never sent.
 | Immediately again | `already_nudged` |
 | `nudged_today` on partner status | `true` |
 | Dinesh (state `invited`) | `no_partner` |
-| Recipient at 01:10 local | `quiet_hours` |
+| Recipient at 01:10 local | `quiet_hours` (until 17 Nov 2026; now sent) |
 | After recipient logs | `already_logged` |
 | No JWT | raises `not authenticated` |
 | Gayan reading Synth's status | raises `not your status` |
