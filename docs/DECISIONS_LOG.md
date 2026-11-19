@@ -4539,3 +4539,14 @@ Left for Dinesh: listed in `docs/BLOCKED_ON_YOU.md`, items 9 to 13.
   menu; support hello@choner.io.
 
 **Decided by:** user, 19 November 2026.
+
+## Launch: one shared iOS and Android date, 19 November 2026
+
+- The 2-week marketing campaign aims at a single launch day for both
+  stores, set once the 12th Play closed tester opts in (Android Production
+  unlocks 14 days later). iOS 1.0 is on manual release, so it waits for
+  that date after approval.
+- Marketing runs in its own session ("Choner-Reimagined - Marketing"),
+  which was sent a status brief on 19 Nov.
+
+**Decided by:** user, 19 November 2026.
