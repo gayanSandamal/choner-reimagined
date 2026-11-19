@@ -4519,3 +4519,23 @@ Left for Dinesh: listed in `docs/BLOCKED_ON_YOU.md`, items 9 to 13.
   statement for `io.choner.app` with the Play signing fingerprint.
 
 **Decided by:** user, 17 November 2026.
+
+## iOS 1.0 submitted to App Review, 19 November 2026
+
+- Submitted by Dinesh on 19 Nov, 9:00 am; status **Waiting for Review**
+  (checked in App Store Connect).
+- **Manual release:** after approval the version waits until someone
+  presses Release, so it can't go live by surprise or before Android is
+  ready.
+- **Price:** free. **Availability:** Sri Lanka only.
+- **App Privacy:** published by Dinesh.
+- **Screenshots:** the 1206 x 2622 set with Kavindi; the orange search
+  results image; the B dark header.
+- **Review notes** (Dinesh's wording): what Choner does; the demo account
+  Alex is matched with Sam with a first run at Viharamahadevi Park, please
+  don't end the match; where to look (Home, Challenges, the plan screen);
+  matching uses the chosen area, not GPS, live in Colombo only; the QR
+  check-in needs both partners present; report and block are in the partner
+  menu; support hello@choner.io.
+
+**Decided by:** user, 19 November 2026.
