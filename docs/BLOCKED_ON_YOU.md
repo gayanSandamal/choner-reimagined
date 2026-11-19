@@ -246,7 +246,7 @@ and shared links show no picture. Upload the images first.
 Done when: opening each site shows the orange "C." in the browser tab, and
 pasting the link into the Facebook Sharing Debugger shows the new picture.
 
-### 9. Publish App Privacy — **Dinesh**
+### 9. Publish App Privacy — **Dinesh** (DONE 19 Nov)
 
 App Store Connect → Trust & Safety → App Privacy. All nine data types are
 filled in and saved (17 Nov), but the label is not live until someone presses
@@ -255,7 +255,7 @@ filled in and saved (17 Nov), but the label is not live until someone presses
 Done when: the App Privacy page shows no Publish button and the preview reads
 "Data Linked to You" with no "Data Used to Track You".
 
-### 10. Finish App Store version 1.0 and submit — **Dinesh**
+### 10. Finish App Store version 1.0 and submit — **Dinesh** (DONE 19 Nov: Waiting for Review, manual release)
 
 Done by Claude on 17 Nov: build 1.0.0 (12) attached, listing text, App
 Privacy answers, age rating 18+. Left for Dinesh:
