@@ -24,6 +24,7 @@
 //   -- is complete (activity_key present) and welcome_sent_at is still null.
 //   create or replace function public.mark_welcome_sent(p_token text) ...
 
+import { clientIp, rateLimited } from '../_shared/rate-limit.ts';
 import { WELCOME_SUBJECT, welcomeHtml, welcomeText } from './email.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -127,6 +128,12 @@ Deno.serve(async (req) => {
   // 200 so the bot believes it worked and does not come back to try again.
   if (String(body.website ?? '').trim() !== '') {
     return json({ ok: true, access_code: 'F2-XXXXXX', claim_token: '' }, 200, origin);
+  }
+
+  // The form posts twice per person, so 20 an hour is ten registrations from
+  // one address: room for a shared connection at an event, not for a script.
+  if (await rateLimited(`register:${clientIp(req)}`, 20, 3600)) {
+    return json({ error: 'too_many_requests' }, 429, origin);
   }
 
   const email = String(body.email ?? '').trim().toLowerCase();
