@@ -1,5 +1,7 @@
 import { Resend } from "npm:resend@4.0.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { withCors } from "../_shared/cors.ts";
+import { rateLimited } from "../_shared/rate-limit.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const admin = createClient(
@@ -23,38 +25,24 @@ function escapeHtml(s: string): string {
   );
 }
 
-// Browsers preflight any cross-origin POST carrying an Authorization header,
-// which is every call supabase-js makes. Without these the preflight fails and
-// the invite is never sent — silently, because the row is already written by
-// then. Native apps don't preflight, so this only ever broke on web.
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
-};
-
-Deno.serve(async (req) => {
-  // Answer the preflight before touching the body: an OPTIONS request has none,
-  // so req.json() would throw and return a 400 with no CORS headers at all.
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: CORS });
-  }
-
+// CORS (preflight and the allowlist) comes from withCors: the preflight is
+// answered before the body is touched, so an OPTIONS request with no body does
+// not fall into req.json() and come back a 400 with no CORS headers at all.
+Deno.serve(withCors(async (req) => {
   let body: { inviterName?: string; email?: string; challengeId?: string; token?: string; code?: string };
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: "Invalid request body" }, { status: 400, headers: CORS });
+    return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
   const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
   const { data: auth } = jwt ? await admin.auth.getUser(jwt) : { data: null };
   const uid = auth?.user?.id;
   if (!uid) {
-    return Response.json({ error: "Sign in to send an invite." }, { status: 401, headers: CORS });
+    return Response.json({ error: "Sign in to send an invite." }, { status: 401 });
   }
   if (!body.token) {
-    return Response.json({ error: "Missing invite." }, { status: 400, headers: CORS });
+    return Response.json({ error: "Missing invite." }, { status: 400 });
   }
 
   const { data: invite } = await admin
@@ -63,7 +51,13 @@ Deno.serve(async (req) => {
     .eq("token", body.token)
     .maybeSingle();
   if (!invite || invite.invited_by !== uid || invite.status !== "pending" || !invite.email) {
-    return Response.json({ error: "Invite not found." }, { status: 404, headers: CORS });
+    return Response.json({ error: "Invite not found." }, { status: 404 });
+  }
+
+  // Per-minute burst cap on top of the daily one below: the daily count only
+  // looks at invites created, so it does not slow someone resending one row.
+  if (await rateLimited(`invite-email:${uid}`, 5, 60)) {
+    return Response.json({ error: "Slow down a little. Try again in a minute." }, { status: 429 });
   }
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -73,7 +67,7 @@ Deno.serve(async (req) => {
     .eq("invited_by", uid)
     .gte("created_at", since);
   if ((count ?? 0) > DAILY_LIMIT) {
-    return Response.json({ error: "Too many invites today. Try again tomorrow." }, { status: 429, headers: CORS });
+    return Response.json({ error: "Too many invites today. Try again tomorrow." }, { status: 429 });
   }
 
   const { data: profile } = await admin
@@ -152,9 +146,9 @@ Deno.serve(async (req) => {
           ? "No verified sending domain. Verify one at resend.com/domains and set RESEND_FROM_EMAIL to an address on it."
           : undefined
       },
-      { status: 502, headers: CORS }
+      { status: 502 }
     );
   }
 
-  return Response.json(result, { headers: CORS });
-});
+  return Response.json(result);
+}));

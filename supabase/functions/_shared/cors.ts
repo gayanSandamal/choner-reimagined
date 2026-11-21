@@ -19,11 +19,29 @@
 // partner-match, cleanup-checkin-photos) or the revenuecat-webhook: no browser
 // calls those, so no preflight is ever sent.
 
-export const CORS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
+// An allowlist, not '*'. Native apps send no Origin header and never preflight,
+// so this only decides which web pages may call these functions from a
+// browser. The Expo web build is not deployed anywhere yet; the localhost
+// entries are for `expo start --web` (8081) and the Expo dev server (19006).
+export const ALLOWED_ORIGINS = new Set([
+  'https://choner.io',
+  'https://join.choner.io',
+  'https://app.choner.io',
+  'http://localhost:8081',
+  'http://localhost:19006'
+]);
+
+export function corsHeaders(origin: string | null): Record<string, string> {
+  return {
+    // A disallowed origin gets the default one back, so the browser blocks it
+    // rather than the function failing in some other way.
+    'Access-Control-Allow-Origin':
+      origin && ALLOWED_ORIGINS.has(origin) ? origin : 'https://app.choner.io',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    Vary: 'Origin'
+  };
+}
 
 /**
  * Answers the preflight, and puts the CORS headers on whatever the handler
@@ -40,11 +58,12 @@ export function withCors(
   handler: (req: Request) => Response | Promise<Response>
 ): (req: Request) => Promise<Response> {
   return async (req: Request): Promise<Response> => {
-    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+    const cors = corsHeaders(req.headers.get('origin'));
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
     const res = await handler(req);
     const headers = new Headers(res.headers);
-    for (const [name, value] of Object.entries(CORS)) headers.set(name, value);
+    for (const [name, value] of Object.entries(cors)) headers.set(name, value);
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
   };
 }
